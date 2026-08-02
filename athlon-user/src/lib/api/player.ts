@@ -16,7 +16,7 @@ export interface PlayerRole {
 
 export const PlayerService = {
   register: (data: any) => 
-    api.post<Player>('/player/register', data),
+    api.post<Player>('/api/identity/users/createUser', data),
 
   getById: (playerId: number) => 
     api.get<Player>(`/player/getPlayerById/${playerId}`),

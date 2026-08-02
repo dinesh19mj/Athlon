@@ -1,4 +1,4 @@
-package com.athlon.identityservice.Config;
+package com.athlon.identityservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

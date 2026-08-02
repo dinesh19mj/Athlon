@@ -1,12 +1,21 @@
 package com.athlon.identityservice.organization.repository;
 
+import com.athlon.identityservice.organization.entity.OrganizationMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import com.athlon.identityservice.organization.model.OrganizationMember;
+
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface OrganizationMemberRepository extends JpaRepository<OrganizationMember, Long> {
-    List<OrganizationMember> findByOrgId(Long orgId);
-    List<OrganizationMember> findByPlayerId(Long playerId);
+    
+    Optional<OrganizationMember> findByUuid(UUID uuid);
+    
+    List<OrganizationMember> findByOrganizationId(Long organizationId);
+    
+    List<OrganizationMember> findByUserId(Long userId);
+    
+    boolean existsByOrganizationIdAndUserId(Long organizationId, Long userId);
 }

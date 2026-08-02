@@ -1,83 +1,103 @@
 package com.athlon.identityservice.organization.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.athlon.identityservice.organization.model.Organization;
-import com.athlon.identityservice.organization.model.OrganizationMember;
-import com.athlon.identityservice.organization.repository.OrganizationMemberRepository;
+import com.athlon.identityservice.organization.dto.request.CreateOrganizationRequest;
+import com.athlon.identityservice.organization.dto.request.UpdateOrganizationRequest;
+import com.athlon.identityservice.organization.dto.response.OrganizationResponse;
+import com.athlon.identityservice.organization.entity.Organization;
+import com.athlon.identityservice.exception.DuplicateResourceException;
+import com.athlon.identityservice.exception.ResourceNotFoundException;
 import com.athlon.identityservice.organization.repository.OrganizationRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class OrganizationService {
 
-    @Autowired
-    private OrganizationRepository organizationRepository;
+    private final OrganizationRepository organizationRepository;
 
-    @Autowired
-    private OrganizationMemberRepository organizationMemberRepository;
+    public OrganizationService(OrganizationRepository organizationRepository) {
+        this.organizationRepository = organizationRepository;
+    }
 
-    public Organization createOrganization(Organization organization) {
-        organization.setOrgUuid(UUID.randomUUID());
-        organization.setCreatedOn(LocalDateTime.now());
-        organization.setIsActive(1);
-        if (organization.getStatus() == null) {
-            organization.setStatus("ACTIVE");
+    @Transactional
+    public OrganizationResponse createOrganization(CreateOrganizationRequest request, Long currentUserId) {
+        if (organizationRepository.existsByName(request.getName())) {
+            throw new DuplicateResourceException("Organization already exists with name: " + request.getName());
         }
-        return organizationRepository.save(organization);
+
+        Organization organization = new Organization(
+            request.getName(), 
+            request.getDescription(), 
+            request.getType(), 
+            request.getParentOrganizationId(), 
+            currentUserId
+        );
+        organization = organizationRepository.save(organization);
+
+        return mapToResponse(organization);
     }
 
-    public Organization updateOrganization(Long orgId, Organization orgDetails) {
-        Organization existingOrg = organizationRepository.findById(orgId)
-            .orElseThrow(() -> new RuntimeException("Organization not found"));
-        
-        if (orgDetails.getName() != null) existingOrg.setName(orgDetails.getName());
-        if (orgDetails.getEmail() != null) existingOrg.setEmail(orgDetails.getEmail());
-        if (orgDetails.getPhoneNumber() != null) existingOrg.setPhoneNumber(orgDetails.getPhoneNumber());
-        if (orgDetails.getLogo() != null) existingOrg.setLogo(orgDetails.getLogo());
-        if (orgDetails.getStatus() != null) existingOrg.setStatus(orgDetails.getStatus());
-        
-        existingOrg.setModifiedOn(LocalDateTime.now());
-        return organizationRepository.save(existingOrg);
-    }
+    @Transactional
+    public OrganizationResponse updateOrganization(UpdateOrganizationRequest request, Long currentUserId) {
+        Organization organization = organizationRepository.findByUuid(request.getUuid())
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + request.getUuid()));
 
-    public Organization updateSubscriptionStatus(Long orgId, String status, String paymentRef) {
-        Organization existingOrg = organizationRepository.findById(orgId)
-            .orElseThrow(() -> new RuntimeException("Organization not found"));
-        
-        existingOrg.setSubscriptionStatus(status);
-        if (paymentRef != null) {
-            existingOrg.setPaymentReference(paymentRef);
+        if (!organization.getName().equals(request.getName()) && organizationRepository.existsByName(request.getName())) {
+            throw new DuplicateResourceException("Organization already exists with name: " + request.getName());
         }
-        existingOrg.setModifiedOn(LocalDateTime.now());
-        return organizationRepository.save(existingOrg);
+
+        organization.setName(request.getName());
+        organization.setDescription(request.getDescription());
+        if (request.getType() != null) {
+            organization.setType(request.getType());
+        }
+        if (request.getParentOrganizationId() != null) {
+            organization.setParentOrganizationId(request.getParentOrganizationId());
+        }
+        organization.setUpdatedBy(currentUserId);
+        
+        organization = organizationRepository.save(organization);
+
+        return mapToResponse(organization);
     }
 
-    public Organization getOrganizationById(Long orgId) {
-        return organizationRepository.findById(orgId)
-            .orElseThrow(() -> new RuntimeException("Organization not found"));
+    @Transactional
+    public void deleteOrganization(UUID uuid, Long currentUserId) {
+        Organization organization = organizationRepository.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + uuid));
+        
+        organization.setActive(false);
+        organization.setUpdatedBy(currentUserId);
+        organizationRepository.save(organization);
     }
 
-    public List<Organization> getAllOrganizations() {
-        return organizationRepository.findAll();
+    @Transactional(readOnly = true)
+    public OrganizationResponse getOrganizationByUuid(UUID uuid) {
+        Organization organization = organizationRepository.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + uuid));
+                
+        return mapToResponse(organization);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<OrganizationResponse> getAllOrganizations() {
+        return organizationRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    public OrganizationMember addMemberToOrganization(Long orgId, Long playerId, String role) {
-        OrganizationMember member = new OrganizationMember();
-        member.setOrgId(orgId);
-        member.setPlayerId(playerId);
-        member.setRole(role);
-        member.setStatus("ACTIVE");
-        member.setIsActive(1);
-        member.setCreatedOn(LocalDateTime.now());
-        return organizationMemberRepository.save(member);
-    }
-
-    public List<OrganizationMember> getOrganizationMembers(Long orgId) {
-        return organizationMemberRepository.findByOrgId(orgId);
+    private OrganizationResponse mapToResponse(Organization organization) {
+        OrganizationResponse response = new OrganizationResponse();
+        response.setUuid(organization.getUuid());
+        response.setName(organization.getName());
+        response.setDescription(organization.getDescription());
+        response.setActive(organization.isActive());
+        response.setType(organization.getType());
+        response.setParentOrganizationId(organization.getParentOrganizationId());
+        return response;
     }
 }

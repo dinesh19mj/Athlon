@@ -8,8 +8,8 @@ type AuthState = {
   subscriptions: Subscription[];
   userEmail: string | null;
   token: string | null;
-  playerId: number | null;
-  login: (email: string, token: string, playerId: number) => Promise<void>;
+  userId: string | null;
+  login: (email: string, token: string, userId: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
   setSubscriptions: (subs: Subscription[]) => void;
@@ -20,9 +20,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   subscriptions: ['PLAYER'],
   userEmail: null,
   token: null,
-  playerId: null,
+  userId: null,
 
-  login: async (email: string, token: string, playerId: number) => {
+  login: async (email: string, token: string, userId: string) => {
     const lowerEmail = email.toLowerCase();
     
     let subs: Subscription[] = ['PLAYER'];
@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: true,
       userEmail: email,
       token: token,
-      playerId: playerId,
+      userId: userId,
       subscriptions: subs,
     });
   },
@@ -65,7 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       subscriptions: ['PLAYER'],
       userEmail: null,
       token: null,
-      playerId: null,
+      userId: null,
     });
   },
   setSubscriptions: (subs) =>

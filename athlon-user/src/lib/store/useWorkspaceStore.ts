@@ -50,8 +50,8 @@ const MOCK_ORGS: Organization[] = [
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeWorkspaceId: 'PERSONAL',
-  personalProfile: MOCK_PROFILE,
-  organizations: MOCK_ORGS,
+  personalProfile: null,
+  organizations: [],
 
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
   setOrganizations: (orgs) => set({ organizations: orgs }),

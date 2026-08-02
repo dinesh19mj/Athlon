@@ -1,7 +1,7 @@
 import { api } from './client';
 
 export const AuthService = {
-  login: (input: string, password?: string) => api.post<{ token: string }>('/api/auth/login', { input, password }),
+  login: (identifier: string, password?: string) => api.post<{ data: { accessToken: string, refreshToken: string } }>('/api/auth/login', { identifier, password }),
   register: (data: any) => api.post<any>('/api/auth/register', data),
-  getUserProfile: () => api.get<{ message: string, data: any }>('/users/me'),
+  getUserProfile: (uuid: string, token: string) => api.get<{ message: string, data: any }>(`/api/identity/users/get/${uuid}`, { headers: { Authorization: `Bearer ${token}` } }),
 };

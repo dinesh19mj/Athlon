@@ -1,7 +1,7 @@
 package com.athlon.identityservice.dto.request;
+import java.util.UUID;
 
 import jakarta.validation.constraints.NotNull;
-import java.util.UUID;
 
 public class AssignRoleRequest {
 

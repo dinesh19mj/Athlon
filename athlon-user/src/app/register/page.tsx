@@ -16,7 +16,8 @@ export default function RegisterPage() {
     firstName: '',
     lastName: '',
     email: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    password: ''
   });
   const [phoneError, setPhoneError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +55,8 @@ export default function RegisterPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        phoneNumber: formData.phoneNumber
+        phone: formData.phoneNumber, // IdentityService expects 'phone' instead of 'phoneNumber'
+        password: formData.password
       });
 
       // Show success animation
@@ -133,7 +135,7 @@ export default function RegisterPage() {
               >
                 <h2 className="text-3xl font-bold mb-3">Registration Successful!</h2>
                 <p className="text-(--text-muted) mb-8">
-                  Welcome to Athlon! Please check your email for your temporary password.
+                  Welcome to Athlon! You can now log in with your credentials.
                 </p>
                 <div className="w-8 h-8 mx-auto border-2 border-(--primary)/30 border-t-(--primary) rounded-full animate-spin" />
                 <p className="text-xs text-(--text-muted) mt-4">Redirecting to login...</p>
@@ -229,6 +231,25 @@ export default function RegisterPage() {
               {phoneError && (
                 <p className="text-red-500 text-xs mt-1">{phoneError}</p>
               )}
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input 
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full bg-(--surface) border border-(--border) rounded-xl py-4 px-4 text-(--text) focus:outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary) transition-all"
+                  required
+                  minLength={8}
+                />
+              </div>
             </div>
 
             {apiError && (

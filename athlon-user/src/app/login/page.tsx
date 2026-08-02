@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
+import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { AuthService } from '@/lib/api/auth';
 import { useRouter } from 'next/navigation';
 import { Mail, Home, Trophy, Plus, Building, User } from 'lucide-react';
@@ -28,7 +29,7 @@ export default function LoginPage() {
     try {
       const response = await AuthService.login(identifier, password);
       
-      const token = response.token;
+      const token = response.data.accessToken;
 
       // Basic base64 decode to get roles
       const payloadBase64 = token.split('.')[1];
@@ -37,10 +38,28 @@ export default function LoginPage() {
 
       const roles = payload.roles || [];
       const lowerRoles = roles.map((r: string) => r.toLowerCase());
-      const playerId = payload.parentId;
+      const userId = payload.userId;
 
       // Update store
-      login(identifier, token, playerId);
+      login(identifier, token, userId);
+
+      // Fetch user profile from IDENTITYSERVICE
+      if (userId) {
+        try {
+          const userProfileResp = await AuthService.getUserProfile(userId, token);
+          if (userProfileResp && userProfileResp.data) {
+            const user = userProfileResp.data;
+            useWorkspaceStore.getState().setPersonalProfile({
+              id: user.uuid,
+              name: `${user.firstName} ${user.lastName}`,
+              athlonId: `ATH-${user.uuid.substring(0, 6).toUpperCase()}`,
+              avatar: '/umpire.png'
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch user profile", e);
+        }
+      }
 
       router.push('/home');
     } catch (err: any) {

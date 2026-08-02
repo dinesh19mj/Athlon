@@ -1,7 +1,7 @@
 package com.athlon.authservice.security;
 
-import com.athlon.authservice.entity.Credentials;
-import com.athlon.authservice.repository.CredentialsRepository;
+import com.athlon.authservice.auth.entity.Credentials;
+import com.athlon.authservice.auth.repository.CredentialsRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,8 +22,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
         return new CurrentUser(
-                credentials.getId(),
-                credentials.getUuid(),
+                credentials.getCredentialId(),
+                credentials.getCredentialUuid(),
                 credentials.getEmail(),
                 credentials.getPasswordHash(),
                 credentials.isAccountLocked(),

@@ -53,7 +53,7 @@ export default function PersonalHomePage() {
       <div className="relative z-10 flex-1 overflow-y-auto hide-scrollbar">
         
         {/* HERO SECTION - DIGITAL SPORTS PASSPORT */}
-        <div className="px-6 pt-8 pb-6 border-b border-foreground/10 relative overflow-hidden">
+        <div className="px-6 pt-8 pb-12 border-b border-foreground/10 relative overflow-hidden">
           
           {/* Video Background (Hero Only) */}
           <div className="absolute inset-0 z-0">
@@ -62,20 +62,15 @@ export default function PersonalHomePage() {
               loop 
               muted 
               playsInline 
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover opacity-60"
             >
               <source src="/athlon-background.mp4" type="video/mp4" />
             </video>
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1A] via-[#0A0F1A]/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           </div>
 
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#3B82F6]/10 rounded-full blur-[100px] pointer-events-none z-0" />
           
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/10 border border-foreground/20 backdrop-blur-md mb-6 relative z-10">
-            <ShieldCheck className="w-4 h-4 text-[#3B82F6]" />
-            <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Digital Sports Passport</span>
-          </div>
 
           <div className="flex items-center gap-4 relative z-10 mb-6">
             <div className="w-16 h-16 rounded-2xl bg-black/50 border border-white/10 overflow-hidden shrink-0 shadow-xl">
@@ -91,7 +86,10 @@ export default function PersonalHomePage() {
             </div>
           </div>
 
-          <div className="flex gap-3 relative z-10">
+        </div>
+
+        <div className="px-6 pt-6 relative z-10">
+          <div className="flex gap-3">
             <div className="flex-1 bg-black/40 border border-foreground/10 backdrop-blur-md rounded-2xl p-4 flex flex-col justify-center shadow-lg">
               <span className="text-[10px] font-black text-foreground/60 uppercase tracking-widest mb-1">State Rank</span>
               <span className="text-2xl font-black text-foreground">#18</span>

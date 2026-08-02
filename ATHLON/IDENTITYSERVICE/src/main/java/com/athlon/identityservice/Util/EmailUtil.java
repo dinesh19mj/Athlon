@@ -1,4 +1,4 @@
-package com.athlon.identityservice.Util;
+package com.athlon.identityservice.util;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

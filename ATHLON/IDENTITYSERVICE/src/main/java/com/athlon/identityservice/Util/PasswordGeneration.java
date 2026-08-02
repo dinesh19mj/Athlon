@@ -1,4 +1,4 @@
-package com.athlon.identityservice.Util;
+package com.athlon.identityservice.util;
 
 import java.security.SecureRandom;
 

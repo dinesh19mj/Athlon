@@ -12,11 +12,11 @@ export interface SubscriptionPackage {
 
 export const SubscriptionService = {
   create: (data: SubscriptionPackage) => 
-    api.post<SubscriptionPackage>('/subscriptionPackage/create', data),
+    api.post<SubscriptionPackage>('/api/identity/subscriptions/packages', data),
     
   getAll: () => 
-    api.get<SubscriptionPackage[]>('/subscriptionPackage/getAll'),
+    api.get<SubscriptionPackage[]>('/api/identity/subscriptions/packages'),
     
-  getById: (packageId: number) => 
-    api.get<SubscriptionPackage>(`/subscriptionPackage/getById/${packageId}`)
+  getById: (packageId: string) => 
+    api.get<SubscriptionPackage>(`/api/identity/subscriptions/packages/${packageId}`)
 };
