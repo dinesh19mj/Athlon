@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+:root {
+  /* Default: Dark Theme */
+  --bg: #0E1420;
+  --surface: #161D2B;
+  --surface-elevated: #1E2636;
+  --primary: #C6FF3D;
+  --live: #FF5F45;
+  --info: #3DA9FC;
+  --success: #00D68F;
+  --text: #F4F6FA;
+  --text-muted: #9AA5B8;
+  --border: #2A3344;
+  --accent: #C6FF3D;
+}
+
+.light {
+  /* Light Theme (for public live-view pages) */
+  --bg: #FFFFFF;
+  --surface: #F7F8FA;
+  --surface-elevated: #FFFFFF;
+  --primary: #FF5F45;
+  /* Ignite coral is primary here */
+  --live: #FF5F45;
+  --info: #185FA5;
+  --success: #1D9E75;
+  --text: #101423;
+  --text-muted: #5F6B7A;
+  --border: #E2E8F0;
+  --accent: #7BC400;
+  /* Volt lime darkened */
+}
+
+@theme {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-primary: var(--primary);
+  --color-live: var(--live);
+  --color-info: var(--info);
+  --color-success: var(--success);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+
+  --font-sans: "Inter", Arial, Helvetica, sans-serif;
+
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Base resets or common utilities can go here */
