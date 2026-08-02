@@ -14,46 +14,49 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "scores", schema = "tournament")
+@Table(name = "scores")
 public class Score {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Long id;
+    @Column(name = "scoreid", updatable = false, nullable = false)
+    private Long scoreId;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    @Column(name = "scoreuuid", updatable = false, nullable = false, unique = true)
+    private UUID scoreUuid;
 
-    @Column(name = "match_id", nullable = false)
+    @Column(name = "matchid", nullable = false)
     private Long matchId;
 
-    @Column(name = "match_uuid", nullable = false)
+    @Column(name = "matchuuid")
     private UUID matchUuid;
 
-    @Column(name = "team_a_score")
+    @Column(name = "teamascore")
     private String teamAScore;
 
-    @Column(name = "team_b_score")
+    @Column(name = "teambscore")
     private String teamBScore;
 
-    @Column(name = "is_final", nullable = false)
+    @Column(name = "isfinal", nullable = false)
     private boolean isFinal = false;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "scoremeta", columnDefinition = "jsonb")
+    private com.fasterxml.jackson.databind.JsonNode scoreMeta;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "createdon", nullable = false, updatable = false)
+    private LocalDateTime createdOn;
 
-    @Column(name = "created_by")
+    @Column(name = "modifiedon")
+    private LocalDateTime modifiedOn;
+
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
-    private Long updatedBy;
+    @Column(name = "modifiedby")
+    private Long modifiedBy;
 
     public Score() {
     }
@@ -69,22 +72,22 @@ public class Score {
 
     @PrePersist
     protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
+        if (this.scoreUuid == null) {
+            this.scoreUuid = UUID.randomUUID();
         }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdOn = LocalDateTime.now();
+        this.modifiedOn = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.modifiedOn = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public UUID getUuid() { return uuid; }
-    public void setUuid(UUID uuid) { this.uuid = uuid; }
+    public Long getScoreId() { return scoreId; }
+    public void setScoreId(Long scoreId) { this.scoreId = scoreId; }
+    public UUID getScoreUuid() { return scoreUuid; }
+    public void setScoreUuid(UUID scoreUuid) { this.scoreUuid = scoreUuid; }
     public Long getMatchId() { return matchId; }
     public void setMatchId(Long matchId) { this.matchId = matchId; }
     public UUID getMatchUuid() { return matchUuid; }
@@ -97,33 +100,35 @@ public class Score {
     public void setFinal(boolean aFinal) { isFinal = aFinal; }
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public com.fasterxml.jackson.databind.JsonNode getScoreMeta() { return scoreMeta; }
+    public void setScoreMeta(com.fasterxml.jackson.databind.JsonNode scoreMeta) { this.scoreMeta = scoreMeta; }
+    public LocalDateTime getCreatedOn() { return createdOn; }
+    public void setCreatedOn(LocalDateTime createdOn) { this.createdOn = createdOn; }
+    public LocalDateTime getModifiedOn() { return modifiedOn; }
+    public void setModifiedOn(LocalDateTime modifiedOn) { this.modifiedOn = modifiedOn; }
     public Long getCreatedBy() { return createdBy; }
     public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
-    public Long getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(Long updatedBy) { this.updatedBy = updatedBy; }
+    public Long getModifiedBy() { return modifiedBy; }
+    public void setModifiedBy(Long modifiedBy) { this.modifiedBy = modifiedBy; }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Score score = (Score) o;
-        return Objects.equals(id, score.id) && Objects.equals(uuid, score.uuid);
+        return Objects.equals(scoreId, score.scoreId) && Objects.equals(scoreUuid, score.scoreUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid);
+        return Objects.hash(scoreId, scoreUuid);
     }
 
     @Override
     public String toString() {
         return "Score{" +
-                "id=" + id +
-                ", uuid=" + uuid +
+                "scoreId=" + scoreId +
+                ", scoreUuid=" + scoreUuid +
                 ", matchId=" + matchId +
                 ", teamAScore='" + teamAScore + '\'' +
                 ", teamBScore='" + teamBScore + '\'' +

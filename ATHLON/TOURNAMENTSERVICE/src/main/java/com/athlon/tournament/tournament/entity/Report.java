@@ -14,42 +14,42 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "reports", schema = "tournament")
+@Table(name = "reports")
 public class Report {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "reportid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "reportuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "tournament_id", nullable = false)
+    @Column(name = "tournamentid", nullable = false)
     private Long tournamentId;
 
-    @Column(name = "tournament_uuid", nullable = false)
+    @Column(name = "tournamentuuid", nullable = false)
     private UUID tournamentUuid;
 
-    @Column(name = "report_type", nullable = false)
+    @Column(name = "reporttype", nullable = false)
     private String reportType;
 
-    @Column(name = "file_url")
+    @Column(name = "fileurl")
     private String fileUrl;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public Report() {

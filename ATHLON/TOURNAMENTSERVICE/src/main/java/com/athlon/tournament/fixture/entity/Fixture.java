@@ -14,42 +14,42 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "fixtures", schema = "tournament")
+@Table(name = "fixtures")
 public class Fixture {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "fixtureid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "fixtureuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "category_id", nullable = false)
+    @Column(name = "categoryid", nullable = false)
     private Long categoryId;
 
-    @Column(name = "category_uuid", nullable = false)
+    @Column(name = "categoryuuid", nullable = false)
     private UUID categoryUuid;
 
-    @Column(name = "round_name", nullable = false)
+    @Column(name = "roundname", nullable = false)
     private String roundName;
 
-    @Column(name = "round_number", nullable = false)
+    @Column(name = "roundnumber", nullable = false)
     private Integer roundNumber;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public Fixture() {

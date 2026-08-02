@@ -14,15 +14,15 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "venues", schema = "tournament")
+@Table(name = "venues")
 public class Venue {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "venueid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "venueuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
     @Column(name = "name", nullable = false)
@@ -31,25 +31,25 @@ public class Venue {
     @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 
-    @Column(name = "city_id")
+    @Column(name = "cityid")
     private Long cityId;
 
-    @Column(name = "city_uuid")
+    @Column(name = "cityuuid")
     private UUID cityUuid;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public Venue() {

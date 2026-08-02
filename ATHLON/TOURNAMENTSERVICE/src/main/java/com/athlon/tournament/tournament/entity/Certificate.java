@@ -14,48 +14,48 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "certificates", schema = "tournament")
+@Table(name = "certificates")
 public class Certificate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "certificateid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "certificateuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "registration_id", nullable = false)
+    @Column(name = "registrationid", nullable = false)
     private Long registrationId;
 
-    @Column(name = "registration_uuid", nullable = false)
+    @Column(name = "registrationuuid", nullable = false)
     private UUID registrationUuid;
 
-    @Column(name = "player_id")
+    @Column(name = "playerid")
     private Long playerId;
 
-    @Column(name = "player_uuid")
+    @Column(name = "playeruuid")
     private UUID playerUuid;
 
-    @Column(name = "certificate_type", nullable = false)
+    @Column(name = "certificatetype", nullable = false)
     private String certificateType;
 
-    @Column(name = "file_url")
+    @Column(name = "fileurl")
     private String fileUrl;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public Certificate() {

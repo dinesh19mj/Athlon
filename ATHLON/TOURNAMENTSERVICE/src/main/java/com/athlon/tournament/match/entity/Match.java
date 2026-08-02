@@ -14,60 +14,60 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "matches", schema = "tournament")
+@Table(name = "matches")
 public class Match {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "matchid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "matchuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "team_a_registration_id")
+    @Column(name = "teamaregistrationid")
     private Long teamARegistrationId;
 
-    @Column(name = "team_a_registration_uuid")
+    @Column(name = "teamaregistrationuuid")
     private UUID teamARegistrationUuid;
 
-    @Column(name = "team_b_registration_id")
+    @Column(name = "teambregistrationid")
     private Long teamBRegistrationId;
 
-    @Column(name = "team_b_registration_uuid")
+    @Column(name = "teambregistrationuuid")
     private UUID teamBRegistrationUuid;
 
-    @Column(name = "court_id")
+    @Column(name = "courtid")
     private Long courtId;
 
-    @Column(name = "court_uuid")
+    @Column(name = "courtuuid")
     private UUID courtUuid;
 
-    @Column(name = "scheduled_time")
+    @Column(name = "scheduledtime")
     private LocalDateTime scheduledTime;
 
     @Column(name = "status", nullable = false)
     private String status = "SCHEDULED";
 
-    @Column(name = "winner_registration_id")
+    @Column(name = "winnerregistrationid")
     private Long winnerRegistrationId;
 
-    @Column(name = "winner_registration_uuid")
+    @Column(name = "winnerregistrationuuid")
     private UUID winnerRegistrationUuid;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public Match() {

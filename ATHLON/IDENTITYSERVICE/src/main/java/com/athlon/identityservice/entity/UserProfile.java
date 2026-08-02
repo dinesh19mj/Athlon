@@ -13,45 +13,45 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_profiles", schema = "identity")
+@Table(name = "user_profiles")
 public class UserProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "userprofileid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "userprofileuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "userid", nullable = false)
     private Long userId;
 
-    @Column(name = "user_uuid", nullable = false)
+    @Column(name = "useruuid", nullable = false)
     private UUID userUuid;
 
-    @Column(name = "first_name", nullable = false, length = 100)
+    @Column(name = "firstname", nullable = false, length = 100)
     private String firstName;
 
-    @Column(name = "last_name", length = 100)
+    @Column(name = "lastname", length = 100)
     private String lastName;
 
     @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public UserProfile() {

@@ -14,45 +14,45 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "match_officials", schema = "tournament")
+@Table(name = "match_officials")
 public class MatchOfficial {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "matchofficialid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "matchofficialuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "match_id", nullable = false)
+    @Column(name = "matchid", nullable = false)
     private Long matchId;
 
-    @Column(name = "match_uuid", nullable = false)
+    @Column(name = "matchuuid", nullable = false)
     private UUID matchUuid;
 
-    @Column(name = "official_id", nullable = false)
+    @Column(name = "officialid", nullable = false)
     private Long officialId;
 
-    @Column(name = "official_uuid", nullable = false)
+    @Column(name = "officialuuid", nullable = false)
     private UUID officialUuid;
 
     @Column(name = "role", nullable = false)
     private String role;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public MatchOfficial() {

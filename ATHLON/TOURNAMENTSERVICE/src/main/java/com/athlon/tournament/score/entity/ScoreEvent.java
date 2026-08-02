@@ -14,52 +14,52 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "score_events", schema = "tournament")
+@Table(name = "score_events")
 public class ScoreEvent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Long id;
+    @Column(name = "scoreeventid", updatable = false, nullable = false)
+    private Long scoreEventId;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    @Column(name = "scoreeventuuid", updatable = false, nullable = false, unique = true)
+    private UUID scoreEventUuid;
 
-    @Column(name = "score_id", nullable = false)
+    @Column(name = "scoreid", nullable = false)
     private Long scoreId;
 
-    @Column(name = "score_uuid", nullable = false)
+    @Column(name = "scoreuuid", nullable = false)
     private UUID scoreUuid;
 
-    @Column(name = "player_id")
+    @Column(name = "playerid")
     private Long playerId;
 
-    @Column(name = "player_uuid")
+    @Column(name = "playeruuid")
     private UUID playerUuid;
 
-    @Column(name = "event_type", nullable = false)
+    @Column(name = "eventtype", nullable = false)
     private String eventType;
 
-    @Column(name = "event_value")
+    @Column(name = "eventvalue")
     private String eventValue;
 
-    @Column(name = "event_time", nullable = false)
+    @Column(name = "eventtime", nullable = false)
     private LocalDateTime eventTime;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "createdon", nullable = false, updatable = false)
+    private LocalDateTime createdOn;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "modifiedon")
+    private LocalDateTime modifiedOn;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
-    private Long updatedBy;
+    @Column(name = "modifiedby")
+    private Long modifiedBy;
 
     public ScoreEvent() {
     }
@@ -77,25 +77,25 @@ public class ScoreEvent {
 
     @PrePersist
     protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
+        if (this.scoreEventUuid == null) {
+            this.scoreEventUuid = UUID.randomUUID();
         }
         if (this.eventTime == null) {
             this.eventTime = LocalDateTime.now();
         }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdOn = LocalDateTime.now();
+        this.modifiedOn = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.modifiedOn = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public UUID getUuid() { return uuid; }
-    public void setUuid(UUID uuid) { this.uuid = uuid; }
+    public Long getScoreEventId() { return scoreEventId; }
+    public void setScoreEventId(Long scoreEventId) { this.scoreEventId = scoreEventId; }
+    public UUID getScoreEventUuid() { return scoreEventUuid; }
+    public void setScoreEventUuid(UUID scoreEventUuid) { this.scoreEventUuid = scoreEventUuid; }
     public Long getScoreId() { return scoreId; }
     public void setScoreId(Long scoreId) { this.scoreId = scoreId; }
     public UUID getScoreUuid() { return scoreUuid; }
@@ -112,33 +112,33 @@ public class ScoreEvent {
     public void setEventTime(LocalDateTime eventTime) { this.eventTime = eventTime; }
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public LocalDateTime getCreatedOn() { return createdOn; }
+    public void setCreatedOn(LocalDateTime createdOn) { this.createdOn = createdOn; }
+    public LocalDateTime getModifiedOn() { return modifiedOn; }
+    public void setModifiedOn(LocalDateTime modifiedOn) { this.modifiedOn = modifiedOn; }
     public Long getCreatedBy() { return createdBy; }
     public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
-    public Long getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(Long updatedBy) { this.updatedBy = updatedBy; }
+    public Long getModifiedBy() { return modifiedBy; }
+    public void setModifiedBy(Long modifiedBy) { this.modifiedBy = modifiedBy; }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ScoreEvent that = (ScoreEvent) o;
-        return Objects.equals(id, that.id) && Objects.equals(uuid, that.uuid);
+        return Objects.equals(scoreEventId, that.scoreEventId) && Objects.equals(scoreEventUuid, that.scoreEventUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid);
+        return Objects.hash(scoreEventId, scoreEventUuid);
     }
 
     @Override
     public String toString() {
         return "ScoreEvent{" +
-                "id=" + id +
-                ", uuid=" + uuid +
+                "scoreEventId=" + scoreEventId +
+                ", scoreEventUuid=" + scoreEventUuid +
                 ", scoreId=" + scoreId +
                 ", eventType='" + eventType + '\'' +
                 ", isActive=" + isActive +

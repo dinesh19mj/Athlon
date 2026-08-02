@@ -1,0 +1,1 @@
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; public class TestPassword { public static void main(String[] args) { BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(); boolean match = encoder.matches("N%IPQ2", "$2a$10$JiY7YOZA7rRThzcI1Ej89eWKFMPDOzrM0drvztQ55yUCyUIMDz6Oa"); System.out.println("Match: " + match); } }

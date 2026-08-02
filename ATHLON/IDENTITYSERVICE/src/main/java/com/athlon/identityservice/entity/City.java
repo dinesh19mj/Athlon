@@ -13,39 +13,39 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "cities", schema = "identity")
+@Table(name = "cities")
 public class City {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "cityid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "cityuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "district_id", nullable = false)
+    @Column(name = "districtid", nullable = false)
     private Long districtId;
 
-    @Column(name = "district_uuid", nullable = false)
+    @Column(name = "districtuuid", nullable = false)
     private UUID districtUuid;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public City() {

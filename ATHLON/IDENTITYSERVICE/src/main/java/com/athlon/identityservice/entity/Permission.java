@@ -13,15 +13,15 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "permissions", schema = "identity")
+@Table(name = "permissions")
 public class Permission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "permissionid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "permissionuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
     @Column(name = "name", nullable = false, unique = true, length = 100)
@@ -30,19 +30,19 @@ public class Permission {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public Permission() {

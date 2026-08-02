@@ -14,45 +14,45 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "gallery", schema = "tournament")
+@Table(name = "gallery")
 public class TournamentGallery {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "tournamentgalleryid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "tournamentgalleryuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "tournament_id", nullable = false)
+    @Column(name = "tournamentid", nullable = false)
     private Long tournamentId;
 
-    @Column(name = "tournament_uuid", nullable = false)
+    @Column(name = "tournamentuuid", nullable = false)
     private UUID tournamentUuid;
 
-    @Column(name = "media_url", nullable = false)
+    @Column(name = "mediaurl", nullable = false)
     private String mediaUrl;
 
-    @Column(name = "media_type", nullable = false)
+    @Column(name = "mediatype", nullable = false)
     private String mediaType;
 
     @Column(name = "caption", columnDefinition = "TEXT")
     private String caption;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public TournamentGallery() {

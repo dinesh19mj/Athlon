@@ -15,15 +15,15 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "tournaments", schema = "tournament")
+@Table(name = "tournaments")
 public class Tournament {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "tournamentid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "tournamentuuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
     @Column(name = "name", nullable = false)
@@ -32,34 +32,34 @@ public class Tournament {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "start_date")
+    @Column(name = "startdate")
     private LocalDate startDate;
 
-    @Column(name = "end_date")
+    @Column(name = "enddate")
     private LocalDate endDate;
 
-    @Column(name = "organizer_id", nullable = false)
+    @Column(name = "organizerid", nullable = false)
     private Long organizerId;
 
-    @Column(name = "organizer_uuid", nullable = false)
+    @Column(name = "organizeruuid", nullable = false)
     private UUID organizerUuid;
 
     @Column(name = "status", nullable = false)
     private String status = "DRAFT";
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public Tournament() {

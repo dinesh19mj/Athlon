@@ -14,42 +14,42 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-@Table(name = "registration_players", schema = "tournament")
+@Table(name = "registration_players")
 public class RegistrationPlayer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
+    @Column(name = "registrationplayerid", updatable = false, nullable = false)
     private Long id;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "registrationplayeruuid", updatable = false, nullable = false, unique = true)
     private UUID uuid;
 
-    @Column(name = "registration_id", nullable = false)
+    @Column(name = "registrationid", nullable = false)
     private Long registrationId;
 
-    @Column(name = "registration_uuid", nullable = false)
+    @Column(name = "registrationuuid", nullable = false)
     private UUID registrationUuid;
 
-    @Column(name = "player_id", nullable = false)
+    @Column(name = "playerid", nullable = false)
     private Long playerId;
 
-    @Column(name = "player_uuid", nullable = false)
+    @Column(name = "playeruuid", nullable = false)
     private UUID playerUuid;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "isactive", nullable = false)
     private boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdon", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "modifiedon")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "createdby")
     private Long createdBy;
 
-    @Column(name = "updated_by")
+    @Column(name = "modifiedby")
     private Long updatedBy;
 
     public RegistrationPlayer() {
