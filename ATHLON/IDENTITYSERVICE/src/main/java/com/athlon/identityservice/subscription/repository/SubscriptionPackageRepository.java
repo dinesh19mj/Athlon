@@ -9,6 +9,8 @@ import java.util.UUID;
 
 @Repository
 public interface SubscriptionPackageRepository extends JpaRepository<SubscriptionPackage, Long> {
-    Optional<SubscriptionPackage> findByUuid(UUID uuid);
+	
+	Optional<SubscriptionPackage> findByPackageUuid(UUID packageUuid);
+
     Optional<SubscriptionPackage> findByName(String name);
 }

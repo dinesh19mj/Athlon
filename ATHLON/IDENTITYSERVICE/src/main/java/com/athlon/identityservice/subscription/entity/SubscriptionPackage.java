@@ -6,6 +6,9 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 @Entity
 @Table(name = "subscription_packages")
 public class SubscriptionPackage {
@@ -13,39 +16,45 @@ public class SubscriptionPackage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "packageid", updatable = false, nullable = false)
-    private Long id;
+    private Long packageId;
 
     @Column(name = "packageuuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    private UUID packageUuid;
 
-    @Column(name = "name", nullable = false, length = 100, unique = true)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "price", nullable = false)
+    @Column(name = "price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
     @Column(name = "durationmonths", nullable = false)
     private Integer durationMonths;
 
     @Column(name = "features", columnDefinition = "TEXT")
-    private String features; // JSON string mapping of features
+    private String features;
 
-    @Column(name = "isactive", nullable = false)
+    @Column(name = "isactive")
     private Integer isActive = 1;
 
-    @Column(name = "createdon", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "modifiedon")
+    @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public SubscriptionPackage() {
     }
 
-    public SubscriptionPackage(String name, String description, BigDecimal price, Integer durationMonths, String features) {
+    public SubscriptionPackage(String name,
+                               String description,
+                               BigDecimal price,
+                               Integer durationMonths,
+                               String features) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -54,59 +63,112 @@ public class SubscriptionPackage {
     }
 
     @PrePersist
-    protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
+    public void prePersist() {
+
+        if (packageUuid == null) {
+            packageUuid = UUID.randomUUID();
         }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+
+        if (isActive == null) {
+            isActive = 1;
+        }
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public Long getPackageId() {
+        return packageId;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setPackageId(Long packageId) {
+        this.packageId = packageId;
+    }
 
-    public UUID getUuid() { return uuid; }
-    public void setUuid(UUID uuid) { this.uuid = uuid; }
+    public UUID getPackageUuid() {
+        return packageUuid;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setPackageUuid(UUID packageUuid) {
+        this.packageUuid = packageUuid;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getName() {
+        return name;
+    }
 
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public Integer getDurationMonths() { return durationMonths; }
-    public void setDurationMonths(Integer durationMonths) { this.durationMonths = durationMonths; }
+    public String getDescription() {
+        return description;
+    }
 
-    public String getFeatures() { return features; }
-    public void setFeatures(String features) { this.features = features; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public Integer getIsActive() { return isActive; }
-    public void setIsActive(Integer active) { isActive = active; }
+    public BigDecimal getPrice() {
+        return price;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Integer getDurationMonths() {
+        return durationMonths;
+    }
+
+    public void setDurationMonths(Integer durationMonths) {
+        this.durationMonths = durationMonths;
+    }
+
+    public String getFeatures() {
+        return features;
+    }
+
+    public void setFeatures(String features) {
+        this.features = features;
+    }
+
+    public Integer getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Integer isActive) {
+        this.isActive = isActive;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof SubscriptionPackage)) return false;
         SubscriptionPackage that = (SubscriptionPackage) o;
-        return Objects.equals(id, that.id) && Objects.equals(uuid, that.uuid);
+        return Objects.equals(packageId, that.packageId)
+                && Objects.equals(packageUuid, that.packageUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid);
+        return Objects.hash(packageId, packageUuid);
+    }
+
+    @Override
+    public String toString() {
+        return "SubscriptionPackage{" +
+                "packageId=" + packageId +
+                ", packageUuid=" + packageUuid +
+                ", name='" + name + '\'' +
+                ", price=" + price +
+                ", durationMonths=" + durationMonths +
+                ", isActive=" + isActive +
+                '}';
     }
 }

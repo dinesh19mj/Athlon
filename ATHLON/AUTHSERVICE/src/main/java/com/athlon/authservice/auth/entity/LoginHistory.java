@@ -1,16 +1,19 @@
 package com.athlon.authservice.auth.entity;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "login_history")
@@ -18,11 +21,11 @@ public class LoginHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Long id;
+    @Column(name = "login_historyid", updatable = false, nullable = false)
+    private Long loginHistoryId;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    @Column(name = "login_historyuuid", updatable = false, nullable = false, unique = true)
+    private UUID loginHistoryUuid;
 
     @Column(name = "credentials_id", nullable = false)
     private Long credentialsId;
@@ -42,16 +45,21 @@ public class LoginHistory {
     @Column(name = "login_time", nullable = false)
     private LocalDateTime loginTime;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public LoginHistory() {
     }
 
-    public LoginHistory(Long credentialsId, UUID credentialsUuid, String ipAddress, String userAgent, String loginStatus) {
+    public LoginHistory(Long credentialsId, UUID credentialsUuid,
+                        String ipAddress, String userAgent,
+                        String loginStatus) {
+
         this.credentialsId = credentialsId;
         this.credentialsUuid = credentialsUuid;
         this.ipAddress = ipAddress;
@@ -61,33 +69,31 @@ public class LoginHistory {
     }
 
     @PrePersist
-    protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
+    public void prePersist() {
+
+        if (loginHistoryUuid == null) {
+            loginHistoryUuid = UUID.randomUUID();
         }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+
+        if (loginTime == null) {
+            loginTime = LocalDateTime.now();
+        }
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public Long getLoginHistoryId() {
+        return loginHistoryId;
     }
 
-    public Long getId() {
-        return id;
+    public void setLoginHistoryId(Long loginHistoryId) {
+        this.loginHistoryId = loginHistoryId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public UUID getLoginHistoryUuid() {
+        return loginHistoryUuid;
     }
 
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public void setLoginHistoryUuid(UUID loginHistoryUuid) {
+        this.loginHistoryUuid = loginHistoryUuid;
     }
 
     public Long getCredentialsId() {
@@ -142,37 +148,29 @@ public class LoginHistory {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof LoginHistory)) return false;
         LoginHistory that = (LoginHistory) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(uuid, that.uuid);
+        return Objects.equals(loginHistoryId, that.loginHistoryId)
+                && Objects.equals(loginHistoryUuid, that.loginHistoryUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid);
+        return Objects.hash(loginHistoryId, loginHistoryUuid);
     }
 
     @Override
     public String toString() {
         return "LoginHistory{" +
-                "id=" + id +
-                ", uuid=" + uuid +
+                "loginHistoryId=" + loginHistoryId +
+                ", loginHistoryUuid=" + loginHistoryUuid +
                 ", credentialsId=" + credentialsId +
                 ", credentialsUuid=" + credentialsUuid +
                 ", ipAddress='" + ipAddress + '\'' +

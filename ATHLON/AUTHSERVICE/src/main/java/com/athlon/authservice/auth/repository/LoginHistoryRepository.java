@@ -10,6 +10,8 @@ import java.util.UUID;
 
 @Repository
 public interface LoginHistoryRepository extends JpaRepository<LoginHistory, Long> {
-    List<LoginHistory> findByCredentialsIdOrderByLoginTimeDesc(Long credentialsId);
-    Optional<LoginHistory> findByUuid(UUID uuid);
+	
+	List<LoginHistory> findByCredentialsIdOrderByLoginTimeDesc(Long credentialsId);
+
+	Optional<LoginHistory> findByLoginHistoryUuid(UUID loginHistoryUuid);
 }

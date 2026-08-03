@@ -88,7 +88,7 @@ public class UserService {
         profile.setFirstName(request.getFirstName());
         profile.setLastName(request.getLastName());
         profile.setPhone(request.getPhone());
-        profile.setModifiedBy(currentUserId);
+        profile.setUpdatedBy(currentUserId);
         
         userProfileRepository.save(profile);
 
@@ -102,12 +102,12 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with UUID: " + uuid));
         
         user.setIsActive(0);
-        user.setModifiedBy(currentUserId);
+        user.setUpdatedBy(currentUserId);
         userRepository.save(user);
 
         userProfileRepository.findByUserId(user.getUserId()).ifPresent(profile -> {
             profile.setIsActive(0);
-            profile.setModifiedBy(currentUserId);
+            profile.setUpdatedBy(currentUserId);
             userProfileRepository.save(profile);
         });
     }
@@ -150,7 +150,7 @@ public class UserService {
         if (sportsProfiles != null) {
             List<SportsProfileResponse> sportsProfileResponses = sportsProfiles.stream().map(sp -> {
                 SportsProfileResponse spr = new SportsProfileResponse();
-                spr.setUuid(sp.getUuid());
+                spr.setUuid(sp.getSportsProfileUuid());
                 spr.setSportName(sp.getSportName());
                 spr.setCurrentRanking(sp.getCurrentRanking());
                 spr.setVerificationStatus(sp.getVerificationStatus());
@@ -179,7 +179,7 @@ public class UserService {
         profile = sportsProfileRepository.save(profile);
         
         SportsProfileResponse response = new SportsProfileResponse();
-        response.setUuid(profile.getUuid());
+        response.setUuid(profile.getSportsProfileUuid());
         response.setSportName(profile.getSportName());
         response.setCurrentRanking(profile.getCurrentRanking());
         response.setVerificationStatus(profile.getVerificationStatus());

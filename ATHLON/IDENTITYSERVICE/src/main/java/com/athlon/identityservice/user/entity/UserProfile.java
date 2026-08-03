@@ -1,16 +1,19 @@
 package com.athlon.identityservice.user.entity;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "user_profiles")
@@ -39,20 +42,22 @@ public class UserProfile {
     @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(name = "isactive", nullable = false)
-    private Integer isActive;
+    @Column(name = "isactive")
+    private Integer isActive = 1;
 
-    @Column(name = "createdon", nullable = false, updatable = false)
-    private LocalDateTime createdOn;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "modifiedon")
-    private LocalDateTime modifiedOn;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    @Column(name = "createdby")
+    @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "modifiedby")
-    private Long modifiedBy;
+    @Column(name = "updated_by")
+    private Long updatedBy;
 
     public UserProfile() {
     }
@@ -69,123 +74,112 @@ public class UserProfile {
     }
 
     @PrePersist
-    protected void onCreate() {
-        if (this.userProfileUuid == null) {
-            this.userProfileUuid = UUID.randomUUID();
+    public void prePersist() {
+        if (userProfileUuid == null) {
+            userProfileUuid = UUID.randomUUID();
         }
-        this.createdOn = LocalDateTime.now();
-        this.modifiedOn = LocalDateTime.now();
-    }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.modifiedOn = LocalDateTime.now();
+        if (isActive == null) {
+            isActive = 1;
+        }
     }
 
     public Long getUserProfileId() {
-		return userProfileId;
-	}
+        return userProfileId;
+    }
 
-	public void setUserProfileId(Long userProfileId) {
-		this.userProfileId = userProfileId;
-	}
+    public void setUserProfileId(Long userProfileId) {
+        this.userProfileId = userProfileId;
+    }
 
-	public UUID getUserProfileUuid() {
-		return userProfileUuid;
-	}
+    public UUID getUserProfileUuid() {
+        return userProfileUuid;
+    }
 
-	public void setUserProfileUuid(UUID userProfileUuid) {
-		this.userProfileUuid = userProfileUuid;
-	}
+    public void setUserProfileUuid(UUID userProfileUuid) {
+        this.userProfileUuid = userProfileUuid;
+    }
 
-	public Long getUserId() {
-		return userId;
-	}
+    public Long getUserId() {
+        return userId;
+    }
 
-	public void setUserId(Long userId) {
-		this.userId = userId;
-	}
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-	public UUID getUserUuid() {
-		return userUuid;
-	}
+    public UUID getUserUuid() {
+        return userUuid;
+    }
 
-	public void setUserUuid(UUID userUuid) {
-		this.userUuid = userUuid;
-	}
+    public void setUserUuid(UUID userUuid) {
+        this.userUuid = userUuid;
+    }
 
-	public String getFirstName() {
-		return firstName;
-	}
+    public String getFirstName() {
+        return firstName;
+    }
 
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
 
-	public String getLastName() {
-		return lastName;
-	}
+    public String getLastName() {
+        return lastName;
+    }
 
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
 
-	public String getPhone() {
-		return phone;
-	}
+    public String getPhone() {
+        return phone;
+    }
 
-	public void setPhone(String phone) {
-		this.phone = phone;
-	}
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
 
-	public Integer getIsActive() {
-		return isActive;
-	}
+    public Integer getIsActive() {
+        return isActive;
+    }
 
-	public void setIsActive(Integer isActive) {
-		this.isActive = isActive;
-	}
+    public void setIsActive(Integer isActive) {
+        this.isActive = isActive;
+    }
 
-	public LocalDateTime getCreatedOn() {
-		return createdOn;
-	}
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
-	public void setCreatedOn(LocalDateTime createdOn) {
-		this.createdOn = createdOn;
-	}
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
-	public LocalDateTime getModifiedOn() {
-		return modifiedOn;
-	}
+    public Long getCreatedBy() {
+        return createdBy;
+    }
 
-	public void setModifiedOn(LocalDateTime modifiedOn) {
-		this.modifiedOn = modifiedOn;
-	}
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
+    }
 
-	public Long getCreatedBy() {
-		return createdBy;
-	}
+    public Long getUpdatedBy() {
+        return updatedBy;
+    }
 
-	public void setCreatedBy(Long createdBy) {
-		this.createdBy = createdBy;
-	}
+    public void setUpdatedBy(Long updatedBy) {
+        this.updatedBy = updatedBy;
+    }
 
-	public Long getModifiedBy() {
-		return modifiedBy;
-	}
-
-	public void setModifiedBy(Long modifiedBy) {
-		this.modifiedBy = modifiedBy;
-	}
-
-	@Override
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof UserProfile)) return false;
         UserProfile that = (UserProfile) o;
         return Objects.equals(userProfileId, that.userProfileId) &&
-               Objects.equals(userProfileUuid, that.userProfileUuid) &&
-               Objects.equals(userId, that.userId);
+                Objects.equals(userProfileUuid, that.userProfileUuid) &&
+                Objects.equals(userId, that.userId);
     }
 
     @Override
@@ -204,10 +198,10 @@ public class UserProfile {
                 ", lastName='" + lastName + '\'' +
                 ", phone='" + phone + '\'' +
                 ", isActive=" + isActive +
-                ", createdOn=" + createdOn +
-                ", modifiedOn=" + modifiedOn +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
                 ", createdBy=" + createdBy +
-                ", modifiedBy=" + modifiedBy +
+                ", updatedBy=" + updatedBy +
                 '}';
     }
 }

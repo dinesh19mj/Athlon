@@ -1,16 +1,19 @@
 package com.athlon.authservice.token.entity;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "refresh_tokens")
@@ -18,16 +21,16 @@ public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Long id;
+    @Column(name = "refresh_tokenid", updatable = false, nullable = false)
+    private Long refreshTokenId;
 
-    @Column(name = "uuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    @Column(name = "refresh_tokenuuid", updatable = false, nullable = false, unique = true)
+    private UUID refreshTokenUuid;
 
     @Column(name = "credentials_id", nullable = false)
     private Long credentialsId;
 
-    @Column(name = "credentials_uuid", nullable = false)
+    @Column(name = "credentials_uuid", nullable =false)
     private UUID credentialsUuid;
 
     @Column(name = "token", nullable = false, unique = true, length = 500)
@@ -36,19 +39,25 @@ public class RefreshToken {
     @Column(name = "expiry_date", nullable = false)
     private LocalDateTime expiryDate;
 
-    @Column(name = "revoked", nullable = false)
+    @Column(name = "revoked")
     private Integer revoked = 0;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public RefreshToken() {
     }
 
-    public RefreshToken(Long credentialsId, UUID credentialsUuid, String token, LocalDateTime expiryDate) {
+    public RefreshToken(Long credentialsId,
+                        UUID credentialsUuid,
+                        String token,
+                        LocalDateTime expiryDate) {
+
         this.credentialsId = credentialsId;
         this.credentialsUuid = credentialsUuid;
         this.token = token;
@@ -57,33 +66,31 @@ public class RefreshToken {
     }
 
     @PrePersist
-    protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
+    public void prePersist() {
+
+        if (refreshTokenUuid == null) {
+            refreshTokenUuid = UUID.randomUUID();
         }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+
+        if (revoked == null) {
+            revoked = 0;
+        }
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public Long getRefreshTokenId() {
+        return refreshTokenId;
     }
 
-    public Long getId() {
-        return id;
+    public void setRefreshTokenId(Long refreshTokenId) {
+        this.refreshTokenId = refreshTokenId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public UUID getRefreshTokenUuid() {
+        return refreshTokenUuid;
     }
 
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public void setRefreshTokenUuid(UUID refreshTokenUuid) {
+        this.refreshTokenUuid = refreshTokenUuid;
     }
 
     public Long getCredentialsId() {
@@ -126,42 +133,38 @@ public class RefreshToken {
         this.revoked = revoked ? 1 : 0;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public Integer getRevoked() {
+        return revoked;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof RefreshToken)) return false;
         RefreshToken that = (RefreshToken) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(uuid, that.uuid) &&
-                Objects.equals(token, that.token);
+        return Objects.equals(refreshTokenId, that.refreshTokenId)
+                && Objects.equals(refreshTokenUuid, that.refreshTokenUuid)
+                && Objects.equals(token, that.token);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid, token);
+        return Objects.hash(refreshTokenId, refreshTokenUuid, token);
     }
 
     @Override
     public String toString() {
         return "RefreshToken{" +
-                "id=" + id +
-                ", uuid=" + uuid +
+                "refreshTokenId=" + refreshTokenId +
+                ", refreshTokenUuid=" + refreshTokenUuid +
                 ", credentialsId=" + credentialsId +
                 ", credentialsUuid=" + credentialsUuid +
                 ", token='" + token + '\'' +

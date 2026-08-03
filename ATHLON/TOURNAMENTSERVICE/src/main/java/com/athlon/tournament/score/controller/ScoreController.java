@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
 @RequestMapping("/api/tournament/scores")
@@ -31,5 +32,19 @@ public class ScoreController {
         
         Score response = scoreService.recordScoreEvent(matchId, event, sportType);
         return new ResponseEntity<>(ApiResponse.success("Score event recorded successfully", response), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/state/{matchId}")
+    public ResponseEntity<ApiResponse<Score>> getScoreState(@PathVariable Long matchId) {
+        Score score = scoreService.getScoreState(matchId);
+        return ResponseEntity.ok(ApiResponse.success("Score state fetched successfully", score));
+    }
+
+    @PostMapping("/sync")
+    public ResponseEntity<ApiResponse<Score>> syncScoreState(
+            @RequestParam("matchId") Long matchId,
+            @RequestBody com.fasterxml.jackson.databind.JsonNode state) {
+        Score score = scoreService.syncScoreState(matchId, state);
+        return ResponseEntity.ok(ApiResponse.success("Score state synced successfully", score));
     }
 }

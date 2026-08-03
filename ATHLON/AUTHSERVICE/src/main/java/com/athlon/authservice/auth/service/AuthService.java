@@ -36,7 +36,10 @@ public class AuthService {
     private final EmailService emailService;
     private final SecurityProperties securityProperties;
 
-    public AuthService(CredentialsRepository credentialsRepository, LoginHistoryRepository loginHistoryRepository, PasswordResetTokenRepository passwordResetTokenRepository, EmailVerificationTokenRepository emailVerificationTokenRepository, JwtService jwtService, RefreshTokenService refreshTokenService, PasswordService passwordService, EmailService emailService, SecurityProperties securityProperties) {
+    public AuthService(CredentialsRepository credentialsRepository, LoginHistoryRepository loginHistoryRepository, 
+    		PasswordResetTokenRepository passwordResetTokenRepository, EmailVerificationTokenRepository emailVerificationTokenRepository, 
+    		JwtService jwtService, RefreshTokenService refreshTokenService, PasswordService passwordService, EmailService emailService,
+    		SecurityProperties securityProperties) {
         this.credentialsRepository = credentialsRepository;
         this.loginHistoryRepository = loginHistoryRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;

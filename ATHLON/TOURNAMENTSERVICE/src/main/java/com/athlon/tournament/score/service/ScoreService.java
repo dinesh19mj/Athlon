@@ -36,4 +36,20 @@ public class ScoreService {
         
         return scoreRepository.save(calculatedScore);
     }
+
+    public Score getScoreState(Long matchId) {
+        return scoreRepository.findByMatchIdAndIsActiveTrue(matchId).orElse(null);
+    }
+
+    @Transactional
+    public Score syncScoreState(Long matchId, com.fasterxml.jackson.databind.JsonNode state) {
+        Score score = scoreRepository.findByMatchIdAndIsActiveTrue(matchId).orElseGet(() -> {
+            Score newScore = new Score();
+            newScore.setMatchId(matchId);
+            return newScore;
+        });
+        
+        score.setScoreMeta(state);
+        return scoreRepository.save(score);
+    }
 }

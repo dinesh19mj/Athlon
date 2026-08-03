@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Trophy, 
-  Activity, 
-  TrendingUp, 
+import {
+  Trophy,
+  Activity,
+  TrendingUp,
   CreditCard,
   ChevronRight,
   MapPin,
@@ -40,7 +40,7 @@ export default function PersonalHomePage() {
   const { personalProfile, organizations } = useWorkspaceStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
+
 
 
   const displayName = personalProfile?.name || (userEmail ? userEmail.split('@')[0] : 'Athlete');
@@ -51,17 +51,17 @@ export default function PersonalHomePage() {
 
       {/* Main Scrollable Area */}
       <div className="relative z-10 flex-1 overflow-y-auto hide-scrollbar">
-        
+
         {/* HERO SECTION - DIGITAL SPORTS PASSPORT */}
         <div className="px-6 pt-8 pb-12 border-b border-foreground/10 relative overflow-hidden">
-          
+
           {/* Video Background (Hero Only) */}
           <div className="absolute inset-0 z-0">
-            <video 
-              autoPlay 
-              loop 
-              muted 
-              playsInline 
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
               className="absolute inset-0 w-full h-full object-cover opacity-60"
             >
               <source src="/athlon-background.mp4" type="video/mp4" />
@@ -70,11 +70,11 @@ export default function PersonalHomePage() {
           </div>
 
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#3B82F6]/10 rounded-full blur-[100px] pointer-events-none z-0" />
-          
+
 
           <div className="flex items-center gap-4 relative z-10 mb-6">
             <div className="w-16 h-16 rounded-2xl bg-black/50 border border-white/10 overflow-hidden shrink-0 shadow-xl">
-               <img src={personalProfile?.avatar || '/placeholder.png'} alt="Profile" className="w-full h-full object-cover" />
+              <img src={personalProfile?.avatar || '/placeholder.png'} alt="Profile" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-2xl font-extrabold mb-1 text-foreground tracking-tight capitalize flex items-center gap-2">
@@ -118,7 +118,7 @@ export default function PersonalHomePage() {
         </div>
 
         {/* MY ORGANIZATIONS */}
-        {organizations && organizations.length > 0 && (
+        {organizations && (
           <div className="px-6 pb-6 overflow-hidden">
             <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-4 pl-1">My Organizations</h2>
             <section className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
@@ -126,34 +126,34 @@ export default function PersonalHomePage() {
                 const isAssoc = org.type === 'ASSOCIATION';
                 const isAcad = org.type === 'ACADEMY';
                 const isClub = org.type === 'CLUB';
-                
+
                 return (
-                  <button 
-                    key={org.id} 
+                  <button
+                    key={org.id}
                     onClick={() => {
                       window.location.href = `/org/${org.id}/dashboard`;
                     }}
                     className="flex flex-col items-center gap-2 shrink-0 snap-start max-w-[80px]"
                   >
                     <div className={`w-[68px] h-[68px] rounded-[20px] bg-surface border border-foreground/5 flex flex-col items-center justify-center transition-all shadow-md hover:shadow-xl hover:border-foreground/20 cursor-pointer`}>
-                       {isAssoc && <Trophy className="w-8 h-8 text-yellow-500" strokeWidth={1.5} />}
-                       {isAcad && <Building className="w-8 h-8 text-blue-500" strokeWidth={1.5} />}
-                       {isClub && <Users className="w-8 h-8 text-green-500" strokeWidth={1.5} />}
-                       {!isAssoc && !isAcad && !isClub && <ShieldCheck className="w-8 h-8 text-purple-500" strokeWidth={1.5} />}
+                      {isAssoc && <Trophy className="w-8 h-8 text-yellow-500" strokeWidth={1.5} />}
+                      {isAcad && <Building className="w-8 h-8 text-blue-500" strokeWidth={1.5} />}
+                      {isClub && <Users className="w-8 h-8 text-green-500" strokeWidth={1.5} />}
+                      {!isAssoc && !isAcad && !isClub && <ShieldCheck className="w-8 h-8 text-purple-500" strokeWidth={1.5} />}
                     </div>
                     <span className="text-[10px] font-medium text-foreground/80 text-center leading-tight line-clamp-2">{org.name}</span>
                   </button>
                 )
               })}
-              
-              <button 
+
+              <button
                 onClick={() => {
                   window.location.href = `/subscription`;
                 }}
                 className="flex flex-col items-center gap-2 shrink-0 snap-start max-w-[80px]"
               >
                 <div className={`w-[68px] h-[68px] rounded-[20px] bg-surface/50 border border-foreground/5 border-dashed flex flex-col items-center justify-center transition-all shadow-sm hover:shadow-md hover:border-foreground/20 cursor-pointer`}>
-                   <Plus className="w-8 h-8 text-foreground/40" strokeWidth={1.5} />
+                  <Plus className="w-8 h-8 text-foreground/40" strokeWidth={1.5} />
                 </div>
                 <span className="text-[10px] font-medium text-foreground/80 text-center leading-tight line-clamp-2">Add New</span>
               </button>
@@ -169,12 +169,12 @@ export default function PersonalHomePage() {
               View All <ChevronRight className="w-3 h-3 ml-0.5" />
             </Link>
           </div>
-          
+
           <div className="space-y-3">
             {upcomingMatches.length > 0 ? upcomingMatches.map((match, i) => (
               <div key={match.id} className={`bg-surface/80 backdrop-blur-md border border-foreground/5 rounded-3xl p-5 shadow-xl relative overflow-hidden ${i === 0 ? 'border-[#3B82F6]/30' : ''}`}>
                 {i === 0 && <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-[#3B82F6] opacity-80" />}
-                
+
                 <div className="flex items-center justify-between mb-3 border-b border-foreground/5 pb-3">
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-black uppercase tracking-widest ${i === 0 ? 'text-[#3B82F6]' : 'text-foreground/40'}`}>

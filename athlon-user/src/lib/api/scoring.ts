@@ -11,7 +11,7 @@ export const ScoringService = {
   recordEvent: async (matchId: string, sportType: string, event: ScoreEvent) => {
     try {
       return await api.post<{ data: any }>(
-        `/tournament/scores/record-event?matchId=${matchId}&sportType=${sportType}`, 
+        `/api/tournament/scores/record-event?matchId=${matchId}&sportType=${sportType}`, 
         event
       );
     } catch (error) {
@@ -23,7 +23,7 @@ export const ScoringService = {
   syncState: async (matchId: string, state: any) => {
     try {
       return await api.post<{ data: any }>(
-        `/tournament/scores/sync?matchId=${matchId}`, 
+        `/api/tournament/scores/sync?matchId=${matchId}`, 
         state
       );
     } catch (error) {
@@ -35,7 +35,7 @@ export const ScoringService = {
   getState: async (matchId: string) => {
     try {
       return await api.get<{ data: any }>(
-        `/tournament/scores/state/${matchId}`
+        `/api/tournament/scores/state/${matchId}`
       );
     } catch (error) {
       console.error('Failed to fetch state from backend', error);

@@ -3,11 +3,15 @@ package com.athlon.authservice.auth.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -34,97 +38,135 @@ public class Credentials {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "is_email_verified", nullable = false)
+    @Column(name = "is_email_verified")
     private Integer isEmailVerified = 0;
 
-    @Column(name = "is_account_locked", nullable = false)
+    @Column(name = "is_account_locked")
     private Integer isAccountLocked = 0;
 
-    @Column(name = "failed_login_attempts", nullable = false)
-    private int failedLoginAttempts;
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
 
-    @Column(name = "createdon", nullable = false, updatable = false)
-    private LocalDateTime createdOn;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "modifiedon")
-    private LocalDateTime modifiedOn;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-	public Long getCredentialId() {
-		return credentialId;
-	}
+    @PrePersist
+    public void prePersist() {
+        if (credentialUuid == null) {
+            credentialUuid = UUID.randomUUID();
+        }
 
-	public void setCredentialId(Long credentialId) {
-		this.credentialId = credentialId;
-	}
+        if (isEmailVerified == null) {
+            isEmailVerified = 0;
+        }
 
-	public UUID getCredentialUuid() {
-		return credentialUuid;
-	}
+        if (isAccountLocked == null) {
+            isAccountLocked = 0;
+        }
 
-	public void setCredentialUuid(UUID credentialUuid) {
-		this.credentialUuid = credentialUuid;
-	}
+        if (failedLoginAttempts == null) {
+            failedLoginAttempts = 0;
+        }
+    }
 
-    public UUID getUserUuid() { return userUuid; }
-    public void setUserUuid(UUID userUuid) { this.userUuid = userUuid; }
+    public Long getCredentialId() {
+        return credentialId;
+    }
 
-	public String getEmail() {
-		return email;
-	}
+    public void setCredentialId(Long credentialId) {
+        this.credentialId = credentialId;
+    }
 
-	public void setEmail(String email) {
-		this.email = email;
-	}
+    public UUID getCredentialUuid() {
+        return credentialUuid;
+    }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    public void setCredentialUuid(UUID credentialUuid) {
+        this.credentialUuid = credentialUuid;
+    }
 
-	public String getPasswordHash() {
-		return passwordHash;
-	}
+    public UUID getUserUuid() {
+        return userUuid;
+    }
 
-	public void setPasswordHash(String passwordHash) {
-		this.passwordHash = passwordHash;
-	}
+    public void setUserUuid(UUID userUuid) {
+        this.userUuid = userUuid;
+    }
 
-	public boolean isEmailVerified() {
-		return isEmailVerified != null && isEmailVerified == 1;
-	}
+    public String getEmail() {
+        return email;
+    }
 
-	public void setEmailVerified(boolean isEmailVerified) {
-		this.isEmailVerified = isEmailVerified ? 1 : 0;
-	}
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-	public boolean isAccountLocked() {
-		return isAccountLocked != null && isAccountLocked == 1;
-	}
+    public String getPhone() {
+        return phone;
+    }
 
-	public void setAccountLocked(boolean isAccountLocked) {
-		this.isAccountLocked = isAccountLocked ? 1 : 0;
-	}
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
 
-	public int getFailedLoginAttempts() {
-		return failedLoginAttempts;
-	}
+    public String getPasswordHash() {
+        return passwordHash;
+    }
 
-	public void setFailedLoginAttempts(int failedLoginAttempts) {
-		this.failedLoginAttempts = failedLoginAttempts;
-	}
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 
-	public LocalDateTime getCreatedOn() {
-		return createdOn;
-	}
+    public boolean isEmailVerified() {
+        return isEmailVerified != null && isEmailVerified == 1;
+    }
 
-	public void setCreatedOn(LocalDateTime createdOn) {
-		this.createdOn = createdOn;
-	}
+    public void setEmailVerified(boolean emailVerified) {
+        this.isEmailVerified = emailVerified ? 1 : 0;
+    }
 
-	public LocalDateTime getModifiedOn() {
-		return modifiedOn;
-	}
+    public Integer getIsEmailVerified() {
+        return isEmailVerified;
+    }
 
-	public void setModifiedOn(LocalDateTime modifiedOn) {
-		this.modifiedOn = modifiedOn;
-	}
+    public boolean isAccountLocked() {
+        return isAccountLocked != null && isAccountLocked == 1;
+    }
 
+    public void setAccountLocked(boolean accountLocked) {
+        this.isAccountLocked = accountLocked ? 1 : 0;
+    }
+
+    public Integer getIsAccountLocked() {
+        return isAccountLocked;
+    }
+
+    public Integer getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

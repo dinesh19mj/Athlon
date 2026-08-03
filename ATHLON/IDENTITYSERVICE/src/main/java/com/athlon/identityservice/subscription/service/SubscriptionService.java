@@ -63,7 +63,7 @@ public class SubscriptionService {
 
     @Transactional(readOnly = true)
     public SubscriptionPackageResponse getPackageByUuid(UUID uuid) {
-        SubscriptionPackage pack = subscriptionPackageRepository.findByUuid(uuid)
+        SubscriptionPackage pack = subscriptionPackageRepository.findByPackageUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Subscription Package not found with UUID: " + uuid));
         return mapToResponse(pack);
     }
@@ -73,7 +73,7 @@ public class SubscriptionService {
         Organization organization = organizationRepository.findByUuid(request.getOrganizationUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + request.getOrganizationUuid()));
 
-        SubscriptionPackage pack = subscriptionPackageRepository.findByUuid(request.getPackageUuid())
+        SubscriptionPackage pack = subscriptionPackageRepository.findByPackageUuid(request.getPackageUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("Subscription Package not found with UUID: " + request.getPackageUuid()));
 
         // Check if organization already has an active subscription
@@ -89,7 +89,7 @@ public class SubscriptionService {
 
         OrganizationSubscription subscription = new OrganizationSubscription(
                 organization.getId(),
-                pack.getId(),
+                pack.getPackageId(),
                 startDate,
                 endDate,
                 request.getPaymentReference()
@@ -116,7 +116,7 @@ public class SubscriptionService {
 
     private SubscriptionPackageResponse mapToResponse(SubscriptionPackage pack) {
         SubscriptionPackageResponse response = new SubscriptionPackageResponse();
-        response.setUuid(pack.getUuid());
+        response.setUuid(pack.getPackageUuid());
         response.setName(pack.getName());
         response.setDescription(pack.getDescription());
         response.setPrice(pack.getPrice());

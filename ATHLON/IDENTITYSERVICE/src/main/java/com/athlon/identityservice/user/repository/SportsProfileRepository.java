@@ -11,11 +11,11 @@ import java.util.UUID;
 @Repository
 public interface SportsProfileRepository extends JpaRepository<SportsProfile, Long> {
 
-    Optional<SportsProfile> findByUuid(UUID uuid);
+	Optional<SportsProfile> findBySportsProfileUuid(UUID sportsProfileUuid);
 
     List<SportsProfile> findByUserId(Long userId);
 
     List<SportsProfile> findByUserUuid(UUID userUuid);
-    
+
     Optional<SportsProfile> findByUserUuidAndSportName(UUID userUuid, String sportName);
 }

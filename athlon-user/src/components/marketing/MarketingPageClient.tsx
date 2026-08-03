@@ -14,22 +14,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore';
 
 export function MarketingPageClient() {
   const [activeTab, setActiveTab] = useState('home');
-  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-
-  const heroImages = [
-    'https://images.unsplash.com/photo-1611252758110-6c9f2868853b?q=80&w=800&auto=format&fit=crop', // Player smash
-    'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800&auto=format&fit=crop', // Shuttlecock close
-    'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=800&auto=format&fit=crop', // Court view
-    'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=800&auto=format&fit=crop'  // Action shot
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [heroImages.length]);
 
   const topCategories = [
     { id: 'tournaments', label: 'Tournaments', icon: Trophy, color: 'text-green-400' },
@@ -64,22 +49,23 @@ export function MarketingPageClient() {
         {/* 2. Hero Banner Carousel */}
         <section className="relative w-full min-h-[220px] rounded-[24px] overflow-hidden bg-background border border-foreground/10 shadow-[0_10px_40px_rgba(0,136,255,0.15)] mt-2">
 
-          {/* Multiple Badminton Images Collage */}
+          {/* Video Background */}
           <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
             {/* Base dark gradient to ensure text readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#001122] via-[#001122]/90 to-transparent z-10" />
 
-            {/* Image 1: Main background image (Scrolling) */}
-            {heroImages.map((src, index) => (
-              <div
-                key={src}
-                className="absolute top-[-10%] right-[-5%] w-[60%] h-[120%] mix-blend-screen transition-opacity duration-1000 ease-in-out"
-                style={{ opacity: currentHeroIndex === index ? 0.5 : 0 }}
+            <div className="absolute top-[-10%] right-[-5%] w-[60%] h-[120%] mix-blend-screen opacity-50">
+              <video 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                className="absolute inset-0 w-full h-full object-cover"
               >
-                <img src={src} alt="Hero Background" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#0A0F1A]" />
-              </div>
-            ))}
+                <source src="/athlon-background.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#0A0F1A]" />
+            </div>
           </div>
 
           <div className="relative z-10 p-6 flex flex-col justify-center h-full w-full">
@@ -100,16 +86,7 @@ export function MarketingPageClient() {
             </div>
           </div>
 
-          {/* Dots Indicator */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
-            {heroImages.map((_, index) => (
-              <span
-                key={index}
-                onClick={() => setCurrentHeroIndex(index)}
-                className={`w-1.5 h-1.5 rounded-full cursor-pointer transition-all duration-300 ${currentHeroIndex === index ? 'bg-[#1B9C56] w-3' : 'bg-foreground/30'}`}
-              />
-            ))}
-          </div>
+
         </section>
 
         {/* 3. Primary Categories (Horizontal Scroll) */}
