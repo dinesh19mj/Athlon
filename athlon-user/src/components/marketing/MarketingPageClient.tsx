@@ -32,16 +32,6 @@ export function MarketingPageClient() {
   return (
     <div className="min-h-screen w-full bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-[#1B9C56] selection:text-black">
 
-      {/* 1. Top Navbar */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-background/90 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <Image src="/athlon-logo-3.png" alt="Athlon" width={90} height={18} className="object-contain w-auto h-10" />
-        </div>
-
-        <Link href="/login" className="relative p-2 -mr-2 text-[#1B9C56] hover:text-[#1B9C56]/80 transition-colors">
-          <User className="w-6 h-6" strokeWidth={1.5} />
-        </Link>
-      </header>
 
       {/* Main Container for Desktop Centering */}
       <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-6">

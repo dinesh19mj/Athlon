@@ -29,20 +29,20 @@ public class SubscriptionController {
         this.subscriptionService = subscriptionService;
     }
 
-    @PostMapping("/packages")
+    @PostMapping("/createPackage")
     public ResponseEntity<ApiResponse<SubscriptionPackageResponse>> createPackage(@Valid @RequestBody CreateSubscriptionPackageRequest request) {
         SubscriptionPackageResponse response = subscriptionService.createPackage(request);
         return ResponseEntity.ok(ApiResponse.success("Subscription Package created successfully", response));
     }
 
-    @GetMapping("/packages")
+    @GetMapping("/getAllPackages")
     public ResponseEntity<ApiResponse<List<SubscriptionPackageResponse>>> getAllPackages() {
         List<SubscriptionPackageResponse> responses = subscriptionService.getAllPackages();
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
-    @GetMapping("/packages/{uuid}")
-    public ResponseEntity<ApiResponse<SubscriptionPackageResponse>> getPackageByUuid(@PathVariable UUID uuid) {
+    @GetMapping("/getPackageByUuid/{uuid}")
+    public ResponseEntity<ApiResponse<SubscriptionPackageResponse>> getPackageByUuid(@PathVariable("uuid") UUID uuid) {
         SubscriptionPackageResponse response = subscriptionService.getPackageByUuid(uuid);
         return ResponseEntity.ok(ApiResponse.success(response));
     }

@@ -83,101 +83,120 @@ export default function OrganizationDashboard() {
   const OrgIcon = getOrgIcon();
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto pb-24 animate-in fade-in duration-500">
+    <div className="h-[calc(100vh-80px)] md:h-screen overflow-hidden bg-background text-foreground flex flex-col relative">
       
-      {/* Hero Banner Section (Matches Player Home Page Design) */}
-      <div className="relative h-[280px] w-full overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-35">
-          <video 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            className="absolute inset-0 w-full h-full object-cover"
-          >
-            <source src="/athlon-background.mp4" type="video/mp4" />
-          </video>
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-        
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 max-w-7xl mx-auto flex items-end gap-6">
-          {/* Org Logo / Avatar */}
-          <div className="relative group">
-            <div className="w-24 h-24 rounded-3xl bg-surface border-4 border-background flex items-center justify-center shadow-2xl relative overflow-hidden transition-transform duration-300 group-hover:scale-105">
-              {org.logo ? (
-                <img src={org.logo} alt={org.name} className="w-full h-full object-cover" />
-              ) : (
-                <OrgIcon className="w-10 h-10 text-foreground/40" />
-              )}
-            </div>
-            {/* Type Badge */}
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#1B9C56] text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg whitespace-nowrap">
-              {org.type}
-            </div>
-          </div>
+      {/* Main Scrollable Area */}
+      <div className="relative z-10 flex-1 overflow-y-auto hide-scrollbar pb-24">
 
-          <div className="flex-grow pb-1">
-            <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight drop-shadow-md">
-              {org.name}
-            </h1>
-            <div className="flex items-center gap-3 mt-1.5">
-              <span className="text-sm font-bold text-foreground/60 uppercase tracking-widest font-mono">
-                ID: {org.id.toUpperCase()}
-              </span>
-              <span className="w-1 h-1 rounded-full bg-foreground/20" />
-              <span className="text-sm font-medium text-[#1B9C56] flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#1B9C56] animate-pulse" />
-                Active Workspace
-              </span>
+        {/* HERO SECTION (Video Container) */}
+        <div className="px-6 relative z-10 mt-6 mb-6 max-w-7xl mx-auto">
+          <section className="relative w-full min-h-[160px] rounded-[24px] overflow-hidden bg-background border border-foreground/10 shadow-lg">
+            
+            {/* Video Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <video 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                className="absolute inset-0 w-full h-full object-cover"
+              >
+                <source src="/athlon-background.mp4" type="video/mp4" />
+              </video>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="px-6 md:px-8 max-w-7xl mx-auto mt-8 space-y-8">
-        
-        {/* Quick Metrics */}
-        <div className="grid grid-cols-2 gap-4 max-w-2xl">
-          <div className="bg-gradient-to-br from-[#1B9C56] to-[#158045] rounded-2xl p-4 text-black shadow-[0_4px_10px_rgba(27,156,86,0.2)]">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Monthly Revenue</span>
-              <CreditCard className="w-3.5 h-3.5 opacity-80" />
-            </div>
-            <div className="text-xl font-black mb-1">₹42,500</div>
-            <div className="text-[10px] font-bold bg-black/10 inline-block px-1.5 py-0.5 rounded-md">
-              +12% vs last month
-            </div>
-          </div>
-
-          <div className="bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold text-foreground/60 uppercase tracking-widest">Active Members</span>
-              <Users className="w-3.5 h-3.5 text-blue-500" />
-            </div>
-            <div className="text-xl font-black text-foreground mb-1">148</div>
-            <div className="text-[10px] font-medium text-foreground/40">
-              <span className="text-blue-500 font-bold">+5</span> new this week
-            </div>
-          </div>
+          </section>
         </div>
 
-        {/* Horizontal Quick Actions (Menu based icons) */}
-        <div className="flex flex-wrap gap-6 pb-4 -mx-6 px-6 md:mx-0 md:px-0">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link key={action.id} href={action.id} className="group flex flex-col items-center gap-3 min-w-[90px]">
-                <div className="w-16 h-16 rounded-2xl bg-surface border border-foreground/5 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 group-active:scale-95 group-hover:bg-foreground/[0.02]">
-                  <Icon className={`w-7 h-7 ${action.color} drop-shadow-sm group-hover:scale-110 transition-transform duration-300`} />
+        {/* ORG STATS CARD */}
+        <div className="px-6 relative z-10 mb-6 max-w-7xl mx-auto">
+          <div className="bg-[#0A101D] border border-white/5 rounded-[20px] shadow-xl overflow-hidden p-5">
+             <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-black/50 border border-white/10 flex items-center justify-center shrink-0 shadow-md overflow-hidden relative">
+                  {org.logo ? (
+                    <img src={org.logo} alt={org.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <OrgIcon className="w-8 h-8 text-foreground/40" />
+                  )}
                 </div>
-                <span className="text-[11px] font-bold text-foreground/70 group-hover:text-foreground transition-colors uppercase tracking-wider text-center">
-                  {action.label}
-                </span>
-              </Link>
-            );
-          })}
+                <div className="flex flex-col flex-1">
+                  <div className="text-[#3B82F6] font-black text-[10px] tracking-widest uppercase mb-1">
+                    {org.type}
+                  </div>
+                  <h1 className="text-xl font-black text-white uppercase leading-tight mb-1 truncate">
+                    {org.name}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-foreground/40 text-[10px] font-mono font-bold tracking-widest uppercase">
+                      ID: {org.id.toUpperCase()}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-foreground/20" />
+                    <span className="text-[10px] font-bold text-[#1B9C56] flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1B9C56] animate-pulse" />
+                      Active Workspace
+                    </span>
+                  </div>
+                </div>
+             </div>
+          </div>
+        </div>
+
+        <div className="px-6 md:px-8 max-w-7xl mx-auto mt-8 space-y-8">
+          
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-2 gap-4 max-w-2xl">
+            <div className="bg-gradient-to-br from-[#1B9C56] to-[#158045] rounded-2xl p-4 text-black shadow-[0_4px_10px_rgba(27,156,86,0.2)]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Monthly Revenue</span>
+                <CreditCard className="w-3.5 h-3.5 opacity-80" />
+              </div>
+              <div className="text-xl font-black mb-1">₹42,500</div>
+              <div className="text-[10px] font-bold bg-black/10 inline-block px-1.5 py-0.5 rounded-md">
+                +12% vs last month
+              </div>
+            </div>
+
+            <div className="bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold text-foreground/60 uppercase tracking-widest">Active Members</span>
+                <Users className="w-3.5 h-3.5 text-blue-500" />
+              </div>
+              <div className="text-xl font-black text-foreground mb-1">148</div>
+              <div className="text-[10px] font-medium text-foreground/40">
+                <span className="text-blue-500 font-bold">+5</span> new this week
+              </div>
+            </div>
+          </div>
+
+          {/* Horizontal Quick Actions (Menu based icons) */}
+          <div className="grid grid-cols-4 gap-4 pb-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Link key={action.id} href={action.id} className="group flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 rounded-[16px] bg-surface border border-foreground/5 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-300 group-hover:-translate-y-1 group-active:scale-95 group-hover:bg-foreground/[0.02]">
+                    <Icon className={`w-6 h-6 ${action.color} drop-shadow-sm group-hover:scale-110 transition-transform duration-300`} />
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-foreground/70 group-hover:text-foreground transition-colors uppercase tracking-wider text-center leading-tight">
+                    {action.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
+      
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}} />
     </div>
   );
 }

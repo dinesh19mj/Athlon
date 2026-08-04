@@ -16,7 +16,10 @@ import {
   ShieldCheck,
   Building,
   Users,
-  Plus
+  Plus,
+  Flame,
+  Hand,
+  ClipboardList
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -24,10 +27,10 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 
 
 const quickActions = [
-  { id: '/home/tournaments', label: 'My Events', icon: Trophy, color: 'text-[#1B9C56]' },
+  { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, color: 'text-[#1B9C56]' },
   { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, color: 'text-orange-400' },
-  { id: '/home/matches', label: 'History', icon: Activity, color: 'text-[#3B82F6]' },
-  { id: '/home/wallet', label: 'Wallet', icon: Wallet, color: 'text-purple-400' },
+  { id: '/home/matches', label: 'Matches', icon: Activity, color: 'text-[#1B9C56]' },
+  { id: '/home/wallet', label: 'Registered', icon: ClipboardList, color: 'text-purple-400' },
 ];
 
 const upcomingMatches = [
@@ -36,7 +39,7 @@ const upcomingMatches = [
 ];
 
 export default function PersonalHomePage() {
-  const { userEmail, playerId, token } = useAuthStore();
+  const { userEmail } = useAuthStore();
   const { personalProfile, organizations } = useWorkspaceStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -47,67 +50,101 @@ export default function PersonalHomePage() {
   const athlonId = personalProfile?.athlonId || 'ATH-0000000';
 
   return (
-    <div className="h-[calc(100vh-156px)] md:h-[calc(100vh-64px)] overflow-hidden bg-background text-foreground flex flex-col relative">
+    <div className="h-[calc(100vh-80px)] md:h-screen overflow-hidden bg-background text-foreground flex flex-col relative">
 
       {/* Main Scrollable Area */}
       <div className="relative z-10 flex-1 overflow-y-auto hide-scrollbar">
 
-        {/* HERO SECTION - DIGITAL SPORTS PASSPORT */}
-        <div className="px-6 pt-8 pb-12 border-b border-foreground/10 relative overflow-hidden">
-
-          {/* Video Background (Hero Only) */}
-          <div className="absolute inset-0 z-0">
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover opacity-60"
-            >
-              <source src="/athlon-background.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-          </div>
-
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#3B82F6]/10 rounded-full blur-[100px] pointer-events-none z-0" />
-
-
-          <div className="flex items-center gap-4 relative z-10 mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-black/50 border border-white/10 overflow-hidden shrink-0 shadow-xl">
-              <img src={personalProfile?.avatar || '/placeholder.png'} alt="Profile" className="w-full h-full object-cover" />
+        {/* HERO SECTION (Video Container) */}
+        <div className="px-6 relative z-10 mt-6 mb-6">
+          <section className="relative w-full min-h-[160px] rounded-[24px] overflow-hidden bg-background border border-foreground/10 shadow-lg">
+            
+            {/* Video Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <video 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                className="absolute inset-0 w-full h-full object-cover"
+              >
+                <source src="/athlon-background.mp4" type="video/mp4" />
+              </video>
             </div>
-            <div>
-              <h1 className="text-2xl font-extrabold mb-1 text-foreground tracking-tight capitalize flex items-center gap-2">
-                {displayName} <span className="animate-wave origin-bottom-right inline-block text-xl">👋</span>
-              </h1>
-              <div className="inline-block bg-[#3B82F6]/20 border border-[#3B82F6]/40 text-[#3B82F6] px-2 py-0.5 rounded text-xs font-mono font-bold tracking-widest">
-                {athlonId}
-              </div>
-            </div>
-          </div>
 
+          </section>
         </div>
 
-        <div className="px-6 pt-6 relative z-10">
-          <div className="flex gap-3">
-            <div className="flex-1 bg-black/40 border border-foreground/10 backdrop-blur-md rounded-2xl p-4 flex flex-col justify-center shadow-lg">
-              <span className="text-[10px] font-black text-foreground/60 uppercase tracking-widest mb-1">State Rank</span>
-              <span className="text-2xl font-black text-foreground">#18</span>
+        {/* PROFILE STATS CARD */}
+        <div className="px-6 relative z-10 mb-6">
+          <div className="bg-[#0A101D] border border-white/5 rounded-[20px] shadow-xl overflow-hidden">
+            
+            {/* Top Section */}
+            <div className="flex items-center justify-between p-5 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-black/50 border border-white/10 overflow-hidden shrink-0 shadow-md">
+                  <img src={personalProfile?.avatar || '/placeholder.png'} alt="Profile" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-[#1B9C56] font-black text-lg tracking-wide uppercase leading-tight">
+                    {displayName}
+                  </div>
+                  <div className="text-foreground/40 text-[10px] font-mono font-bold tracking-widest mt-0.5">
+                    {athlonId}
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-px h-12 bg-white/5 mx-2" />
+
+              <div className="flex flex-col gap-1 items-end text-right">
+                <div className="text-foreground/40 text-[10px] font-black tracking-widest uppercase">
+                  RATING
+                </div>
+                <div className="text-[#1B9C56] font-black text-3xl leading-none">
+                  1200
+                </div>
+              </div>
             </div>
-            <div className="flex-1 bg-[#3B82F6]/10 border border-[#3B82F6]/30 backdrop-blur-md rounded-2xl p-4 flex flex-col justify-center shadow-lg relative overflow-hidden">
-              <div className="absolute inset-0 bg-[#3B82F6]/10 pointer-events-none" />
-              <span className="text-[10px] font-black text-[#3B82F6]/80 uppercase tracking-widest mb-1">Career Matches</span>
-              <span className="text-2xl font-black text-[#3B82F6]">124</span>
+
+            {/* Bottom Section */}
+            <div className="grid grid-cols-3 divide-x divide-white/5">
+              <div className="flex flex-col items-center justify-center p-4 py-5 gap-2">
+                <div className="flex items-center gap-1.5 text-foreground/40 text-[9px] font-black tracking-widest uppercase">
+                  <Activity className="w-3.5 h-3.5" /> MATCHES
+                </div>
+                <div className="text-white font-black text-2xl">
+                  0
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center p-4 py-5 gap-2">
+                <div className="flex items-center gap-1.5 text-foreground/40 text-[9px] font-black tracking-widest uppercase">
+                  <TrendingUp className="w-3.5 h-3.5" /> WIN RATE
+                </div>
+                <div className="text-white font-black text-2xl flex items-baseline gap-1">
+                  0 <span className="text-[#1B9C56] text-sm">%</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center p-4 py-5 gap-2">
+                <div className="flex items-center gap-1.5 text-foreground/40 text-[9px] font-black tracking-widest uppercase">
+                  <Flame className="w-3.5 h-3.5" /> RANK
+                </div>
+                <div className="text-white font-black text-2xl">
+                  0
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
 
         {/* QUICK ACTIONS GRID */}
-        <div className="p-6 overflow-hidden">
-          <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-4 pl-1">Personal Apps</h2>
-          <section className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+        <div className="px-6 py-4 overflow-hidden">
+          <section className="flex items-center justify-between">
             {quickActions.map((action) => (
-              <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0 snap-start">
+              <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0">
                 <div className="w-[68px] h-[68px] rounded-[16px] bg-surface border border-foreground/5 hover:border-foreground/20 flex flex-col items-center justify-center transition-colors shadow-lg cursor-pointer">
                   <action.icon className={`w-6 h-6 ${action.color.replace('text-', '') === action.color ? action.color.replace('bg-', 'text-') : action.color}`} strokeWidth={1.5} />
                 </div>
@@ -165,19 +202,19 @@ export default function PersonalHomePage() {
         <div className="px-6 pb-8">
           <div className="flex items-center justify-between mb-4 pl-1 pr-2">
             <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">My Schedule</h2>
-            <Link href="/home/matches" className="text-[10px] font-bold text-[#3B82F6] uppercase tracking-wider flex items-center hover:underline">
+            <Link href="/home/matches" className="text-[10px] font-bold text-[#1B9C56] uppercase tracking-wider flex items-center hover:underline">
               View All <ChevronRight className="w-3 h-3 ml-0.5" />
             </Link>
           </div>
 
           <div className="space-y-3">
             {upcomingMatches.length > 0 ? upcomingMatches.map((match, i) => (
-              <div key={match.id} className={`bg-surface/80 backdrop-blur-md border border-foreground/5 rounded-3xl p-5 shadow-xl relative overflow-hidden ${i === 0 ? 'border-[#3B82F6]/30' : ''}`}>
-                {i === 0 && <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-[#3B82F6] opacity-80" />}
+              <div key={match.id} className={`bg-surface/80 backdrop-blur-md border border-foreground/5 rounded-3xl p-5 shadow-xl relative overflow-hidden ${i === 0 ? 'border-[#1B9C56]/30' : ''}`}>
+                {i === 0 && <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-[#1B9C56] opacity-80" />}
 
                 <div className="flex items-center justify-between mb-3 border-b border-foreground/5 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${i === 0 ? 'text-[#3B82F6]' : 'text-foreground/40'}`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${i === 0 ? 'text-[#1B9C56]' : 'text-foreground/40'}`}>
                       {match.status}
                     </span>
                   </div>
@@ -193,7 +230,7 @@ export default function PersonalHomePage() {
                 </div>
 
                 <div className="flex items-center justify-between bg-background p-3.5 rounded-2xl border border-foreground/5">
-                  <span className="text-xs font-bold text-[#3B82F6] uppercase tracking-widest shrink-0">VS</span>
+                  <span className="text-xs font-bold text-[#1B9C56] uppercase tracking-widest shrink-0">VS</span>
                   <span className="text-sm font-bold text-foreground truncate text-right">{match.opponent}</span>
                 </div>
               </div>

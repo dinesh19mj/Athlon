@@ -29,6 +29,7 @@ interface WorkspaceState {
   setOrganizations: (orgs: Organization[]) => void;
   addOrganization: (org: Organization) => void;
   setPersonalProfile: (profile: PersonalProfile) => void;
+  updateOrganization: (id: string, updates: Partial<Organization>) => void;
   
   // Helpers
   getActiveOrganization: () => Organization | undefined;
@@ -57,6 +58,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setOrganizations: (orgs) => set({ organizations: orgs }),
   addOrganization: (org) => set((state) => ({ organizations: [...state.organizations, org] })),
   setPersonalProfile: (profile) => set({ personalProfile: profile }),
+  updateOrganization: (id, updates) => set((state) => ({
+    organizations: state.organizations.map((org) => org.id === id ? { ...org, ...updates } : org)
+  })),
 
   getActiveOrganization: () => {
     const { activeWorkspaceId, organizations } = get();

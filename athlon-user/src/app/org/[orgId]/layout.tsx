@@ -100,6 +100,10 @@ export default function OrganizationLayout({ children }: { children: React.React
 
   const navItems = getNavItems();
 
+  const Icon0 = navItems[0]?.icon;
+  const Icon1 = navItems[1]?.icon;
+  const Icon2 = navItems[2]?.icon;
+
   return (
     <div className="flex h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
@@ -119,7 +123,7 @@ export default function OrganizationLayout({ children }: { children: React.React
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-[#3B82F6]/10 text-[#3B82F6]'
+                    ? 'bg-[#1B9C56]/10 text-[#1B9C56]'
                     : 'text-white/50 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -140,61 +144,48 @@ export default function OrganizationLayout({ children }: { children: React.React
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto bg-background md:pb-0 pb-16">
-        {/* Mobile Header */}
-        <header className="dark md:hidden sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-[#0A0F1A]/90 backdrop-blur-md border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <Image src="/athlon-logo-3.png" alt="Athlon" width={90} height={18} className="object-contain w-auto h-10" />
-          </div>
-
-          <div className="relative">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 -mr-2 text-foreground hover:text-[#3B82F6] transition-colors"
-            >
-              <Menu className="w-6 h-6" strokeWidth={1.5} />
-            </button>
-
-            {isMenuOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-12 w-64 bg-surface border border-foreground/10 rounded-xl shadow-2xl py-2 flex flex-col z-50 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="px-4 py-2 border-b border-white/10 mb-2">
-                    <ContextSwitcher />
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      logout();
-                      window.location.href = '/';
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors w-full text-left mt-1"
-                  >
-                    <LogOut className="w-4 h-4" /> Logout
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </header>
-
         {children}
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="dark md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0A0F1A]/95 backdrop-blur-xl border-t border-white/10 z-50 px-4 flex items-center justify-around">
-        {navItems.slice(0, 4).map(item => {
-           const isActive = pathname === item.href;
-           return (
-             <Link key={item.name} href={item.href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${isActive ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-               <item.icon className={`w-5 h-5 ${isActive ? 'text-[#3B82F6]' : 'text-white'}`} />
-               <span className={`text-[9px] font-bold ${isActive ? 'text-[#3B82F6]' : 'text-white'}`}>{item.name}</span>
-             </Link>
-           );
-        })}
+      <nav className="dark md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0A0F1A]/95 backdrop-blur-xl border-t border-white/10 z-50 px-6 flex items-center justify-between">
+        
+        {/* Item 1 */}
+        {navItems[0] && Icon0 && (
+          <Link href={navItems[0].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[0].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
+            <Icon0 className={`w-6 h-6 ${pathname === navItems[0].href ? 'text-[#1B9C56]' : 'text-white'}`} />
+            <span className={`text-[9px] font-bold ${pathname === navItems[0].href ? 'text-[#1B9C56]' : 'text-white'}`}>{navItems[0].name}</span>
+          </Link>
+        )}
+
+        {/* Item 2 */}
+        {navItems[1] && Icon1 && (
+          <Link href={navItems[1].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[1].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
+            <Icon1 className={`w-6 h-6 ${pathname === navItems[1].href ? 'text-[#1B9C56]' : 'text-white'}`} />
+            <span className={`text-[9px] font-bold ${pathname === navItems[1].href ? 'text-[#1B9C56]' : 'text-white'}`}>{navItems[1].name}</span>
+          </Link>
+        )}
+
+        {/* Elevated Center + Button */}
+        <div className="relative -top-6 flex items-center justify-center">
+          <Link href="/match-setup" className="w-16 h-16 rounded-full bg-[#1B9C56] text-black shadow-[0_8px_30px_rgba(27,156,86,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 border-[#0A0F1A]">
+            <img src="/umpire.png" alt="Umpire" className="w-8 h-8 object-contain drop-shadow-md" />
+          </Link>
+        </div>
+
+        {/* Item 3 */}
+        {navItems[2] && Icon2 && (
+          <Link href={navItems[2].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[2].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
+            <Icon2 className={`w-6 h-6 ${pathname === navItems[2].href ? 'text-[#1B9C56]' : 'text-white'}`} />
+            <span className={`text-[9px] font-bold ${pathname === navItems[2].href ? 'text-[#1B9C56]' : 'text-white'}`}>{navItems[2].name}</span>
+          </Link>
+        )}
+
+        {/* Profile (replacing Item 4 / Results) */}
+        <Link href="/profile" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/profile' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
+          <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`} />
+          <span className={`text-[9px] font-bold ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`}>Profile</span>
+        </Link>
       </nav>
     </div>
   );

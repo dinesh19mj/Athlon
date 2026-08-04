@@ -1,0 +1,4 @@
+ip: 15.252.63.6
+username: ubuntu
+
+ssh -i "/c/Dinesh/Projects/Athlon-Sport/Infrastructure/athlon-key.pem" ubuntu@15.252.63.6

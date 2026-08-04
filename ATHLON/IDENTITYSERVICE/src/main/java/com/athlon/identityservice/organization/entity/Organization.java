@@ -28,7 +28,7 @@ public class Organization {
     private String name;
 
     @Column(name = "type", nullable = false, length = 100)
-    private String type; // e.g., ACADEMY, ASSOCIATION, CLUB, VENUE, SCHOOL, CORPORATE
+    private String type;
 
     @Column(name = "parentorganizationid")
     private Long parentOrganizationId; // Supports Hierarchy
@@ -57,7 +57,7 @@ public class Organization {
     public Organization(String name, String description, String type, Long parentOrganizationId, Long createdBy) {
         this.name = name;
         this.description = description;
-        this.type = type != null ? type : "CLUB"; // Default type if null
+        this.type = type != null ? type : "CLUB";
         this.parentOrganizationId = parentOrganizationId;
         this.isActive = true;
         this.createdBy = createdBy;

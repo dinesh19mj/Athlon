@@ -52,7 +52,7 @@ export default function TournamentsPage() {
         </div>
         <button
           onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-medium hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/25"
+          className="flex items-center gap-2 bg-[#1B9C56] text-black px-4 py-2 rounded-xl font-medium hover:bg-[#158045] transition-all hover:scale-105 active:scale-95 shadow-lg shadow-[#1B9C56]/25"
         >
           <PlusIcon className="w-5 h-5" />
           Create Tournament
@@ -66,7 +66,7 @@ export default function TournamentsPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === tab
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-[#1B9C56] text-black shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             }`}
           >
@@ -80,9 +80,9 @@ export default function TournamentsPage() {
           <Link
             key={tournament.id}
             href={`/org/${orgId}/tournaments/${tournament.id}`}
-            className="group relative flex flex-col bg-card border border-border rounded-2xl p-6 transition-all hover:shadow-xl hover:border-primary/50 overflow-hidden"
+            className="group relative flex flex-col bg-card border border-border rounded-2xl p-6 transition-all hover:shadow-xl hover:border-[#1B9C56]/50 overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#1B9C56]/5 rounded-full blur-3xl group-hover:bg-[#1B9C56]/10 transition-colors" />
             
             <div className="flex justify-between items-start mb-4">
               <span
@@ -97,7 +97,7 @@ export default function TournamentsPage() {
               <span
                 className={`px-3 py-1 rounded-full text-xs font-medium border ${
                   tournament.status === "ONGOING"
-                    ? "border-blue-500/20 bg-blue-500/10 text-blue-500"
+                    ? "border-[#1B9C56]/20 bg-[#1B9C56]/10 text-[#1B9C56]"
                     : "border-border bg-secondary text-muted-foreground"
                 }`}
               >
@@ -105,21 +105,21 @@ export default function TournamentsPage() {
               </span>
             </div>
 
-            <h3 className="text-xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors">
+            <h3 className="text-xl font-bold text-foreground mb-4 group-hover:text-[#1B9C56] transition-colors">
               {tournament.name}
             </h3>
 
             <div className="mt-auto space-y-3">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <CalendarIcon className="w-4 h-4 text-primary/70" />
+                <CalendarIcon className="w-4 h-4 text-[#1B9C56]/70" />
                 <span>{tournament.startDate} - {tournament.endDate}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <MapPinIcon className="w-4 h-4 text-primary/70" />
+                <MapPinIcon className="w-4 h-4 text-[#1B9C56]/70" />
                 <span>{tournament.location}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <UsersIcon className="w-4 h-4 text-primary/70" />
+                <UsersIcon className="w-4 h-4 text-[#1B9C56]/70" />
                 <span>{tournament.playersRegistered} Players</span>
               </div>
             </div>

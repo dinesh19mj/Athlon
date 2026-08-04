@@ -55,7 +55,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-[#3B82F6]/10 text-[#3B82F6]'
+                    ? 'bg-[#1B9C56]/10 text-[#1B9C56]'
                     : 'text-white/50 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -72,7 +72,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
               logout();
               window.location.href = '/';
             }}
-            className="flex items-center gap-3 text-foreground/50 hover:text-[#3B82F6] transition-colors w-full px-3 py-2"
+            className="flex items-center gap-3 text-foreground/50 hover:text-[#1B9C56] transition-colors w-full px-3 py-2"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Logout</span>
@@ -82,46 +82,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto bg-background md:pb-0 pb-16">
-        {/* Mobile Header */}
-        <header className="dark md:hidden sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-[#0A0F1A]/90 backdrop-blur-md border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <Image src="/athlon-logo-3.png" alt="Athlon" width={90} height={18} className="object-contain w-auto h-10" />
-          </div>
 
-          <div className="relative">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 -mr-2 text-foreground hover:text-[#3B82F6] transition-colors"
-            >
-              <Menu className="w-6 h-6" strokeWidth={1.5} />
-            </button>
-
-            {isMenuOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsMenuOpen(false)}
-                />
-                <div className="absolute right-0 top-12 w-64 bg-surface border border-foreground/10 rounded-xl shadow-2xl py-2 flex flex-col z-50 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="px-4 py-2 border-b border-white/10 mb-2">
-                    <ContextSwitcher />
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      logout();
-                      window.location.href = '/';
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors w-full text-left mt-1"
-                  >
-                    <LogOut className="w-4 h-4" /> Logout
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </header>
 
         {children}
       </main>
@@ -129,30 +90,30 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
       {/* Mobile Bottom Nav */}
       <nav className="dark md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0A0F1A]/95 backdrop-blur-xl border-t border-white/10 z-50 px-6 flex items-center justify-between">
         <Link href="/home" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/home' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-          <Home className={`w-6 h-6 ${pathname === '/home' ? 'text-[#3B82F6]' : 'text-white'}`} />
-          <span className={`text-[9px] font-bold ${pathname === '/home' ? 'text-[#3B82F6]' : 'text-white'}`}>Home</span>
+          <Home className={`w-6 h-6 ${pathname === '/home' ? 'text-[#1B9C56]' : 'text-white'}`} />
+          <span className={`text-[9px] font-bold ${pathname === '/home' ? 'text-[#1B9C56]' : 'text-white'}`}>Home</span>
         </Link>
 
         <Link href="/home/tournaments" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/home/tournaments' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-          <Trophy className={`w-6 h-6 ${pathname === '/home/tournaments' ? 'text-[#3B82F6]' : 'text-white'}`} />
-          <span className={`text-[9px] font-bold ${pathname === '/home/tournaments' ? 'text-[#3B82F6]' : 'text-white'}`}>Events</span>
+          <Trophy className={`w-6 h-6 ${pathname === '/home/tournaments' ? 'text-[#1B9C56]' : 'text-white'}`} />
+          <span className={`text-[9px] font-bold ${pathname === '/home/tournaments' ? 'text-[#1B9C56]' : 'text-white'}`}>Events</span>
         </Link>
 
         {/* Elevated Center + Button */}
         <div className="relative -top-6 flex items-center justify-center">
-          <Link href="/match-setup" className="w-16 h-16 rounded-full bg-[#3B82F6] text-black shadow-[0_8px_30px_rgba(204,255,0,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 border-[#0A0F1A]">
+          <Link href="/match-setup" className="w-16 h-16 rounded-full bg-[#1B9C56] text-black shadow-[0_8px_30px_rgba(0,255,102,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 border-[#0A0F1A]">
             <img src="/umpire.png" alt="Umpire" className="w-8 h-8 object-contain drop-shadow-md" />
           </Link>
         </div>
 
         <Link href="/home/notifications" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/home/notifications' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-          <Bell className={`w-6 h-6 ${pathname === '/home/notifications' ? 'text-[#3B82F6]' : 'text-white'}`} />
-          <span className={`text-[9px] font-bold ${pathname === '/home/notifications' ? 'text-[#3B82F6]' : 'text-white'}`}>Alerts</span>
+          <Bell className={`w-6 h-6 ${pathname === '/home/notifications' ? 'text-[#1B9C56]' : 'text-white'}`} />
+          <span className={`text-[9px] font-bold ${pathname === '/home/notifications' ? 'text-[#1B9C56]' : 'text-white'}`}>Alerts</span>
         </Link>
 
         <Link href="/profile" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/profile' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-          <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-[#3B82F6]' : 'text-white'}`} />
-          <span className={`text-[9px] font-bold ${pathname === '/profile' ? 'text-[#3B82F6]' : 'text-white'}`}>Profile</span>
+          <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`} />
+          <span className={`text-[9px] font-bold ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`}>Profile</span>
         </Link>
       </nav>
     </div>
