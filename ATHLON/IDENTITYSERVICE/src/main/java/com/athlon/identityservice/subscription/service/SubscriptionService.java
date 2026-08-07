@@ -5,12 +5,12 @@ import com.athlon.identityservice.dto.request.SubscribeOrganizationRequest;
 import com.athlon.identityservice.dto.response.OrganizationSubscriptionResponse;
 import com.athlon.identityservice.subscription.dto.response.SubscriptionPackageResponse;
 import com.athlon.identityservice.organization.entity.Organization;
-import com.athlon.identityservice.entity.OrganizationSubscription;
 import com.athlon.identityservice.subscription.entity.SubscriptionPackage;
 import com.athlon.identityservice.exception.DuplicateResourceException;
 import com.athlon.identityservice.exception.ResourceNotFoundException;
+import com.athlon.identityservice.oganizationsubscription.entity.OrganizationSubscription;
 import com.athlon.identityservice.organization.repository.OrganizationRepository;
-import com.athlon.identityservice.repository.OrganizationSubscriptionRepository;
+import com.athlon.identityservice.organizationsubscription.repository.OrganizationSubscriptionRepository;
 import com.athlon.identityservice.subscription.repository.SubscriptionPackageRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,14 +70,14 @@ public class SubscriptionService {
 
     @Transactional
     public OrganizationSubscriptionResponse subscribeOrganization(SubscribeOrganizationRequest request) {
-        Organization organization = organizationRepository.findByUuid(request.getOrganizationUuid())
+        Organization organization = organizationRepository.findByOrganizationUuid(request.getOrganizationUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + request.getOrganizationUuid()));
 
         SubscriptionPackage pack = subscriptionPackageRepository.findByPackageUuid(request.getPackageUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("Subscription Package not found with UUID: " + request.getPackageUuid()));
 
         // Check if organization already has an active subscription
-        organizationSubscriptionRepository.findByOrganizationIdAndStatus(organization.getId(), "ACTIVE")
+        organizationSubscriptionRepository.findByOrganizationIdAndStatus(organization.getOrganizationId(), "ACTIVE")
                 .ifPresent(sub -> {
                     // We could either expire the old one or throw an exception. Let's expire the old one for now.
                     sub.setStatus("EXPIRED");
@@ -88,7 +88,7 @@ public class SubscriptionService {
         LocalDateTime endDate = startDate.plusMonths(pack.getDurationMonths());
 
         OrganizationSubscription subscription = new OrganizationSubscription(
-                organization.getId(),
+                organization.getOrganizationId(),
                 pack.getPackageId(),
                 startDate,
                 endDate,
@@ -102,10 +102,10 @@ public class SubscriptionService {
 
     @Transactional(readOnly = true)
     public OrganizationSubscriptionResponse getActiveSubscription(UUID organizationUuid) {
-        Organization organization = organizationRepository.findByUuid(organizationUuid)
+        Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + organizationUuid));
 
-        OrganizationSubscription subscription = organizationSubscriptionRepository.findByOrganizationIdAndStatus(organization.getId(), "ACTIVE")
+        OrganizationSubscription subscription = organizationSubscriptionRepository.findByOrganizationIdAndStatus(organization.getOrganizationId(), "ACTIVE")
                 .orElseThrow(() -> new ResourceNotFoundException("No active subscription found for Organization UUID: " + organizationUuid));
 
         SubscriptionPackage pack = subscriptionPackageRepository.findById(subscription.getPackageId())
@@ -128,7 +128,7 @@ public class SubscriptionService {
 
     private OrganizationSubscriptionResponse mapToResponse(OrganizationSubscription subscription, SubscriptionPackage pack) {
         OrganizationSubscriptionResponse response = new OrganizationSubscriptionResponse();
-        response.setUuid(subscription.getUuid());
+        response.setUuid(subscription.getOrganizationSubscriptionUuid());
         response.setOrganizationId(subscription.getOrganizationId());
         response.setStartDate(subscription.getStartDate());
         response.setEndDate(subscription.getEndDate());

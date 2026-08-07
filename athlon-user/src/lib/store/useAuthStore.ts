@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { AuthService } from '../api/auth';
 
 export type Subscription = 'PLAYER' | 'ORGANIZER' | 'ACADEMY' | 'COURT' | 'CLUB';
@@ -9,20 +10,24 @@ type AuthState = {
   userEmail: string | null;
   token: string | null;
   userId: string | null;
-  login: (email: string, token: string, userId: string) => Promise<void>;
+  userUuid: string | null;
+  login: (email: string, token: string, userId: string, userUuid: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
   setSubscriptions: (subs: Subscription[]) => void;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
-  subscriptions: ['PLAYER'],
-  userEmail: null,
-  token: null,
-  userId: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      isAuthenticated: false,
+      subscriptions: ['PLAYER'],
+      userEmail: null,
+      token: null,
+      userId: null,
+      userUuid: null,
 
-  login: async (email: string, token: string, userId: string) => {
+  login: async (email: string, token: string, userId: string, userUuid: string) => {
     const lowerEmail = email.toLowerCase();
     
     let subs: Subscription[] = ['PLAYER'];
@@ -36,6 +41,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       userEmail: email,
       token: token,
       userId: userId,
+      userUuid: userUuid,
       subscriptions: subs,
     });
   },
@@ -66,10 +72,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       userEmail: null,
       token: null,
       userId: null,
+      userUuid: null,
     });
   },
   setSubscriptions: (subs) =>
     set({
       subscriptions: subs,
     }),
-}));
+  }),
+  {
+    name: 'auth-storage', // name of item in the storage (must be unique)
+  }
+));

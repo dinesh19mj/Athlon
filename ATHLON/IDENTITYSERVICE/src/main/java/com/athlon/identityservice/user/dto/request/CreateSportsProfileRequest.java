@@ -11,6 +11,8 @@ public class CreateSportsProfileRequest {
     @NotBlank(message = "Sport name is required")
     @Size(max = 100, message = "Sport name must not exceed 100 characters")
     private String sportName;
+    
+    private String category;
 
     private Integer currentRanking;
     private String careerHighlights;
@@ -49,4 +51,13 @@ public class CreateSportsProfileRequest {
     public void setCareerHighlights(String careerHighlights) {
         this.careerHighlights = careerHighlights;
     }
+
+	public String getCategory() {
+		return category;
+	}
+
+	public void setCategory(String category) {
+		this.category = category;
+	}
+    
 }

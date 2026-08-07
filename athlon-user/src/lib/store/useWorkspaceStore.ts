@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type WorkspaceType = 'PERSONAL' | 'ACADEMY' | 'ASSOCIATION' | 'CLUB' | 'COURT' | 'ORGANIZER';
 
@@ -35,36 +36,30 @@ interface WorkspaceState {
   getActiveOrganization: () => Organization | undefined;
 }
 
-// Mock Data for initial testing
-const MOCK_PROFILE: PersonalProfile = {
-  id: 'usr_123',
-  name: 'John Doe',
-  athlonId: 'ATH-004523',
-  avatar: '/umpire.png', // Temporary placeholder
-};
+export const useWorkspaceStore = create<WorkspaceState>()(
+  persist(
+    (set, get) => ({
+      activeWorkspaceId: 'PERSONAL',
+      personalProfile: null,
+      organizations: [],
 
-const MOCK_ORGS: Organization[] = [
-  { id: 'org_elite', name: 'Elite Academy', type: 'ACADEMY' },
-  { id: 'org_kba', name: 'Kerala Badminton Association', type: 'ASSOCIATION' },
-  { id: 'org_weekend', name: 'Weekend Smashers Club', type: 'CLUB' },
-];
+      setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+      setOrganizations: (orgs) => set({ organizations: orgs }),
+      addOrganization: (org) => set((state) => ({ organizations: [...state.organizations, org] })),
+      setPersonalProfile: (profile) => set({ personalProfile: profile }),
+      updateOrganization: (id, updates) => set((state) => ({
+        organizations: state.organizations.map((org) => org.id === id ? { ...org, ...updates } : org)
+      })),
 
-export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
-  activeWorkspaceId: 'PERSONAL',
-  personalProfile: null,
-  organizations: [],
-
-  setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
-  setOrganizations: (orgs) => set({ organizations: orgs }),
-  addOrganization: (org) => set((state) => ({ organizations: [...state.organizations, org] })),
-  setPersonalProfile: (profile) => set({ personalProfile: profile }),
-  updateOrganization: (id, updates) => set((state) => ({
-    organizations: state.organizations.map((org) => org.id === id ? { ...org, ...updates } : org)
-  })),
-
-  getActiveOrganization: () => {
-    const { activeWorkspaceId, organizations } = get();
-    if (activeWorkspaceId === 'PERSONAL') return undefined;
-    return organizations.find((org) => org.id === activeWorkspaceId);
-  },
-}));
+      getActiveOrganization: () => {
+        const { activeWorkspaceId, organizations } = get();
+        if (activeWorkspaceId === 'PERSONAL') return undefined;
+        return organizations.find((org) => org.id === activeWorkspaceId);
+      },
+    }),
+    {
+      name: 'workspace-storage',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);

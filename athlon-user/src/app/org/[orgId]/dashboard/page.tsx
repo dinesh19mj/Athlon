@@ -23,6 +23,8 @@ import {
 
 
 
+import MyOrganizationsList from '@/components/MyOrganizationsList';
+
 export default function OrganizationDashboard() {
   const { getActiveOrganization } = useWorkspaceStore();
   const org = getActiveOrganization();
@@ -183,6 +185,10 @@ export default function OrganizationDashboard() {
                 </Link>
               );
             })}
+          </div>
+
+          <div className="pb-8">
+            <MyOrganizationsList />
           </div>
         </div>
       </div>

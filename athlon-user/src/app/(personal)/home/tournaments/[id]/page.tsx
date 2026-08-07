@@ -1,192 +1,225 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, MapPin, Calendar, Users, DollarSign, Trophy, ActivityIcon, FileText, Phone, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
-import { use, useState } from 'react';
-import { ArrowLeft, MapPin, Calendar, Users, Trophy, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { TournamentService, Tournament } from '@/lib/api/tournaments';
 
-const mockTournament = {
-  id: 1,
-  name: 'Summer Smash 2024',
-  date: 'Oct 15 - Oct 17, 2024',
-  location: 'Chennai Sports Club',
-  categories: ['Men\'s Singles', 'Women\'s Singles', 'Mixed Doubles'],
-  prizePool: '₹50,000',
-  registrations: '120/150',
-  entryFee: 500,
-  description: 'Join the biggest badminton tournament of the summer! Open to all skill levels. Exciting prizes and merchandise for all participants.'
-};
+export default function PersonalTournamentDetailsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const tournamentUuid = params.id as string;
 
-export default function PlayerTournamentDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [isRegistered, setIsRegistered] = useState(false);
+  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCategory) return;
-    setIsRegistered(true);
-  };
+  useEffect(() => {
+    const fetchTournament = async () => {
+      try {
+        const res = await TournamentService.getById(tournamentUuid);
+        if (res.data) {
+          setTournament(res.data);
+        } else {
+          setError("Tournament not found");
+        }
+      } catch (err: any) {
+        console.error("Failed to load tournament details", err);
+        setError("Could not load tournament details. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTournament();
+  }, [tournamentUuid]);
 
-  if (isRegistered) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground font-sans flex flex-col items-center justify-center p-8">
-        <div className="bg-surface border border-foreground/10 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-[#1B9C56]" />
-          <div className="w-20 h-20 bg-[#1B9C56]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-10 h-10 text-[#1B9C56]" />
-          </div>
-          <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Registration Confirmed!</h2>
-          <p className="text-foreground/50 mb-8">
-            You have successfully registered for {mockTournament.name} in {selectedCategory}.
-          </p>
-          <Link 
-            href="/player/tournaments"
-            className="block w-full py-3 bg-[#1B9C56] text-black font-black uppercase tracking-wide rounded-xl hover:scale-105 active:scale-95 transition-transform"
-          >
-            Back to Tournaments
-          </Link>
-        </div>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#1B9C56] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-foreground/50 font-bold tracking-widest uppercase text-sm">Loading details...</p>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background text-foreground font-sans pb-24">
-      {/* Header Banner */}
-      <div className="relative h-48 md:h-64 bg-foreground/5">
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent z-10" />
-        <Link href="/player/tournaments" className="absolute top-6 left-4 md:left-8 z-20 p-2 bg-background/50 backdrop-blur-md border border-foreground/10 rounded-full text-foreground/70 hover:text-foreground transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
+  if (error || !tournament) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <Trophy className="w-16 h-16 text-foreground/20 mb-4" />
+        <h1 className="text-xl font-bold text-foreground mb-2">Tournament Not Found</h1>
+        <p className="text-foreground/50 text-sm mb-6 max-w-sm">{error || "The tournament you are looking for does not exist or has been removed."}</p>
+        <button onClick={() => router.back()} className="px-6 py-3 bg-surface border border-foreground/10 rounded-xl font-bold text-sm hover:border-[#1B9C56] transition-colors">
+          Go Back
+        </button>
       </div>
+    );
+  }
 
-      <main className="max-w-3xl mx-auto px-4 md:px-8 -mt-24 relative z-20">
+  const startDate = new Date(tournament.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const endDate = new Date(tournament.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Handle Windows paths that might accidentally have a leading slash (e.g. /C:\...)
+  const posterPath = tournament.poster ? tournament.poster.replace(/^\/([a-zA-Z]:)/, '$1') : '';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+  const posterUrl = `${baseUrl}/api/tournament/tournaments/getFile?filePath=${encodeURIComponent(posterPath)}`;
+
+  return (
+    <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-[#1B9C56] selection:text-black">
+      
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-50 flex items-center px-4 py-4 bg-background/90 backdrop-blur-md border-b border-foreground/5">
+        <button onClick={() => router.back()} className="p-2 -ml-2 text-foreground hover:text-[#1B9C56] transition-colors">
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+        <h1 className="text-lg font-bold uppercase tracking-wider ml-2 truncate">Tournament Details</h1>
+      </header>
+
+      <main className="w-full max-w-2xl mx-auto px-4 flex flex-col gap-6 pt-6">
         
-        {/* Tournament Info */}
-        <div className="mb-10">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="bg-[#1B9C56]/20 text-[#1B9C56] px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-[#1B9C56]/30">
-              Registering
-            </span>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4">{mockTournament.name}</h1>
-          <p className="text-foreground/60 text-sm leading-relaxed mb-6">
-            {mockTournament.description}
-          </p>
+        {/* HERO SECTION */}
+        <div className="bg-surface border border-foreground/10 rounded-3xl overflow-hidden shadow-2xl relative">
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-surface border border-foreground/10 rounded-xl p-4">
-              <Calendar className="w-5 h-5 text-[#1B9C56] mb-2" />
-              <p className="text-xs font-bold text-foreground/50 uppercase tracking-wider mb-1">Date</p>
-              <p className="text-sm font-bold truncate">{mockTournament.date}</p>
+          {tournament.poster && (
+            <div className="w-full h-48 md:h-64 relative bg-foreground/5 border-b border-foreground/10">
+              <img 
+                src={posterUrl} 
+                alt={`${tournament.name} Poster`} 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent" />
             </div>
-            <div className="bg-surface border border-foreground/10 rounded-xl p-4">
-              <MapPin className="w-5 h-5 text-[#1B9C56] mb-2" />
-              <p className="text-xs font-bold text-foreground/50 uppercase tracking-wider mb-1">Location</p>
-              <p className="text-sm font-bold truncate">{mockTournament.location}</p>
+          )}
+
+          {!tournament.poster && (
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#1B9C56]/10 blur-[80px] rounded-full pointer-events-none" />
+          )}
+          
+          <div className="p-6 md:p-8 relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="px-3 py-1 bg-[#1B9C56]/20 text-[#1B9C56] border border-[#1B9C56]/30 rounded-full text-[10px] font-black uppercase tracking-widest">
+                {tournament.sport}
+              </span>
+              <span className="px-3 py-1 bg-foreground/5 text-foreground/70 border border-foreground/10 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                <ActivityIcon className="w-3 h-3" />
+                {tournament.tournamentType === 'TEAM_EVENT' ? 'Team League' : 'Knockout'}
+              </span>
             </div>
-            <div className="bg-surface border border-foreground/10 rounded-xl p-4">
-              <Trophy className="w-5 h-5 text-[#1B9C56] mb-2" />
-              <p className="text-xs font-bold text-foreground/50 uppercase tracking-wider mb-1">Prize Pool</p>
-              <p className="text-sm font-bold truncate">{mockTournament.prizePool}</p>
-            </div>
-            <div className="bg-surface border border-foreground/10 rounded-xl p-4">
-              <Users className="w-5 h-5 text-[#1B9C56] mb-2" />
-              <p className="text-xs font-bold text-foreground/50 uppercase tracking-wider mb-1">Entries</p>
-              <p className="text-sm font-bold truncate">{mockTournament.registrations}</p>
+
+            <h1 className="text-2xl md:text-3xl font-black leading-tight text-foreground mb-4">
+              {tournament.name}
+            </h1>
+
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-3 text-foreground/80">
+                <Calendar className="w-5 h-5 text-primary shrink-0" />
+                <span className="text-sm font-semibold">{startDate} - {endDate}</span>
+              </div>
+              <div className="flex items-center gap-3 text-foreground/80">
+                <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
+                <span className="text-sm font-semibold">{tournament.location || 'Location TBD'}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Registration Form */}
-        <div className="bg-surface border border-foreground/10 rounded-3xl p-6 md:p-8 shadow-2xl">
-          <h2 className="text-xl font-black uppercase tracking-wide mb-6 flex items-center gap-2">
-            Registration Form <ChevronRight className="w-5 h-5 text-[#1B9C56]" />
+        {/* DETAILS GRID */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-surface border border-foreground/10 rounded-2xl p-5 flex flex-col gap-2">
+            <DollarSign className="w-6 h-6 text-purple-400 mb-1" />
+            <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Entry Fee</span>
+            <span className="text-lg font-black text-foreground">
+              {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'Free'}
+            </span>
+          </div>
+
+          <div className="bg-surface border border-foreground/10 rounded-2xl p-5 flex flex-col gap-2">
+            <Users className="w-6 h-6 text-blue-400 mb-1" />
+            <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Match Format</span>
+            <div className="flex flex-wrap gap-1">
+              {tournament.matchFormat ? tournament.matchFormat.split(',').map((format, i) => (
+                <span key={i} className="text-xs font-bold text-foreground bg-background px-2 py-0.5 rounded border border-foreground/10">
+                  {format.trim()}
+                </span>
+              )) : (
+                <span className="text-sm font-bold text-foreground">-</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* CATEGORIES SECTION */}
+        <div className="bg-surface border border-foreground/10 rounded-2xl p-6">
+          <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-[#1B9C56]" />
+            Categories
           </h2>
-
-          <form onSubmit={handleRegister} className="space-y-6">
-            
-            {/* Category Selection */}
-            <div>
-              <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3">
-                Select Category
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {mockTournament.categories.map(cat => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`py-3 px-4 rounded-xl border text-sm font-bold transition-all ${
-                      selectedCategory === cat 
-                        ? 'bg-[#1B9C56]/10 border-[#1B9C56] text-[#1B9C56]'
-                        : 'bg-background border-foreground/10 text-foreground/70 hover:border-foreground/30'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+          <div className="flex flex-wrap gap-2">
+            {tournament.category ? tournament.category.split(',').map((cat, i) => (
+              <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-background border border-foreground/10 rounded-lg">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#1B9C56]" />
+                <span className="text-sm font-bold text-foreground">{cat.trim()}</span>
               </div>
-            </div>
-
-            {/* Doubles Partner Input (Conditional) */}
-            {selectedCategory.includes('Doubles') && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-2">
-                  Partner Name / ID
-                </label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Enter your partner's name or Athlon ID"
-                  className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:border-[#1B9C56] transition-colors"
-                />
-              </div>
+            )) : (
+              <span className="text-sm text-foreground/50">No categories specified</span>
             )}
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-2">
-                  Player Name
-                </label>
-                <input 
-                  type="text" 
-                  defaultValue="Alex Johnson"
-                  disabled
-                  className="w-full bg-foreground/5 border border-transparent rounded-xl py-3 px-4 text-sm font-bold text-foreground/50 cursor-not-allowed"
-                />
-                <p className="text-[10px] text-foreground/40 mt-1">Loaded from your profile</p>
-              </div>
-              <div>
-                <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-2">
-                  Phone Number
-                </label>
-                <input 
-                  type="tel" 
-                  required
-                  placeholder="+91 "
-                  className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:border-[#1B9C56] transition-colors"
-                />
-              </div>
+        {/* ABOUT / DESCRIPTION */}
+        {tournament.description && (
+          <div className="bg-surface border border-foreground/10 rounded-2xl p-6">
+            <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#1B9C56]" />
+              About Tournament
+            </h2>
+            <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              {tournament.description}
+            </p>
+          </div>
+        )}
+
+        {/* CONTACT INFO */}
+        {(tournament.contactPhone || tournament.mapLink) && (
+          <div className="bg-surface border border-foreground/10 rounded-2xl p-6">
+            <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Phone className="w-4 h-4 text-[#1B9C56]" />
+              Contact & Location
+            </h2>
+            <div className="flex flex-col gap-3">
+              {tournament.contactPhone && (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-background border border-foreground/10 flex items-center justify-center">
+                    <Phone className="w-3.5 h-3.5 text-foreground/70" />
+                  </div>
+                  <span className="text-sm font-bold text-foreground">{tournament.contactPhone}</span>
+                </div>
+              )}
+              {tournament.mapLink && (
+                <a href={tournament.mapLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
+                  <div className="w-8 h-8 rounded-full bg-background border border-foreground/10 flex items-center justify-center group-hover:border-[#1B9C56] transition-colors">
+                    <MapPin className="w-3.5 h-3.5 text-foreground/70 group-hover:text-[#1B9C56]" />
+                  </div>
+                  <span className="text-sm font-bold text-[#1B9C56] group-hover:underline">View on Map</span>
+                </a>
+              )}
             </div>
+          </div>
+        )}
 
-            {/* Payment Summary */}
-            <div className="mt-8 pt-6 border-t border-foreground/10">
-              <button 
-                type="submit"
-                disabled={!selectedCategory}
-                className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-black uppercase tracking-widest transition-all ${
-                  selectedCategory 
-                    ? 'bg-[#1B9C56] text-black hover:scale-[1.02] active:scale-[0.98] shadow-[0_10px_30px_rgba(27,156,86,0.3)]'
-                    : 'bg-foreground/5 text-foreground/30 cursor-not-allowed'
-                }`}
-              >
-                Register
-              </button>
+        {/* Sticky Registration Bar */}
+        <div className="fixed bottom-20 md:bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t border-foreground/10 z-50">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Entry Fee</span>
+              <span className="text-lg font-black text-[#1B9C56]">
+                {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'Free'}
+              </span>
             </div>
-
-          </form>
+            <button className="px-8 py-3 bg-[#1B9C56] text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-[0_5px_20px_rgba(27,156,86,0.3)] hover:scale-[1.02] active:scale-95 transition-transform">
+              Register Now
+            </button>
+          </div>
         </div>
 
       </main>

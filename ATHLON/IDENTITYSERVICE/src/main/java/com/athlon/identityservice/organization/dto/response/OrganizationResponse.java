@@ -4,14 +4,22 @@ import java.util.UUID;
 
 public class OrganizationResponse {
 
+    private Long orgId;
     private UUID uuid;
     private String name;
     private String description;
     private boolean isActive;
     private String type;
-    private Long parentOrganizationId;
 
     public OrganizationResponse() {
+    }
+
+    public Long getOrgId() {
+        return orgId;
+    }
+
+    public void setOrgId(Long orgId) {
+        this.orgId = orgId;
     }
 
     public UUID getUuid() {
@@ -52,13 +60,5 @@ public class OrganizationResponse {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public Long getParentOrganizationId() {
-        return parentOrganizationId;
-    }
-
-    public void setParentOrganizationId(Long parentOrganizationId) {
-        this.parentOrganizationId = parentOrganizationId;
     }
 }

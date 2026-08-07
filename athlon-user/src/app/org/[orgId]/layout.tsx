@@ -22,6 +22,11 @@ export default function OrganizationLayout({ children }: { children: React.React
 
   const orgId = params?.orgId as string;
   const activeOrg = getActiveOrganization();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Sync route with store on load
   useEffect(() => {
@@ -54,6 +59,7 @@ export default function OrganizationLayout({ children }: { children: React.React
     };
   }, [isMenuOpen]);
 
+  if (!isMounted) return null;
   if (!activeOrg) return null;
 
   // Determine which nav links to show based on org type

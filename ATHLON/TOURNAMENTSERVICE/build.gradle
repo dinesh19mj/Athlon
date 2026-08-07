@@ -40,6 +40,10 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	
+	implementation 'com.itextpdf:itextpdf:5.5.13.3'
+	implementation 'com.sksamuel.scrimage:scrimage-core:4.3.0'
+	implementation 'com.sksamuel.scrimage:scrimage-webp:4.3.0'
 }
 
 ext {

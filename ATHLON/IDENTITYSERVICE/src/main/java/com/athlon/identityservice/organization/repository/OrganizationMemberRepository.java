@@ -11,11 +11,17 @@ import java.util.UUID;
 @Repository
 public interface OrganizationMemberRepository extends JpaRepository<OrganizationMember, Long> {
     
-    Optional<OrganizationMember> findByUuid(UUID uuid);
-    
+	Optional<OrganizationMember> findByOrganizationMemberUuid(UUID organizationMemberUuid);
+
     List<OrganizationMember> findByOrganizationId(Long organizationId);
-    
+
+    List<OrganizationMember> findByOrganizationUuid(UUID organizationUuid);
+
     List<OrganizationMember> findByUserId(Long userId);
+
+    List<OrganizationMember> findByUserUuid(UUID userUuid);
     
     boolean existsByOrganizationIdAndUserId(Long organizationId, Long userId);
+
+    Optional<OrganizationMember> findByOrganizationIdAndUserId(Long organizationId, Long userId);
 }

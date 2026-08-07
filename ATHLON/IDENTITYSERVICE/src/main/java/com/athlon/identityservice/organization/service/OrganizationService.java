@@ -7,6 +7,8 @@ import com.athlon.identityservice.organization.entity.Organization;
 import com.athlon.identityservice.exception.DuplicateResourceException;
 import com.athlon.identityservice.exception.ResourceNotFoundException;
 import com.athlon.identityservice.organization.repository.OrganizationRepository;
+import com.athlon.identityservice.subscription.service.SubscriptionService;
+import com.athlon.identityservice.dto.request.SubscribeOrganizationRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +20,15 @@ import java.util.stream.Collectors;
 public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
+    private final SubscriptionService subscriptionService;
 
-    public OrganizationService(OrganizationRepository organizationRepository) {
+    public OrganizationService(OrganizationRepository organizationRepository, SubscriptionService subscriptionService) {
         this.organizationRepository = organizationRepository;
+        this.subscriptionService = subscriptionService;
     }
 
     @Transactional
-    public OrganizationResponse createOrganization(CreateOrganizationRequest request, Long currentUserId) {
+    public OrganizationResponse createOrganization(CreateOrganizationRequest request, Long userId, UUID userUuid) {
         if (organizationRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Organization already exists with name: " + request.getName());
         }
@@ -33,17 +37,26 @@ public class OrganizationService {
             request.getName(), 
             request.getDescription(), 
             request.getType(), 
-            request.getParentOrganizationId(), 
-            currentUserId
+            userId,
+            userUuid, 
+            userId
         );
         organization = organizationRepository.save(organization);
+
+        if (request.getSubscriptionPackageUuid() != null) {
+            SubscribeOrganizationRequest subRequest = new SubscribeOrganizationRequest();
+            subRequest.setOrganizationUuid(organization.getOrganizationUuid());
+            subRequest.setPackageUuid(request.getSubscriptionPackageUuid());
+            subRequest.setPaymentReference("AUTO-ACTIVATED");
+            subscriptionService.subscribeOrganization(subRequest);
+        }
 
         return mapToResponse(organization);
     }
 
     @Transactional
     public OrganizationResponse updateOrganization(UpdateOrganizationRequest request, Long currentUserId) {
-        Organization organization = organizationRepository.findByUuid(request.getUuid())
+        Organization organization = organizationRepository.findByOrganizationUuid(request.getUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + request.getUuid()));
 
         if (!organization.getName().equals(request.getName()) && organizationRepository.existsByName(request.getName())) {
@@ -55,9 +68,7 @@ public class OrganizationService {
         if (request.getType() != null) {
             organization.setType(request.getType());
         }
-        if (request.getParentOrganizationId() != null) {
-            organization.setParentOrganizationId(request.getParentOrganizationId());
-        }
+
         organization.setUpdatedBy(currentUserId);
         
         organization = organizationRepository.save(organization);
@@ -66,18 +77,18 @@ public class OrganizationService {
     }
 
     @Transactional
-    public void deleteOrganization(UUID uuid, Long currentUserId) {
-        Organization organization = organizationRepository.findByUuid(uuid)
+    public void deleteOrganization(UUID uuid, Long userId) {
+        Organization organization = organizationRepository.findByOrganizationUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + uuid));
         
         organization.setActive(false);
-        organization.setUpdatedBy(currentUserId);
+        organization.setUpdatedBy(userId);
         organizationRepository.save(organization);
     }
 
     @Transactional(readOnly = true)
     public OrganizationResponse getOrganizationByUuid(UUID uuid) {
-        Organization organization = organizationRepository.findByUuid(uuid)
+        Organization organization = organizationRepository.findByOrganizationUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + uuid));
                 
         return mapToResponse(organization);
@@ -90,14 +101,21 @@ public class OrganizationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<OrganizationResponse> getOrganizationsByUserUuid(UUID userUuid) {
+        return organizationRepository.findByUserUuid(userUuid).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     private OrganizationResponse mapToResponse(Organization organization) {
         OrganizationResponse response = new OrganizationResponse();
-        response.setUuid(organization.getUuid());
+        response.setOrgId(organization.getOrganizationId());
+        response.setUuid(organization.getOrganizationUuid());
         response.setName(organization.getName());
         response.setDescription(organization.getDescription());
         response.setActive(organization.isActive());
         response.setType(organization.getType());
-        response.setParentOrganizationId(organization.getParentOrganizationId());
         return response;
     }
 }

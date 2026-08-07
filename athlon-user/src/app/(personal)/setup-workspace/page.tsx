@@ -45,15 +45,11 @@ function SetupWorkspaceForm() {
 
     const fetchPackage = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050'}/api/identity/subscriptions/getAllPackages`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050'}/api/identity/subscriptions/getPackageByUuid/${packageId}`);
         const json = await response.json();
 
         if (json.success && json.data) {
-          const pkg = json.data.find((p: any) => p.uuid === packageId);
-          if (!pkg) {
-            router.push('/subscription');
-            return;
-          }
+          const pkg = json.data;
 
           let type: WorkspaceType = 'PERSONAL';
           let icon = Trophy;
@@ -137,19 +133,13 @@ function SetupWorkspaceForm() {
       const orgRes = await OrganizationService.create({
         name: finalOrgName,
         type: finalOrgType,
-        isActive: 1
+        subscriptionPackageUuid: selectedModule.id // Pass package UUID to auto-subscribe
       });
 
-      if (orgRes.orgId) {
-        newOrgIdStr = orgRes.orgId.toString();
-        finalOrgName = orgRes.name || finalOrgName;
-        finalOrgType = (orgRes.type as WorkspaceType) || finalOrgType;
-
-        await OrganizationService.updateSubscription(
-          orgRes.orgId,
-          'ACTIVE',
-          `mock_pay_${Date.now()}`
-        ).catch(err => console.error('Failed to update subscription status', err));
+      if (orgRes && orgRes.data && orgRes.data.uuid) {
+        newOrgIdStr = orgRes.data.uuid;
+        finalOrgName = orgRes.data.name || finalOrgName;
+        finalOrgType = (orgRes.data.type as WorkspaceType) || finalOrgType;
       }
     } catch (err) {
       console.warn('API Create Organization failed, proceeding with local simulation', err);

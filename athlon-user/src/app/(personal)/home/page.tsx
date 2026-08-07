@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { TournamentService, Tournament } from '@/lib/api/tournaments';
+import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 
 
 
@@ -43,6 +45,20 @@ export default function PersonalHomePage() {
   const { personalProfile, organizations } = useWorkspaceStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [publicTournaments, setPublicTournaments] = useState<Tournament[]>([]);
+
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const res = await TournamentService.getAll();
+        const activePublic = res.data.filter((t: Tournament) => t.visibility === 'PUBLIC');
+        setPublicTournaments(activePublic);
+      } catch (err) {
+        console.error("Failed to load tournaments", err);
+      }
+    };
+    fetchTournaments();
+  }, []);
 
 
 
@@ -242,6 +258,26 @@ export default function PersonalHomePage() {
             )}
           </div>
         </div>
+
+        {/* PUBLIC TOURNAMENTS */}
+        {publicTournaments.length > 0 && (
+          <div className="px-6 pb-8">
+            <div className="flex items-center justify-between mb-4 pl-1 pr-2">
+              <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Public Tournaments</h2>
+              <Link href="/tournaments" className="text-[10px] font-bold text-[#1B9C56] uppercase tracking-wider flex items-center hover:underline">
+                View All <ChevronRight className="w-3 h-3 ml-0.5" />
+              </Link>
+            </div>
+            
+            <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+              {publicTournaments.map(tournament => (
+                <div key={tournament.tournamentId} className="snap-start shrink-0 w-[300px]">
+                  <PublicTournamentCard tournament={tournament} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>
 

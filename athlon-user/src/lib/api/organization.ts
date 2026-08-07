@@ -15,6 +15,7 @@ export interface Organization {
   website?: string;
   logo?: string;
   isActive?: number;
+  subscriptionPackageUuid?: string;
 }
 
 export interface OrganizationMember {
@@ -27,19 +28,22 @@ export interface OrganizationMember {
 
 export const OrganizationService = {
   create: (data: Organization) => 
-    api.post<Organization>('/organization/createOrganization', data),
+    api.post<any>('/api/identity/organizations/createOrganization', data),
     
   update: (orgId: number, data: Organization) => 
-    api.post<Organization>(`/organization/updateOrganization/${orgId}`, data),
+    api.post<any>(`/api/identity/organizations/updateOrganization`, data),
     
   updateSubscription: (orgId: number, status: string, paymentRef?: string) => 
-    api.post<Organization>(`/organization/updateSubscription/${orgId}?status=${status}${paymentRef ? `&paymentRef=${paymentRef}` : ''}`, {}),
+    api.post<any>(`/organization/updateSubscription/${orgId}?status=${status}${paymentRef ? `&paymentRef=${paymentRef}` : ''}`, {}),
     
-  getById: (orgId: number) => 
-    api.get<Organization>(`/organization/getOrganizationById/${orgId}`),
+  getById: (orgUuid: string) => 
+    api.get<any>(`/api/identity/organizations/getOrganizationByUuid/${orgUuid}`),
     
   getAll: () => 
-    api.get<Organization[]>('/organization/getAllOrganizations'),
+    api.get<any>('/api/identity/organizations/getAllOrganizations'),
+    
+  getByUserUuid: (userUuid: string) => 
+    api.get<any>(`/api/identity/organizations/getByUserUuid/${userUuid}`),
     
   addMember: (orgId: number, playerId: number, role: string) => 
     api.post<OrganizationMember>(`/organization/addMember/${orgId}?playerId=${playerId}&role=${role}`, {}),

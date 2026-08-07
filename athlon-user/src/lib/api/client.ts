@@ -1,3 +1,5 @@
+import { useAuthStore } from '../store/useAuthStore';
+
 export class ApiError extends Error {
   public status: number;
   public data: any;
@@ -16,12 +18,29 @@ export const fetchClient = async <T>(
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
   const url = `${baseUrl}${endpoint}`;
 
-  // Here you can inject tokens from localStorage/sessionStorage if available
-  // e.g. const token = localStorage.getItem('token');
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
+  // Extract identity and auth token from Zustand store
+  const { token, userId, userUuid } = useAuthStore.getState();
+
+  const headers: Record<string, string> = {
+    ...options.headers as Record<string, string>,
   };
+
+  // Only set default Content-Type if it's not FormData
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  if (userId) {
+    headers['X-User-Id'] = userId;
+  }
+
+  if (userUuid) {
+    headers['X-User-Uuid'] = userUuid;
+  }
 
   try {
     const response = await fetch(url, {

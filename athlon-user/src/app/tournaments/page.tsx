@@ -1,11 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, Search, MapPin, Calendar, Users, DollarSign, Trophy, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Search, MapPin, Calendar, Users, DollarSign, Trophy, ChevronRight, ActivityIcon } from 'lucide-react';
 import Link from 'next/link';
+import { TournamentService, Tournament } from '@/lib/api/tournaments';
 
 export default function TournamentsPage() {
   const [activeTab, setActiveTab] = useState('upcoming');
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const res = await TournamentService.getAll();
+        const activePublic = res.data.filter((t: Tournament) => t.visibility === 'PUBLIC');
+        setTournaments(activePublic);
+      } catch (err) {
+        console.error("Failed to load tournaments", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTournaments();
+  }, []);
 
   const tabs = [
     { id: 'upcoming', label: 'Upcoming' },
@@ -13,44 +31,7 @@ export default function TournamentsPage() {
     { id: 'completed', label: 'Completed' },
   ];
 
-  const tournaments = [
-    {
-      id: 1,
-      title: 'District Badminton Championship 2024',
-      status: 'upcoming',
-      date: '25 Jul - 28 Jul 2024',
-      location: 'Elite Sports Academy',
-      participants: '128 / 256',
-      prize: '₹50,000',
-      entryFee: '₹1,500',
-      categories: ['Men Singles', 'Women Singles', 'Mixed Doubles'],
-      color: 'bg-[#1B9C56]',
-    },
-    {
-      id: 2,
-      title: 'Junior State Ranking Tournament',
-      status: 'upcoming',
-      date: '05 Aug - 08 Aug 2024',
-      location: 'Govt. Indoor Stadium',
-      participants: '340 / 500',
-      prize: '₹1,00,000',
-      entryFee: '₹1,000',
-      categories: ['U-15', 'U-17', 'U-19'],
-      color: 'bg-[#1B9C56]',
-    },
-    {
-      id: 3,
-      title: 'Corporate Smash League Season 2',
-      status: 'upcoming',
-      date: '12 Aug - 14 Aug 2024',
-      location: 'Smash Arena',
-      participants: '32 / 64 Teams',
-      prize: '₹2,50,000',
-      entryFee: '₹5,000 / Team',
-      categories: ['Team Event', 'Corporate Mix'],
-      color: 'bg-[#1B9C56]',
-    }
-  ];
+
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-[#1B9C56] selection:text-black">
@@ -100,60 +81,78 @@ export default function TournamentsPage() {
 
         {/* Tournament Cards List */}
         <div className="flex flex-col gap-5">
-          {tournaments.map((tournament) => (
-            <div key={tournament.id} className="bg-surface border border-foreground/10 hover:border-foreground/30 rounded-[24px] overflow-hidden transition-colors shadow-lg cursor-pointer group">
-              
-              {/* Header / Gradient Banner */}
-              <div className={`h-1.5 w-full ${tournament.color}`} />
-              
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <h2 className="text-sm sm:text-base font-black leading-tight text-foreground group-hover:text-[#1B9C56] transition-colors">
-                    {tournament.title}
-                  </h2>
-                  <div className="w-10 h-10 shrink-0 rounded-xl bg-background border border-foreground/10 flex items-center justify-center">
-                    <Trophy className={`w-5 h-5 text-foreground/50 group-hover:text-[#1B9C56] transition-colors`} />
-                  </div>
-                </div>
-
-                {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-y-3 gap-x-2 mb-5">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-[#FF7722]" />
-                    <span className="text-[10px] sm:text-xs text-foreground/70">{tournament.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-orange-400" />
-                    <span className="text-[10px] sm:text-xs text-foreground/70 truncate">{tournament.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-3.5 h-3.5 text-[#1B9C56]" />
-                    <span className="text-[10px] sm:text-xs text-foreground/70">Prize: <span className="font-bold text-foreground">{tournament.prize}</span></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-3.5 h-3.5 text-purple-400" />
-                    <span className="text-[10px] sm:text-xs text-foreground/70">Fill: <span className="font-bold text-foreground">{tournament.participants}</span></span>
-                  </div>
-                </div>
-
-                {/* Categories & Actions */}
-                <div className="flex items-center justify-between border-t border-foreground/5 pt-4">
-                  <div className="flex flex-wrap items-center gap-1.5 max-w-[65%]">
-                    {tournament.categories.map((cat, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded border border-foreground/10 bg-background text-[9px] font-medium text-foreground/50 whitespace-nowrap">
-                        {cat}
-                      </span>
-                    ))}
-                  </div>
-                  
-                  <button className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#1B9C56] hover:text-foreground transition-colors bg-[#1B9C56]/10 px-3 py-1.5 rounded-lg">
-                    DETAILS <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-
-              </div>
+          {loading ? (
+            <div className="text-center py-12 text-foreground/50 text-sm font-bold uppercase tracking-widest">
+              Loading tournaments...
             </div>
-          ))}
+          ) : tournaments.length === 0 ? (
+            <div className="text-center py-12 text-foreground/50 text-sm font-bold uppercase tracking-widest">
+              No tournaments found
+            </div>
+          ) : tournaments.map((tournament) => {
+            const startDate = new Date(tournament.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const endDate = new Date(tournament.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            
+            return (
+              <Link href={`/tournaments/${tournament.tournamentUuid}`} key={tournament.tournamentId} className="bg-surface border border-foreground/10 hover:border-foreground/30 rounded-[24px] overflow-hidden transition-colors shadow-lg cursor-pointer group block">
+                
+                {/* Header / Gradient Banner */}
+                <div className="h-1.5 w-full bg-[#1B9C56]" />
+                
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <h2 className="text-sm sm:text-base font-black leading-tight text-foreground group-hover:text-[#1B9C56] transition-colors">
+                      {tournament.name}
+                    </h2>
+                    <div className="w-10 h-10 shrink-0 rounded-xl bg-background border border-foreground/10 flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-foreground/50 group-hover:text-[#1B9C56] transition-colors" />
+                    </div>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-2 mb-5">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-[#FF7722]" />
+                      <span className="text-[10px] sm:text-xs text-foreground/70">{startDate} - {endDate}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-orange-400" />
+                      <span className="text-[10px] sm:text-xs text-foreground/70 truncate">{tournament.location || 'TBD'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ActivityIcon className="w-3.5 h-3.5 text-[#1B9C56]" />
+                      <span className="text-[10px] sm:text-xs text-foreground/70">{tournament.sport}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-3.5 h-3.5 text-purple-400" />
+                      <span className="text-[10px] sm:text-xs text-foreground/70">Fee: <span className="font-bold text-foreground">{tournament.registrationFees ? `₹${tournament.registrationFees}` : 'Free'}</span></span>
+                    </div>
+                  </div>
+
+                  {/* Categories & Actions */}
+                  <div className="flex items-center justify-between border-t border-foreground/5 pt-4">
+                    <div className="flex flex-wrap items-center gap-1.5 max-w-[65%]">
+                      {tournament.category && tournament.category.split(',').map((cat, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded border border-foreground/10 bg-background text-[9px] font-medium text-foreground/50 whitespace-nowrap">
+                          {cat.trim()}
+                        </span>
+                      ))}
+                      {tournament.matchFormat && tournament.matchFormat.split(',').map((format, idx) => (
+                        <span key={`f-${idx}`} className="px-2 py-0.5 rounded border border-foreground/10 bg-background text-[9px] font-medium text-foreground/50 whitespace-nowrap">
+                          {format.trim()}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#1B9C56] group-hover:text-foreground transition-colors bg-[#1B9C56]/10 px-3 py-1.5 rounded-lg">
+                      DETAILS <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </div>
+
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
       </main>

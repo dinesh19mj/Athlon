@@ -1,35 +1,109 @@
 'use client';
 
-import { ArrowLeft, Settings, MapPin, Edit3, Wallet, Trophy, Target, Zap, Activity, UserPlus, ChevronRight, LogOut, CreditCard, User as UserIcon, Gift, Mail, Phone, Key, Trash, FileText, ShieldCheck as ShieldAlert, Plus } from 'lucide-react';
+import { ArrowLeft, Settings, MapPin, Edit3, Wallet, Trophy, Target, Zap, Activity, UserPlus, ChevronRight, LogOut, CreditCard, User as UserIcon, Gift, Mail, Phone, Key, Trash, FileText, ShieldCheck as ShieldAlert, Plus, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ContextSwitcher from '@/components/ContextSwitcher';
+import MyOrganizationsList from '@/components/MyOrganizationsList';
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
+import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { PlayerService } from '@/lib/api/player';
-
+import { UserService, UserResponse, SportsProfileResponse } from '@/lib/api/user';
+import { OrganizationService, Organization } from '@/lib/api/organization';
 
 export default function ProfilePage() {
-  const { userId: playerId, token, logout, userEmail } = useAuthStore();
-  const [profile, setProfile] = useState<any>(null);
+  const { userId: playerId, userUuid, token, logout, userEmail } = useAuthStore();
+  const { activeWorkspaceId, organizations: storeOrgs, setOrganizations: setStoreOrganizations, personalProfile, setPersonalProfile } = useWorkspaceStore();
+  const [profile, setProfile] = useState<UserResponse | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
 
-  const [roles, setRoles] = useState<string[]>([]);
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const sportsProfiles = [
-    { id: 1, sport: 'Badminton', level: 'Intermediate', handedness: 'Right' },
-    { id: 2, sport: 'Cricket', level: 'Amateur', handedness: 'Right' },
-  ];
-  const [selectedSportId, setSelectedSportId] = useState(1);
+  const sportsProfiles = profile?.sportsProfiles || [];
+  const [selectedSportId, setSelectedSportId] = useState<string | null>(null);
+
+  const [isAddingSport, setIsAddingSport] = useState(false);
+  const [newSportName, setNewSportName] = useState('Badminton');
+  const [newCategory, setNewCategory] = useState('Beginner');
+  const [newRanking, setNewRanking] = useState('');
+  const [newHighlights, setNewHighlights] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const handleEditProfileSubmit = async () => {
+    if (!userUuid) return;
+    setIsSavingProfile(true);
+    try {
+      const res = await UserService.updateUser({
+        uuid: userUuid,
+        firstName: editFirstName,
+        lastName: editLastName,
+        phone: editPhone
+      });
+      if (res.success && res.data) {
+        setProfile(res.data);
+        setIsEditingProfile(false);
+      }
+    } catch (error) {
+      console.error('Failed to update profile', error);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleAddSportsProfile = async () => {
+    if (!userUuid) return;
+    setIsSubmitting(true);
+    try {
+      const res = await UserService.addSportsProfile({
+        userUuid,
+        sportName: newSportName,
+        category: newCategory,
+        currentRanking: newRanking ? parseInt(newRanking) : undefined,
+        careerHighlights: newHighlights
+      });
+      if (res.success) {
+        setIsAddingSport(false);
+        setNewRanking('');
+        setNewHighlights('');
+        const profileRes = await UserService.getUserByUuid(userUuid);
+        if (profileRes.success && profileRes.data) {
+          setProfile(profileRes.data);
+          setSelectedSportId(res.data.uuid);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add sports profile', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (sportsProfiles.length > 0 && !selectedSportId) {
+      setSelectedSportId(sportsProfiles[0].uuid);
+    }
+  }, [sportsProfiles, selectedSportId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -52,9 +126,33 @@ export default function ProfilePage() {
     }
 
     const fetchProfile = async () => {
+      if (!userUuid) {
+        setLoading(false);
+        return;
+      }
       try {
-        const res = await PlayerService.getById(parseInt(playerId));
-        setProfile(res);
+        const [res, orgsRes] = await Promise.all([
+          UserService.getUserByUuid(userUuid),
+          OrganizationService.getByUserUuid(userUuid)
+        ]);
+        if (res.success && res.data) {
+          setProfile(res.data);
+          setPersonalProfile({
+            id: res.data.uuid,
+            name: `${res.data.firstName} ${res.data.lastName}`,
+            athlonId: '',
+            avatar: res.data.photo ? `http://localhost:5050/player/photo/${res.data.photo}` : ''
+          });
+        }
+        if (orgsRes?.data) {
+          setOrganizations(orgsRes.data);
+          setStoreOrganizations(orgsRes.data.map((o: any) => ({
+            id: o.uuid,
+            name: o.name,
+            type: o.type,
+            logo: o.logo
+          })));
+        }
       } catch (error) {
         console.error('Failed to fetch profile', error);
       } finally {
@@ -62,22 +160,8 @@ export default function ProfilePage() {
       }
     };
 
-    const fetchRoles = async () => {
-      try {
-        const res = await PlayerService.getRoles(parseInt(playerId));
-        // map if it returns object array or just strings
-        if (Array.isArray(res)) {
-          // Check if it's returning strings or objects based on previous mock
-          setRoles(res.map(r => typeof r === 'string' ? r : (r as any).roleName || r));
-        }
-      } catch (error) {
-        console.error('Failed to fetch roles', error);
-      }
-    };
-
     fetchProfile();
-    fetchRoles();
-  }, [playerId, token]);
+  }, [playerId, userUuid, token]);
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -143,7 +227,7 @@ export default function ProfilePage() {
                 <div className="px-4 py-2 border-b border-foreground/5">
                   <ContextSwitcher />
                 </div>
-                <button onClick={() => setIsSettingsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5">
+                <button onClick={() => { setIsSettingsOpen(false); setEditFirstName(profile?.firstName || ''); setEditLastName(profile?.lastName || ''); setEditPhone(profile?.phone || ''); setIsEditingProfile(true); }} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5">
                   <Edit3 className="w-4 h-4 text-foreground/70" /> Edit Profile
                 </button>
                 <button onClick={() => setIsSettingsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5">
@@ -198,14 +282,31 @@ export default function ProfilePage() {
             />
           </div>
 
-          <h2 className="text-2xl font-black text-foreground tracking-wide mt-2">
-            {profile ? `${profile.firstName} ${profile.lastName}` : 'Dinesh Kumar'}
-          </h2>
+          {!isEditingProfile ? (
+            <>
+              <h2 className="text-2xl font-black text-foreground tracking-wide mt-2">
+                {profile ? `${profile.firstName} ${profile.lastName}` : 'Dinesh Kumar'}
+              </h2>
 
-          <div className="flex items-center gap-1.5 text-foreground/50 mt-1">
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">{profile?.bio || 'Bangalore, India'}</span>
-          </div>
+              <div className="flex items-center gap-1.5 text-foreground/50 mt-1">
+                <MapPin className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">{profile?.phone || 'Bangalore, India'}</span>
+              </div>
+            </>
+          ) : (
+            <div className="w-full mt-4 flex flex-col gap-3">
+              <input type="text" placeholder="First Name" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-[#1B9C56] outline-none" />
+              <input type="text" placeholder="Last Name" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-[#1B9C56] outline-none" />
+              <input type="text" placeholder="Phone Number" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-[#1B9C56] outline-none" />
+              <div className="flex justify-end gap-2 mt-2">
+                <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-xs font-bold text-foreground/60 hover:text-foreground">Cancel</button>
+                <button onClick={handleEditProfileSubmit} disabled={isSavingProfile} className="px-5 py-2.5 text-xs font-bold bg-[#1B9C56] text-black rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+                  {isSavingProfile && <span className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          )}
 
 
         </section>
@@ -242,10 +343,14 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Current Workspace</span>
-              <span className="text-2xl font-black text-white">Player</span>
+              <span className="text-2xl font-black text-white">
+                {!isMounted ? '...' : (activeWorkspaceId === 'PERSONAL' 
+                  ? 'Personal Space' 
+                  : (storeOrgs.find(o => o.id === activeWorkspaceId)?.name || 'Personal Space'))}
+              </span>
             </div>
           </div>
-          <button className="bg-[#1B9C56]/10 text-[#1B9C56] hover:bg-[#1B9C56]/20 border border-[#1B9C56]/30 px-4 py-2 rounded-xl text-sm font-bold transition-colors z-10">
+          <button onClick={() => setIsSettingsOpen(true)} className="bg-[#1B9C56]/10 text-[#1B9C56] hover:bg-[#1B9C56]/20 border border-[#1B9C56]/30 px-4 py-2 rounded-xl text-sm font-bold transition-colors z-10">
             Switch
           </button>
         </section>
@@ -272,43 +377,77 @@ export default function ProfilePage() {
               <Activity className="w-4 h-4 text-[#1B9C56]" />
               <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">Sports Profile</span>
             </div>
-            <button className="text-[10px] font-bold text-[#1B9C56] hover:text-white transition-colors flex items-center gap-1 bg-[#1B9C56]/10 px-2 py-1 rounded-md">
+            <button onClick={() => setIsAddingSport(true)} className="text-[10px] font-bold text-[#1B9C56] hover:text-white transition-colors flex items-center gap-1 bg-[#1B9C56]/10 px-2 py-1 rounded-md">
               <Plus className="w-3 h-3" /> Add New
             </button>
           </div>
 
           <div className="px-4 py-3 border-b border-foreground/5 overflow-x-auto hide-scrollbar flex gap-2">
-            {sportsProfiles.map(sp => (
-              <button
-                key={sp.id}
-                onClick={() => setSelectedSportId(sp.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${selectedSportId === sp.id
-                    ? 'bg-[#1B9C56] text-black'
-                    : 'bg-surface border border-foreground/10 text-foreground/70 hover:border-[#1B9C56]/50'
-                  }`}
-              >
-                {sp.sport}
-              </button>
-            ))}
+            {sportsProfiles.length === 0 ? (
+              <span className="text-sm text-foreground/50">No sports profiles found.</span>
+            ) : (
+              sportsProfiles.map(sp => (
+                <button
+                  key={sp.uuid}
+                  onClick={() => setSelectedSportId(sp.uuid)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${selectedSportId === sp.uuid
+                      ? 'bg-[#1B9C56] text-black'
+                      : 'bg-surface border border-foreground/10 text-foreground/70 hover:border-[#1B9C56]/50'
+                    }`}
+                >
+                  {sp.sportName}
+                </button>
+              ))
+            )}
           </div>
 
-          {sportsProfiles.filter(sp => sp.id === selectedSportId).map(sp => (
-            <div key={sp.id}>
+          {isAddingSport && (
+            <div className="p-4 border-b border-foreground/5 bg-foreground/5">
+              <div className="flex flex-col gap-3">
+                <select value={newSportName} onChange={(e) => setNewSportName(e.target.value)} className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-[#1B9C56] outline-none">
+                  <option value="Badminton">Badminton</option>
+                  <option value="Cricket">Cricket</option>
+                  <option value="Football">Football</option>
+                  <option value="Volleyball">Volleyball</option>
+                </select>
+                <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-[#1B9C56] outline-none">
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                  <option value="Professional">Professional</option>
+                </select>
+                <input type="number" placeholder="Current Ranking (Optional)" value={newRanking} onChange={(e) => setNewRanking(e.target.value)} className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-[#1B9C56] outline-none placeholder:text-foreground/40" />
+                <textarea placeholder="Career Highlights (Optional)" value={newHighlights} onChange={(e) => setNewHighlights(e.target.value)} className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-[#1B9C56] outline-none resize-none h-24 placeholder:text-foreground/40" />
+                <div className="flex justify-end gap-3 mt-2">
+                  <button onClick={() => setIsAddingSport(false)} className="px-4 py-2 text-xs font-bold text-foreground/60 hover:text-foreground">Cancel</button>
+                  <button onClick={handleAddSportsProfile} disabled={isSubmitting} className="px-5 py-2.5 text-xs font-bold bg-[#1B9C56] text-black rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(27,156,86,0.2)]">
+                    {isSubmitting && <span className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
+                    Save Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isAddingSport && sportsProfiles.filter(sp => sp.uuid === selectedSportId).map(sp => (
+            <div key={sp.uuid}>
               <div className="px-4 py-4 flex items-center justify-between border-b border-foreground/5">
                 <span className="text-sm font-medium text-foreground/60">Sport</span>
-                <span className="text-sm font-medium text-white">{sp.sport}</span>
+                <span className="text-sm font-medium text-white">{sp.sportName}</span>
               </div>
               <div className="px-4 py-4 flex items-center justify-between border-b border-foreground/5">
-                <span className="text-sm font-medium text-foreground/60">Level</span>
-                <span className="text-sm font-medium text-white">{sp.level}</span>
+                <span className="text-sm font-medium text-foreground/60">Ranking</span>
+                <span className="text-sm font-medium text-white">{sp.currentRanking || 'N/A'}</span>
               </div>
               <div className="px-4 py-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground/60">Handedness</span>
-                <span className="text-sm font-medium text-white">{sp.handedness}</span>
+                <span className="text-sm font-medium text-foreground/60">Highlights</span>
+                <span className="text-sm font-medium text-white">{sp.careerHighlights || 'None'}</span>
               </div>
             </div>
           ))}
         </section>
+
+        <MyOrganizationsList />
 
         {/* REWARDS */}
         <section className="bg-[#0f171c] border border-[#1B9C56]/20 rounded-2xl overflow-hidden shadow-sm">

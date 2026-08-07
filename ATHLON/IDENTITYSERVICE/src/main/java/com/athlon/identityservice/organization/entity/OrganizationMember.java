@@ -1,16 +1,19 @@
 package com.athlon.identityservice.organization.entity;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "organization_members")
@@ -19,10 +22,10 @@ public class OrganizationMember {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "organizationmemberid", updatable = false, nullable = false)
-    private Long id;
+    private Long organizationMemberId;
 
     @Column(name = "organizationmemberuuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    private UUID organizationMemberUuid;
 
     @Column(name = "organizationid", nullable = false)
     private Long organizationId;
@@ -37,64 +40,70 @@ public class OrganizationMember {
     private UUID userUuid;
 
     @Column(name = "role", nullable = false, length = 100)
-    private String role; // e.g., ADMIN, PLAYER, COACH, OFFICIAL
+    private String role;
 
-    @Column(name = "isactive", nullable = false)
-    private boolean isActive;
+    @Column(name = "isactive")
+    private Integer isActive = 1;
 
-    @Column(name = "createdon", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "modifiedon")
+    @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "createdby")
+    @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "modifiedby")
+    @Column(name = "updated_by")
     private Long updatedBy;
 
     public OrganizationMember() {
     }
 
-    public OrganizationMember(Long organizationId, UUID organizationUuid, Long userId, UUID userUuid, String role, Long createdBy) {
+    public OrganizationMember(Long organizationId,
+                              UUID organizationUuid,
+                              Long userId,
+                              UUID userUuid,
+                              String role,
+                              Long createdBy) {
+
         this.organizationId = organizationId;
         this.organizationUuid = organizationUuid;
         this.userId = userId;
         this.userUuid = userUuid;
         this.role = role != null ? role : "MEMBER";
-        this.isActive = true;
         this.createdBy = createdBy;
+        this.isActive = 1;
     }
 
     @PrePersist
-    protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
+    public void prePersist() {
+
+        if (organizationMemberUuid == null) {
+            organizationMemberUuid = UUID.randomUUID();
         }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+
+        if (isActive == null) {
+            isActive = 1;
+        }
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public Long getOrganizationMemberId() {
+        return organizationMemberId;
     }
 
-    public Long getId() {
-        return id;
+    public void setOrganizationMemberId(Long organizationMemberId) {
+        this.organizationMemberId = organizationMemberId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public UUID getOrganizationMemberUuid() {
+        return organizationMemberUuid;
     }
 
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public void setOrganizationMemberUuid(UUID organizationMemberUuid) {
+        this.organizationMemberUuid = organizationMemberUuid;
     }
 
     public Long getOrganizationId() {
@@ -137,28 +146,28 @@ public class OrganizationMember {
         this.role = role;
     }
 
-    public boolean isActive() {
+    public Integer getIsActive() {
         return isActive;
     }
 
+    public void setIsActive(Integer isActive) {
+        this.isActive = isActive;
+    }
+
+    public boolean isActive() {
+        return isActive != null && isActive == 1;
+    }
+
     public void setActive(boolean active) {
-        isActive = active;
+        this.isActive = active ? 1 : 0;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public Long getCreatedBy() {
@@ -180,26 +189,27 @@ public class OrganizationMember {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof OrganizationMember)) return false;
         OrganizationMember that = (OrganizationMember) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(uuid, that.uuid) &&
-                Objects.equals(organizationId, that.organizationId) &&
-                Objects.equals(userId, that.userId);
+        return Objects.equals(organizationMemberId, that.organizationMemberId)
+                && Objects.equals(organizationMemberUuid, that.organizationMemberUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid, organizationId, userId);
+        return Objects.hash(organizationMemberId, organizationMemberUuid);
     }
 
     @Override
     public String toString() {
         return "OrganizationMember{" +
-                "id=" + id +
-                ", uuid=" + uuid +
+                "organizationMemberId=" + organizationMemberId +
+                ", organizationMemberUuid=" + organizationMemberUuid +
                 ", organizationId=" + organizationId +
+                ", organizationUuid=" + organizationUuid +
                 ", userId=" + userId +
+                ", userUuid=" + userUuid +
+                ", role='" + role + '\'' +
                 ", isActive=" + isActive +
                 '}';
     }

@@ -36,6 +36,9 @@ public class SportsProfile {
     @Column(name = "sportname", nullable = false, length = 100)
     private String sportName;
 
+    @Column(name = "category", nullable = false, length = 100)
+    private String category;
+
     @Column(name = "current_ranking")
     private Integer currentRanking;
 
@@ -59,10 +62,14 @@ public class SportsProfile {
     public SportsProfile() {
     }
 
-    public SportsProfile(Long userId, UUID userUuid, String sportName) {
+    public SportsProfile(Long userId,
+                         UUID userUuid,
+                         String sportName,
+                         String category) {
         this.userId = userId;
         this.userUuid = userUuid;
         this.sportName = sportName;
+        this.category = category;
         this.verificationStatus = "PENDING";
         this.isActive = 1;
     }
@@ -121,6 +128,14 @@ public class SportsProfile {
 
     public void setSportName(String sportName) {
         this.sportName = sportName;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public Integer getCurrentRanking() {
@@ -193,6 +208,7 @@ public class SportsProfile {
                 ", userId=" + userId +
                 ", userUuid=" + userUuid +
                 ", sportName='" + sportName + '\'' +
+                ", category='" + category + '\'' +
                 ", currentRanking=" + currentRanking +
                 ", verificationStatus='" + verificationStatus + '\'' +
                 ", careerHighlights='" + careerHighlights + '\'' +

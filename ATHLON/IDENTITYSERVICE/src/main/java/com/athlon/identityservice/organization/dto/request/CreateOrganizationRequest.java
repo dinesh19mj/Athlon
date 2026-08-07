@@ -14,7 +14,9 @@ public class CreateOrganizationRequest {
     @Size(max = 100, message = "Type must not exceed 100 characters")
     private String type;
 
-    private Long parentOrganizationId;
+
+    private java.util.UUID subscriptionPackageUuid;
+
     public CreateOrganizationRequest() {
     }
 
@@ -42,11 +44,12 @@ public class CreateOrganizationRequest {
         this.type = type;
     }
 
-    public Long getParentOrganizationId() {
-        return parentOrganizationId;
+
+    public java.util.UUID getSubscriptionPackageUuid() {
+        return subscriptionPackageUuid;
     }
 
-    public void setParentOrganizationId(Long parentOrganizationId) {
-        this.parentOrganizationId = parentOrganizationId;
+    public void setSubscriptionPackageUuid(java.util.UUID subscriptionPackageUuid) {
+        this.subscriptionPackageUuid = subscriptionPackageUuid;
     }
 }

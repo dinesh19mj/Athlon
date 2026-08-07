@@ -1,16 +1,19 @@
 package com.athlon.identityservice.organization.entity;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "organizations")
@@ -19,10 +22,10 @@ public class Organization {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "organizationid", updatable = false, nullable = false)
-    private Long id;
+    private Long organizationId;
 
     @Column(name = "organizationuuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    private UUID organizationUuid;
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;
@@ -30,67 +33,77 @@ public class Organization {
     @Column(name = "type", nullable = false, length = 100)
     private String type;
 
-    @Column(name = "parentorganizationid")
-    private Long parentOrganizationId; // Supports Hierarchy
+    @Column(name = "userid")
+    private Long userId;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "useruuid")
+    private UUID userUuid;
+
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "isactive", nullable = false)
-    private boolean isActive;
+    @Column(name = "isactive")
+    private Integer isActive = 1;
 
-    @Column(name = "createdon", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "modifiedon")
+    @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "createdby")
+    @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "modifiedby")
+    @Column(name = "updated_by")
     private Long updatedBy;
 
     public Organization() {
     }
 
-    public Organization(String name, String description, String type, Long parentOrganizationId, Long createdBy) {
+    public Organization(String name,
+                        String description,
+                        String type,
+                        Long userId,
+                        UUID userUuid,
+                        Long createdBy) {
+
         this.name = name;
         this.description = description;
         this.type = type != null ? type : "CLUB";
-        this.parentOrganizationId = parentOrganizationId;
-        this.isActive = true;
+        this.userId = userId;
+        this.userUuid = userUuid;
         this.createdBy = createdBy;
+        this.isActive = 1;
     }
 
     @PrePersist
-    protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
+    public void prePersist() {
+
+        if (organizationUuid == null) {
+            organizationUuid = UUID.randomUUID();
         }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+
+        if (isActive == null) {
+            isActive = 1;
+        }
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public Long getOrganizationId() {
+        return organizationId;
     }
 
-    public Long getId() {
-        return id;
+    public void setOrganizationId(Long organizationId) {
+        this.organizationId = organizationId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public UUID getOrganizationUuid() {
+        return organizationUuid;
     }
 
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public void setOrganizationUuid(UUID organizationUuid) {
+        this.organizationUuid = organizationUuid;
     }
 
     public String getName() {
@@ -109,12 +122,20 @@ public class Organization {
         this.type = type;
     }
 
-    public Long getParentOrganizationId() {
-        return parentOrganizationId;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setParentOrganizationId(Long parentOrganizationId) {
-        this.parentOrganizationId = parentOrganizationId;
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public UUID getUserUuid() {
+        return userUuid;
+    }
+
+    public void setUserUuid(UUID userUuid) {
+        this.userUuid = userUuid;
     }
 
     public String getDescription() {
@@ -125,28 +146,28 @@ public class Organization {
         this.description = description;
     }
 
-    public boolean isActive() {
+    public Integer getIsActive() {
         return isActive;
     }
 
+    public void setIsActive(Integer isActive) {
+        this.isActive = isActive;
+    }
+
+    public boolean isActive() {
+        return isActive != null && isActive == 1;
+    }
+
     public void setActive(boolean active) {
-        isActive = active;
+        this.isActive = active ? 1 : 0;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public Long getCreatedBy() {
@@ -168,24 +189,26 @@ public class Organization {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof Organization)) return false;
         Organization that = (Organization) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(uuid, that.uuid) &&
-                Objects.equals(name, that.name);
+        return Objects.equals(organizationId, that.organizationId)
+                && Objects.equals(organizationUuid, that.organizationUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid, name);
+        return Objects.hash(organizationId, organizationUuid);
     }
 
     @Override
     public String toString() {
         return "Organization{" +
-                "id=" + id +
-                ", uuid=" + uuid +
+                "organizationId=" + organizationId +
+                ", organizationUuid=" + organizationUuid +
                 ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", userId=" + userId +
+                ", userUuid=" + userUuid +
                 ", description='" + description + '\'' +
                 ", isActive=" + isActive +
                 ", createdAt=" + createdAt +

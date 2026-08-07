@@ -172,9 +172,10 @@ public class UserService {
             throw new DuplicateResourceException("Sports Profile already exists for this sport: " + request.getSportName());
         }
 
-        SportsProfile profile = new SportsProfile(user.getUserId(), user.getUserUuid(), request.getSportName());
+        SportsProfile profile = new SportsProfile(user.getUserId(), user.getUserUuid(), request.getSportName(), request.getCategory());
         profile.setCurrentRanking(request.getCurrentRanking());
         profile.setCareerHighlights(request.getCareerHighlights());
+        profile.setCategory(request.getCategory());
         
         profile = sportsProfileRepository.save(profile);
         

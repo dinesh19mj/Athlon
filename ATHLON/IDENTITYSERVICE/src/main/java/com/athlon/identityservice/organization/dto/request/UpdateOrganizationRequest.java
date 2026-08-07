@@ -17,7 +17,6 @@ public class UpdateOrganizationRequest {
     @Size(max = 100, message = "Type must not exceed 100 characters")
     private String type;
 
-    private Long parentOrganizationId;
 
     public UpdateOrganizationRequest() {
     }
@@ -52,13 +51,5 @@ public class UpdateOrganizationRequest {
 
     public void setType(String type) {
         this.type = type;
-    }
-
-    public Long getParentOrganizationId() {
-        return parentOrganizationId;
-    }
-
-    public void setParentOrganizationId(Long parentOrganizationId) {
-        this.parentOrganizationId = parentOrganizationId;
     }
 }

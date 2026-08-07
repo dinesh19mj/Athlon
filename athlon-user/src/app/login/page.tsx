@@ -38,15 +38,17 @@ export default function LoginPage() {
 
       const roles = payload.roles || [];
       const lowerRoles = roles.map((r: string) => r.toLowerCase());
-      const userId = payload.userId;
+      
+      const userIdStr = response.data.userId?.toString() || payload.userId;
+      const userUuidStr = response.data.userUuid;
 
       // Update store
-      login(identifier, token, userId);
+      login(identifier, token, userIdStr, userUuidStr);
 
       // Fetch user profile from IDENTITYSERVICE
-      if (userId) {
+      if (userUuidStr) {
         try {
-          const userProfileResp = await AuthService.getUserProfile(userId, token);
+          const userProfileResp = await AuthService.getUserProfile(userUuidStr, token);
           if (userProfileResp && userProfileResp.data) {
             const user = userProfileResp.data;
             useWorkspaceStore.getState().setPersonalProfile({
