@@ -2,51 +2,128 @@ package com.athlon.tournamentservice.dto.response;
 
 import com.athlon.tournamentservice.registration.entity.Registration;
 
+import java.util.List;
 import java.util.UUID;
 
 public class RegistrationResponse {
 
-    private Long id;
-    private UUID uuid;
+	private Long registrationId;
+    private UUID registrationUuid;
+
     private Long tournamentId;
-    private Long categoryId;
+    private UUID tournamentUuid;
+
     private String teamName;
-    private Long primaryContactId;
+
+    private String place;
+
     private String status;
-    private boolean isActive;
+
+    private String paymentStatus;
+
+    private List<PlayerResponse> players;
 
     public RegistrationResponse() {
     }
 
     public static RegistrationResponse fromEntity(Registration registration) {
-        if (registration == null) return null;
+
+        if (registration == null) {
+            return null;
+        }
+
         RegistrationResponse response = new RegistrationResponse();
-        response.setId(registration.getId());
-        response.setUuid(registration.getUuid());
+
+        response.setRegistrationId(registration.getRegistrationId());
+        response.setRegistrationUuid(registration.getRegistrationUuid());
         response.setTournamentId(registration.getTournamentId());
-        response.setCategoryId(registration.getCategoryId());
+        response.setTournamentUuid(registration.getTournamentUuid());
         response.setTeamName(registration.getTeamName());
-        response.setPrimaryContactId(registration.getPrimaryContactId());
+        response.setPlace(registration.getPlace());
         response.setStatus(registration.getStatus());
-        response.setActive(registration.isActive());
+        response.setPaymentStatus(registration.getPaymentStatus());
+
         return response;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public UUID getUuid() { return uuid; }
-    public void setUuid(UUID uuid) { this.uuid = uuid; }
-    public Long getTournamentId() { return tournamentId; }
-    public void setTournamentId(Long tournamentId) { this.tournamentId = tournamentId; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public String getTeamName() { return teamName; }
-    public void setTeamName(String teamName) { this.teamName = teamName; }
-    public Long getPrimaryContactId() { return primaryContactId; }
-    public void setPrimaryContactId(Long primaryContactId) { this.primaryContactId = primaryContactId; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
+    public static RegistrationResponse fromEntity(Registration registration, List<PlayerResponse> players) {
+        RegistrationResponse response = fromEntity(registration);
+        if (response != null) {
+            response.setPlayers(players);
+        }
+        return response;
+    }
+
+    public Long getRegistrationId() {
+        return registrationId;
+    }
+
+    public void setRegistrationId(Long registrationId) {
+        this.registrationId = registrationId;
+    }
+
+    public UUID getRegistrationUuid() {
+        return registrationUuid;
+    }
+
+    public void setRegistrationUuid(UUID registrationUuid) {
+        this.registrationUuid = registrationUuid;
+    }
+
+    public Long getTournamentId() {
+        return tournamentId;
+    }
+
+    public void setTournamentId(Long tournamentId) {
+        this.tournamentId = tournamentId;
+    }
+
+    public UUID getTournamentUuid() {
+        return tournamentUuid;
+    }
+
+    public void setTournamentUuid(UUID tournamentUuid) {
+        this.tournamentUuid = tournamentUuid;
+    }
+
+    public String getTeamName() {
+        return teamName;
+    }
+
+    public void setTeamName(String teamName) {
+        this.teamName = teamName;
+    }
+
+    public String getPlace() {
+        return place;
+    }
+
+    public void setPlace(String place) {
+        this.place = place;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public List<PlayerResponse> getPlayers() {
+        return players;
+    }
+
+    public void setPlayers(List<PlayerResponse> players) {
+        this.players = players;
+    }
 }
 

@@ -35,7 +35,7 @@ public class RegistrationController {
     }
 
     @GetMapping("/get/{uuid}")
-    public ResponseEntity<ApiResponse<RegistrationResponse>> getRegistrationByUuid(@PathVariable UUID uuid) {
+    public ResponseEntity<ApiResponse<RegistrationResponse>> getRegistrationByUuid(@PathVariable("uuid") UUID uuid) {
         RegistrationResponse response = registrationService.getRegistrationByUuid(uuid);
         return ResponseEntity.ok(ApiResponse.success("Registration retrieved successfully", response));
     }
@@ -54,11 +54,20 @@ public class RegistrationController {
 
     @PostMapping("/{uuid}/status")
     public ResponseEntity<ApiResponse<RegistrationResponse>> updateStatus(
-            @PathVariable UUID uuid, 
+            @PathVariable("uuid") UUID uuid, 
             @RequestParam("status") String status,
             @RequestParam(value = "updatedBy", required = false) Long updatedBy) {
         RegistrationResponse response = registrationService.updateStatus(uuid, status, updatedBy);
         return ResponseEntity.ok(ApiResponse.success("Registration status updated successfully", response));
+    }
+
+    @PostMapping("/{uuid}/payment-status")
+    public ResponseEntity<ApiResponse<RegistrationResponse>> updatePaymentStatus(
+            @PathVariable("uuid") UUID uuid, 
+            @RequestParam("status") String status,
+            @RequestParam(value = "updatedBy", required = false) Long updatedBy) {
+        RegistrationResponse response = registrationService.updatePaymentStatus(uuid, status, updatedBy);
+        return ResponseEntity.ok(ApiResponse.success("Registration payment status updated successfully", response));
     }
 }
 

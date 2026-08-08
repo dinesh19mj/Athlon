@@ -10,7 +10,15 @@ import java.util.UUID;
 
 @Repository
 public interface RegistrationPlayerRepository extends JpaRepository<RegistrationPlayer, Long> {
-    Optional<RegistrationPlayer> findByUuid(UUID uuid);
-    List<RegistrationPlayer> findByRegistrationIdAndIsActiveTrue(Long registrationId);
+	
+	Optional<RegistrationPlayer> findByRegistrationPlayerUuid(UUID registrationPlayerUuid);
+
+    List<RegistrationPlayer> findByRegistrationId(Long registrationId);
+
+    List<RegistrationPlayer> findByTournamentId(Long tournamentId);
+
+    List<RegistrationPlayer> findByPlayerId(Long playerId);
+
+    List<RegistrationPlayer> findByTournamentIdAndPlayerId(Long tournamentId, Long playerId);
 }
 

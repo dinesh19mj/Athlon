@@ -10,8 +10,19 @@ import java.util.UUID;
 
 @Repository
 public interface RegistrationRepository extends JpaRepository<Registration, Long> {
-    Optional<Registration> findByUuid(UUID uuid);
-    List<Registration> findByTournamentIdAndIsActiveTrue(Long tournamentId);
-    List<Registration> findByCategoryIdAndIsActiveTrue(Long categoryId);
-}
 
+	Optional<Registration> findByRegistrationUuid(UUID registrationUuid);
+
+	List<Registration> findByTournamentId(Long tournamentId);
+
+	List<Registration> findByTournamentIdAndStatus(Long tournamentId, String status);
+
+	List<Registration> findByPaymentStatus(String paymentStatus);
+
+	List<Registration> findByTournamentIdAndPaymentStatus(Long tournamentId, String paymentStatus);
+
+	List<Registration> findByTournamentIdAndStatusAndPaymentStatus(Long tournamentId, String status,
+			String paymentStatus);
+
+	List<Registration> findByCategoryIdAndStatus(Long categoryId, String status);
+}
