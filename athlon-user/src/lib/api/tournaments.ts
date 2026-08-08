@@ -64,15 +64,26 @@ export const CategoryService = {
     api.get<{ data: any[] }>(`/api/tournament/categories/organization/${orgId}`),
 };
 
+export interface RegistrationPlayer {
+  playerId?: number;
+  playerUuid?: string;
+  playerName: string;
+  phoneNumber?: string;
+}
+
 export interface Registration {
   id: number;
+  registrationId?: number;
   uuid: string;
+  registrationUuid?: string;
   tournamentId: number;
   categoryId: number;
   teamName: string;
   status: string;
+  paymentStatus?: string;
   createdAt: string;
   isActive: boolean;
+  players?: RegistrationPlayer[];
 }
 
 export const RegistrationService = {
@@ -80,4 +91,6 @@ export const RegistrationService = {
     api.get<{ data: Registration[] }>(`/api/tournament/registrations/get-by-tournament?tournamentId=${tournamentId}`),
   updateStatus: (uuid: string, status: string, updatedBy?: number) =>
     api.post<{ data: Registration }>(`/api/tournament/registrations/${uuid}/status?status=${status}${updatedBy ? `&updatedBy=${updatedBy}` : ''}`, {}),
+  updatePaymentStatus: (uuid: string, status: string, updatedBy?: number) =>
+    api.post<{ data: Registration }>(`/api/tournament/registrations/${uuid}/payment-status?status=${status}${updatedBy ? `&updatedBy=${updatedBy}` : ''}`, {}),
 };

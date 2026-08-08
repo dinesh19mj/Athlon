@@ -216,7 +216,10 @@ export default function PersonalTournamentDetailsPage() {
                 {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'Free'}
               </span>
             </div>
-            <button className="px-8 py-3 bg-[#1B9C56] text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-[0_5px_20px_rgba(27,156,86,0.3)] hover:scale-[1.02] active:scale-95 transition-transform">
+            <button 
+              onClick={() => router.push(`/home/tournaments/${tournamentUuid}/register`)}
+              className="px-8 py-3 bg-[#1B9C56] text-white font-black text-sm uppercase tracking-wider rounded-xl shadow-[0_5px_20px_rgba(27,156,86,0.3)] hover:scale-[1.02] active:scale-95 transition-transform"
+            >
               Register Now
             </button>
           </div>

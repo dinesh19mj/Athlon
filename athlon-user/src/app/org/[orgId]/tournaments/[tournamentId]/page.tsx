@@ -44,9 +44,27 @@ export default function TournamentDashboardPage() {
   const handleApprove = async (regUuid: string) => {
     try {
       await RegistrationService.updateStatus(regUuid, "APPROVED", userId);
-      setRegistrations(prev => prev.map(r => r.uuid === regUuid ? { ...r, status: "APPROVED" } : r));
+      setRegistrations(prev => prev.map(r => (r.registrationUuid === regUuid || r.uuid === regUuid) ? { ...r, status: "APPROVED" } : r));
     } catch (error) {
       console.error("Failed to approve registration", error);
+    }
+  };
+
+  const handleReject = async (regUuid: string) => {
+    try {
+      await RegistrationService.updateStatus(regUuid, "REJECTED", userId);
+      setRegistrations(prev => prev.map(r => (r.registrationUuid === regUuid || r.uuid === regUuid) ? { ...r, status: "REJECTED" } : r));
+    } catch (error) {
+      console.error("Failed to reject registration", error);
+    }
+  };
+
+  const handlePaymentUpdate = async (regUuid: string, status: string) => {
+    try {
+      await RegistrationService.updatePaymentStatus(regUuid, status, userId);
+      setRegistrations(prev => prev.map(r => (r.registrationUuid === regUuid || r.uuid === regUuid) ? { ...r, paymentStatus: status } : r));
+    } catch (error) {
+      console.error("Failed to update payment status", error);
     }
   };
 
@@ -76,7 +94,7 @@ export default function TournamentDashboardPage() {
     <div className="min-h-screen bg-background text-foreground pb-24">
       {/* Page Header */}
       <div className="bg-surface border-b border-border">
-        <div className="max-w-7xl mx-auto px-8 py-6">
+        <div className="max-w-7xl mx-auto px-8 pt-6">
           <Link
             href={`/org/${orgId}/tournaments`}
             className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-primary transition-colors mb-6"
@@ -113,22 +131,26 @@ export default function TournamentDashboardPage() {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-8 flex gap-8 border-t border-border mt-6">
-          {["overview", "registrations", "draws", "matches"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-4 text-sm font-medium capitalize border-b-2 transition-colors ${activeTab === tab
-                ? "border-primary text-primary"
-                : "border-transparent text-text-muted hover:text-foreground hover:border-border"
-                }`}
-            >
-              {tab}
-            </button>
-          ))}
+          {/* Navigation Tabs */}
+          <div className="flex gap-8 mt-8 overflow-x-auto whitespace-nowrap" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+            {["overview", "registrations", "draws", "matches"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-3 text-sm font-semibold capitalize border-b-2 -mb-px transition-colors ${activeTab === tab
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-foreground hover:border-border"
+                  }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -155,92 +177,12 @@ export default function TournamentDashboardPage() {
                 <p className="text-3xl font-black text-foreground">0</p>
               </div>
             </div>
-
-            {/* Tournament Details Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              <div className="bg-surface rounded-xl p-5 border border-border shadow-sm hover:border-primary/30 transition-colors">
-                <p className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                  <ActivityIcon className="w-3.5 h-3.5 text-primary" /> Sport
-                </p>
-                <p className="text-lg font-bold text-foreground">{tournament.sport}</p>
-              </div>
-
-              <div className="bg-surface rounded-xl p-5 border border-border shadow-sm hover:border-primary/30 transition-colors">
-                <p className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                  <TrophyIcon className="w-3.5 h-3.5 text-primary" /> Type
-                </p>
-                <p className="text-lg font-bold text-foreground">{tournament.tournamentType === 'TEAM_EVENT' ? 'Team League' : 'Knockout'}</p>
-              </div>
-
-              {tournament.matchFormat && (
-                <div className="bg-surface rounded-xl p-5 border border-border shadow-sm hover:border-primary/30 transition-colors">
-                  <p className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                    <UsersIcon className="w-3.5 h-3.5 text-primary" /> Format
-                  </p>
-                  <p className="text-sm font-bold text-foreground truncate" title={tournament.matchFormat}>
-                    {tournament.matchFormat.split(',').join(', ')}
-                  </p>
-                </div>
-              )}
-
-              <div className="bg-surface rounded-xl p-5 border border-border shadow-sm hover:border-primary/30 transition-colors">
-                <p className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                  <CalendarIcon className="w-3.5 h-3.5 text-primary" /> Dates
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                  {new Date(tournament.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {new Date(tournament.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </p>
-              </div>
-
-              <div className="bg-surface rounded-xl p-5 border border-border shadow-sm hover:border-primary/30 transition-colors">
-                <p className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                  <MapPinIcon className="w-3.5 h-3.5 text-primary" /> Location
-                </p>
-                <p className="text-lg font-bold text-foreground truncate" title={tournament.location}>
-                  {tournament.location || "TBD"}
-                </p>
-              </div>
-
-              <div className="bg-surface rounded-xl p-5 border border-border shadow-sm hover:border-primary/30 transition-colors">
-                <p className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                  <TicketIcon className="w-3.5 h-3.5 text-primary" /> Entry Fee
-                </p>
-                <p className="text-lg font-bold text-foreground">
-                  {tournament.registrationFees ? `₹${tournament.registrationFees}` : "Free"}
-                </p>
-              </div>
-              
-              {tournament.contactPhone && (
-                <div className="bg-surface rounded-xl p-5 border border-border shadow-sm hover:border-primary/30 transition-colors">
-                  <p className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                    <PhoneIcon className="w-3.5 h-3.5 text-primary" /> Contact
-                  </p>
-                  <p className="text-lg font-bold text-foreground">{tournament.contactPhone}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Categories Full Width */}
-            <div className="bg-surface rounded-xl p-6 border border-border">
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                <TrophyIcon className="w-5 h-5 text-primary" />
-                Categories
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                {(tournament.category ? tournament.category.split(',') : ["General"]).map((cat, idx) => (
-                  <div key={idx} className="px-4 py-2 bg-background rounded-lg border border-border text-foreground font-medium flex items-center gap-2.5 shadow-sm hover:border-primary/50 transition-colors">
-                    <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(27,156,86,0.8)]" />
-                    <span className="capitalize text-sm">{cat.trim().toLowerCase()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
         {activeTab === "registrations" && (
-          <div className="bg-surface rounded-xl border border-border overflow-hidden">
-            <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h3 className="text-lg font-semibold">Team Registrations</h3>
               <div className="relative">
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -252,51 +194,114 @@ export default function TournamentDashboardPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-background">
-                  <tr>
-                    <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Team Name</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {registrations.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-text-muted">
-                        No registrations found.
-                      </td>
-                    </tr>
-                  ) : (
-                    registrations.map((reg) => (
-                      <tr key={reg.id} className="hover:bg-background transition-colors">
-                        <td className="px-6 py-4 font-medium text-foreground">{reg.teamName}</td>
-                        <td className="px-6 py-4 text-text-muted">{tournament.category}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium uppercase ${reg.status === 'APPROVED'
-                            ? 'bg-success/20 text-success'
-                            : 'bg-primary/20 text-primary'
+            <div>
+              {registrations.length === 0 ? (
+                <div className="text-center py-12 text-text-muted">
+                  No registrations found.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {registrations.map((reg, rIdx) => (
+                    <div key={reg.registrationUuid || reg.uuid || rIdx} className="group relative bg-surface-elevated overflow-hidden border border-border rounded-2xl p-6 flex flex-col hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
+
+                      {/* Premium Accent Line */}
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+
+                      {/* Header Section */}
+                      <div className="flex justify-between items-start mb-5 pb-5 border-b border-border/50">
+                        <div className="flex gap-4">
+                          <div>
+                            <h4 className="font-bold text-foreground text-xl tracking-tight mb-0.5">{reg.teamName}</h4>
+                            <span className="text-xs font-medium text-text-muted uppercase tracking-widest">{tournament.category}</span>
+                          </div>
+                        </div>
+
+                        {/* Status Badges */}
+                        <div className="flex flex-col items-end gap-1.5">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm ${reg.status === 'APPROVED'
+                            ? 'bg-success/10 text-success border border-success/20'
+                            : reg.status === 'REJECTED'
+                              ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                              : 'bg-primary/10 text-primary border border-primary/20'
                             }`}>
                             {reg.status}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {reg.status === "PENDING" && (
+                          <span className={`inline-flex items-center px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm ${reg.paymentStatus === 'PAID'
+                            ? 'bg-success/10 text-success border border-success/20'
+                            : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                            }`}>
+                            {reg.paymentStatus === 'PAID' ? 'PAID' : 'UNPAID'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Players Section */}
+                      <div className="flex-1 mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <UsersIcon className="w-4 h-4 text-text-muted" />
+                          <h5 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Players</h5>
+                        </div>
+
+                        {reg.players && reg.players.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {reg.players.map((player, idx) => (
+                              <div key={idx} className="flex items-center justify-between bg-background/50 p-2.5 rounded-lg border border-border/30 hover:border-border transition-colors">
+                                <span className="text-sm font-medium text-foreground">{player.playerName}</span>
+                                {player.phoneNumber && (
+                                  <span className="text-xs font-mono text-text-muted bg-surface px-2 py-0.5 rounded text-right">{player.phoneNumber}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-6 bg-background/30 rounded-lg border border-dashed border-border/50">
+                            <UsersIcon className="w-6 h-6 text-text-muted/50 mb-2" />
+                            <span className="text-xs text-text-muted font-medium">No players listed</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions Footer */}
+                      <div className="mt-auto pt-4 flex flex-col gap-2.5">
+                        <div className="flex gap-2.5">
+                          {reg.status !== "APPROVED" && (
                             <button
-                              onClick={() => handleApprove(reg.uuid)}
-                              className="text-primary hover:text-primary/80 font-semibold text-sm transition-colors"
+                              onClick={() => handleApprove(reg.registrationUuid || reg.uuid)}
+                              className="flex-1 py-2.5 bg-success/10 hover:bg-success text-success hover:text-white font-semibold rounded-lg text-sm border border-success/20 hover:border-success transition-all shadow-sm"
                             >
                               Approve
                             </button>
                           )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                          {reg.status !== "REJECTED" && (
+                            <button
+                              onClick={() => handleReject(reg.registrationUuid || reg.uuid)}
+                              className="flex-1 py-2.5 bg-background hover:bg-destructive text-destructive hover:text-white font-semibold rounded-lg text-sm border border-border hover:border-destructive transition-all shadow-sm"
+                            >
+                              Reject
+                            </button>
+                          )}
+                        </div>
+
+                        {reg.paymentStatus !== "PAID" ? (
+                          <button
+                            onClick={() => handlePaymentUpdate(reg.registrationUuid || reg.uuid, "PAID")}
+                            className="w-full py-2.5 bg-[#1B9C56] hover:bg-[#1B9C56]/90 text-white font-bold rounded-lg text-sm transition-all shadow-sm shadow-[#1B9C56]/20"
+                          >
+                            Mark as Paid
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handlePaymentUpdate(reg.registrationUuid || reg.uuid, "PENDING")}
+                            className="w-full py-2.5 bg-surface hover:bg-background text-text-muted hover:text-foreground font-medium rounded-lg text-sm border border-border transition-all shadow-sm"
+                          >
+                            Mark as Unpaid
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
