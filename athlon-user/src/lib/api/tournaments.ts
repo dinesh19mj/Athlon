@@ -72,6 +72,8 @@ export interface Match {
   umpirePhone?: string;
   poolId?: number | null;
   poolName?: string | null;
+  teamAName?: string | null;
+  teamBName?: string | null;
 }
 
 export const MatchService = {
@@ -87,6 +89,11 @@ export const MatchService = {
 
   updateUmpire: async (matchUuid: string, umpirePhone: string) => {
     const res = await api.put<{ data: Match }>(`/api/tournament/matches/${matchUuid}/umpire?umpirePhone=${encodeURIComponent(umpirePhone)}`, {});
+    return res.data;
+  },
+
+  updateSchedule: async (matchUuid: string, scheduledTime: string) => {
+    const res = await api.put<{ data: Match }>(`/api/tournament/matches/${matchUuid}/schedule?scheduledTime=${encodeURIComponent(scheduledTime)}`, {});
     return res.data;
   }
 };

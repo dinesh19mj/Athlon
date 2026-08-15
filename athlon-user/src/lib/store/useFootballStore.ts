@@ -451,8 +451,15 @@ if (typeof window !== 'undefined') {
   useFootballStore.subscribe((state) => {
     if (!state.config?.id) return;
     
+    const payload = {
+      ...state,
+      teamAScore: String(state.goalsA),
+      teamBScore: String(state.goalsB),
+      isFinal: state.isMatchOver
+    };
+
     // Fire and forget POST to sync state to backend
-    ScoringService.syncState(state.config.id, state).catch(err => 
+    ScoringService.syncState(state.config.id, payload).catch(err => 
       console.error('Failed to sync football state with backend', err)
     );
   });

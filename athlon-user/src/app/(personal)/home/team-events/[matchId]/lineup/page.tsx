@@ -219,6 +219,7 @@ export default function LineupSubmissionPage() {
 
     if (existingPlayers) {
         existingPlayers.forEach(p => {
+            if (!p.teamEventCategoryId) return;
             const catIdStr = p.teamEventCategoryId.toString();
             if (!existingLineupState[catIdStr]) {
                 existingLineupState[catIdStr] = [];

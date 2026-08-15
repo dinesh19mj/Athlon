@@ -20,6 +20,7 @@ import { useMatchStore, GameCategory, Player } from '@/lib/store/useMatchStore';
 import { useCricketStore } from '@/lib/store/useCricketStore';
 import { useFootballStore } from '@/lib/store/useFootballStore';
 import { useVolleyballStore } from '@/lib/store/useVolleyballStore';
+import { MatchService } from '@/lib/api/matches';
 import Image from 'next/image';
 
 function MatchSetupContent() {
@@ -27,10 +28,25 @@ function MatchSetupContent() {
   const searchParams = useSearchParams();
   const setupMatch = useMatchStore(state => state.setupMatch);
 
+  const matchIdParam = searchParams.get('matchId');
+
+  useEffect(() => {
+    if (matchIdParam && matchIdParam !== 'live') {
+      MatchService.getById(matchIdParam)
+        .then((res: any) => {
+          if (res?.data?.status === 'COMPLETED') {
+            router.replace(`/live-score/${matchIdParam}`);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [matchIdParam, router]);
+
   const urlSport = searchParams.get('sport');
-  const initialSport = urlSport || '';
+  const initialSport = urlSport || 'Badminton';
   const urlCategory = searchParams.get('category');
   const initialCategory = urlCategory || 'Doubles';
+  const isFromUmpire = searchParams.get('fromUmpire') === 'true';
   
   const initialTeamA = searchParams.get('teamA')?.split(',') || ['', ''];
   const initialTeamB = searchParams.get('teamB')?.split(',') || ['', ''];
@@ -38,7 +54,7 @@ function MatchSetupContent() {
   const initialTeamBName = searchParams.get('teamBName') || 'Team B';
   const isPreFilled = !!searchParams.get('teamA') || !!searchParams.get('teamB');
 
-  const [activeTab, setActiveTab] = useState<'sport' | 'rules' | 'team1' | 'team2'>('sport');
+  const [activeTab, setActiveTab] = useState<'sport' | 'rules' | 'team1' | 'team2'>(isFromUmpire ? 'rules' : 'sport');
 
   const [sport, setSport] = useState(initialSport);
   const [category, setCategory] = useState<GameCategory>(initialCategory as GameCategory);
@@ -166,12 +182,15 @@ function MatchSetupContent() {
       setupMatch({
         id: searchParams.get('matchId') || `match-${Date.now()}`,
         category,
-        bestOfSets: sets,
+        bestOfSets: sets as 1 | 2 | 3,
         pointBreak: pointBreak,
         teamA: finalTeamA,
         teamB: finalTeamB,
         teamAName: searchParams.get('teamAName') || undefined,
         teamBName: searchParams.get('teamBName') || undefined,
+        tournamentName: searchParams.get('tournamentName') || undefined,
+        courtName: searchParams.get('courtName') || undefined,
+        sportType: sport,
       });
 
       const categoryId = searchParams.get('categoryId');
@@ -216,34 +235,46 @@ function MatchSetupContent() {
         </button>
       </header>
 
-      {/* SEGMENTED TABS */}
+      {/* SEGMENTED TABS / MATCH INFO BANNER */}
       <div className="px-4 pb-6 shrink-0 relative z-10">
-        <div className="flex bg-surface border border-foreground/5 p-1.5 rounded-2xl shadow-xl">
-          <button
-            onClick={() => setActiveTab('sport')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'sport' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-          >
-            Sport
-          </button>
-          <button
-            onClick={() => setActiveTab('rules')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'rules' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-          >
-            Rules
-          </button>
-          <button
-            onClick={() => setActiveTab('team1')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'team1' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-          >
-            {sport !== 'Badminton' ? 'Team 1' : isDoubles ? 'Team 1' : 'Player 1'}
-          </button>
-          <button
-            onClick={() => setActiveTab('team2')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'team2' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-          >
-            {sport !== 'Badminton' ? 'Team 2' : isDoubles ? 'Team 2' : 'Player 2'}
-          </button>
-        </div>
+        {isFromUmpire ? (
+          <div className="bg-gradient-to-r from-red-500/10 via-surface to-red-500/10 border border-red-500/20 p-4 rounded-2xl shadow-xl flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-red-400">Assigned Fixture</span>
+              <span className="text-sm font-bold text-foreground mt-0.5">{initialTeamAName} <span className="text-red-400 font-black">VS</span> {initialTeamBName}</span>
+            </div>
+            <span className="px-3 py-1 bg-red-500 text-white font-black text-[10px] uppercase tracking-widest rounded-lg">
+              {sport}
+            </span>
+          </div>
+        ) : (
+          <div className="flex bg-surface border border-foreground/5 p-1.5 rounded-2xl shadow-xl">
+            <button
+              onClick={() => setActiveTab('sport')}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'sport' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
+            >
+              Sport
+            </button>
+            <button
+              onClick={() => setActiveTab('rules')}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'rules' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
+            >
+              Rules
+            </button>
+            <button
+              onClick={() => setActiveTab('team1')}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'team1' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
+            >
+              {sport !== 'Badminton' ? 'Team 1' : isDoubles ? 'Team 1' : 'Player 1'}
+            </button>
+            <button
+              onClick={() => setActiveTab('team2')}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'team2' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
+            >
+              {sport !== 'Badminton' ? 'Team 2' : isDoubles ? 'Team 2' : 'Player 2'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* CONTENT AREA */}

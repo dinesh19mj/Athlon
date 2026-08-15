@@ -33,10 +33,30 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({ matches, registrat
 
   // Helper to render a single match card
   const MatchCard = ({ match }: { match: Match }) => {
-    const teamA = registrations.find(r => r.registrationUuid === match.teamARegistrationUuid || r.uuid === match.teamARegistrationUuid);
-    const teamB = registrations.find(r => r.registrationUuid === match.teamBRegistrationUuid || r.uuid === match.teamBRegistrationUuid);
-    const isLive = match.status === 'LIVE';
+    const teamA = registrations.find(r => 
+      (match.teamARegistrationUuid && (r.registrationUuid === match.teamARegistrationUuid || r.uuid === match.teamARegistrationUuid)) ||
+      (match.teamARegistrationId && (r.registrationId === match.teamARegistrationId || r.id === match.teamARegistrationId))
+    );
+    const teamB = registrations.find(r => 
+      (match.teamBRegistrationUuid && (r.registrationUuid === match.teamBRegistrationUuid || r.uuid === match.teamBRegistrationUuid)) ||
+      (match.teamBRegistrationId && (r.registrationId === match.teamBRegistrationId || r.id === match.teamBRegistrationId))
+    );
+
+    const isLive = match.status === 'LIVE' || match.status === 'IN_PROGRESS';
     const isCompleted = match.status === 'COMPLETED';
+
+    const teamAName = teamA?.teamName || match.teamAName || (match.teamARegistrationId || match.teamARegistrationUuid ? 'Player / Team A' : 'TBD');
+    const teamBName = teamB?.teamName || match.teamBName || (match.teamBRegistrationId || match.teamBRegistrationUuid ? 'Player / Team B' : 'TBD');
+
+    const isWinnerA = isCompleted && (
+      (match.winnerRegistrationUuid && teamA && (match.winnerRegistrationUuid === teamA.registrationUuid || match.winnerRegistrationUuid === teamA.uuid)) ||
+      (match.winnerRegistrationId && (match.winnerRegistrationId === match.teamARegistrationId || (teamA && (match.winnerRegistrationId === teamA.registrationId || match.winnerRegistrationId === teamA.id))))
+    );
+
+    const isWinnerB = isCompleted && (
+      (match.winnerRegistrationUuid && teamB && (match.winnerRegistrationUuid === teamB.registrationUuid || match.winnerRegistrationUuid === teamB.uuid)) ||
+      (match.winnerRegistrationId && (match.winnerRegistrationId === match.teamBRegistrationId || (teamB && (match.winnerRegistrationId === teamB.registrationId || match.winnerRegistrationId === teamB.id))))
+    );
 
     return (
       <div 
@@ -45,16 +65,16 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({ matches, registrat
       >
         <div className="flex flex-col gap-1.5">
           {/* Team A */}
-          <div className={`flex items-center justify-between gap-2 p-1.5 rounded-lg ${match.winnerRegistrationUuid === teamA?.registrationUuid && isCompleted ? 'bg-primary/10 border-primary/30' : 'bg-transparent'}`}>
+          <div className={`flex items-center justify-between gap-2 p-1.5 rounded-lg ${isWinnerA ? 'bg-primary/10 border border-primary/30' : 'bg-transparent'}`}>
             <div className="flex items-center gap-2 overflow-hidden">
-              <div className="w-5 h-5 rounded-full bg-surface border border-border flex items-center justify-center shrink-0">
-                <UsersIcon className="w-2.5 h-2.5 text-text-muted" />
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${isWinnerA ? 'bg-primary text-black border-primary font-bold' : 'bg-surface border-border text-text-muted'}`}>
+                <UsersIcon className="w-2.5 h-2.5" />
               </div>
-              <span className={`text-xs truncate ${teamA ? 'font-bold text-foreground' : 'font-medium text-text-muted italic'}`}>
-                {teamA ? teamA.teamName : 'TBD'}
+              <span className={`text-xs truncate ${teamAName !== 'TBD' ? 'font-bold text-foreground' : 'font-medium text-text-muted italic'}`}>
+                {teamAName}
               </span>
             </div>
-            {match.winnerRegistrationUuid === teamA?.registrationUuid && isCompleted && (
+            {isWinnerA && (
               <span className="text-[10px] font-black text-primary">WIN</span>
             )}
           </div>
@@ -62,16 +82,16 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({ matches, registrat
           <div className="w-full h-px bg-border/50 my-0.5"></div>
 
           {/* Team B */}
-          <div className={`flex items-center justify-between gap-2 p-1.5 rounded-lg ${match.winnerRegistrationUuid === teamB?.registrationUuid && isCompleted ? 'bg-primary/10 border-primary/30' : 'bg-transparent'}`}>
+          <div className={`flex items-center justify-between gap-2 p-1.5 rounded-lg ${isWinnerB ? 'bg-primary/10 border border-primary/30' : 'bg-transparent'}`}>
             <div className="flex items-center gap-2 overflow-hidden">
-              <div className="w-5 h-5 rounded-full bg-surface border border-border flex items-center justify-center shrink-0">
-                <UsersIcon className="w-2.5 h-2.5 text-text-muted" />
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${isWinnerB ? 'bg-primary text-black border-primary font-bold' : 'bg-surface border-border text-text-muted'}`}>
+                <UsersIcon className="w-2.5 h-2.5" />
               </div>
-              <span className={`text-xs truncate ${teamB ? 'font-bold text-foreground' : 'font-medium text-text-muted italic'}`}>
-                {teamB ? teamB.teamName : 'TBD'}
+              <span className={`text-xs truncate ${teamBName !== 'TBD' ? 'font-bold text-foreground' : 'font-medium text-text-muted italic'}`}>
+                {teamBName}
               </span>
             </div>
-            {match.winnerRegistrationUuid === teamB?.registrationUuid && isCompleted && (
+            {isWinnerB && (
               <span className="text-[10px] font-black text-primary">WIN</span>
             )}
           </div>

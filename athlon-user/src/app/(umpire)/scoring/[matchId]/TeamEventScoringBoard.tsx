@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MatchService } from '@/lib/api/matches';
-import { Match, RegistrationService } from '@/lib/api/tournaments';
+import { MatchService, Match } from '@/lib/api/matches';
+import { RegistrationService } from '@/lib/api/tournaments';
 import { TeamEventService, TeamEventFixtureDetails, TeamEventCategoryMatch, TeamEventLineupPlayer } from '@/lib/api/teamEvents';
 import { ChevronLeftIcon, UsersIcon, Undo2 } from 'lucide-react';
 import Link from 'next/link';

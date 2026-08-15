@@ -22,10 +22,26 @@ public class SportEngine {
     }
 
     public SportStrategy getStrategy(String sportType) {
-        if (sportType == null || !strategyMap.containsKey(sportType.toUpperCase())) {
-            throw new IllegalArgumentException("Unsupported sport type: " + sportType);
+        if (sportType == null) {
+            throw new IllegalArgumentException("Sport type cannot be null");
         }
-        return strategyMap.get(sportType.toUpperCase());
+        String upper = sportType.toUpperCase();
+        if (strategyMap.containsKey(upper)) {
+            return strategyMap.get(upper);
+        }
+        if (upper.contains("BADMINTON") || upper.equals("SINGLES") || upper.equals("DOUBLES") || upper.equals("MIXED DOUBLES")) {
+            return strategyMap.get("BADMINTON");
+        }
+        if (upper.contains("FOOTBALL") || upper.contains("SOCCER")) {
+            return strategyMap.get("FOOTBALL");
+        }
+        if (upper.contains("VOLLEYBALL")) {
+            return strategyMap.get("VOLLEYBALL");
+        }
+        if (upper.contains("CRICKET")) {
+            return strategyMap.get("CRICKET");
+        }
+        throw new IllegalArgumentException("Unsupported sport type: " + sportType);
     }
 }
 

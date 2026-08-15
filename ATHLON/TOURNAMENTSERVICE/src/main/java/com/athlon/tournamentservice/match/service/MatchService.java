@@ -103,6 +103,70 @@ public class MatchService {
         return populateTeamNames(MatchResponse.fromEntity(updatedMatch));
     }
 
+    public MatchResponse updateMatchScheduledTime(UUID uuid, java.time.LocalDateTime scheduledTime) {
+        Match match = matchRepository.findByMatchUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found with UUID: " + uuid));
+        match.setScheduledTime(scheduledTime);
+        Match updatedMatch = matchRepository.save(match);
+        return populateTeamNames(MatchResponse.fromEntity(updatedMatch));
+    }
+
+    @Transactional
+    public MatchResponse updateMatchStatus(UUID uuid, String status, Long winnerRegistrationId) {
+        Match match = matchRepository.findByMatchUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found with UUID: " + uuid));
+        match.setStatus(status);
+        if (winnerRegistrationId != null) {
+            match.setWinnerRegistrationId(winnerRegistrationId);
+            registrationRepository.findById(winnerRegistrationId)
+                    .ifPresent(reg -> match.setWinnerRegistrationUuid(reg.getRegistrationUuid()));
+        }
+        Match updatedMatch = matchRepository.save(match);
+
+        // Advance winner into next round match in the draw / fixture bracket
+        if ("COMPLETED".equalsIgnoreCase(status) && updatedMatch.getWinnerRegistrationId() != null && updatedMatch.getNextMatchUuid() != null) {
+            advanceWinnerToNextMatch(updatedMatch);
+        }
+
+        return populateTeamNames(MatchResponse.fromEntity(updatedMatch));
+    }
+
+    private void advanceWinnerToNextMatch(Match completedMatch) {
+        UUID nextMatchUuid = completedMatch.getNextMatchUuid();
+        if (nextMatchUuid == null) return;
+
+        matchRepository.findByMatchUuid(nextMatchUuid).ifPresent(nextMatch -> {
+            Long winnerId = completedMatch.getWinnerRegistrationId();
+            UUID winnerUuid = completedMatch.getWinnerRegistrationUuid();
+
+            // Find all sibling feeder matches leading into this next match
+            List<Match> feeders = matchRepository.findByNextMatchUuid(nextMatchUuid);
+            feeders.sort((a, b) -> a.getMatchId().compareTo(b.getMatchId()));
+
+            if (feeders.size() >= 2) {
+                if (feeders.get(0).getMatchUuid().equals(completedMatch.getMatchUuid())) {
+                    // Left branch child -> Team A in next round
+                    nextMatch.setTeamARegistrationId(winnerId);
+                    nextMatch.setTeamARegistrationUuid(winnerUuid);
+                } else {
+                    // Right branch child -> Team B in next round
+                    nextMatch.setTeamBRegistrationId(winnerId);
+                    nextMatch.setTeamBRegistrationUuid(winnerUuid);
+                }
+            } else {
+                // Single feeder or fallback
+                if (nextMatch.getTeamARegistrationId() == null || nextMatch.getTeamARegistrationId().equals(winnerId)) {
+                    nextMatch.setTeamARegistrationId(winnerId);
+                    nextMatch.setTeamARegistrationUuid(winnerUuid);
+                } else {
+                    nextMatch.setTeamBRegistrationId(winnerId);
+                    nextMatch.setTeamBRegistrationUuid(winnerUuid);
+                }
+            }
+            matchRepository.save(nextMatch);
+        });
+    }
+
     private MatchResponse populateTeamNames(MatchResponse response) {
         if (response == null) return null;
         if (response.getTeamARegistrationId() != null) {

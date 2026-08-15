@@ -5,7 +5,10 @@ export interface Match {
   uuid: string;
   tournamentId: number;
   tournamentUuid: string;
-  teamARegistrationId: number;
+  teamARegistrationId?: number;
+  teamARegistrationUuid?: string;
+  teamBRegistrationId?: number;
+  teamBRegistrationUuid?: string;
   teamAId: number;
   teamBId: number;
   teamAName?: string;
@@ -15,6 +18,8 @@ export interface Match {
   tournamentName?: string;
   tournamentType?: string;
   matchDate?: string;
+  scheduledTime?: string;
+  poolName?: string;
   sportType: string;
   status?: string;
   teamALineupStatus?: string;
@@ -44,5 +49,8 @@ export const MatchService = {
     api.get<{ data: any[] }>(`/api/tournament/matches/user/${userId}`),
     
   getByUmpirePhone: (phone: string) =>
-    api.get<{ data: any[] }>(`/api/tournament/matches/umpire/${phone}`)
+    api.get<{ data: any[] }>(`/api/tournament/matches/umpire/${encodeURIComponent(phone)}`),
+    
+  updateStatus: (uuid: string, status: string, winnerRegistrationId?: number) =>
+    api.put<{ data: any }>(`/api/tournament/matches/${uuid}/status?status=${status}${winnerRegistrationId ? `&winnerRegistrationId=${winnerRegistrationId}` : ''}`, {})
 };

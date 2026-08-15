@@ -71,10 +71,28 @@ public class MatchController {
         return ResponseEntity.ok(ApiResponse.success("Match umpire updated successfully", response));
     }
 
+    @PutMapping("/{uuid}/schedule")
+    public ResponseEntity<ApiResponse<MatchResponse>> updateMatchSchedule(
+            @PathVariable("uuid") UUID uuid,
+            @RequestParam("scheduledTime") String scheduledTime) {
+        java.time.LocalDateTime dateTime = java.time.LocalDateTime.parse(scheduledTime);
+        MatchResponse response = matchService.updateMatchScheduledTime(uuid, dateTime);
+        return ResponseEntity.ok(ApiResponse.success("Match schedule updated successfully", response));
+    }
+
     @GetMapping("/umpire/{phone}")
     public ResponseEntity<ApiResponse<List<MatchResponse>>> getMatchesByUmpirePhone(@PathVariable("phone") String phone) {
         List<MatchResponse> responses = matchService.getMatchesByUmpirePhone(phone);
         return ResponseEntity.ok(ApiResponse.success("Umpire matches retrieved successfully", responses));
+    }
+
+    @PutMapping("/{uuid}/status")
+    public ResponseEntity<ApiResponse<MatchResponse>> updateMatchStatus(
+            @PathVariable("uuid") UUID uuid,
+            @RequestParam("status") String status,
+            @RequestParam(value = "winnerRegistrationId", required = false) Long winnerRegistrationId) {
+        MatchResponse response = matchService.updateMatchStatus(uuid, status, winnerRegistrationId);
+        return ResponseEntity.ok(ApiResponse.success("Match status updated successfully", response));
     }
 }
 

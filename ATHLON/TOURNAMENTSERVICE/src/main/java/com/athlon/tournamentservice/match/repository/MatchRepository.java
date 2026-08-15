@@ -25,5 +25,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findMatchesByUserId(@Param("userId") Long userId);
     
     List<Match> findByUmpirePhone(String umpirePhone);
+    
+    List<Match> findByNextMatchUuid(UUID nextMatchUuid);
 }
 

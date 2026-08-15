@@ -531,7 +531,14 @@ if (typeof window !== 'undefined') {
   useCricketStore.subscribe((state) => {
     if (!state.config?.id) return;
     
-    ScoringService.syncState(state.config.id, state).catch(err => 
+    const payload = {
+      ...state,
+      teamAScore: `${state.runsA}/${state.wicketsA} (${Math.floor(state.validBallsA / 6)}.${state.validBallsA % 6} ov)`,
+      teamBScore: `${state.runsB}/${state.wicketsB} (${Math.floor(state.validBallsB / 6)}.${state.validBallsB % 6} ov)`,
+      isFinal: state.isMatchOver
+    };
+
+    ScoringService.syncState(state.config.id, payload).catch(err => 
       console.error('Failed to sync cricket state with backend', err)
     );
   });

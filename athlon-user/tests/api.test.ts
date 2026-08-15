@@ -34,9 +34,9 @@ describe('API Integration Tests', () => {
   test('ScoringService.recordEvent should call /api/tournament/scores/record-event', async () => {
     try {
       const res = await ScoringService.recordEvent('match123', 'Tennis', {
-        team: 'A',
-        action: 'POINT_SCORED',
-        timestamp: new Date().toISOString()
+        eventValue: 'A',
+        eventType: 'POINT_SCORED',
+        eventTime: new Date().toISOString()
       });
       assert.ok(res);
     } catch (e: any) {

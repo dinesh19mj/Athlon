@@ -297,7 +297,14 @@ if (typeof window !== 'undefined') {
   useVolleyballStore.subscribe((state) => {
     if (!state.config?.id) return;
     
-    ScoringService.syncState(state.config.id, state).catch(err => 
+    const payload = {
+      ...state,
+      teamAScore: `${state.setsA} (${state.pointsA})`,
+      teamBScore: `${state.setsB} (${state.pointsB})`,
+      isFinal: state.isMatchOver
+    };
+
+    ScoringService.syncState(state.config.id, payload).catch(err => 
       console.error('Failed to sync volleyball state with backend', err)
     );
   });

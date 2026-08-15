@@ -11,10 +11,41 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/lib/store/useAuthStore';
+import { ScoreService, LiveScore } from '@/lib/api/scores';
 
 export function MarketingPageClient() {
   const [activeTab, setActiveTab] = useState('home');
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
+
+  useEffect(() => {
+    const fetchLiveScores = () => {
+      ScoreService.getLive()
+        .then((res: any) => {
+          if (res && res.data) {
+            setLiveScores(res.data);
+          }
+        })
+        .catch(err => console.error("Failed to load live scores in marketing client", err));
+    };
+
+    fetchLiveScores();
+    const interval = setInterval(fetchLiveScores, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentLive = liveScores[0];
+  const meta = currentLive?.scoreMeta || {};
+  const teamAName = meta.config?.teamAName || (meta.config?.teamA ? meta.config.teamA.join(' & ') : 'Team A');
+  const teamBName = meta.config?.teamBName || (meta.config?.teamB ? meta.config.teamB.join(' & ') : 'Team B');
+  const currentGameIndex = meta.currentGameIndex || 0;
+  const games = meta.games || [];
+  const currentGame = games[currentGameIndex] || {};
+  const scoreA = currentGame.scoreA ?? (currentLive?.teamAScore || 0);
+  const scoreB = currentGame.scoreB ?? (currentLive?.teamBScore || 0);
+  const tournamentName = meta.config?.tournamentName || 'Tournament Match';
+  const category = meta.config?.category || 'Doubles';
+  const courtName = meta.config?.courtName || 'Court 1';
 
   const topCategories = [
     { id: 'tournaments', label: 'Tournaments', icon: Trophy, color: 'text-green-400' },
@@ -92,58 +123,70 @@ export function MarketingPageClient() {
         </section>
 
         {/* 4. Live Match Card */}
-        <section className="bg-surface border border-foreground/5 rounded-[24px] p-4 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-red-500 font-bold text-xs tracking-wider">LIVE</span>
-              <span className="text-foreground font-bold text-xs tracking-wider">MATCH</span>
+        {liveScores.length > 0 ? (
+          <section className="bg-surface border border-foreground/5 rounded-[24px] p-4 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-red-500 font-bold text-xs tracking-wider">LIVE</span>
+                <span className="text-foreground font-bold text-xs tracking-wider">MATCH</span>
+              </div>
+              <span className="text-foreground/50 text-xs">{courtName}</span>
             </div>
-            <span className="text-foreground/50 text-xs">Court 2</span>
-          </div>
 
-          <div className="flex items-center justify-center mb-6">
-            <span className="px-3 py-1 bg-background rounded-full text-[10px] font-bold text-foreground/60 uppercase tracking-widest border border-foreground/5">
-              Men Singles • Semi Final
-            </span>
-          </div>
+            <div className="flex items-center justify-center mb-6">
+              <span className="px-3 py-1 bg-background rounded-full text-[10px] font-bold text-foreground/60 uppercase tracking-widest border border-foreground/5 text-center">
+                {tournamentName} • {category}
+              </span>
+            </div>
 
-          <div className="flex items-center justify-between px-2 mb-6">
-            {/* Player 1 */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-b from-[#1B9C56] to-transparent p-[2px]">
-                <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden">
-                  <div className="w-full h-full bg-gray-800 flex items-end justify-center"><User className="w-10 h-10 text-gray-500" /></div>
+            <div className="flex items-center justify-between px-2 mb-6">
+              {/* Player 1 */}
+              <div className="flex flex-col items-center gap-2 max-w-[110px]">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-b from-[#1B9C56] to-transparent p-[2px]">
+                  <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden flex items-center justify-center">
+                    <span className="text-xl font-black text-[#1B9C56]">{teamAName.charAt(0)}</span>
+                  </div>
                 </div>
+                <span className="font-bold text-xs tracking-wider uppercase text-center line-clamp-2 leading-tight">{teamAName}</span>
+                <span className="text-4xl font-black text-[#1B9C56] leading-none tabular-nums">{scoreA}</span>
               </div>
-              <span className="font-bold text-sm tracking-wider uppercase">Arjun</span>
-              <span className="text-4xl font-black text-[#1B9C56] leading-none">21</span>
-            </div>
 
-            {/* VS */}
-            <div className="flex flex-col items-center justify-center gap-2 mt-4">
-              <div className="w-10 h-10 rounded-full bg-background border border-foreground/10 flex items-center justify-center">
-                <span className="text-foreground/50 font-bold text-sm">VS</span>
-              </div>
-              <span className="px-2 py-0.5 bg-background border border-foreground/5 rounded text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Game 2</span>
-            </div>
-
-            {/* Player 2 */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-b from-white/20 to-transparent p-[2px]">
-                <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden">
-                  <div className="w-full h-full bg-gray-800 flex items-end justify-center"><User className="w-10 h-10 text-gray-500" /></div>
+              {/* VS */}
+              <div className="flex flex-col items-center justify-center gap-2 mt-4 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-background border border-foreground/10 flex items-center justify-center">
+                  <span className="text-foreground/50 font-bold text-sm">VS</span>
                 </div>
+                <span className="px-2 py-0.5 bg-background border border-foreground/5 rounded text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
+                  Game {currentGameIndex + 1}
+                </span>
               </div>
-              <span className="font-bold text-sm tracking-wider uppercase">Rahul</span>
-              <span className="text-4xl font-black text-foreground leading-none">18</span>
-            </div>
-          </div>
 
-          <button className="w-full py-3.5 bg-[#1B9C56] rounded-xl text-foreground font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-            WATCH LIVE <Tv className="w-4 h-4" />
-          </button>
-        </section>
+              {/* Player 2 */}
+              <div className="flex flex-col items-center gap-2 max-w-[110px]">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-b from-white/20 to-transparent p-[2px]">
+                  <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden flex items-center justify-center">
+                    <span className="text-xl font-black text-foreground">{teamBName.charAt(0)}</span>
+                  </div>
+                </div>
+                <span className="font-bold text-xs tracking-wider uppercase text-center line-clamp-2 leading-tight">{teamBName}</span>
+                <span className="text-4xl font-black text-foreground leading-none tabular-nums">{scoreB}</span>
+              </div>
+            </div>
+
+            <Link href={`/live-score/${currentLive.matchUuid}`} className="w-full py-3.5 bg-[#1B9C56] rounded-xl text-foreground font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+              WATCH LIVE <Tv className="w-4 h-4" />
+            </Link>
+          </section>
+        ) : (
+          <section className="bg-surface border border-foreground/5 rounded-[24px] p-6 shadow-xl text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-foreground/30" />
+              <span className="text-foreground/50 font-bold text-xs tracking-wider uppercase">No Active Live Matches</span>
+            </div>
+            <p className="text-xs text-foreground/50">Live match scores will appear here automatically when an umpire starts scoring.</p>
+          </section>
+        )}
       </main>
 
       {/* (Removed Subscription Packages) */}

@@ -107,6 +107,19 @@ export default function TournamentDashboardPage() {
     loadData();
   }, [tournamentId]);
 
+  useEffect(() => {
+    if (tournament?.tournamentUuid && (activeTab === "draws" || activeTab === "matches")) {
+      const interval = setInterval(() => {
+        MatchService.getByTournament(tournament.tournamentUuid!)
+          .then(mRes => {
+            if (mRes) setMatches(mRes);
+          })
+          .catch(() => {});
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [tournament?.tournamentUuid, activeTab]);
+
   const handleApprove = async (regUuid: string) => {
     try {
       await RegistrationService.updateStatus(regUuid, "APPROVED", Number(userId));

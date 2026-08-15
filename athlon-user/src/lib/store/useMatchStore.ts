@@ -22,6 +22,9 @@ export interface MatchConfig {
   teamB: string[]; // 1 or 2 players
   teamAName?: string;
   teamBName?: string;
+  tournamentName?: string;
+  courtName?: string;
+  sportType?: string;
 }
 
 export interface CourtPositions {
@@ -218,7 +221,8 @@ export const useMatchStore = create<MatchState>((set, get) => ({
     
     // API Call with Meta
     if (state.config.id) {
-      ScoringService.recordEvent(state.config.id, state.config.category, {
+      const sportType = state.config.sportType || 'BADMINTON';
+      ScoringService.recordEvent(state.config.id, sportType, {
         eventValue: scoringTeam,
         eventType: 'POINT_SCORED',
         eventTime: new Date().toISOString()
@@ -239,20 +243,21 @@ export const useMatchStore = create<MatchState>((set, get) => ({
     const newGames = [...state.games];
     newGames[gameIndex] = previousGameState;
 
-    // Optimistic API Call
-    if (state.config && state.config.id) {
-      ScoringService.recordEvent(state.config.id, state.config.category, {
-        team: previousGameState.winner || 'A', // placeholder logic for undo team
-        action: 'POINT_REVERTED',
-        timestamp: new Date().toISOString()
-      }).catch(err => console.error('Failed to revert score event', err));
-    }
-
     set({
       games: newGames,
       history: newHistory,
       matchWinner: null,
     });
+
+    // Optimistic API Call
+    if (state.config && state.config.id) {
+      const sportType = state.config.sportType || 'BADMINTON';
+      ScoringService.recordEvent(state.config.id, sportType, {
+        eventValue: previousGameState.winner || 'A',
+        eventType: 'POINT_REVERTED',
+        eventTime: new Date().toISOString()
+      }).catch(err => console.error('Failed to revert score event', err));
+    }
   },
 
   nextGame: () => {
@@ -358,8 +363,16 @@ if (typeof window !== 'undefined') {
   useMatchStore.subscribe((state) => {
     if (!state.config?.id) return;
     
-    // Fire and forget POST to sync state to overlay
-    ScoringService.syncState(state.config.id, state).catch(() => {
+    const currentGame = state.games[state.currentGameIndex];
+    const payload = {
+      ...state,
+      teamAScore: currentGame ? String(currentGame.scoreA) : '0',
+      teamBScore: currentGame ? String(currentGame.scoreB) : '0',
+      isFinal: !!state.matchWinner
+    };
+
+    // Fire and forget POST to sync state to overlay & backend
+    ScoringService.syncState(state.config.id, payload).catch(() => {
       // Silently ignore sync errors (e.g. for Team Event categories that don't have direct Match entities)
     });
   });
