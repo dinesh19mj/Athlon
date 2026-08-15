@@ -19,7 +19,7 @@ import jakarta.persistence.Table;
 @Table(name = "user_profiles")
 public class UserProfile {
 
-    @Id
+	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "userprofileid", updatable = false, nullable = false)
     private Long userProfileId;
@@ -42,6 +42,18 @@ public class UserProfile {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    @Column(name = "photo")
+    private String photo;
+
+    @Column(name = "city")
+    private String city;
+
+    @Column(name = "district")
+    private String district;
+
+    @Column(name = "state")
+    private String state;
+
     @Column(name = "isactive")
     private Integer isActive = 1;
 
@@ -62,19 +74,26 @@ public class UserProfile {
     public UserProfile() {
     }
 
-    public UserProfile(Long userId, UUID userUuid, String firstName,
-                       String lastName, String phone, Long createdBy) {
+    public UserProfile(
+            Long userId,
+            UUID userUuid,
+            String firstName,
+            String lastName,
+            String phone,
+            Long createdBy) {
+
         this.userId = userId;
         this.userUuid = userUuid;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
-        this.isActive = 1;
         this.createdBy = createdBy;
+        this.isActive = 1;
     }
 
     @PrePersist
     public void prePersist() {
+
         if (userProfileUuid == null) {
             userProfileUuid = UUID.randomUUID();
         }
@@ -140,12 +159,52 @@ public class UserProfile {
         this.phone = phone;
     }
 
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
     public Integer getIsActive() {
         return isActive;
     }
 
     public void setIsActive(Integer isActive) {
         this.isActive = isActive;
+    }
+
+    public boolean isActive() {
+        return isActive != null && isActive == 1;
+    }
+
+    public void setActive(boolean active) {
+        this.isActive = active ? 1 : 0;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -174,17 +233,23 @@ public class UserProfile {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof UserProfile)) return false;
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof UserProfile)) {
+            return false;
+        }
+
         UserProfile that = (UserProfile) o;
-        return Objects.equals(userProfileId, that.userProfileId) &&
-                Objects.equals(userProfileUuid, that.userProfileUuid) &&
-                Objects.equals(userId, that.userId);
+
+        return java.util.Objects.equals(userProfileId, that.userProfileId)
+                && java.util.Objects.equals(userProfileUuid, that.userProfileUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userProfileId, userProfileUuid, userId);
+        return java.util.Objects.hash(userProfileId, userProfileUuid);
     }
 
     @Override
@@ -197,6 +262,10 @@ public class UserProfile {
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", phone='" + phone + '\'' +
+                ", photo='" + photo + '\'' +
+                ", city='" + city + '\'' +
+                ", district='" + district + '\'' +
+                ", state='" + state + '\'' +
                 ", isActive=" + isActive +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +

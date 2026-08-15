@@ -68,7 +68,7 @@ export default function RegistrationPage() {
 
   const isTeamEvent = tournament?.tournamentType === 'TEAM_EVENT';
   const matchFormatStr = tournament?.matchFormat?.toLowerCase() || '';
-  const isDoubles = matchFormatStr.includes('doubles');
+  const isDoubles = !isTeamEvent && matchFormatStr.includes('doubles');
 
   const handleSubmit = async () => {
     if (!tournament) return;
@@ -76,39 +76,27 @@ export default function RegistrationPage() {
     
     const players = [];
     
-    if (isTeamEvent) {
-      // Team Event: just use the logged-in user details
-      if (userProfile && userId && userUuid) {
-        players.push({
-          playerId: Number(userId),
-          playerUuid: userUuid,
-          playerName: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim(),
-          phoneNumber: userProfile.phone || ''
-        });
-      }
+    // Player 1 (or Team Owner)
+    if (registrationType === 'self' && userProfile && userId && userUuid) {
+      players.push({
+        playerId: Number(userId),
+        playerUuid: userUuid,
+        playerName: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim(),
+        phoneNumber: userProfile.phone || ''
+      });
     } else {
-      // Player 1
-      if (registrationType === 'self' && userProfile && userId && userUuid) {
-        players.push({
-          playerId: Number(userId),
-          playerUuid: userUuid,
-          playerName: `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim(),
-          phoneNumber: userProfile.phone || ''
-        });
-      } else {
-        players.push({
-          playerName: player1.name,
-          phoneNumber: player1.phone
-        });
-      }
-      
-      // Player 2
-      if (isDoubles) {
-        players.push({
-          playerName: player2.name,
-          phoneNumber: player2.phone
-        });
-      }
+      players.push({
+        playerName: player1.name,
+        phoneNumber: player1.phone
+      });
+    }
+    
+    // Player 2
+    if (isDoubles) {
+      players.push({
+        playerName: player2.name,
+        phoneNumber: player2.phone
+      });
     }
     
     // Default team name if empty
@@ -182,8 +170,8 @@ export default function RegistrationPage() {
     );
   }
 
-  const showPlayerDetailsStep = !isTeamEvent;
-  const totalSteps = showPlayerDetailsStep ? 2 : 1;
+  const showPlayerDetailsStep = true;
+  const totalSteps = 2;
   const isFinalStep = step === totalSteps;
 
   return (
@@ -222,8 +210,12 @@ export default function RegistrationPage() {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out fill-mode-both">
             
             <div className="text-center space-y-2 mb-10">
-              <h2 className="text-3xl font-black tracking-tight">Who is competing?</h2>
-              <p className="text-foreground/50 font-medium">Add the players for this event.</p>
+              <h2 className="text-3xl font-black tracking-tight">
+                {isTeamEvent ? 'Team Details' : 'Who is competing?'}
+              </h2>
+              <p className="text-foreground/50 font-medium">
+                {isTeamEvent ? 'Register your team for this event.' : 'Add the players for this event.'}
+              </p>
             </div>
             
             {/* iOS-Style Segmented Control */}
@@ -252,10 +244,10 @@ export default function RegistrationPage() {
               </button>
             </div>
 
-            {isDoubles && (
+            {(isDoubles || isTeamEvent) && (
               <div className="space-y-2 px-1">
                 <label className="text-xs font-black text-foreground/40 uppercase tracking-widest pl-1">
-                  Team Name <span className="lowercase font-normal text-foreground/30 tracking-normal">(Optional)</span>
+                  Team Name {isTeamEvent ? <span className="text-[#1B9C56]">*</span> : <span className="lowercase font-normal text-foreground/30 tracking-normal">(Optional)</span>}
                 </label>
                 <input 
                   type="text" 
@@ -276,7 +268,7 @@ export default function RegistrationPage() {
                   <div className="w-8 h-8 rounded-full bg-[#1B9C56]/10 flex items-center justify-center">
                     <User className="w-4 h-4 text-[#1B9C56]" />
                   </div>
-                  <h3 className="font-bold text-lg">{isDoubles ? 'Player 1' : 'Player'}</h3>
+                  <h3 className="font-bold text-lg">{isTeamEvent ? 'Team Owner' : (isDoubles ? 'Player 1' : 'Player')}</h3>
                 </div>
 
                 <div className="space-y-5 relative z-10">
@@ -360,7 +352,7 @@ export default function RegistrationPage() {
             </div>
             
             <button 
-              disabled={!player1.name || !player1.phone || (isDoubles && (!player2.name || !player2.phone))}
+              disabled={!player1.name || !player1.phone || (isTeamEvent && !teamName) || (isDoubles && (!player2.name || !player2.phone))}
               onClick={handleNext}
               className="w-full py-5 bg-gradient-to-r from-[#1B9C56] to-[#127d42] text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl shadow-[0_8px_30px_rgba(27,156,86,0.25)] hover:shadow-[0_8px_40px_rgba(27,156,86,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-3 group relative overflow-hidden"
             >
@@ -439,7 +431,7 @@ export default function RegistrationPage() {
                       Roster Details
                     </p>
                     
-                    {isDoubles && teamName && (
+                    {(isDoubles || isTeamEvent) && teamName && (
                       <div className="inline-block px-4 py-2 bg-foreground/5 rounded-xl border border-foreground/5 mb-2">
                         <span className="text-xs text-foreground/50 mr-2 font-medium">Team:</span>
                         <span className="font-bold">{teamName}</span>
@@ -447,14 +439,25 @@ export default function RegistrationPage() {
                     )}
                     
                     <div className="grid gap-3">
-                      {isTeamEvent && userProfile ? (
-                        <div className="flex items-center justify-between p-4 bg-background border border-foreground/10 rounded-2xl shadow-sm">
+                      {isTeamEvent ? (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-background border border-foreground/10 rounded-2xl shadow-sm gap-2">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-[#1B9C56]/10 flex items-center justify-center">
                               <ShieldCheck className="w-5 h-5 text-[#1B9C56]" />
                             </div>
-                            <span className="font-bold">{userProfile.firstName} {userProfile.lastName} <span className="text-xs text-[#1B9C56] ml-1 uppercase tracking-widest">(Captain)</span></span>
+                            <span className="font-bold">
+                              {registrationType === 'self' && userProfile 
+                                ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim()
+                                : player1.name} 
+                              <span className="text-xs text-[#1B9C56] ml-1 uppercase tracking-widest">(Owner)</span>
+                            </span>
                           </div>
+                          {registrationType === 'someone_else' && player1.phone && (
+                            <div className="flex items-center gap-2 text-sm text-foreground/50 sm:ml-auto font-medium bg-foreground/5 px-3 py-1.5 rounded-lg">
+                              <Phone className="w-3.5 h-3.5" />
+                              {player1.phone}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <>

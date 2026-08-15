@@ -6,6 +6,7 @@ import { ArrowLeftIcon, CalendarIcon, MapPinIcon, ImageIcon, X } from "lucide-re
 import Link from "next/link";
 
 import { TournamentService, CategoryService } from "@/lib/api/tournaments";
+import { TeamEventCategoryBuilder, TeamEventCategoryConfig } from "@/components/tournaments/teamevent/TeamEventCategoryBuilder";
 import { OrganizationService } from "@/lib/api/organization";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useWorkspaceStore } from "@/lib/store/useWorkspaceStore";
@@ -57,6 +58,7 @@ export default function CreateTournamentPage() {
     registrationFees: "",
     description: "",
     contactPhone: "",
+    teamEventCategories: [] as TeamEventCategoryConfig[],
   });
 
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
@@ -102,8 +104,7 @@ export default function CreateTournamentPage() {
       form.append("tournamentType", formData.tournamentType);
       form.append("sport", formData.sport);
       if (formData.tournamentType === 'TEAM_EVENT') {
-        form.append("matchFormat", formData.matchFormats.join(","));
-        form.append("category", formData.categories.join(","));
+        form.append("teamEventCategories", JSON.stringify(formData.teamEventCategories));
       } else {
         form.append("matchFormat", formData.matchFormat);
         form.append("category", formData.category);
@@ -247,7 +248,7 @@ export default function CreateTournamentPage() {
                   }
                   setFormData({ ...formData, ...updates });
                 }}
-                disabled={formData.sport && formData.sport !== 'Badminton' && type === 'TEAM_EVENT'}
+                disabled={Boolean(formData.sport && formData.sport !== 'Badminton' && type === 'TEAM_EVENT')}
                 className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                   formData.tournamentType === type
                     ? 'border-[#1B9C56] bg-[#1B9C56]/10 text-white'
@@ -283,30 +284,10 @@ export default function CreateTournamentPage() {
 
           {formData.tournamentType === 'TEAM_EVENT' && (
             <div className="space-y-7">
-              <div>
-                <label className={labelClass}>Match Formats <span className="text-[#1B9C56]">*</span></label>
-                <div className="flex flex-wrap gap-2">
-                  {["Men's Singles", "Women's Singles", "Men's Doubles", "Women's Doubles", "Mixed Doubles"].map(format => (
-                    <button
-                      key={format}
-                      type="button"
-                      onClick={() => {
-                        const newFormats = formData.matchFormats.includes(format)
-                          ? formData.matchFormats.filter(f => f !== format)
-                          : [...formData.matchFormats, format];
-                        setFormData({ ...formData, matchFormats: newFormats });
-                      }}
-                      className={`py-2 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
-                        formData.matchFormats.includes(format)
-                          ? 'border-[#1B9C56] bg-[#1B9C56]/10 text-white'
-                          : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
-                      }`}
-                    >
-                      {format}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <TeamEventCategoryBuilder 
+                categories={formData.teamEventCategories}
+                onChange={(categories) => setFormData({ ...formData, teamEventCategories: categories })}
+              />
               <div>
                 <label className={labelClass}>Players Count <span className="text-[#1B9C56]">*</span></label>
                 <input

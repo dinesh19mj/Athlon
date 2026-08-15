@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   MoreVertical,
@@ -10,34 +10,40 @@ import {
   ListOrdered,
   ClipboardList,
   Copy,
-  Hash,
-  Globe,
   Settings,
   ChevronDown,
+  ChevronRight,
   Trophy,
-  Activity
+  Activity,
 } from 'lucide-react';
 import { useMatchStore, GameCategory, Player } from '@/lib/store/useMatchStore';
 import { useCricketStore } from '@/lib/store/useCricketStore';
 import { useFootballStore } from '@/lib/store/useFootballStore';
 import { useVolleyballStore } from '@/lib/store/useVolleyballStore';
-import { useEffect } from 'react';
 import Image from 'next/image';
 
-export default function MatchSetupPage() {
+function MatchSetupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setupMatch = useMatchStore(state => state.setupMatch);
+
+  const urlSport = searchParams.get('sport');
+  const initialSport = urlSport || '';
+  const urlCategory = searchParams.get('category');
+  const initialCategory = urlCategory || 'Doubles';
+  
+  const initialTeamA = searchParams.get('teamA')?.split(',') || ['', ''];
+  const initialTeamB = searchParams.get('teamB')?.split(',') || ['', ''];
+  const initialTeamAName = searchParams.get('teamAName') || 'Team A';
+  const initialTeamBName = searchParams.get('teamBName') || 'Team B';
+  const isPreFilled = !!searchParams.get('teamA') || !!searchParams.get('teamB');
 
   const [activeTab, setActiveTab] = useState<'sport' | 'rules' | 'team1' | 'team2'>('sport');
 
-  const [sport, setSport] = useState('');
-  const [category, setCategory] = useState<GameCategory>('Doubles');
-  const [sets, setSets] = useState<1 | 2 | 3>(3);
+  const [sport, setSport] = useState(initialSport);
+  const [category, setCategory] = useState<GameCategory>(initialCategory as GameCategory);
+  const [sets, setSets] = useState<number>(3);
   const [pointBreak, setPointBreak] = useState<number>(15);
-
-  const [useDeuce, setUseDeuce] = useState(true);
-  const [useSeeding, setUseSeeding] = useState(true);
-  const [useCountries, setUseCountries] = useState(true);
 
   // Cricket specific config
   const [totalOvers, setTotalOvers] = useState<number>(10);
@@ -55,8 +61,8 @@ export default function MatchSetupPage() {
   const [bestOfSets, setBestOfSets] = useState<3 | 5>(3);
   const [pointsPerSet, setPointsPerSet] = useState<number>(25);
 
-  const [teamA, setTeamA] = useState<string[]>(['', '']);
-  const [teamB, setTeamB] = useState<string[]>(['', '']);
+  const [teamA, setTeamA] = useState<string[]>(initialTeamA);
+  const [teamB, setTeamB] = useState<string[]>(initialTeamB);
 
   const [teamAPlayers, setTeamAPlayers] = useState<Player[]>([]);
   const [teamBPlayers, setTeamBPlayers] = useState<Player[]>([]);
@@ -86,7 +92,7 @@ export default function MatchSetupPage() {
     }
   };
 
-  const isDoubles = category === 'Doubles' || category === 'Mixed Doubles';
+  const isDoubles = category?.includes('Doubles');
 
   const handleNext = () => {
     if (activeTab === 'sport') setActiveTab('rules');
@@ -158,15 +164,22 @@ export default function MatchSetupPage() {
       if (isDoubles && !finalTeamB[1]) finalTeamB[1] = 'Player 2 (B)';
 
       setupMatch({
-        id: `match-${Date.now()}`,
+        id: searchParams.get('matchId') || `match-${Date.now()}`,
         category,
         bestOfSets: sets,
         pointBreak: pointBreak,
         teamA: finalTeamA,
         teamB: finalTeamB,
+        teamAName: searchParams.get('teamAName') || undefined,
+        teamBName: searchParams.get('teamBName') || undefined,
       });
 
-      router.push('/scoring/live?sport=Badminton');
+      const categoryId = searchParams.get('categoryId');
+      let url = '/scoring/live?sport=Badminton';
+      if (searchParams.get('matchId')) {
+          url = `/scoring/${searchParams.get('matchId')}?sport=Badminton${categoryId ? `&categoryId=${categoryId}` : ''}`;
+      }
+      router.push(url);
     }
   };
 
@@ -252,10 +265,12 @@ export default function MatchSetupPage() {
                   <button
                     key={s.name}
                     onClick={() => {
+                      if (urlSport) return;
                       setSport(s.name);
                       setActiveTab('rules');
                     }}
-                    className="flex flex-col items-center gap-3 outline-none group shrink-0 snap-center"
+                    disabled={!!urlSport}
+                    className={`flex flex-col items-center gap-3 outline-none group shrink-0 snap-center ${urlSport && urlSport !== s.name ? 'opacity-30 cursor-not-allowed' : ''}`}
                   >
                     <div className={`relative w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-[18px] flex items-center justify-center transition-colors duration-200 shadow-sm bg-surface group-hover:bg-foreground/10 group-active:bg-foreground/15 border border-foreground/5 group-hover:border-foreground/20 group-active:border-foreground/30 ${sport === s.name ? 'ring-[1.5px] ring-foreground/20 bg-foreground/10' : ''}`}>
                       <div className="relative w-8 h-8 sm:w-10 sm:h-10">
@@ -287,8 +302,9 @@ export default function MatchSetupPage() {
                   <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest pl-2">Match Format</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <button
-                      onClick={() => setCategory('Singles')}
-                      className={`flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border transition-all ${!isDoubles ? 'bg-surface border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] scale-[1.02]' : 'bg-background border-foreground/5 hover:border-foreground/20 hover:bg-foreground/5'}`}
+                      onClick={() => !urlCategory && setCategory('Singles')}
+                      disabled={!!urlCategory}
+                      className={`flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border transition-all ${!isDoubles ? 'bg-surface border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] scale-[1.02]' : 'bg-background border-foreground/5 hover:border-foreground/20 hover:bg-foreground/5'} ${urlCategory ? 'opacity-80 cursor-not-allowed' : ''}`}
                     >
                       <div className={`p-3 rounded-full ${!isDoubles ? 'bg-red-500/20 text-red-500' : 'bg-foreground/5 text-foreground/40'}`}>
                         <User className="w-6 h-6" />
@@ -296,8 +312,9 @@ export default function MatchSetupPage() {
                       <span className={`text-sm font-bold uppercase tracking-wide ${!isDoubles ? 'text-foreground' : 'text-foreground/40'}`}>Singles</span>
                     </button>
                     <button
-                      onClick={() => setCategory('Doubles')}
-                      className={`flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border transition-all ${isDoubles ? 'bg-surface border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] scale-[1.02]' : 'bg-background border-foreground/5 hover:border-foreground/20 hover:bg-foreground/5'}`}
+                      onClick={() => !urlCategory && setCategory('Doubles')}
+                      disabled={!!urlCategory}
+                      className={`flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border transition-all ${isDoubles ? 'bg-surface border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] scale-[1.02]' : 'bg-background border-foreground/5 hover:border-foreground/20 hover:bg-foreground/5'} ${urlCategory ? 'opacity-80 cursor-not-allowed' : ''}`}
                     >
                       <div className={`p-3 rounded-full ${isDoubles ? 'bg-red-500/20 text-red-500' : 'bg-foreground/5 text-foreground/40'}`}>
                         <Users className="w-6 h-6" />
@@ -313,7 +330,6 @@ export default function MatchSetupPage() {
 
                   <div className="bg-surface border border-foreground/5 rounded-3xl overflow-hidden shadow-xl">
 
-                    {/* Max Games */}
                     <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="p-2 bg-background rounded-xl border border-foreground/5">
@@ -321,78 +337,34 @@ export default function MatchSetupPage() {
                         </div>
                         <span className="text-sm font-bold text-foreground/90">Max games (sets)</span>
                       </div>
-                      <div className="relative">
-                        <select
-                          value={sets}
-                          onChange={(e) => setSets(Number(e.target.value) as 1 | 2 | 3)}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        >
-                          <option value={1}>1</option>
-                          <option value={2}>2</option>
-                          <option value={3}>3</option>
-                        </select>
-                        <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                          <span className="font-bold">{sets}</span>
-                          <ChevronDown className="w-4 h-4 text-foreground/50" />
-                        </div>
-                      </div>
+                      <select
+                        value={sets}
+                        onChange={(e) => setSets(Number(e.target.value))}
+                        className="bg-background border border-foreground/10 rounded-xl px-4 py-2 font-bold outline-none focus:ring-2 focus:ring-red-500/50"
+                      >
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <option key={i} value={i}>{i}</option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* Points Per Game */}
-                    <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
+                    <div className="flex items-center justify-between p-5 hover:bg-foreground/5 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="p-2 bg-background rounded-xl border border-foreground/5">
                           <Trophy className="w-5 h-5 text-foreground/70" />
                         </div>
                         <span className="text-sm font-bold text-foreground/90">Points per game</span>
                       </div>
-                      <div className="relative">
-                        <select
-                          value={pointBreak}
-                          onChange={(e) => setPointBreak(Number(e.target.value))}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        >
-                          <option value={11}>11</option>
-                          <option value={15}>15</option>
-                          <option value={21}>21</option>
-                          <option value={30}>30</option>
-                        </select>
-                        <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                          <span className="font-bold">{pointBreak}</span>
-                          <ChevronDown className="w-4 h-4 text-foreground/50" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Toggles */}
-                    <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                          <Activity className="w-5 h-5 text-foreground/70" />
-                        </div>
-                        <span className="text-sm font-bold text-foreground/90">Use Deuce</span>
-                      </div>
-                      <CustomSwitch checked={useDeuce} onChange={setUseDeuce} />
-                    </div>
-
-                    <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                          <Hash className="w-5 h-5 text-foreground/70" />
-                        </div>
-                        <span className="text-sm font-bold text-foreground/90">Use Seeding</span>
-                      </div>
-                      <CustomSwitch checked={useSeeding} onChange={setUseSeeding} />
-                    </div>
-
-                    <div className="flex items-center justify-between p-5 hover:bg-foreground/5 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                          <Globe className="w-5 h-5 text-foreground/70" />
-                        </div>
-                        <span className="text-sm font-bold text-foreground/90">Use Countries</span>
-                      </div>
-                      <CustomSwitch checked={useCountries} onChange={setUseCountries} />
+                      <select
+                        value={pointBreak}
+                        onChange={(e) => setPointBreak(Number(e.target.value))}
+                        className="bg-background border border-foreground/10 rounded-xl px-4 py-2 font-bold outline-none focus:ring-2 focus:ring-red-500/50"
+                      >
+                        {Array.from({ length: 30 }, (_, i) => i + 1).map((i) => (
+                          <option key={i} value={i}>{i}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -640,7 +612,7 @@ export default function MatchSetupPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="bg-surface border border-foreground/5 rounded-3xl p-6 shadow-xl">
               <h2 className="text-lg font-black uppercase tracking-wide mb-6 text-foreground drop-shadow-md">
-                {sport !== 'Badminton' ? 'Team 1 Details' : isDoubles ? 'Team 1 Roster' : 'Player 1 Details'}
+                {sport !== 'Badminton' ? 'Team 1 Details' : isDoubles ? 'Team 1' : 'Player 1 Details'}
               </h2>
 
               <div className="space-y-5">
@@ -651,9 +623,10 @@ export default function MatchSetupPage() {
                   <input
                     type="text"
                     value={teamA[0]}
+                    readOnly={isPreFilled}
                     onChange={(e) => setTeamA([e.target.value, teamA[1]])}
                     placeholder="Enter full name"
-                    className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20"
+                    className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 {isDoubles && sport === 'Badminton' && (
@@ -662,9 +635,10 @@ export default function MatchSetupPage() {
                     <input
                       type="text"
                       value={teamA[1]}
+                      readOnly={isPreFilled}
                       onChange={(e) => setTeamA([teamA[0], e.target.value])}
                       placeholder="Enter full name"
-                      className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20"
+                      className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
                     />
                   </div>
                 )}
@@ -711,7 +685,7 @@ export default function MatchSetupPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="bg-surface border border-foreground/5 rounded-3xl p-6 shadow-xl">
               <h2 className="text-lg font-black uppercase tracking-wide mb-6 text-foreground drop-shadow-md">
-                {sport !== 'Badminton' ? 'Team 2 Details' : isDoubles ? 'Team 2 Roster' : 'Player 2 Details'}
+                {sport !== 'Badminton' ? 'Team 2 Details' : isDoubles ? 'Team 2' : 'Player 2 Details'}
               </h2>
 
               <div className="space-y-5">
@@ -722,9 +696,10 @@ export default function MatchSetupPage() {
                   <input
                     type="text"
                     value={teamB[0]}
+                    readOnly={isPreFilled}
                     onChange={(e) => setTeamB([e.target.value, teamB[1]])}
                     placeholder="Enter full name"
-                    className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20"
+                    className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
                   />
                 </div>
                 {isDoubles && sport === 'Badminton' && (
@@ -733,9 +708,10 @@ export default function MatchSetupPage() {
                     <input
                       type="text"
                       value={teamB[1]}
+                      readOnly={isPreFilled}
                       onChange={(e) => setTeamB([teamB[0], e.target.value])}
                       placeholder="Enter full name"
-                      className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20"
+                      className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
                     />
                   </div>
                 )}
@@ -843,7 +819,7 @@ export default function MatchSetupPage() {
           className="w-full bg-red-500 text-foreground font-black uppercase tracking-widest py-4 rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-red-400 active:scale-[0.98] transition-all shadow-[0_10px_40px_rgba(239,68,68,0.3)] border border-red-400/50"
         >
           {activeTab === 'sport' ? 'Configure Rules' : activeTab === 'rules' ? 'Configure Team 1' : activeTab === 'team1' ? 'Configure Team 2' : 'Start Scoring Match'}
-          {activeTab !== 'team2' ? <span className="ml-1 text-lg font-normal">›</span> : <Activity className="w-4 h-4 ml-1" />}
+          {activeTab !== 'team2' ? <ChevronRight className="w-5 h-5 ml-1" /> : <Activity className="w-5 h-5 ml-1" />}
         </button>
       </div>
 
@@ -860,3 +836,4 @@ export default function MatchSetupPage() {
     </div>
   );
 }
+export default function MatchSetupPage() { return <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><MatchSetupContent /></Suspense>; }

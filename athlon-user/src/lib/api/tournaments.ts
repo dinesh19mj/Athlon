@@ -49,6 +49,48 @@ export const TournamentService = {
     api.post<{ data: null }>(`/api/tournament/tournaments/deactivateTournament/${uuid}`, {})
 };
 
+export interface DrawResponse {
+  message: string;
+  data: any; // Simplified for now
+}
+
+export interface Match {
+  id: number;
+  uuid: string;
+  tournamentId?: number;
+  tournamentUuid?: string;
+  teamARegistrationId: number | null;
+  teamARegistrationUuid: string | null;
+  teamBRegistrationId: number | null;
+  teamBRegistrationUuid: string | null;
+  courtId: number | null;
+  scheduledTime: string | null;
+  status: string;
+  winnerRegistrationId: number | null;
+  winnerRegistrationUuid: string | null;
+  nextMatchUuid: string | null;
+  umpirePhone?: string;
+  poolId?: number | null;
+  poolName?: string | null;
+}
+
+export const MatchService = {
+  getByTournament: async (tournamentUuid: string): Promise<Match[]> => {
+    const res = await api.get<{ data: Match[] }>(`/api/tournament/matches/tournament/${tournamentUuid}`);
+    return res.data || [];
+  },
+
+  updateCourt: async (matchUuid: string, courtId: number) => {
+    const res = await api.put<{ data: Match }>(`/api/tournament/matches/${matchUuid}/court?courtId=${courtId}`, {});
+    return res.data;
+  },
+
+  updateUmpire: async (matchUuid: string, umpirePhone: string) => {
+    const res = await api.put<{ data: Match }>(`/api/tournament/matches/${matchUuid}/umpire?umpirePhone=${encodeURIComponent(umpirePhone)}`, {});
+    return res.data;
+  }
+};
+
 export interface CategoryCreateRequest {
   organizationId: number;
   organizationUuid: string;
@@ -65,6 +107,8 @@ export const CategoryService = {
 };
 
 export interface RegistrationPlayer {
+  registrationPlayerId?: number;
+  registrationPlayerUuid?: string;
   playerId?: number;
   playerUuid?: string;
   playerName: string;
@@ -78,6 +122,7 @@ export interface Registration {
   registrationUuid?: string;
   tournamentId: number;
   categoryId: number;
+  primaryContactId?: number;
   teamName: string;
   status: string;
   paymentStatus?: string;
@@ -89,8 +134,96 @@ export interface Registration {
 export const RegistrationService = {
   getByTournament: (tournamentId: number) =>
     api.get<{ data: Registration[] }>(`/api/tournament/registrations/get-by-tournament?tournamentId=${tournamentId}`),
+  getByUser: (userId: string) =>
+    api.get<{ data: Registration[] }>(`/api/tournament/registrations/get-by-user?userId=${userId}`),
   updateStatus: (uuid: string, status: string, updatedBy?: number) =>
     api.post<{ data: Registration }>(`/api/tournament/registrations/${uuid}/status?status=${status}${updatedBy ? `&updatedBy=${updatedBy}` : ''}`, {}),
   updatePaymentStatus: (uuid: string, status: string, updatedBy?: number) =>
     api.post<{ data: Registration }>(`/api/tournament/registrations/${uuid}/payment-status?status=${status}${updatedBy ? `&updatedBy=${updatedBy}` : ''}`, {}),
+  addPlayers: (uuid: string, players: { playerName: string; phoneNumber?: string }[], updatedBy?: number) =>
+    api.post<{ data: Registration }>(`/api/tournament/registrations/${uuid}/players${updatedBy ? `?updatedBy=${updatedBy}` : ''}`, players),
+};
+
+export interface TeamEventRosterPlayer {
+  rosterPlayerId?: number;
+  rosterPlayerUuid?: string;
+  tournamentId?: number;
+  teamRegistrationId?: number;
+  playerName: string;
+  phoneNumber?: string;
+  playerId?: number;
+  categoryId?: number;
+  categoryName?: string;
+}
+
+export const TeamEventRosterService = {
+  getTeamRoster: (registrationUuid: string) =>
+    api.get<{ data: TeamEventRosterPlayer[] }>(`/api/tournament/team-events/roster/${registrationUuid}`),
+  addPlayers: (registrationUuid: string, players: TeamEventRosterPlayer[], updatedBy?: number) =>
+    api.post<{ data: TeamEventRosterPlayer[] }>(`/api/tournament/team-events/roster/${registrationUuid}/players${updatedBy ? `?updatedBy=${updatedBy}` : ''}`, players)
+};
+
+export const DrawService = {
+    generateDraw: (tournamentUuid: string, type: string) =>
+        api.post<{ data: any }>(`/api/tournament/draws/generate/${tournamentUuid}?type=${type}`, {}),
+    generateManualDraw: (tournamentUuid: string, requestBody: any) =>
+        api.post<{ data: any }>(`/api/tournament/draws/manual/${tournamentUuid}`, requestBody),
+    generateLeagueDraw: (tournamentUuid: string, requestBody: any) =>
+        api.post<{ data: any }>(`/api/tournament/draws/league/${tournamentUuid}`, requestBody),
+    generateLeaguePlayoffs: (tournamentUuid: string) =>
+        api.post<{ data: any }>(`/api/tournament/draws/league-playoffs/${tournamentUuid}`, {}),
+    getStandings: (tournamentUuid: string) =>
+        api.get<any>(`/api/tournament/draws/standings/${tournamentUuid}`),
+    deleteDraw: (tournamentUuid: string) =>
+        api.delete<{ data: any }>(`/api/tournament/draws/${tournamentUuid}`),
+};
+
+export interface CourtConfig {
+  id: number;
+  tournamentUuid?: string;
+  name: string;
+  streamKey: string;
+  enableStream?: boolean;
+}
+
+export const StreamConfigService = {
+  getByTournament: async (tournamentUuid: string): Promise<CourtConfig[]> => {
+    try {
+      const res = await api.get<{ data: any[] }>(`/api/tournament/stream-config/${tournamentUuid}`);
+      if (res.data) {
+        return res.data.map((c: any) => ({
+          id: c.id,
+          tournamentUuid: c.tournamentUuid,
+          name: c.courtName,
+          streamKey: c.streamKey || '',
+          enableStream: !!c.streamKey
+        }));
+      }
+      return [];
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
+  
+  saveConfigs: async (tournamentUuid: string, configs: CourtConfig[]): Promise<CourtConfig[]> => {
+    const payload = configs.map(c => ({
+      id: (c.id && c.id > 1000000000000) ? null : c.id,
+      courtName: c.name,
+      streamKey: c.enableStream ? (c.streamKey || '') : ''
+    }));
+    
+    const res = await api.post<{ data: any[] }>(`/api/tournament/stream-config/${tournamentUuid}`, payload);
+    
+    if (res.data) {
+       return res.data.map((c: any) => ({
+         id: c.id,
+         tournamentUuid: c.tournamentUuid,
+         name: c.courtName,
+         streamKey: c.streamKey || '',
+         enableStream: !!c.streamKey
+       }));
+    }
+    return [];
+  }
 };

@@ -44,7 +44,7 @@ export default function CreateCategoryPage() {
         organizationUuid: orgUuid,
         sportType: formData.sportType,
         categoryName: formData.categoryName,
-        createdBy: userId || 0
+        createdBy: userId ? Number(userId) : 0
       });
       
       if (returnTo === "create-tournament") {

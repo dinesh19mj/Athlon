@@ -56,6 +56,8 @@ public class TournamentCreateRequest {
 
     private Long createdBy;
 
+    private String teamEventCategories;
+
     public TournamentCreateRequest() {
     }
 
@@ -217,5 +219,13 @@ public class TournamentCreateRequest {
 
     public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getTeamEventCategories() {
+        return teamEventCategories;
+    }
+
+    public void setTeamEventCategories(String teamEventCategories) {
+        this.teamEventCategories = teamEventCategories;
     }
 }

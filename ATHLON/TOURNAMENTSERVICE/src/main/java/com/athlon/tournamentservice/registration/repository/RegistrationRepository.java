@@ -25,4 +25,6 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
 			String paymentStatus);
 
 	List<Registration> findByCategoryIdAndStatus(Long categoryId, String status);
+
+	List<Registration> findByCreatedBy(Long createdBy);
 }

@@ -11,5 +11,6 @@ import java.util.UUID;
 public interface ScoreRepository extends JpaRepository<Score, Long> {
     Optional<Score> findByScoreUuid(UUID scoreUuid);
     Optional<Score> findByMatchIdAndIsActiveTrue(Long matchId);
+    Optional<Score> findByMatchUuidAndIsActiveTrue(UUID matchUuid);
 }
 

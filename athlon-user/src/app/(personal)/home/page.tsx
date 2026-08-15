@@ -32,7 +32,7 @@ const quickActions = [
   { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, color: 'text-[#1B9C56]' },
   { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, color: 'text-orange-400' },
   { id: '/home/matches', label: 'Matches', icon: Activity, color: 'text-[#1B9C56]' },
-  { id: '/home/wallet', label: 'Registered', icon: ClipboardList, color: 'text-purple-400' },
+  { id: '/home/registered', label: 'Registered', icon: ClipboardList, color: 'text-purple-400' },
 ];
 
 const upcomingMatches = [

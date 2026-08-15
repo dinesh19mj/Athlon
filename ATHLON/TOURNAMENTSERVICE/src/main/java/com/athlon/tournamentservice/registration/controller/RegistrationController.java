@@ -1,5 +1,6 @@
 package com.athlon.tournamentservice.registration.controller;
 
+import com.athlon.tournamentservice.dto.request.PlayerRequest;
 import com.athlon.tournamentservice.dto.request.RegistrationCreateRequest;
 import com.athlon.tournamentservice.dto.response.ApiResponse;
 import com.athlon.tournamentservice.dto.response.RegistrationResponse;
@@ -52,6 +53,12 @@ public class RegistrationController {
         return ResponseEntity.ok(ApiResponse.success("Registrations retrieved successfully", response));
     }
 
+    @GetMapping("/get-by-user")
+    public ResponseEntity<ApiResponse<List<RegistrationResponse>>> getRegistrationsByUser(@RequestParam("userId") Long userId) {
+        List<RegistrationResponse> response = registrationService.getRegistrationsByUser(userId);
+        return ResponseEntity.ok(ApiResponse.success("Registrations retrieved successfully", response));
+    }
+
     @PostMapping("/{uuid}/status")
     public ResponseEntity<ApiResponse<RegistrationResponse>> updateStatus(
             @PathVariable("uuid") UUID uuid, 
@@ -68,6 +75,14 @@ public class RegistrationController {
             @RequestParam(value = "updatedBy", required = false) Long updatedBy) {
         RegistrationResponse response = registrationService.updatePaymentStatus(uuid, status, updatedBy);
         return ResponseEntity.ok(ApiResponse.success("Registration payment status updated successfully", response));
+    }
+    @PostMapping("/{uuid}/players")
+    public ResponseEntity<ApiResponse<RegistrationResponse>> addPlayers(
+            @PathVariable("uuid") UUID uuid,
+            @RequestBody List<PlayerRequest> players,
+            @RequestParam(value = "updatedBy", required = false) Long updatedBy) {
+        RegistrationResponse response = registrationService.addPlayersToRegistration(uuid, players, updatedBy);
+        return ResponseEntity.ok(ApiResponse.success("Players added successfully", response));
     }
 }
 

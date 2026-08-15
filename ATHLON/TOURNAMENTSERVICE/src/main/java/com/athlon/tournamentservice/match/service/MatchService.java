@@ -9,17 +9,34 @@ import com.athlon.tournamentservice.sport.SportEngine;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import com.athlon.tournamentservice.registration.repository.RegistrationRepository;
+import com.athlon.tournamentservice.teamevent.repository.TeamEventLineupRepository;
+import com.athlon.tournamentservice.tournament.repository.TournamentRepository;
+import com.athlon.tournamentservice.streaming.repository.TournamentStreamConfigRepository;
+import com.athlon.tournamentservice.tournament.entity.Tournament;
+import com.athlon.tournamentservice.streaming.entity.TournamentStreamConfig;
 
 @Service
 public class MatchService {
 
     private final MatchRepository matchRepository;
     private final SportEngine sportEngine;
+    private final RegistrationRepository registrationRepository;
+    private final TeamEventLineupRepository teamEventLineupRepository;
+    private final TournamentRepository tournamentRepository;
+    private final TournamentStreamConfigRepository streamConfigRepository;
 
-    public MatchService(MatchRepository matchRepository, SportEngine sportEngine) {
+    public MatchService(MatchRepository matchRepository, SportEngine sportEngine, RegistrationRepository registrationRepository, TeamEventLineupRepository teamEventLineupRepository, TournamentRepository tournamentRepository, TournamentStreamConfigRepository streamConfigRepository) {
         this.matchRepository = matchRepository;
         this.sportEngine = sportEngine;
+        this.registrationRepository = registrationRepository;
+        this.teamEventLineupRepository = teamEventLineupRepository;
+        this.tournamentRepository = tournamentRepository;
+        this.streamConfigRepository = streamConfigRepository;
     }
 
     @Transactional
@@ -36,16 +53,83 @@ public class MatchService {
         );
 
         Match saved = matchRepository.save(match);
-        return MatchResponse.fromEntity(saved);
+        return populateTeamNames(MatchResponse.fromEntity(saved));
     }
 
     @Transactional(readOnly = true)
     public MatchResponse getMatchByUuid(UUID uuid) {
-        Match match = matchRepository.findByUuid(uuid)
+        Match match = matchRepository.findByMatchUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Match not found with UUID: " + uuid));
-        return MatchResponse.fromEntity(match);
+        return populateTeamNames(MatchResponse.fromEntity(match));
     }
 
-    // Example of using SportEngine inside a Match processing flow could be added here
-}
+    @Transactional(readOnly = true)
+    public java.util.List<MatchResponse> getMatchesByTournament(UUID tournamentUuid) {
+        return matchRepository.findByTournamentUuid(tournamentUuid).stream()
+                .map(MatchResponse::fromEntity)
+                .map(this::populateTeamNames)
+                .collect(Collectors.toList());
+    }
 
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getMatchesByUser(Long userId) {
+        return matchRepository.findMatchesByUserId(userId).stream()
+                .map(MatchResponse::fromEntity)
+                .map(this::populateTeamNames)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MatchResponse> getMatchesByUmpirePhone(String phone) {
+        return matchRepository.findByUmpirePhone(phone).stream()
+                .map(MatchResponse::fromEntity)
+                .map(this::populateTeamNames)
+                .collect(Collectors.toList());
+    }
+
+    public MatchResponse updateMatchCourt(UUID uuid, Long courtId) {
+        Match match = matchRepository.findByMatchUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found with UUID: " + uuid));
+        match.setCourtId(courtId);
+        Match updatedMatch = matchRepository.save(match);
+        return populateTeamNames(MatchResponse.fromEntity(updatedMatch));
+    }
+
+    public MatchResponse updateMatchUmpire(UUID uuid, String umpirePhone) {
+        Match match = matchRepository.findByMatchUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found with UUID: " + uuid));
+        match.setUmpirePhone(umpirePhone);
+        Match updatedMatch = matchRepository.save(match);
+        return populateTeamNames(MatchResponse.fromEntity(updatedMatch));
+    }
+
+    private MatchResponse populateTeamNames(MatchResponse response) {
+        if (response == null) return null;
+        if (response.getTeamARegistrationId() != null) {
+            registrationRepository.findById(response.getTeamARegistrationId())
+                    .ifPresent(reg -> response.setTeamAName(reg.getTeamName()));
+            teamEventLineupRepository.findByFixtureMatchIdAndTeamRegistrationId(response.getId(), response.getTeamARegistrationId())
+                    .ifPresent(lineup -> response.setTeamALineupStatus(lineup.getStatus()));
+        }
+        if (response.getTeamBRegistrationId() != null) {
+            registrationRepository.findById(response.getTeamBRegistrationId())
+                    .ifPresent(reg -> response.setTeamBName(reg.getTeamName()));
+            teamEventLineupRepository.findByFixtureMatchIdAndTeamRegistrationId(response.getId(), response.getTeamBRegistrationId())
+                    .ifPresent(lineup -> response.setTeamBLineupStatus(lineup.getStatus()));
+        }
+        if (response.getTournamentId() != null) {
+            tournamentRepository.findById(response.getTournamentId())
+                    .ifPresent(t -> {
+                        response.setTournamentName(t.getName());
+                        response.setSportType(t.getSport());
+                        response.setTournamentType(t.getTournamentType());
+                    });
+        }
+        if (response.getCourtId() != null) {
+            streamConfigRepository.findById(response.getCourtId())
+                    .ifPresent(c -> response.setCourtName(c.getCourtName()));
+        }
+
+        return response;
+    }
+}

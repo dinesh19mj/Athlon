@@ -96,29 +96,31 @@ export default function PersonalTournamentDetailsPage() {
           )}
           
           <div className="p-6 md:p-8 relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 bg-[#1B9C56]/20 text-[#1B9C56] border border-[#1B9C56]/30 rounded-full text-[10px] font-black uppercase tracking-widest">
+            <div className="flex items-center flex-wrap gap-3 mb-2">
+              <span className="text-[#1B9C56] text-sm font-bold uppercase tracking-wider">
                 {tournament.sport}
               </span>
-              <span className="px-3 py-1 bg-foreground/5 text-foreground/70 border border-foreground/10 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                <ActivityIcon className="w-3 h-3" />
-                {tournament.tournamentType === 'TEAM_EVENT' ? 'Team League' : 'Knockout'}
+              <span className="text-foreground/70 text-sm font-semibold flex items-center gap-2 before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-foreground/20">
+                {tournament.tournamentType === 'KNOCKOUT' ? 'Knockout' : tournament.tournamentType === 'LEAGUE' ? 'League' : tournament.tournamentType === 'TEAM_EVENT' ? 'Team League' : tournament.tournamentType}
+              </span>
+              <span className="px-2 py-0.5 ml-2 bg-[#1B9C56]/20 text-[#1B9C56] rounded-full text-[10px] font-bold uppercase tracking-wide">
+                {tournament.visibility}
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black leading-tight text-foreground mb-4">
+            <h1 className="text-3xl md:text-4xl font-black leading-tight text-foreground mt-1 mb-4">
               {tournament.name}
             </h1>
 
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-3 text-foreground/80">
-                <Calendar className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-sm font-semibold">{startDate} - {endDate}</span>
-              </div>
-              <div className="flex items-center gap-3 text-foreground/80">
-                <MapPin className="w-5 h-5 text-orange-400 shrink-0" />
-                <span className="text-sm font-semibold">{tournament.location || 'Location TBD'}</span>
-              </div>
+            <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-foreground/70">
+              <p className="flex items-center gap-1.5 font-semibold">
+                <Calendar className="w-4 h-4 text-[#1B9C56]" />
+                {startDate} - {endDate}
+              </p>
+              <p className="flex items-center gap-1.5 font-semibold">
+                <MapPin className="w-4 h-4 text-orange-400" />
+                {tournament.location || 'Location TBD'}
+              </p>
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ const CricketScoringBoard = dynamic(() => import('./CricketScoringBoard'), { ssr
 const BadmintonScoringBoard = dynamic(() => import('./BadmintonScoringBoard'), { ssr: false });
 const FootballScoringBoard = dynamic(() => import('./FootballScoringBoard'), { ssr: false });
 const VolleyballScoringBoard = dynamic(() => import('./VolleyballScoringBoard'), { ssr: false });
+const TeamEventScoringBoard = dynamic(() => import('./TeamEventScoringBoard'), { ssr: false });
 
 export default function UmpireScoringPage({ params }: { params: Promise<{ matchId: string }> }) {
   return (
@@ -20,8 +21,14 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
 function UmpireScoringContent({ params }: { params: Promise<{ matchId: string }> }) {
   const searchParams = useSearchParams();
   const sport = searchParams.get('sport');
+  const tournamentType = searchParams.get('tournamentType');
+  const categoryId = searchParams.get('categoryId');
 
   const { matchId } = React.use(params);
+
+  if (tournamentType === 'TEAM_EVENT' && !categoryId) {
+    return <TeamEventScoringBoard matchId={matchId} />;
+  }
 
   if (sport === 'Cricket') return <CricketScoringBoard />;
   if (sport === 'Football') return <FootballScoringBoard />;

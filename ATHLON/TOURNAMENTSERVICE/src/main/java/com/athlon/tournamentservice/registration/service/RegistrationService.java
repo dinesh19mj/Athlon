@@ -76,6 +76,13 @@ public class RegistrationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<RegistrationResponse> getRegistrationsByUser(Long userId) {
+        return registrationRepository.findByCreatedBy(userId).stream()
+                .map(this::mapRegistrationToResponse)
+                .collect(Collectors.toList());
+    }
+
     private RegistrationResponse mapRegistrationToResponse(Registration registration) {
         List<RegistrationPlayer> players = registrationPlayerRepository.findByRegistrationId(registration.getRegistrationId());
         List<PlayerResponse> playerResponses = players.stream()
@@ -109,6 +116,34 @@ public class RegistrationService {
         if (updatedBy != null) registration.setUpdatedBy(updatedBy);
         Registration saved = registrationRepository.save(registration);
         return mapRegistrationToResponse(saved);
+    }
+
+    @Transactional
+    public RegistrationResponse addPlayersToRegistration(UUID uuid, List<PlayerRequest> newPlayers, Long updatedBy) {
+        Registration registration = registrationRepository.findByRegistrationUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Registration not found with UUID: " + uuid));
+
+        if (newPlayers != null && !newPlayers.isEmpty()) {
+            for (PlayerRequest playerRequest : newPlayers) {
+                RegistrationPlayer registrationPlayer = new RegistrationPlayer(
+                        registration.getRegistrationId(),
+                        registration.getRegistrationUuid(),
+                        registration.getTournamentId(),
+                        registration.getTournamentUuid(),
+                        playerRequest.getPlayerId(),
+                        playerRequest.getPlayerUuid(),
+                        playerRequest.getPlayerName(),
+                        playerRequest.getPhoneNumber(),
+                        updatedBy
+                );
+                registrationPlayerRepository.save(registrationPlayer);
+            }
+        }
+        
+        if (updatedBy != null) registration.setUpdatedBy(updatedBy);
+        registrationRepository.save(registration);
+
+        return mapRegistrationToResponse(registration);
     }
 }
 

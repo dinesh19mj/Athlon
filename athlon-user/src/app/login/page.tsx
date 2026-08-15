@@ -39,8 +39,9 @@ export default function LoginPage() {
       const roles = payload.roles || [];
       const lowerRoles = roles.map((r: string) => r.toLowerCase());
       
-      const userIdStr = response.data.userId?.toString() || payload.userId;
-      const userUuidStr = response.data.userUuid;
+      const responseData = response.data as any;
+      const userIdStr = responseData.userId?.toString() || payload.userId;
+      const userUuidStr = responseData.userUuid;
 
       // Update store
       login(identifier, token, userIdStr, userUuidStr);

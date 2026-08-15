@@ -1,19 +1,24 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, StopCircle, PlayCircle } from 'lucide-react';
+import { Camera, StopCircle, PlayCircle, ActivityIcon } from 'lucide-react';
 import { ScoringService } from '@/lib/api/scoring';
+import { api } from '@/lib/api/client';
+import { useSearchParams } from 'next/navigation';
 
 export default function StreamPage({ params }: { params: Promise<{ matchId: string }> }) {
   const [matchId, setMatchId] = useState<string | null>(null);
   const [state, setState] = useState<any | null>(null);
+  
+  const searchParams = useSearchParams();
+  const initialKey = searchParams.get('key') || '';
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [streamKey, setStreamKey] = useState('');
+  const [streamKey, setStreamKey] = useState(initialKey);
 
   useEffect(() => {
     params.then(p => setMatchId(p.matchId));
@@ -55,7 +60,9 @@ export default function StreamPage({ params }: { params: Promise<{ matchId: stri
       }
 
       // 2. Connect WebSocket to Java Backend
-      const ws = new WebSocket('ws://localhost:8080/ws/livestream');
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = process.env.NEXT_PUBLIC_API_URL ? new URL(process.env.NEXT_PUBLIC_API_URL).host : 'localhost:5050';
+      const ws = new WebSocket(`${protocol}//${host}/ws/livestream`);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -156,42 +163,44 @@ export default function StreamPage({ params }: { params: Promise<{ matchId: stri
   };
 
   return (
-    <div className="min-h-screen bg-black p-4 flex flex-col items-center justify-center text-white font-sans">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2"><Camera /> Live Stream Setup</h1>
+    <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center text-foreground font-sans">
+      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2"><Camera className="text-primary" /> Live Stream Configuration</h1>
       
       {!isStreaming ? (
-        <div className="bg-white/10 p-6 rounded-xl w-full max-w-md flex flex-col gap-4">
-          <label className="text-sm text-white/70">YouTube Stream Key</label>
-          <input 
-            type="text" 
-            value={streamKey}
-            onChange={e => setStreamKey(e.target.value)}
-            className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white outline-none focus:border-green-500"
-            placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
-          />
+        <div className="bg-surface-elevated border border-border p-8 rounded-2xl w-full max-w-md flex flex-col gap-6 shadow-xl">
+          <div>
+            <label className="text-sm font-semibold text-text-muted uppercase tracking-wider block mb-2">YouTube Stream Key</label>
+            <input 
+              type="text" 
+              value={streamKey}
+              onChange={e => setStreamKey(e.target.value)}
+              className="w-full bg-background border border-border rounded-lg px-4 py-3 text-foreground outline-none focus:border-primary transition-colors"
+              placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
+            />
+          </div>
           <button 
             onClick={startStream}
-            className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg mt-4 flex justify-center items-center gap-2"
+            className="w-full bg-primary hover:opacity-90 text-black font-bold py-3.5 rounded-lg flex justify-center items-center gap-2 transition-opacity shadow-lg shadow-primary/20"
           >
             <PlayCircle /> Start Live Stream
           </button>
         </div>
       ) : (
-        <div className="flex flex-col items-center w-full max-w-4xl gap-4">
-          <div className="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden border-2 border-red-500">
+        <div className="flex flex-col items-center w-full max-w-5xl gap-6">
+          <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-border shadow-2xl">
             {/* Hidden raw video */}
             <video ref={videoRef} playsInline muted className="hidden" />
             {/* Composited output */}
             <canvas ref={canvasRef} width={1280} height={720} className="w-full h-full object-contain" />
             
-            <div className="absolute top-4 right-4 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded animate-pulse">
-              LIVE
+            <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-live/10 text-live border border-live/30 font-bold rounded-lg animate-pulse backdrop-blur-sm">
+              <ActivityIcon className="w-4 h-4" /> LIVE
             </div>
           </div>
           
           <button 
             onClick={stopStream}
-            className="w-full max-w-md bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2"
+            className="w-full max-w-md bg-destructive hover:bg-destructive/90 text-white font-bold py-3.5 rounded-lg flex justify-center items-center gap-2 shadow-lg shadow-destructive/20 transition-all"
           >
             <StopCircle /> End Stream
           </button>

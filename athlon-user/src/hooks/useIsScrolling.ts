@@ -14,7 +14,7 @@ export function useIsScrolling() {
           const target = e.target as HTMLElement | Document;
           let currentScrollY = 0;
 
-          if (target === document || target === window) {
+          if (target === document || (target as any) === window) {
             currentScrollY = window.scrollY || document.documentElement.scrollTop;
           } else if (target instanceof HTMLElement) {
             currentScrollY = target.scrollTop;

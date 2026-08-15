@@ -18,7 +18,9 @@ import {
   GraduationCap,
   TrendingUp,
   Package,
-  BarChart2
+  BarChart2,
+  Video,
+  Play
 } from 'lucide-react';
 
 
@@ -44,10 +46,12 @@ export default function OrganizationDashboard() {
       actions.push({ id: `/org/${org.id}/schedule`, label: 'Schedule', icon: Calendar, color: 'text-orange-400' });
       actions.push({ id: `/org/${org.id}/performance`, label: 'Performance', icon: TrendingUp, color: 'text-blue-400' });
       actions.push({ id: `/org/${org.id}/matches`, label: 'Matches', icon: Activity, color: 'text-red-400' });
-      actions.push({ id: `/org/${org.id}/umpiring`, label: 'Umpiring', icon: ShieldCheck, color: 'text-red-500' });
+      actions.push({ id: `/org/${org.id}/match-setup`, label: 'Match Setup', icon: Play, color: 'text-amber-500' });
+      actions.push({ id: `/org/${org.id}/livestream`, label: 'Live Stream', icon: Video, color: 'text-red-500' });
     } else if (org.type === 'CLUB') {
       actions.push({ id: `/org/${org.id}/members`, label: 'Members', icon: Users, color: 'text-[#3B82F6]' });
       actions.push({ id: `/org/${org.id}/matches`, label: 'Matches', icon: Activity, color: 'text-red-400' });
+      actions.push({ id: `/org/${org.id}/match-setup`, label: 'Match Setup', icon: Play, color: 'text-amber-500' });
       actions.push({ id: `/org/${org.id}/attendance`, label: 'Attendance', icon: ClipboardList, color: 'text-green-500' });
       actions.push({ id: `/org/${org.id}/leaderboard`, label: 'Leaderboard', icon: BarChart2, color: 'text-purple-400' });
       actions.push({ id: `/org/${org.id}/inventory`, label: 'Inventory', icon: Package, color: 'text-orange-400' });
@@ -55,7 +59,8 @@ export default function OrganizationDashboard() {
     
     if (org.type === 'ORGANIZER' || org.type === 'ASSOCIATION') {
       actions.push({ id: `/org/${org.id}/tournaments`, label: 'Tournaments', icon: Trophy, color: 'text-yellow-400' });
-      actions.push({ id: `/org/${org.id}/umpiring`, label: 'Umpiring', icon: ShieldCheck, color: 'text-red-400' });
+      actions.push({ id: `/org/${org.id}/match-setup`, label: 'Match Setup', icon: Play, color: 'text-amber-500' });
+      actions.push({ id: `/org/${org.id}/livestream`, label: 'Live Stream', icon: Video, color: 'text-red-400' });
     }
 
     if (org.type === 'COURT') {

@@ -2,6 +2,7 @@ package com.athlon.tournamentservice.dto.response;
 
 import com.athlon.tournamentservice.registration.entity.Registration;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +21,8 @@ public class RegistrationResponse {
     private String status;
 
     private String paymentStatus;
+
+    private LocalDateTime createdAt;
 
     private List<PlayerResponse> players;
 
@@ -42,6 +45,7 @@ public class RegistrationResponse {
         response.setPlace(registration.getPlace());
         response.setStatus(registration.getStatus());
         response.setPaymentStatus(registration.getPaymentStatus());
+        response.setCreatedAt(registration.getCreatedAt());
 
         return response;
     }
@@ -124,6 +128,14 @@ public class RegistrationResponse {
 
     public void setPlayers(List<PlayerResponse> players) {
         this.players = players;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
 

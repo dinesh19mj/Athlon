@@ -141,7 +141,7 @@ export default function ProfilePage() {
             id: res.data.uuid,
             name: `${res.data.firstName} ${res.data.lastName}`,
             athlonId: '',
-            avatar: res.data.photo ? `http://localhost:5050/player/photo/${res.data.photo}` : ''
+            avatar: (res.data as any).photo ? `http://localhost:5050/player/photo/${(res.data as any).photo}` : ''
           });
         }
         if (orgsRes?.data) {
@@ -267,7 +267,7 @@ export default function ProfilePage() {
                   <Edit3 className="w-6 h-6 text-white" />
                 </div>
                 <img
-                  src={profile?.photo ? `http://localhost:5050/player/photo/${profile.photo}` : "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200&auto=format&fit=crop"}
+                  src={(profile as any)?.photo ? `http://localhost:5050/player/photo/${(profile as any).photo}` : "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200&auto=format&fit=crop"}
                   alt="User Avatar"
                   className="w-full h-full object-cover relative z-0"
                 />

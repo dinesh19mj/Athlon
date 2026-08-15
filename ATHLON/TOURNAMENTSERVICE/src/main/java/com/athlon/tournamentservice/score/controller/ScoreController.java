@@ -26,7 +26,7 @@ public class ScoreController {
 
     @PostMapping("/record-event")
     public ResponseEntity<ApiResponse<Score>> recordScoreEvent(
-            @RequestParam("matchId") Long matchId,
+            @RequestParam("matchId") String matchId,
             @RequestParam("sportType") String sportType,
             @RequestBody ScoreEvent event) {
         
@@ -35,14 +35,14 @@ public class ScoreController {
     }
 
     @GetMapping("/state/{matchId}")
-    public ResponseEntity<ApiResponse<Score>> getScoreState(@PathVariable Long matchId) {
+    public ResponseEntity<ApiResponse<Score>> getScoreState(@PathVariable String matchId) {
         Score score = scoreService.getScoreState(matchId);
         return ResponseEntity.ok(ApiResponse.success("Score state fetched successfully", score));
     }
 
     @PostMapping("/sync")
     public ResponseEntity<ApiResponse<Score>> syncScoreState(
-            @RequestParam("matchId") Long matchId,
+            @RequestParam("matchId") String matchId,
             @RequestBody com.fasterxml.jackson.databind.JsonNode state) {
         Score score = scoreService.syncScoreState(matchId, state);
         return ResponseEntity.ok(ApiResponse.success("Score state synced successfully", score));

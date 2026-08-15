@@ -12,7 +12,7 @@ export default function UmpireLayout({ children }: { children: React.ReactNode }
   const { logout } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const isScoringLive = pathname.includes('/scoring/live');
+  const isScoringLive = pathname.includes('/scoring/');
 
   const navItems = [
     { name: 'Home', href: '/umpire', icon: LayoutDashboard },
