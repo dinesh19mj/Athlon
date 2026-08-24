@@ -39,6 +39,9 @@ public class Tournament {
 	@Column(name = "enddate")
 	private LocalDateTime endDate;
 
+	@Column(name = "registrationclosingdate")
+	private LocalDateTime registrationClosingDate;
+
 	@Column(name = "organizerid", nullable = false)
 	private Long organizerId;
 
@@ -194,6 +197,14 @@ public class Tournament {
 
 	public void setEndDate(LocalDateTime endDate) {
 		this.endDate = endDate;
+	}
+
+	public LocalDateTime getRegistrationClosingDate() {
+		return registrationClosingDate;
+	}
+
+	public void setRegistrationClosingDate(LocalDateTime registrationClosingDate) {
+		this.registrationClosingDate = registrationClosingDate;
 	}
 
 	public Long getOrganizerId() {

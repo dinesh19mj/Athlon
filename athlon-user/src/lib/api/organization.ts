@@ -1,4 +1,35 @@
-import { api } from './client';
+import { api, fetchClient } from './client';
+
+export interface OrganizationProfile {
+  profileUuid?: string;
+  organizationId?: number;
+  organizationUuid: string;
+  name?: string;
+  type?: string;
+  description?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  city?: string;
+  district?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  website?: string;
+  logo?: string;
+  banner?: string;
+  isPublic?: number;
+  sportsOffered?: string;
+  admissionStatus?: string;
+  academyLevels?: string;
+  totalCourts?: number;
+  surfaceType?: string;
+  openingTime?: string;
+  closingTime?: string;
+  pricePerHour?: number;
+  amenities?: string;
+  updatedAt?: string;
+}
 
 export interface Organization {
   orgId?: number;
@@ -7,6 +38,7 @@ export interface Organization {
   description?: string;
   address?: string;
   city?: string;
+  district?: string;
   state?: string;
   country?: string;
   postalCode?: string;
@@ -16,6 +48,7 @@ export interface Organization {
   logo?: string;
   isActive?: number;
   subscriptionPackageUuid?: string;
+  profile?: OrganizationProfile;
 }
 
 export interface OrganizationMember {
@@ -33,6 +66,32 @@ export const OrganizationService = {
   update: (orgId: number, data: Organization) => 
     api.post<any>(`/api/identity/organizations/updateOrganization`, data),
     
+  saveProfile: (data: OrganizationProfile) =>
+    api.post<any>('/api/identity/organizations/saveProfile', data),
+
+  saveProfileMultipart: (formData: FormData) =>
+    fetchClient<any>('/api/identity/organizations/saveProfileMultipart', {
+      method: 'POST',
+      body: formData,
+    }),
+
+  getProfileByOrgUuid: (orgUuid: string) =>
+    api.get<any>(`/api/identity/organizations/getProfileByOrgUuid/${orgUuid}`),
+
+  getLogoUrl: (fileName: string) => {
+    if (!fileName) return '';
+    if (fileName.startsWith('http') || fileName.startsWith('data:') || fileName.startsWith('blob:')) return fileName;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+    return `${baseUrl}/api/identity/organizations/logo/${fileName}`;
+  },
+
+  getBannerUrl: (fileName: string) => {
+    if (!fileName) return '';
+    if (fileName.startsWith('http') || fileName.startsWith('data:') || fileName.startsWith('blob:')) return fileName;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+    return `${baseUrl}/api/identity/organizations/banner/${fileName}`;
+  },
+
   updateSubscription: (orgId: number, status: string, paymentRef?: string) => 
     api.post<any>(`/organization/updateSubscription/${orgId}?status=${status}${paymentRef ? `&paymentRef=${paymentRef}` : ''}`, {}),
     

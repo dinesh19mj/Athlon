@@ -105,7 +105,7 @@ export default function TournamentRegistrationsPage({ params }: { params: Promis
               <input 
                 type="text" 
                 placeholder="Search player name or ID..." 
-                className="w-full bg-surface border border-foreground/10 rounded-xl py-2 pl-9 pr-4 text-sm font-bold focus:outline-none focus:border-[#1B9C56] transition-colors"
+                className="w-full bg-surface border border-foreground/10 rounded-xl py-2 pl-9 pr-4 text-sm font-bold focus:outline-none focus:border-primary transition-colors"
               />
             </div>
             <button className="flex items-center justify-center p-2 md:px-4 md:py-2 bg-foreground/5 hover:bg-foreground/10 border border-foreground/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shrink-0">
@@ -119,7 +119,7 @@ export default function TournamentRegistrationsPage({ params }: { params: Promis
                 onClick={() => setFilter(f as any)}
                 className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors shrink-0 ${
                   filter === f 
-                    ? 'bg-[#1B9C56] text-black shadow-md' 
+                    ? 'bg-primary text-black shadow-md' 
                     : 'bg-surface border border-foreground/10 text-foreground/60 hover:text-foreground'
                 }`}
               >
@@ -141,7 +141,7 @@ export default function TournamentRegistrationsPage({ params }: { params: Promis
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {filteredRegistrations.map((reg) => (
-            <div key={reg.id} className="bg-surface border border-foreground/10 rounded-2xl overflow-hidden hover:border-[#1B9C56]/50 transition-colors group flex flex-col">
+            <div key={reg.id} className="bg-surface border border-foreground/10 rounded-2xl overflow-hidden hover:border-primary/50 transition-colors group flex flex-col">
               
               {/* Card Header (Category & Date) */}
               <div className="bg-foreground/5 p-4 flex justify-between items-center border-b border-foreground/5">
@@ -193,7 +193,7 @@ export default function TournamentRegistrationsPage({ params }: { params: Promis
                   onClick={() => togglePaymentStatus(reg.id)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 ${
                     reg.status === 'Paid' 
-                      ? 'bg-[#1B9C56] text-black shadow-[0_4px_15px_rgba(27,156,86,0.3)]' 
+                      ? 'bg-primary text-black shadow-[0_4px_15px_rgba(27,156,86,0.3)]' 
                       : 'bg-orange-500/10 text-orange-500 border border-orange-500/30'
                   }`}
                 >

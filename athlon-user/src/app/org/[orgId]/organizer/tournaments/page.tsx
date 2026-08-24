@@ -73,7 +73,7 @@ export default function OrganizerTournamentsPage() {
         </div>
         <button 
           onClick={() => setIsAdding(true)}
-          className="hidden md:flex bg-[#1B9C56] text-black font-bold py-2 px-4 rounded-xl items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(27,156,86,0.3)]"
+          className="hidden md:flex bg-primary text-black font-bold py-2 px-4 rounded-xl items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(27,156,86,0.3)]"
         >
           <PlusCircle className="w-5 h-5" /> New Tournament
         </button>
@@ -86,13 +86,13 @@ export default function OrganizerTournamentsPage() {
             <div className="flex justify-between items-start mb-4">
               <div className="flex gap-3">
                 <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center border border-foreground/5 group-hover:scale-105 transition-transform">
-                  <Trophy className={`w-6 h-6 ${tournament.status === 'ACTIVE' ? 'text-[#1B9C56]' : 'text-foreground/40'}`} />
+                  <Trophy className={`w-6 h-6 ${tournament.status === 'ACTIVE' ? 'text-primary' : 'text-foreground/40'}`} />
                 </div>
                 <div>
                   <h3 className="text-lg font-black tracking-tight">{tournament.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
-                      tournament.status === 'ACTIVE' ? 'bg-[#1B9C56]/20 text-[#1B9C56] border border-[#1B9C56]/30' : 
+                      tournament.status === 'ACTIVE' ? 'bg-primary/20 text-primary border border-primary/30' : 
                       tournament.status === 'COMPLETED' ? 'bg-foreground/10 text-foreground/60 border border-foreground/10' :
                       'bg-orange-500/20 text-orange-500 border border-orange-500/30'
                     }`}>
@@ -118,7 +118,7 @@ export default function OrganizerTournamentsPage() {
             </div>
 
             <div className="mt-4 pt-4 border-t border-foreground/5 flex justify-end">
-              <Link href={`/organizer/tournaments/${tournament.id}`} className="flex items-center gap-1 text-[#1B9C56] text-xs font-bold hover:underline">
+              <Link href={`/organizer/tournaments/${tournament.id}`} className="flex items-center gap-1 text-primary text-xs font-bold hover:underline">
                 MANAGE TOURNAMENT <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
@@ -130,7 +130,7 @@ export default function OrganizerTournamentsPage() {
       <div className="md:hidden fixed bottom-[90px] right-6 z-50">
         <button 
           onClick={() => setIsAdding(true)}
-          className="w-14 h-14 bg-[#1B9C56] text-black rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(27,156,86,0.4)] hover:scale-105 active:scale-95 transition-transform"
+          className="w-14 h-14 bg-primary text-black rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(27,156,86,0.4)] hover:scale-105 active:scale-95 transition-transform"
         >
           <PlusCircle className="w-8 h-8" />
         </button>
@@ -160,7 +160,7 @@ export default function OrganizerTournamentsPage() {
                 {/* Poster Upload */}
                 <div>
                   <label className="block text-[10px] font-black text-foreground/50 uppercase tracking-widest mb-2">Tournament Poster</label>
-                  <label className={`w-full h-40 border-2 border-dashed ${poster ? 'border-[#1B9C56]' : 'border-foreground/20'} rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-[#1B9C56] transition-colors relative overflow-hidden bg-background group`}>
+                  <label className={`w-full h-40 border-2 border-dashed ${poster ? 'border-primary' : 'border-foreground/20'} rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors relative overflow-hidden bg-background group`}>
                     <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                     {poster ? (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -171,7 +171,7 @@ export default function OrganizerTournamentsPage() {
                       </div>
                     ) : (
                       <>
-                        <Upload className="w-8 h-8 text-foreground/40 mb-2 group-hover:text-[#1B9C56] transition-colors" />
+                        <Upload className="w-8 h-8 text-foreground/40 mb-2 group-hover:text-primary transition-colors" />
                         <span className="text-sm font-bold text-foreground/60">Upload Poster Image</span>
                         <span className="text-[10px] text-foreground/40 mt-1">JPEG, PNG up to 5MB</span>
                       </>
@@ -193,7 +193,7 @@ export default function OrganizerTournamentsPage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Summer Smash 2026"
-                        className="w-full bg-background border border-foreground/10 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors"
+                        className="w-full bg-background border border-foreground/10 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                   </div>
@@ -211,7 +211,7 @@ export default function OrganizerTournamentsPage() {
                         value={place}
                         onChange={(e) => setPlace(e.target.value)}
                         placeholder="Stadium / Google Maps Link"
-                        className="w-full bg-background border border-foreground/10 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors"
+                        className="w-full bg-background border border-foreground/10 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                   </div>
@@ -226,7 +226,7 @@ export default function OrganizerTournamentsPage() {
                         setSport(e.target.value);
                         setCategory(''); // reset category on sport change
                       }}
-                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors appearance-none"
+                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
                     >
                       <option value="Badminton">Badminton</option>
                       <option value="Football">Football</option>
@@ -242,7 +242,7 @@ export default function OrganizerTournamentsPage() {
                       required
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors appearance-none"
+                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
                     >
                       <option value="" disabled>Select Category</option>
                       {sport === 'Badminton' ? (
@@ -281,7 +281,7 @@ export default function OrganizerTournamentsPage() {
                         value={fees}
                         onChange={(e) => setFees(e.target.value)}
                         placeholder="e.g. 500"
-                        className="w-full bg-background border border-foreground/10 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors"
+                        className="w-full bg-background border border-foreground/10 rounded-xl py-3 pl-11 pr-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors"
                       />
                     </div>
                   </div>
@@ -294,7 +294,7 @@ export default function OrganizerTournamentsPage() {
                       required
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors"
+                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors"
                     />
                   </div>
 
@@ -306,19 +306,19 @@ export default function OrganizerTournamentsPage() {
                       required
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors"
+                      className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors"
                     />
                   </div>
 
                   {/* Last Date of Entry */}
                   <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black text-[#1B9C56] uppercase tracking-widest mb-2">Registration Deadline</label>
+                    <label className="block text-[10px] font-black text-primary uppercase tracking-widest mb-2">Registration Deadline</label>
                     <input 
                       type="date" 
                       required
                       value={lastEntryDate}
                       onChange={(e) => setLastEntryDate(e.target.value)}
-                      className="w-full bg-[#1B9C56]/5 border border-[#1B9C56]/20 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] transition-colors"
+                      className="w-full bg-primary/5 border border-primary/20 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary transition-colors"
                     />
                   </div>
 
@@ -327,7 +327,7 @@ export default function OrganizerTournamentsPage() {
                 <div className="pt-6 pb-8 md:pb-2">
                   <button 
                     type="submit"
-                    className="w-full py-4 rounded-xl bg-[#1B9C56] text-black font-black tracking-wide shadow-[0_5px_20px_rgba(27,156,86,0.3)] hover:bg-[#158045] transition-colors uppercase"
+                    className="w-full py-4 rounded-xl bg-primary text-black font-black tracking-wide shadow-[0_5px_20px_rgba(27,156,86,0.3)] hover:bg-primary-dark transition-colors uppercase"
                   >
                     Create Tournament
                   </button>

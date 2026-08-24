@@ -21,7 +21,21 @@ export default function PlayerMatchesPage() {
       MatchService.getByUser(Number(userId))
         .then((response: any) => {
           if (response && response.data) {
-            setUserMatches(response.data);
+            const sorted = [...response.data].sort((a: Match, b: Match) => {
+              const isACompleted = a.status === 'COMPLETED';
+              const isBCompleted = b.status === 'COMPLETED';
+              if (!isACompleted && isBCompleted) return -1;
+              if (isACompleted && !isBCompleted) return 1;
+              const isALive = a.status === 'LIVE' || a.status === 'IN_PROGRESS';
+              const isBLive = b.status === 'LIVE' || b.status === 'IN_PROGRESS';
+              if (isALive && !isBLive) return -1;
+              if (!isALive && isBLive) return 1;
+              const timeA = a.scheduledTime ? new Date(a.scheduledTime).getTime() : (a.matchDate ? new Date(a.matchDate).getTime() : Infinity);
+              const timeB = b.scheduledTime ? new Date(b.scheduledTime).getTime() : (b.matchDate ? new Date(b.matchDate).getTime() : Infinity);
+              if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
+              return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
+            });
+            setUserMatches(sorted);
           }
         })
         .catch(err => {
@@ -43,7 +57,21 @@ export default function PlayerMatchesPage() {
           })
           .then((response: any) => {
              if (response && response.data && Array.isArray(response.data)) {
-                setUmpireMatches(response.data);
+                const sortedUmpire = [...response.data].sort((a: Match, b: Match) => {
+                  const isACompleted = a.status === 'COMPLETED';
+                  const isBCompleted = b.status === 'COMPLETED';
+                  if (!isACompleted && isBCompleted) return -1;
+                  if (isACompleted && !isBCompleted) return 1;
+                  const isALive = a.status === 'LIVE' || a.status === 'IN_PROGRESS';
+                  const isBLive = b.status === 'LIVE' || b.status === 'IN_PROGRESS';
+                  if (isALive && !isBLive) return -1;
+                  if (!isALive && isBLive) return 1;
+                  const timeA = a.scheduledTime ? new Date(a.scheduledTime).getTime() : (a.matchDate ? new Date(a.matchDate).getTime() : Infinity);
+                  const timeB = b.scheduledTime ? new Date(b.scheduledTime).getTime() : (b.matchDate ? new Date(b.matchDate).getTime() : Infinity);
+                  if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
+                  return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
+                });
+                setUmpireMatches(sortedUmpire);
              } else {
                 setUmpireMatches([]);
              }
@@ -67,7 +95,7 @@ export default function PlayerMatchesPage() {
     const isBApproved = match.teamBLineupStatus === 'APPROVED';
     
     if (isAApproved && isBApproved) {
-      return { text: 'Lineups Approved', color: 'bg-[#1B9C56]', icon: <CheckCircle className="w-4 h-4" /> };
+      return { text: 'Lineups Approved', color: 'bg-primary', icon: <CheckCircle className="w-4 h-4" /> };
     }
     
     return { text: 'Submit Lineup', color: 'bg-orange-500 hover:bg-orange-600', icon: <ClipboardList className="w-4 h-4" /> };
@@ -123,7 +151,7 @@ export default function PlayerMatchesPage() {
         <div className="flex bg-surface-elevated border border-border p-1 mt-6 rounded-xl max-w-sm shadow-sm">
           <button 
             onClick={() => setActiveTab('playing')}
-            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === 'playing' ? 'bg-[#1B9C56] text-black shadow-md' : 'text-text-muted hover:text-foreground'}`}
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === 'playing' ? 'bg-primary text-black shadow-md' : 'text-text-muted hover:text-foreground'}`}
           >
             Playing ({userMatches.length})
           </button>
@@ -161,15 +189,15 @@ export default function PlayerMatchesPage() {
                 const { date, time } = formatMatchDateTime(match);
                 
                 return (
-                <div key={match.id} className={`border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-colors group ${bothApproved ? 'bg-[#1B9C56]/5 border-[#1B9C56]/20 hover:border-[#1B9C56]/50' : 'bg-orange-500/5 border-orange-500/20 hover:border-orange-500/50'}`}>
+                <div key={match.id} className={`border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-colors group ${bothApproved ? 'bg-primary/5 border-primary/20 hover:border-primary/50' : 'bg-orange-500/5 border-orange-500/20 hover:border-orange-500/50'}`}>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${bothApproved ? 'bg-[#1B9C56]/20 text-[#1B9C56]' : 'bg-orange-500/20 text-orange-500'}`}>
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${bothApproved ? 'bg-primary/20 text-primary' : 'bg-orange-500/20 text-orange-500'}`}>
                         {bothApproved ? 'Lineup Approved' : 'Pending Lineup'}
                       </span>
                       <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">Team Event</span>
                     </div>
-                    <h3 className={`text-xl font-black tracking-tight mb-1 transition-colors ${bothApproved ? 'group-hover:text-[#1B9C56]' : 'group-hover:text-orange-500'}`}>
+                    <h3 className={`text-xl font-black tracking-tight mb-1 transition-colors ${bothApproved ? 'group-hover:text-primary' : 'group-hover:text-orange-500'}`}>
                       {match.teamAName && match.teamBName 
                         ? `${match.teamAName} vs ${match.teamBName}` 
                         : `Team Event Match #${match.id}`}
@@ -210,8 +238,8 @@ export default function PlayerMatchesPage() {
                   const isCompleted = match.status === 'COMPLETED';
 
                   return (
-                    <div key={match.id} className="relative bg-surface-elevated border border-border/80 rounded-2xl p-6 flex flex-col gap-5 hover:border-[#1B9C56]/50 shadow-md transition-all group overflow-hidden">
-                      <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-[#1B9C56] to-emerald-400"></div>
+                    <div key={match.id} className="relative bg-surface-elevated border border-border/80 rounded-2xl p-6 flex flex-col gap-5 hover:border-primary/50 shadow-md transition-all group overflow-hidden">
+                      <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-primary to-emerald-400"></div>
 
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -229,7 +257,7 @@ export default function PlayerMatchesPage() {
                           </span>
                         </div>
 
-                        <h3 className="text-xl font-bold text-foreground tracking-tight group-hover:text-[#1B9C56] transition-colors mb-2">
+                        <h3 className="text-xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors mb-2">
                           {match.tournamentName || `Tournament #${match.tournamentId}`}
                         </h3>
 

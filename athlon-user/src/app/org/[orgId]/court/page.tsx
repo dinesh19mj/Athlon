@@ -102,7 +102,7 @@ export default function CourtDashboardPage() {
             {quickActions.map((action) => (
               <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0 snap-start">
                 <div className="w-[68px] h-[68px] rounded-[16px] bg-surface border border-foreground/5 hover:border-foreground/20 flex flex-col items-center justify-center transition-colors shadow-lg cursor-pointer">
-                  <action.icon className={`w-6 h-6 ${action.color.replace('text-', '') === action.color ? action.color.replace('bg-', 'text-') : action.color}`} strokeWidth={1.5} />
+                  <action.icon className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} strokeWidth={1.5} />
                 </div>
                 <span className="text-[10px] font-medium text-foreground/80">{action.label}</span>
               </Link>

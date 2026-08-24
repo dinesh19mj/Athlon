@@ -1,65 +1,256 @@
 @import "tailwindcss";
-
 @plugin "tailwindcss-animate";
 
-:root {
-  /* Default: Dark Theme */
-  --bg: #0E1420;
-  --surface: #161D2B;
-  --surface-elevated: #1E2636;
-  --primary: #C6FF3D;
-  --live: #FF5F45;
-  --info: #3DA9FC;
-  --success: #00D68F;
-  --text: #F4F6FA;
-  --text-muted: #9AA5B8;
-  --border: #2A3344;
-  --accent: #C6FF3D;
-}
-
-.light {
-  /* Light Theme (for public live-view pages) */
-  --bg: #FFFFFF;
-  --surface: #F7F8FA;
-  --surface-elevated: #FFFFFF;
-  --primary: #FF5F45;
-  /* Ignite coral is primary here */
-  --live: #FF5F45;
-  --info: #185FA5;
-  --success: #1D9E75;
-  --text: #101423;
-  --text-muted: #5F6B7A;
-  --border: #E2E8F0;
-  --accent: #7BC400;
-  /* Volt lime darkened */
-}
-
+/* ─── Tailwind v4 Theme Token Bindings ───────────────────────────────────── */
 @theme {
-  --color-background: var(--bg);
-  --color-foreground: var(--text);
-  --color-surface: var(--surface);
-  --color-surface-elevated: var(--surface-elevated);
-  --color-primary: var(--primary);
-  --color-live: var(--live);
-  --color-info: var(--info);
-  --color-success: var(--success);
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
-  --color-border: var(--border);
-  --color-accent: var(--accent);
+  /* Backgrounds & Surfaces */
+  --color-background: var(--athlon-background);
+  --color-background-secondary: var(--athlon-background-secondary);
+  --color-surface: var(--athlon-surface);
+  --color-surface-hover: var(--athlon-surface-hover);
+  --color-surface-active: var(--athlon-surface-active);
+  --color-card: var(--athlon-card);
+  --color-card-hover: var(--athlon-card-hover);
+  --color-card-elevated: var(--athlon-card-elevated);
 
-  --font-sans: "Inter", Arial, Helvetica, sans-serif;
+  /* Borders */
+  --color-border: var(--athlon-border);
+  --color-border-strong: var(--athlon-border-strong);
+  --color-border-subtle: var(--athlon-border-subtle);
 
-  --radius-card: 16px;
-  --radius-pill: 9999px;
+  /* Primary Brand */
+  --color-primary: var(--athlon-primary);
+  --color-primary-hover: var(--athlon-primary-hover);
+  --color-primary-active: var(--athlon-primary-active);
+  --color-primary-light: var(--athlon-primary-light);
+  --color-primary-dark: var(--athlon-primary-dark);
+  --color-primary-foreground: var(--athlon-primary-foreground);
+
+  /* Typography */
+  --color-foreground: var(--athlon-text);
+  --color-text-secondary: var(--athlon-text-secondary);
+  --color-text-muted: var(--athlon-text-muted);
+  --color-text-disabled: var(--athlon-text-disabled);
+
+  /* Icons */
+  --color-icon: var(--athlon-icon);
+  --color-icon-muted: var(--athlon-icon-muted);
+  --color-icon-active: var(--athlon-icon-active);
+
+  /* Navigation & Layout */
+  --color-navigation: var(--athlon-navigation);
+  --color-header: var(--athlon-header);
+  --color-sidebar: var(--athlon-sidebar);
+  --color-panel: var(--athlon-panel);
+
+  /* Input */
+  --color-input: var(--athlon-input);
+
+  /* Semantic */
+  --color-success: var(--athlon-success);
+  --color-info: var(--athlon-info);
+  --color-warning: var(--athlon-warning);
+  --color-error: var(--athlon-error);
+  --color-live: var(--athlon-live);
+
+  /* Chart */
+  --color-chart-primary: var(--athlon-chart-primary);
+  --color-chart-secondary: var(--athlon-chart-secondary);
+  --color-chart-tertiary: var(--athlon-chart-tertiary);
+}
+
+/* ─── Default (Fallback) CSS Variables — Athlon Green ───────────────────── */
+:root {
+  /* Backgrounds & Surfaces — Deep Slate Navy */
+  --athlon-background: #0A0F1D;
+  --athlon-background-secondary: #0E1426;
+  --athlon-surface: #11182B;
+  --athlon-surface-hover: #1A243D;
+  --athlon-surface-active: #212F4E;
+  --athlon-card: #141C30;
+  --athlon-card-hover: #1C2742;
+  --athlon-card-elevated: #222F4F;
+
+  /* Borders */
+  --athlon-border: #202D47;
+  --athlon-border-strong: #2D3F63;
+  --athlon-border-subtle: #18233A;
+
+  /* Primary */
+  --athlon-primary: #54AC68;
+  --athlon-primary-hover: #68BE7B;
+  --athlon-primary-active: #3E9050;
+  --athlon-primary-light: #76BD86;
+  --athlon-primary-dark: #32673E;
+  --athlon-primary-soft: rgba(84, 172, 104, 0.12);
+  --athlon-primary-muted: rgba(84, 172, 104, 0.06);
+  --athlon-primary-glow: rgba(84, 172, 104, 0.22);
+  --athlon-primary-foreground: #050807;
+
+  /* Typography — High Contrast */
+  --athlon-text: #F8FAFC;
+  --athlon-text-secondary: #A4B3C6;
+  --athlon-text-muted: #748398;
+  --athlon-text-disabled: #4A576C;
+
+  /* Icons */
+  --athlon-icon: #98A7BE;
+  --athlon-icon-muted: #66768E;
+  --athlon-icon-active: #54AC68;
+
+  /* Inputs */
+  --athlon-input: #0D1322;
+  --athlon-input-border: #202D47;
+  --athlon-input-focus: #54AC68;
+
+  /* Navigation & Layout */
+  --athlon-navigation: #0E1527;
+  --athlon-navigation-active: #54AC68;
+  --athlon-navigation-hover: rgba(84, 172, 104, 0.08);
+  --athlon-header: #0E1527;
+  --athlon-sidebar: #0E1527;
+  --athlon-panel: #11182B;
+
+  /* Gradients */
+  --athlon-gradient-start: #0B1B12;
+  --athlon-gradient-middle: #143020;
+  --athlon-gradient-end: #54AC68;
+
+  /* Effects */
+  --athlon-shadow: rgba(0, 0, 0, 0.60);
+  --athlon-glow: rgba(84, 172, 104, 0.15);
+
+  /* Charts */
+  --athlon-chart-primary: #54AC68;
+  --athlon-chart-secondary: #3A7A4A;
+  --athlon-chart-tertiary: #A3D9B1;
+
+  /* Semantic — Always invariant */
+  --athlon-success: #54AC68;
+  --athlon-info: #14A3C7;
+  --athlon-warning: #F59E0B;
+  --athlon-error: #EF4444;
+  --athlon-live: #FF453A;
+}
+
+/* ─── Base Styles ─────────────────────────────────────────────────────────── */
+html {
+  height: 100%;
 }
 
 body {
-  background-color: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--athlon-background);
+  color: var(--athlon-text);
+  height: 100%;
 }
 
-/* Base resets or common utilities can go here */
+* {
+  border-color: var(--athlon-border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--athlon-border) transparent;
+}
+
+::selection {
+  background-color: var(--athlon-primary-soft);
+  color: var(--athlon-primary);
+}
+
+/* ─── Utility Classes ─────────────────────────────────────────────────────── */
+
+/* Glow */
+.athlon-glow {
+  box-shadow: 0 0 30px var(--athlon-glow), 0 0 60px var(--athlon-primary-muted);
+}
+.athlon-glow-sm {
+  box-shadow: 0 0 15px var(--athlon-glow);
+}
+
+/* Gradients */
+.athlon-gradient-primary {
+  background: linear-gradient(135deg, var(--athlon-gradient-start), var(--athlon-gradient-middle), var(--athlon-gradient-end));
+}
+.athlon-gradient-soft {
+  background: linear-gradient(180deg, var(--athlon-primary-soft) 0%, transparent 100%);
+}
+.athlon-gradient-surface {
+  background: linear-gradient(135deg, var(--athlon-surface) 0%, var(--athlon-card) 100%);
+}
+
+/* Cards */
+.athlon-card {
+  background-color: var(--athlon-card);
+  border: 1px solid var(--athlon-border);
+  border-radius: 1rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.athlon-card:hover {
+  background-color: var(--athlon-card-hover);
+  border-color: var(--athlon-border-strong);
+}
+.athlon-card-elevated {
+  background-color: var(--athlon-card-elevated);
+  border: 1px solid var(--athlon-border-strong);
+}
+
+/* Navigation */
+.athlon-nav-icon {
+  color: var(--athlon-icon-muted);
+  transition: color 0.2s ease;
+}
+.athlon-nav-icon:hover {
+  color: var(--athlon-icon);
+}
+.athlon-nav-icon-active {
+  color: var(--athlon-navigation-active);
+}
+
+/* Inputs */
+.athlon-input {
+  background-color: var(--athlon-input);
+  border: 1px solid var(--athlon-input-border);
+  color: var(--athlon-text);
+  transition: border-color 0.2s ease;
+}
+.athlon-input:focus {
+  border-color: var(--athlon-input-focus);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--athlon-primary-soft);
+}
+
+/* Scrollbar */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Ant Design Overrides ─────────────────────────────────────────────────── */
+.ant-modal-content {
+  background-color: var(--athlon-card) !important;
+  border: 1px solid var(--athlon-border) !important;
+}
+.ant-modal-header {
+  background-color: transparent !important;
+}
+.ant-table {
+  background: var(--athlon-surface) !important;
+  color: var(--athlon-text) !important;
+}
+.ant-table-thead > tr > th {
+  background: var(--athlon-card) !important;
+  color: var(--athlon-text-secondary) !important;
+  border-color: var(--athlon-border) !important;
+}
+.ant-table-tbody > tr > td {
+  background: var(--athlon-surface) !important;
+  border-color: var(--athlon-border-subtle) !important;
+}
+.ant-table-tbody > tr:hover > td {
+  background: var(--athlon-surface-hover) !important;
+}
+.ant-select-selector {
+  background-color: var(--athlon-input) !important;
+  border-color: var(--athlon-input-border) !important;
+}

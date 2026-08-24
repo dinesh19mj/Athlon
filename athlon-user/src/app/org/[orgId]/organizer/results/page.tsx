@@ -38,8 +38,8 @@ export default function OrganizerResultsPage() {
           <div key={result.id} className="bg-surface border border-foreground/5 rounded-2xl p-4 shadow-xl hover:border-foreground/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
             
             <div className="flex items-start md:items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#1B9C56]/10 flex items-center justify-center border border-[#1B9C56]/20 shrink-0">
-                <Trophy className="w-5 h-5 text-[#1B9C56]" />
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+                <Trophy className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-sm font-black uppercase tracking-widest">{result.winner}</h3>

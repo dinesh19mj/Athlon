@@ -64,7 +64,7 @@ export function SubscriptionPackages() {
             } else if (pkg.name.toLowerCase().includes('academy')) {
               type = 'ACADEMY';
               icon = Users;
-              color = 'text-[#1B9C56]';
+              color = 'text-primary';
             } else if (pkg.name.toLowerCase().includes('club')) {
               type = 'CLUB';
               icon = Building;
@@ -136,7 +136,7 @@ export function SubscriptionPackages() {
 
         {isLoadingModules ? (
           <div className="flex items-center justify-center py-20">
-            <span className="w-8 h-8 border-4 border-[#1B9C56] border-t-transparent rounded-full animate-spin"></span>
+            <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
           </div>
         ) : (
 
@@ -178,7 +178,7 @@ export function SubscriptionPackages() {
                           {feature.toLowerCase().includes('streaming') ? (
                             <Video className="w-4 h-4 text-red-500 shrink-0 mt-0.5 drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                           ) : (
-                            <Check className="w-4 h-4 text-[#1B9C56] shrink-0 mt-0.5 drop-shadow-[0_0_8px_rgba(27,156,86,0.6)]" />
+                            <Check className="w-4 h-4 text-primary shrink-0 mt-0.5 drop-shadow-[0_0_8px_rgba(27,156,86,0.6)]" />
                           )}
                           <span className="text-xs text-white/90 font-bold leading-tight">{feature}</span>
                         </div>
@@ -192,7 +192,7 @@ export function SubscriptionPackages() {
 
                     <button
                       onClick={() => handleSelectModule(mod)}
-                      className={`w-full relative z-10 text-sm font-black uppercase tracking-wider py-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-[#1B9C56] to-[#158045] text-black shadow-[0_0_20px_rgba(27,156,86,0.3)] hover:shadow-[0_0_30px_rgba(27,156,86,0.5)] hover:scale-[1.02] active:scale-[0.98]`}
+                      className={`w-full relative z-10 text-sm font-black uppercase tracking-wider py-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-[#158045] text-black shadow-[0_0_20px_rgba(27,156,86,0.3)] hover:shadow-[0_0_30px_rgba(27,156,86,0.5)] hover:scale-[1.02] active:scale-[0.98]`}
                     >
                       Select Module
                     </button>

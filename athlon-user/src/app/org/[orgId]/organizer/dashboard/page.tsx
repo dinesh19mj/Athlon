@@ -26,11 +26,11 @@ export default function DetailedDashboardPage() {
       {/* Main Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-surface p-5 rounded-3xl border border-foreground/5 shadow-xl relative overflow-hidden group hover:border-foreground/20 transition-all">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#1B9C56]/10 rounded-full blur-2xl group-hover:bg-[#1B9C56]/20 transition-colors" />
-          <DollarSign className="w-6 h-6 text-[#1B9C56] mb-4" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+          <DollarSign className="w-6 h-6 text-primary mb-4" />
           <p className="text-3xl font-black tracking-tight">$12,450</p>
           <p className="text-xs text-foreground/50 uppercase tracking-widest font-bold mt-1">Total Revenue</p>
-          <div className="flex items-center gap-1 text-[#1B9C56] text-[10px] font-bold mt-3 bg-[#1B9C56]/10 w-fit px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 text-primary text-[10px] font-bold mt-3 bg-primary/10 w-fit px-2 py-1 rounded-md">
             <TrendingUp className="w-3 h-3" /> +14% this month
           </div>
         </div>
@@ -67,11 +67,11 @@ export default function DetailedDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <div className="lg:col-span-2 bg-surface border border-foreground/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1B9C56]/5 to-transparent z-0 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent z-0 pointer-events-none" />
           <div className="relative z-10">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-black uppercase tracking-wide">Revenue Overview</h2>
-              <select className="bg-background border border-foreground/10 rounded-lg px-3 py-1.5 text-xs font-bold text-foreground outline-none focus:border-[#1B9C56]">
+              <select className="bg-background border border-foreground/10 rounded-lg px-3 py-1.5 text-xs font-bold text-foreground outline-none focus:border-primary">
                 <option>This Year</option>
                 <option>Last Year</option>
               </select>
@@ -80,9 +80,9 @@ export default function DetailedDashboardPage() {
             {/* Mock Chart Area */}
             <div className="h-64 flex items-end justify-between gap-2 pt-4">
               {[40, 60, 30, 80, 50, 90, 70, 100, 60, 40, 80, 50].map((height, i) => (
-                <div key={i} className="w-full bg-foreground/5 hover:bg-[#1B9C56]/40 transition-colors rounded-t-sm relative group cursor-crosshair" style={{ height: `${height}%` }}>
+                <div key={i} className="w-full bg-foreground/5 hover:bg-primary/40 transition-colors rounded-t-sm relative group cursor-crosshair" style={{ height: `${height}%` }}>
                   {/* Tooltip */}
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-background border border-[#1B9C56]/30 text-[#1B9C56] text-[10px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg whitespace-nowrap">
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-background border border-primary/30 text-primary text-[10px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg whitespace-nowrap">
                     ${height * 120}
                   </div>
                 </div>
@@ -110,11 +110,11 @@ export default function DetailedDashboardPage() {
             ].map((t, i) => (
               <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-background border border-foreground/5 hover:border-foreground/20 transition-colors group cursor-pointer">
                 <div>
-                  <h4 className="font-bold text-sm tracking-wide group-hover:text-[#1B9C56] transition-colors">{t.name}</h4>
+                  <h4 className="font-bold text-sm tracking-wide group-hover:text-primary transition-colors">{t.name}</h4>
                   <p className="text-[10px] text-foreground/40 uppercase tracking-widest mt-1">{t.players} Players</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-[#1B9C56] text-sm">{t.revenue}</p>
+                  <p className="font-black text-primary text-sm">{t.revenue}</p>
                 </div>
               </div>
             ))}

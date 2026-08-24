@@ -63,6 +63,12 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @GetMapping("/getUserByPhone/{phone}")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByPhone(@PathVariable("phone") String phone) {
+        UserResponse response = userService.getUserByPhone(phone);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @PostMapping("/searchUsers")
     public ResponseEntity<ApiResponse<List<UserResponse>>> searchUsers(@RequestBody UserSearchRequest request) {
         List<UserResponse> responses = userService.searchUsers(request);

@@ -1,8 +1,37 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { MapPin, Phone, Calendar, Clock, Play, Save, Users, User, Trophy, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
-import { TournamentService, MatchService, RegistrationService, StreamConfigService, Tournament, Match, Registration, CourtConfig } from "@/lib/api/tournaments";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  MapPin,
+  Phone,
+  Calendar,
+  Clock,
+  Play,
+  Save,
+  Users,
+  User,
+  Trophy,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Search,
+  Filter,
+  X,
+  RotateCcw,
+  Layers,
+  ShieldAlert,
+  SlidersHorizontal,
+} from "lucide-react";
+import {
+  TournamentService,
+  MatchService,
+  RegistrationService,
+  StreamConfigService,
+  Tournament,
+  Match,
+  Registration,
+  CourtConfig,
+} from "@/lib/api/tournaments";
 
 interface MatchSetupSettingsProps {
   tournamentId: string;
@@ -15,9 +44,15 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
   const [courts, setCourts] = useState<CourtConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Filters State
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'UNASSIGNED' | 'READY' | 'COMPLETED'>('ALL');
+  const [selectedPool, setSelectedPool] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
   // Local state for editing courts/umpires/schedules before saving
-  const [editState, setEditState] = useState<{ [matchUuid: string]: { courtId?: string, umpirePhone?: string, matchDate?: string, matchTime?: string } }>({});
+  const [editState, setEditState] = useState<{ [matchUuid: string]: { courtId?: string; umpirePhone?: string; matchDate?: string; matchTime?: string } }>({});
   const [savingMatches, setSavingMatches] = useState<{ [matchUuid: string]: boolean }>({});
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,18 +164,146 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
 
       if (updatedMatch) {
         setMatches(prev => prev.map(m => m.uuid === matchUuid ? updatedMatch! : m));
-        setEditState(prev => {
-          const newState = { ...prev };
-          delete newState[matchUuid];
-          return newState;
-        });
+        setFeedback({ type: 'success', message: 'Match settings updated successfully!' });
+        setTimeout(() => setFeedback(null), 3000);
       }
     } catch (error) {
       console.error("Failed to update match:", error);
-      alert("Failed to update match configuration.");
+      setFeedback({ type: 'error', message: 'Failed to update match configuration. Please try again.' });
+      setTimeout(() => setFeedback(null), 4000);
     } finally {
       setSavingMatches(prev => ({ ...prev, [matchUuid]: false }));
     }
+  };
+
+  const scheduledMatches = useMemo(
+    () => matches.filter((m) => m.teamARegistrationUuid != null || m.teamBRegistrationUuid != null),
+    [matches]
+  );
+
+  // Distinct Pools
+  const pools = useMemo(() => {
+    const set = new Set<string>();
+    scheduledMatches.forEach((m) => {
+      if (m.poolName) set.add(m.poolName);
+    });
+    return Array.from(set).sort();
+  }, [scheduledMatches]);
+
+  const hasNonPoolMatches = useMemo(
+    () => pools.length > 0 && scheduledMatches.some((m) => !m.poolName),
+    [pools, scheduledMatches]
+  );
+
+  // Status Counts
+  const counts = useMemo(() => {
+    let unassigned = 0;
+    let ready = 0;
+    let completed = 0;
+
+    scheduledMatches.forEach((m) => {
+      const isComp = m.status === 'COMPLETED';
+      if (isComp) {
+        completed++;
+      } else if (m.courtId && m.umpirePhone) {
+        ready++;
+      } else {
+        unassigned++;
+      }
+    });
+
+    return {
+      all: scheduledMatches.length,
+      unassigned,
+      ready,
+      completed,
+    };
+  }, [scheduledMatches]);
+
+  // Filtered Matches
+  const filteredMatches = useMemo(() => {
+    return scheduledMatches.filter((match) => {
+      const isComp = match.status === 'COMPLETED';
+      const isReady = !isComp && Boolean(match.courtId && match.umpirePhone);
+      const isUnassigned = !isComp && (!match.courtId || !match.umpirePhone);
+
+      // Status filter
+      if (statusFilter === 'UNASSIGNED' && !isUnassigned) return false;
+      if (statusFilter === 'READY' && !isReady) return false;
+      if (statusFilter === 'COMPLETED' && !isComp) return false;
+
+      // Pool filter
+      if (selectedPool !== 'ALL') {
+        if (selectedPool === 'NO_POOL' && match.poolName) return false;
+        if (selectedPool !== 'NO_POOL' && match.poolName !== selectedPool) return false;
+      }
+
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const teamA = registrations.find(
+          (r) => r.registrationUuid === match.teamARegistrationUuid || r.uuid === match.teamARegistrationUuid
+        );
+        const teamB = registrations.find(
+          (r) => r.registrationUuid === match.teamBRegistrationUuid || r.uuid === match.teamBRegistrationUuid
+        );
+
+        const matchPool = match.poolName?.toLowerCase() || '';
+        const matchRound = match.roundName?.toLowerCase() || '';
+        const umpire = match.umpirePhone?.toLowerCase() || '';
+        const teamAName = teamA?.teamName?.toLowerCase() || '';
+        const teamBName = teamB?.teamName?.toLowerCase() || '';
+        const playersA = teamA?.players?.map((p) => p.playerName.toLowerCase()).join(' ') || '';
+        const playersB = teamB?.players?.map((p) => p.playerName.toLowerCase()).join(' ') || '';
+
+        const hit =
+          matchPool.includes(q) ||
+          matchRound.includes(q) ||
+          umpire.includes(q) ||
+          teamAName.includes(q) ||
+          teamBName.includes(q) ||
+          playersA.includes(q) ||
+          playersB.includes(q);
+
+        if (!hit) return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      const isACompleted = a.status === 'COMPLETED';
+      const isBCompleted = b.status === 'COMPLETED';
+
+      // 1. Assigned / active matches first, completed matches later
+      if (!isACompleted && isBCompleted) return -1;
+      if (isACompleted && !isBCompleted) return 1;
+
+      // 2. LIVE / IN_PROGRESS matches at the very top of active matches
+      const isALive = a.status === 'LIVE' || a.status === 'IN_PROGRESS';
+      const isBLive = b.status === 'LIVE' || b.status === 'IN_PROGRESS';
+      if (isALive && !isBLive) return -1;
+      if (!isALive && isBLive) return 1;
+
+      // 3. Ascending order by scheduledTime or matchDate
+      const timeA = a.scheduledTime ? new Date(a.scheduledTime).getTime() : (a.matchDate ? new Date(a.matchDate).getTime() : Infinity);
+      const timeB = b.scheduledTime ? new Date(b.scheduledTime).getTime() : (b.matchDate ? new Date(b.matchDate).getTime() : Infinity);
+
+      if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) {
+        return timeA - timeB;
+      }
+
+      // 4. Tie breaker by id / matchNumber ascending
+      const idA = typeof a.id === 'number' ? a.id : (a.matchNumber || 0);
+      const idB = typeof b.id === 'number' ? b.id : (b.matchNumber || 0);
+      return idA - idB;
+    });
+  }, [scheduledMatches, statusFilter, selectedPool, searchQuery, registrations]);
+
+  const hasActiveFilters = statusFilter !== 'ALL' || selectedPool !== 'ALL' || searchQuery.trim() !== '';
+
+  const resetFilters = () => {
+    setStatusFilter('ALL');
+    setSelectedPool('ALL');
+    setSearchQuery('');
   };
 
   if (isLoading) {
@@ -154,12 +317,8 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
     );
   }
 
-  const scheduledMatches = matches.filter(m => m.teamARegistrationUuid != null || m.teamBRegistrationUuid != null);
-  const tournamentDates = getTournamentDateOptions();
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-surface border border-border/80 rounded-2xl shadow-sm">
         <div>
@@ -176,6 +335,235 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
         </div>
       </div>
 
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl border flex items-center gap-3 text-xs font-bold animate-in fade-in duration-200 ${feedback.type === 'success'
+              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+              : 'bg-red-500/15 text-red-400 border-red-500/30'
+            }`}
+        >
+          {feedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+          <span>{feedback.message}</span>
+        </div>
+      )}
+
+      {/* ── FILTERING & CONTROLS DASHBOARD ────────────────────────────── */}
+      <div className="space-y-4">
+        {/* 1. Status Filter Segmented Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* ALL MATCHES */}
+          <button
+            onClick={() => setStatusFilter('ALL')}
+            className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'ALL'
+                ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10 ring-1 ring-primary'
+                : 'bg-surface border-border/80 hover:border-foreground/30'
+              }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-text-muted">All Matches</span>
+              <div
+                className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${statusFilter === 'ALL' ? 'bg-primary text-black' : 'bg-background border border-border text-foreground/70'
+                  }`}
+              >
+                {counts.all}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-black text-foreground">
+              <span>Total Scheduled</span>
+            </div>
+          </button>
+
+          {/* UNASSIGNED */}
+          <button
+            onClick={() => setStatusFilter('UNASSIGNED')}
+            className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'UNASSIGNED'
+                ? 'bg-amber-500/15 border-amber-500 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500'
+                : 'bg-surface border-border/80 hover:border-amber-500/40'
+              }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Needs Setup</span>
+              <div
+                className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${statusFilter === 'UNASSIGNED'
+                    ? 'bg-amber-500 text-black'
+                    : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
+                  }`}
+              >
+                {counts.unassigned}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-black text-amber-400">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>Unassigned</span>
+            </div>
+          </button>
+
+          {/* READY */}
+          <button
+            onClick={() => setStatusFilter('READY')}
+            className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'READY'
+                ? 'bg-emerald-500/15 border-emerald-500 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500'
+                : 'bg-surface border-border/80 hover:border-emerald-500/40'
+              }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Ready to Play</span>
+              <div
+                className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${statusFilter === 'READY'
+                    ? 'bg-emerald-500 text-black'
+                    : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                  }`}
+              >
+                {counts.ready}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-black text-emerald-400">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Court & Umpire Set</span>
+            </div>
+          </button>
+
+          {/* COMPLETED */}
+          <button
+            onClick={() => setStatusFilter('COMPLETED')}
+            className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'COMPLETED'
+                ? 'bg-sky-500/15 border-sky-500 shadow-lg shadow-sky-500/10 ring-1 ring-sky-500'
+                : 'bg-surface border-border/80 hover:border-sky-500/40'
+              }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-sky-400">Finished</span>
+              <div
+                className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${statusFilter === 'COMPLETED'
+                    ? 'bg-sky-500 text-black'
+                    : 'bg-sky-500/15 border border-sky-500/30 text-sky-400'
+                  }`}
+              >
+                {counts.completed}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-black text-sky-400">
+              <Trophy className="w-3.5 h-3.5" />
+              <span>Completed</span>
+            </div>
+          </button>
+        </div>
+
+        {/* 2. Pool Filters & Search Bar Toolbar */}
+        <div className="p-3 bg-surface border border-border/80 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-sm">
+          {/* Pool Selection Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+            <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-text-muted px-2 py-1 shrink-0">
+              <Layers className="w-3.5 h-3.5 text-primary" />
+              <span>Pool:</span>
+            </div>
+
+            <button
+              onClick={() => setSelectedPool('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedPool === 'ALL'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                  : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
+                }`}
+            >
+              All ({scheduledMatches.length})
+            </button>
+
+            {pools.map((pool) => {
+              const poolCount = scheduledMatches.filter((m) => m.poolName === pool).length;
+              return (
+                <button
+                  key={pool}
+                  onClick={() => setSelectedPool(pool)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedPool === pool
+                      ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                      : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
+                    }`}
+                >
+                  {pool} ({poolCount})
+                </button>
+              );
+            })}
+
+            {hasNonPoolMatches && (
+              <button
+                onClick={() => setSelectedPool('NO_POOL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedPool === 'NO_POOL'
+                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                    : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
+                  }`}
+              >
+                Playoffs / Knockouts ({scheduledMatches.filter((m) => !m.poolName).length})
+              </button>
+            )}
+          </div>
+
+          {/* Search Input & Reset Button */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative flex-1 md:w-64">
+              <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search team, player, umpire..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-background border border-border text-xs text-foreground placeholder:text-text-muted/60 focus:outline-none focus:border-primary transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border bg-background hover:bg-white/5 text-xs font-bold text-foreground/70 hover:text-foreground transition-colors shrink-0"
+                title="Reset All Filters"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Reset</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Showing Count Status Tag */}
+        <div className="flex items-center justify-between text-xs text-text-muted px-1">
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+            <span>
+              Showing <strong className="text-foreground font-bold">{filteredMatches.length}</strong> of{' '}
+              <strong className="text-foreground font-bold">{scheduledMatches.length}</strong> matches
+            </span>
+          </div>
+
+          {hasActiveFilters && (
+            <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+              <span className="font-semibold text-text-muted">Active Filter:</span>
+              {statusFilter !== 'ALL' && (
+                <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary font-bold">
+                  {statusFilter}
+                </span>
+              )}
+              {selectedPool !== 'ALL' && (
+                <span className="px-2 py-0.5 rounded-md bg-white/10 border border-white/20 text-foreground font-bold">
+                  {selectedPool === 'NO_POOL' ? 'Playoffs' : selectedPool}
+                </span>
+              )}
+              {searchQuery && (
+                <span className="px-2 py-0.5 rounded-md bg-white/10 border border-white/20 text-foreground font-bold">
+                  &quot;{searchQuery}&quot;
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {scheduledMatches.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl bg-surface/30">
@@ -183,8 +571,23 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
             <p className="text-lg font-bold text-foreground">No matches scheduled yet.</p>
             <p className="text-sm text-text-muted max-w-sm mt-1">Generate the tournament draw first to see matches here.</p>
           </div>
+        ) : filteredMatches.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-16 text-center border border-dashed border-border rounded-2xl bg-surface/30 p-6">
+            <Filter className="w-10 h-10 text-text-muted/40 mb-3" />
+            <h4 className="text-sm font-bold text-foreground mb-1">No Matches Found</h4>
+            <p className="text-xs text-text-muted max-w-sm mb-4">
+              No matches match your current filter selection. Try changing the status, pool, or search query.
+            </p>
+            <button
+              onClick={resetFilters}
+              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Filters</span>
+            </button>
+          </div>
         ) : (
-          scheduledMatches.map((match, idx) => {
+          filteredMatches.map((match, idx) => {
             const teamA = registrations.find(r => r.registrationUuid === match.teamARegistrationUuid || r.uuid === match.teamARegistrationUuid);
             const teamB = registrations.find(r => r.registrationUuid === match.teamBRegistrationUuid || r.uuid === match.teamBRegistrationUuid);
             const isLive = match.status === 'LIVE';
@@ -226,12 +629,12 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
                 {/* Gradient Accent Bar */}
                 <div
                   className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${isLive
-                      ? 'from-red-500 via-rose-500 to-amber-500 animate-pulse'
-                      : isCompleted
-                        ? 'from-emerald-500 to-teal-400'
-                        : assignedCourt
-                          ? 'from-primary via-emerald-400 to-cyan-500'
-                          : 'from-border via-primary/30 to-border'
+                    ? 'from-red-500 via-rose-500 to-amber-500 animate-pulse'
+                    : isCompleted
+                      ? 'from-emerald-500 to-teal-400'
+                      : assignedCourt
+                        ? 'from-primary via-emerald-400 to-cyan-500'
+                        : 'from-border via-primary/30 to-border'
                     }`}
                 />
 

@@ -37,7 +37,7 @@ export default function CoachesPage() {
           <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-foreground/10 text-sm font-bold text-foreground hover:bg-foreground/5 transition-colors">
             <Filter className="w-4 h-4" /> Filter
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B9C56] text-black text-sm font-black tracking-wide hover:bg-[#158045] transition-colors shadow-lg shadow-[#1B9C56]/20">
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20">
             <UserPlus className="w-4 h-4" /> Add Coach
           </button>
         </div>
@@ -74,7 +74,7 @@ export default function CoachesPage() {
             placeholder="Search coaching staff by name or sport..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-background border border-foreground/10 rounded-xl pl-12 pr-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all"
+            className="w-full bg-background border border-foreground/10 rounded-xl pl-12 pr-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
         </div>
       </div>

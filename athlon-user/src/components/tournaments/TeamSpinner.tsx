@@ -198,7 +198,7 @@ export function TeamSpinner({ unassignedTeams, onSelect, disabled }: TeamSpinner
                 className="absolute w-full flex items-center justify-center text-3xl sm:text-4xl font-bold transition-all duration-75 text-center px-4"
                 style={{ 
                   textShadow: isSpinning ? '0 0 10px rgba(27,156,86,0.5)' : '0 0 20px rgba(27,156,86,0.8)',
-                  color: isSpinning ? 'rgba(255,255,255,0.8)' : '#1B9C56',
+                  color: isSpinning ? 'rgba(255,255,255,0.8)' : 'var(--athlon-primary)',
                   transform: isSpinning ? 'scale(1.05)' : 'scale(1.15)'
                 }}
               >

@@ -10,6 +10,7 @@ public class OrganizationResponse {
     private String description;
     private boolean isActive;
     private String type;
+    private OrganizationProfileResponse profile;
 
     public OrganizationResponse() {
     }
@@ -60,5 +61,13 @@ public class OrganizationResponse {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public OrganizationProfileResponse getProfile() {
+        return profile;
+    }
+
+    public void setProfile(OrganizationProfileResponse profile) {
+        this.profile = profile;
     }
 }

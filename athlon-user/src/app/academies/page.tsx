@@ -51,18 +51,18 @@ export default function AcademiesPage() {
   const others = academies.filter(a => !a.featured);
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-[#1B9C56] selection:text-black">
+    <div className="min-h-screen w-full bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-primary selection:text-black">
       
       {/* Top Navbar */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-background/90 backdrop-blur-md border-b border-foreground/5">
         <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 -ml-2 text-foreground hover:text-[#1B9C56] transition-colors">
+          <Link href="/" className="p-2 -ml-2 text-foreground hover:text-primary transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-lg font-bold uppercase tracking-wider">Academies</h1>
         </div>
         
-        <button className="p-2 -mr-2 text-foreground hover:text-[#1B9C56] transition-colors">
+        <button className="p-2 -mr-2 text-foreground hover:text-primary transition-colors">
           <Search className="w-5 h-5" />
         </button>
       </header>
@@ -72,7 +72,7 @@ export default function AcademiesPage() {
         {/* Filters / Quick Search */}
         <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-2">
           {['Near Me', 'Top Rated', 'Coaching', 'BWF Certified', 'Open Now'].map((filter, idx) => (
-            <button key={idx} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${idx === 0 ? 'bg-[#1B9C56] text-black' : 'bg-surface border border-foreground/10 text-foreground/70 hover:text-foreground'}`}>
+            <button key={idx} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${idx === 0 ? 'bg-primary text-black' : 'bg-surface border border-foreground/10 text-foreground/70 hover:text-foreground'}`}>
               {filter}
             </button>
           ))}
@@ -89,7 +89,7 @@ export default function AcademiesPage() {
             </div>
 
             {/* Featured Badge */}
-            <div className="absolute top-4 left-4 z-10 bg-[#1B9C56] px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg">
+            <div className="absolute top-4 left-4 z-10 bg-primary px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg">
               <ShieldCheck className="w-3.5 h-3.5 text-foreground" />
               <span className="text-[9px] font-black uppercase tracking-wider text-foreground">Top Pick</span>
             </div>
@@ -112,7 +112,7 @@ export default function AcademiesPage() {
                   <span>{featured.location}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Navigation className="w-3.5 h-3.5 text-[#1B9C56]" />
+                  <Navigation className="w-3.5 h-3.5 text-primary" />
                   <span>{featured.distance}</span>
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function AcademiesPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <button className="flex-1 flex items-center justify-center gap-1.5 bg-[#1B9C56] text-[#0A0F1A] text-xs font-black px-4 py-3 rounded-xl hover:opacity-90 transition-opacity">
+                <button className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-[#0A0F1A] text-xs font-black px-4 py-3 rounded-xl hover:opacity-90 transition-opacity">
                   BOOK COURT <ChevronRight className="w-4 h-4" />
                 </button>
                 <button className="w-12 h-12 rounded-xl bg-foreground/10 backdrop-blur-md border border-foreground/20 flex items-center justify-center hover:bg-foreground/20 transition-colors">
@@ -157,7 +157,7 @@ export default function AcademiesPage() {
                 <div className="flex flex-col flex-1 justify-center">
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="text-sm font-bold text-foreground leading-tight group-hover:text-[#FF7722] transition-colors">{academy.name}</h4>
-                    <span className="text-[10px] font-black text-[#1B9C56]">{academy.price}</span>
+                    <span className="text-[10px] font-black text-primary">{academy.price}</span>
                   </div>
                   
                   <div className="flex items-center gap-1 text-[10px] text-foreground/50 mb-2">

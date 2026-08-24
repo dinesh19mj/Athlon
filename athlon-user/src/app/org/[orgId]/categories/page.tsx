@@ -60,7 +60,7 @@ export default function CreateCategoryPage() {
   };
 
   const inputClass =
-    "w-full bg-[#0D1520] border border-white/10 rounded-2xl px-4 py-4 text-white text-base focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all placeholder:text-white/25 font-medium";
+    "w-full bg-[#0D1520] border border-white/10 rounded-2xl px-4 py-4 text-white text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-white/25 font-medium";
 
   const labelClass = "block text-[10px] font-black text-white/50 uppercase tracking-widest mb-2";
 
@@ -75,7 +75,7 @@ export default function CreateCategoryPage() {
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#1B9C56]" />
+          <span className="w-2 h-2 rounded-full bg-primary" />
           <span className="text-white/50 text-sm font-bold tracking-widest uppercase"> ADD CATEGORY</span>
         </div>
       </div>
@@ -84,7 +84,7 @@ export default function CreateCategoryPage() {
 
         {/* CATEGORY NAME */}
         <div>
-          <label className={labelClass}>Category Name <span className="text-[#1B9C56]">*</span></label>
+          <label className={labelClass}>Category Name <span className="text-primary">*</span></label>
           <input
             type="text"
             value={formData.categoryName}
@@ -96,7 +96,7 @@ export default function CreateCategoryPage() {
 
         {/* SPORT */}
         <div>
-          <label className={labelClass}>Sport <span className="text-[#1B9C56]">*</span></label>
+          <label className={labelClass}>Sport <span className="text-primary">*</span></label>
           <div className="grid grid-cols-2 gap-2">
             {['Badminton', 'Cricket', 'Football', 'Volleyball'].map((sport) => (
               <button
@@ -104,7 +104,7 @@ export default function CreateCategoryPage() {
                 type="button"
                 onClick={() => setFormData({ ...formData, sportType: sport })}
                 className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${formData.sportType === sport
-                  ? 'border-[#1B9C56] bg-[#1B9C56]/10 text-white'
+                  ? 'border-primary bg-primary/10 text-white'
                   : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
                   }`}
               >
@@ -118,7 +118,7 @@ export default function CreateCategoryPage() {
         <button
           onClick={handleSubmit}
           disabled={!formData.categoryName.trim() || !formData.sportType || isSubmitting}
-          className="w-full bg-[#1B9C56] disabled:opacity-40 disabled:cursor-not-allowed text-black text-base font-black uppercase tracking-wider py-5 rounded-2xl transition-all hover:bg-[#158045] active:scale-95 shadow-[0_8px_30px_rgba(27,156,86,0.3)] mt-8"
+          className="w-full bg-primary disabled:opacity-40 disabled:cursor-not-allowed text-black text-base font-black uppercase tracking-wider py-5 rounded-2xl transition-all hover:bg-primary-dark active:scale-95 shadow-[0_8px_30px_rgba(27,156,86,0.3)] mt-8"
         >
           {isSubmitting ? "Adding..." : "Add Category"}
         </button>

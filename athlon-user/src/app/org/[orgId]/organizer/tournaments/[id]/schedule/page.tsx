@@ -93,10 +93,10 @@ export default function MatchSchedulePage({ params }: { params: Promise<{ id: st
             </Link>
             <div>
               <h1 className="text-xl md:text-2xl font-black uppercase tracking-wide">Match Schedule</h1>
-              <span className="text-[10px] font-bold text-[#1B9C56] uppercase tracking-widest">Day 1 • Oct 15, 2024</span>
+              <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Day 1 • Oct 15, 2024</span>
             </div>
           </div>
-          <button className="hidden md:flex p-2 md:px-4 md:py-2 bg-[#1B9C56] text-black rounded-xl items-center gap-2 text-sm font-bold shadow-[0_0_15px_rgba(27,156,86,0.3)] hover:scale-105 active:scale-95 transition-all">
+          <button className="hidden md:flex p-2 md:px-4 md:py-2 bg-primary text-black rounded-xl items-center gap-2 text-sm font-bold shadow-[0_0_15px_rgba(27,156,86,0.3)] hover:scale-105 active:scale-95 transition-all">
             <PlusCircle className="w-4 h-4" /> Add Match
           </button>
         </div>
@@ -104,7 +104,7 @@ export default function MatchSchedulePage({ params }: { params: Promise<{ id: st
         {/* Toolbar */}
         <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-            <button className="px-5 py-2 bg-[#1B9C56] text-black font-bold text-xs uppercase tracking-wider rounded-lg shrink-0">Day 1 (Oct 15)</button>
+            <button className="px-5 py-2 bg-primary text-black font-bold text-xs uppercase tracking-wider rounded-lg shrink-0">Day 1 (Oct 15)</button>
             <button className="px-5 py-2 bg-surface border border-foreground/10 text-foreground/60 font-bold text-xs uppercase tracking-wider rounded-lg hover:text-foreground shrink-0 transition-colors">Day 2 (Oct 16)</button>
             <button className="px-5 py-2 bg-surface border border-foreground/10 text-foreground/60 font-bold text-xs uppercase tracking-wider rounded-lg hover:text-foreground shrink-0 transition-colors">Day 3 (Oct 17)</button>
           </div>
@@ -117,7 +117,7 @@ export default function MatchSchedulePage({ params }: { params: Promise<{ id: st
               <input 
                 type="text" 
                 placeholder="Search player or court..." 
-                className="w-full bg-background border border-foreground/10 rounded-xl py-2 pl-9 pr-4 text-sm font-bold focus:outline-none focus:border-[#1B9C56] transition-colors"
+                className="w-full bg-background border border-foreground/10 rounded-xl py-2 pl-9 pr-4 text-sm font-bold focus:outline-none focus:border-primary transition-colors"
               />
             </div>
             <button className="p-2 border border-foreground/10 rounded-xl hover:bg-foreground/5 transition-colors">
@@ -130,12 +130,12 @@ export default function MatchSchedulePage({ params }: { params: Promise<{ id: st
       {/* Schedule List */}
       <main className="p-4 md:p-8 max-w-5xl mx-auto space-y-4">
         {schedule.map((match) => (
-          <div key={match.id} className="bg-surface border border-foreground/10 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-8 hover:border-[#1B9C56]/50 transition-colors group">
+          <div key={match.id} className="bg-surface border border-foreground/10 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-8 hover:border-primary/50 transition-colors group">
             
             {/* Time & Court */}
             <div className="flex md:flex-col items-center md:items-start justify-between md:justify-center md:w-32 shrink-0">
               <div className="flex items-center gap-2 text-lg font-black">
-                <Clock className="w-4 h-4 text-[#1B9C56]" />
+                <Clock className="w-4 h-4 text-primary" />
                 <span>{match.time}</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-foreground/50 mt-1">
@@ -151,7 +151,7 @@ export default function MatchSchedulePage({ params }: { params: Promise<{ id: st
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className="text-[10px] font-black uppercase tracking-widest text-foreground/40 bg-foreground/5 px-2 py-0.5 rounded">Match {match.id}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#1B9C56]">{match.category} • {match.round}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">{match.category} • {match.round}</span>
                 {match.umpire && (
                   <span className="text-[10px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> Umpire: {match.umpire}
@@ -210,7 +210,7 @@ export default function MatchSchedulePage({ params }: { params: Promise<{ id: st
       </main>
       
       {/* Mobile FAB */}
-      <button className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-[#1B9C56] text-black rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(27,156,86,0.4)] hover:scale-105 active:scale-95 transition-transform z-30">
+      <button className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-black rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(27,156,86,0.4)] hover:scale-105 active:scale-95 transition-transform z-30">
         <PlusCircle className="w-6 h-6" />
       </button>
 

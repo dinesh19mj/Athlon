@@ -24,17 +24,37 @@ export interface Tournament {
   contactPhone: string;
   registrationFees: number;
   poster: string;
+  registrationClosingDate?: string;
 }
+
+export const sortTournamentsDesc = (list: Tournament[] = []): Tournament[] => {
+  if (!Array.isArray(list)) return [];
+  return [...list].sort((a, b) => {
+    const idA = a.tournamentId || 0;
+    const idB = b.tournamentId || 0;
+    if (idA !== idB) return idB - idA;
+    const dateA = new Date(a.startDate || 0).getTime();
+    const dateB = new Date(b.startDate || 0).getTime();
+    return dateB - dateA;
+  });
+};
 
 export const TournamentService = {
   getAll: () =>
-    api.get<{ data: Tournament[] }>('/api/tournament/tournaments/getAllActiveTournaments'),
+    api
+      .get<{ data: Tournament[] }>('/api/tournament/tournaments/getAllActiveTournaments')
+      .then((res) => ({ ...res, data: sortTournamentsDesc(res.data) })),
 
   getById: (uuid: string) =>
     api.get<{ data: Tournament }>(`/api/tournament/tournaments/getTournamentByUuid/${uuid}`),
 
   getByOrg: (orgUuid: string) =>
-    api.get<{ data: Tournament[] }>(`/api/tournament/tournaments/getTournamentsByOrganizationUuid/${orgUuid}`),
+    api
+      .get<{ data: Tournament[] }>(`/api/tournament/tournaments/getTournamentsByOrganizationUuid/${orgUuid}`)
+      .then((res) => ({ ...res, data: sortTournamentsDesc(res.data) })),
+
+  updateStatus: (uuid: string, status: string) =>
+    api.post<{ data: Tournament }>(`/api/tournament/tournaments/updateStatus/${uuid}?status=${encodeURIComponent(status)}`),
 
   create: (formData: FormData) => {
     // We must use fetchClient directly to avoid JSON.stringify on FormData

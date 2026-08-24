@@ -128,6 +128,22 @@ public class MatchService {
             advanceWinnerToNextMatch(updatedMatch);
         }
 
+        // Check if all tournament matches are completed, and update tournament status to COMPLETED
+        if ("COMPLETED".equalsIgnoreCase(status) && updatedMatch.getTournamentUuid() != null) {
+            try {
+                List<Match> allTournamentMatches = matchRepository.findByTournamentUuid(updatedMatch.getTournamentUuid());
+                boolean allCompleted = !allTournamentMatches.isEmpty() && allTournamentMatches.stream().allMatch(m -> "COMPLETED".equalsIgnoreCase(m.getStatus()));
+                if (allCompleted) {
+                    tournamentRepository.findByTournamentUuid(updatedMatch.getTournamentUuid()).ifPresent(t -> {
+                        t.setStatus("COMPLETED");
+                        tournamentRepository.save(t);
+                    });
+                }
+            } catch (Exception e) {
+                // Log and continue
+            }
+        }
+
         return populateTeamNames(MatchResponse.fromEntity(updatedMatch));
     }
 

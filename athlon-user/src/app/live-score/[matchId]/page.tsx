@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Activity, Shield, Trophy, User, MapPin, Calendar, Clock, 
-  RefreshCcw, Sparkles, Zap, Radio, ChevronRight, Feather, Volume2, VolumeX
+  RefreshCcw, Sparkles, Zap, Radio, ChevronRight, Feather, Volume2, VolumeX,
+  BarChart3, TrendingUp, CheckCircle2, Crown, Target, Timer, Percent
 } from 'lucide-react';
 import { ScoreService, LiveScore } from '@/lib/api/scores';
 import { MatchService, Match } from '@/lib/api/matches';
@@ -24,13 +25,11 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
     let numericMatchId: number | null = null;
 
     const fetchState = () => {
-      // First try the direct state endpoint (returns null if no score yet, never 500)
       ScoreService.getState(matchId)
         .then((res: any) => {
           if (res && res.data) {
             setScoreData(res.data);
           } else {
-            // Fallback: search ALL scores (including completed) by UUID or numeric matchId
             return ScoreService.getAll().then((allRes: any) => {
               if (allRes && allRes.data) {
                 const byUuid = allRes.data.find((s: any) => s.matchUuid === matchId);
@@ -44,7 +43,6 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
           }
         })
         .catch(() => {
-          // If state endpoint still fails, fall back to all scores list
           ScoreService.getAll()
             .then((allRes: any) => {
               if (allRes && allRes.data) {
@@ -55,7 +53,7 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                 if (byUuid || byId) setScoreData(byUuid || byId);
               }
             })
-            .catch(() => {/* silent fail - no score data yet */});
+            .catch(() => {});
         })
         .finally(() => setLoading(false));
 
@@ -63,15 +61,14 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
         .then((res: any) => {
           if (res && res.data) {
             setMatchDetails(res.data);
-            // Cache numeric matchId for fallback score lookup
             if (res.data.id) numericMatchId = res.data.id;
           }
         })
-        .catch(() => {/* silent fail */});
+        .catch(() => {});
     };
 
     fetchState();
-    const interval = setInterval(fetchState, 3000); // Live poll every 3 seconds
+    const interval = setInterval(fetchState, 3000);
     return () => clearInterval(interval);
   }, [matchId]);
 
@@ -81,6 +78,12 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
   const currentGameIndex = meta.currentGameIndex || 0;
   const currentGame = games[currentGameIndex] || {};
 
+  // Match finished detection
+  const isMatchFinished = meta.isFinal === true || 
+    (meta.matchWinner !== undefined && meta.matchWinner !== null) ||
+    games.some((g: any) => g.isGameOver && !games.some((gg: any) => !gg.isGameOver && gg !== g));
+  const matchWinner = meta.matchWinner; // 'A' or 'B'
+
   const teamAName = config.teamAName || matchDetails?.teamAName || (config.teamA ? config.teamA.join(' & ') : 'Team A');
   const teamBName = config.teamBName || matchDetails?.teamBName || (config.teamB ? config.teamB.join(' & ') : 'Team B');
   const tournamentName = config.tournamentName || matchDetails?.tournamentName || 'Tournament Match';
@@ -88,7 +91,6 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
   const category = config.category || matchDetails?.tournamentType || 'Doubles';
   const sportType = config.sportType || matchDetails?.sportType || 'Badminton';
 
-  // Positions and Serving
   const posA = currentGame.posA || { left: 0, right: 1 };
   const posB = currentGame.posB || { left: 0, right: 1 };
   const currentServer = currentGame.currentServer || 'A';
@@ -102,7 +104,6 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
   const serveFromRightB = isServeB && (scoreB % 2 === 0);
   const serveFromLeftB = isServeB && (scoreB % 2 !== 0);
 
-  // Receiver calculation (Diagonal rule: Right serves to Right, Left serves to Left)
   const receiveRightB = isServeA && (scoreA % 2 === 0);
   const receiveLeftB = isServeA && (scoreA % 2 !== 0);
   const receiveRightA = isServeB && (scoreB % 2 === 0);
@@ -117,85 +118,79 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
 
   const playerALeft = posA.left !== null && posA.left !== undefined ? teamAPlayers[posA.left] : teamAPlayers[0];
   const playerARight = posA.right !== null && posA.right !== undefined ? teamAPlayers[posA.right] : teamAPlayers[1] || teamAPlayers[0];
-
   const playerBLeft = posB.left !== null && posB.left !== undefined ? teamBPlayers[posB.left] : teamBPlayers[0];
   const playerBRight = posB.right !== null && posB.right !== undefined ? teamBPlayers[posB.right] : teamBPlayers[1] || teamBPlayers[0];
 
   const setsWonA = games.filter((g: any) => g.winner === 'A').length;
   const setsWonB = games.filter((g: any) => g.winner === 'B').length;
 
-  // Server and Receiver Full Names for Voice
+  // ── Analytics computation ─────────────────────────────────────────────────
+  const totalRallyTimeMs = games.reduce((acc: number, g: any) => acc + (g.totalRallyTimeMs || 0), 0);
+  const totalPointsA = games.reduce((acc: number, g: any) => acc + (g.scoreA || 0), 0);
+  const totalPointsB = games.reduce((acc: number, g: any) => acc + (g.scoreB || 0), 0);
+  const totalPoints = totalPointsA + totalPointsB;
+  const winPctA = totalPoints > 0 ? Math.round((totalPointsA / totalPoints) * 100) : 0;
+  const winPctB = 100 - winPctA;
+
+  const maxContinuousA = Math.max(...games.map((g: any) => g.maxContinuousPointsA || 0), 0);
+  const maxContinuousB = Math.max(...games.map((g: any) => g.maxContinuousPointsB || 0), 0);
+
+  const avgRallyMs = totalPoints > 0 ? Math.round(totalRallyTimeMs / totalPoints) : 0;
+  const formatMs = (ms: number) => {
+    if (!ms || ms === 0) return '—';
+    const s = Math.round(ms / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${m}m ${rem}s`;
+  };
+
+  const winnerName = matchWinner === 'A' ? teamAName : matchWinner === 'B' ? teamBName : null;
+  const loserName = matchWinner === 'A' ? teamBName : matchWinner === 'B' ? teamAName : null;
+
   let serverFullName = '';
   let receiverFullName = '';
-
   if (isServeA) {
-    if (scoreA % 2 === 0) {
-      serverFullName = playerARight;
-      receiverFullName = playerBRight;
-    } else {
-      serverFullName = playerALeft;
-      receiverFullName = playerBLeft;
-    }
+    if (scoreA % 2 === 0) { serverFullName = playerARight; receiverFullName = playerBRight; }
+    else { serverFullName = playerALeft; receiverFullName = playerBLeft; }
   } else {
-    if (scoreB % 2 === 0) {
-      serverFullName = playerBRight;
-      receiverFullName = playerARight;
-    } else {
-      serverFullName = playerBLeft;
-      receiverFullName = playerALeft;
-    }
+    if (scoreB % 2 === 0) { serverFullName = playerBRight; receiverFullName = playerARight; }
+    else { serverFullName = playerBLeft; receiverFullName = playerALeft; }
   }
 
   const generateUmpireCall = () => {
-    if (!scoreData || !games.length) return '';
+    if (!scoreData || !games.length || isMatchFinished) return '';
     if (scoreA === 0 && scoreB === 0) {
       return `${serverFullName || teamAName} to serve ${receiverFullName || teamBName}. Love all. Play.`;
     }
-
     const serverScore = isServeA ? scoreA : scoreB;
     const receiverScore = isServeA ? scoreB : scoreA;
-
     let call = `${serverFullName || 'Server'} to ${receiverFullName || 'Receiver'}. `;
-
     const ptBreak = config.pointBreak || 21;
     const isGamePointServer = serverScore >= (ptBreak - 1) && serverScore > receiverScore;
     const isGamePointReceiver = receiverScore >= (ptBreak - 1) && receiverScore > serverScore;
     const cap = ptBreak === 21 ? 30 : ptBreak === 15 ? 21 : 30;
     const isCapPoint = serverScore === cap - 1 && receiverScore === cap - 1;
-
     const hasGamePoint = isGamePointServer || isGamePointReceiver || isCapPoint;
-
     if (hasGamePoint) {
       const winningTeam = isGamePointServer ? currentServer : (isGamePointReceiver ? (currentServer === 'A' ? 'B' : 'A') : null);
-
       let isMatchPoint = false;
       const requiredWins = Math.ceil((config.bestOfSets || 3) / 2);
       if (winningTeam) {
         const winsWinningTeam = games.filter((g: any) => g.winner === winningTeam).length;
-        if (winsWinningTeam + 1 >= requiredWins) {
-          isMatchPoint = true;
-        }
+        if (winsWinningTeam + 1 >= requiredWins) isMatchPoint = true;
       } else if (isCapPoint) {
-        if (setsWonA + 1 >= requiredWins || setsWonB + 1 >= requiredWins) {
-          isMatchPoint = true;
-        }
+        if (setsWonA + 1 >= requiredWins || setsWonB + 1 >= requiredWins) isMatchPoint = true;
       }
-
       call += isMatchPoint ? 'Match point. ' : 'Game point. ';
     }
-
-    if (serverScore === receiverScore) {
-      call += `${serverScore} all`;
-    } else {
-      call += `${serverScore} - ${receiverScore}`;
-    }
-
+    if (serverScore === receiverScore) call += `${serverScore} all`;
+    else call += `${serverScore} - ${receiverScore}`;
     return call;
   };
 
   const umpireCall = generateUmpireCall();
 
-  // Voice Announcement Effect (Speaks on score changes when unmuted)
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       if (!isMuted && umpireCall) {
@@ -215,7 +210,7 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
   }, [umpireCall, isMuted]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-[#1B9C56]">
+    <div className="min-h-screen bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-primary">
       
       {/* Navbar */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-surface/90 backdrop-blur-md border-b border-border">
@@ -230,27 +225,30 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Speaker Icon Button */}
-          <button
-            onClick={() => setIsMuted(prev => !prev)}
-            className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all ${
-              !isMuted 
-                ? 'bg-primary/20 text-primary border-primary/40 shadow-[0_0_10px_rgba(27,156,86,0.3)]' 
-                : 'bg-surface/80 text-text-muted hover:text-foreground border-border'
-            }`}
-            aria-label={isMuted ? "Unmute Voice Announcements" : "Mute Voice Announcements"}
-            title={isMuted ? "Unmute Voice Announcements" : "Mute Voice Announcements"}
-          >
-            {!isMuted ? (
-              <Volume2 className="w-4 h-4 text-primary animate-pulse" />
-            ) : (
-              <VolumeX className="w-4 h-4 text-text-muted" />
-            )}
-          </button>
+          {/* Speaker Icon Button — only show when live */}
+          {!isMatchFinished && (
+            <button
+              onClick={() => setIsMuted(prev => !prev)}
+              className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all ${
+                !isMuted 
+                  ? 'bg-primary/20 text-primary border-primary/40 shadow-[0_0_10px_rgba(27,156,86,0.3)]' 
+                  : 'bg-surface/80 text-text-muted hover:text-foreground border-border'
+              }`}
+              aria-label={isMuted ? "Unmute Voice Announcements" : "Mute Voice Announcements"}
+            >
+              {!isMuted ? <Volume2 className="w-4 h-4 text-primary animate-pulse" /> : <VolumeX className="w-4 h-4 text-text-muted" />}
+            </button>
+          )}
 
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-400 border border-red-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> LIVE
-          </span>
+          {isMatchFinished ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <CheckCircle2 className="w-3 h-3" /> Match Finished
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-400 border border-red-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> LIVE
+            </span>
+          )}
         </div>
       </header>
 
@@ -259,10 +257,9 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
         {loading ? (
           <div className="py-20 text-center text-text-muted">
             <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-xs font-bold uppercase tracking-wider">Loading Live Match Court...</p>
+            <p className="text-xs font-bold uppercase tracking-wider">Loading Match Scorecard...</p>
           </div>
         ) : !scoreData ? (
-          /* Graceful empty state when match hasn't started scoring yet */
           <div className="py-16 text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-surface border border-border flex items-center justify-center mx-auto">
               <Radio className="w-7 h-7 text-text-muted" />
@@ -284,24 +281,76 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
           </div>
         ) : (
           <>
-            {/* TOP HALF: SCOREBOARD + BADMINTON COURT VIEW */}
+            {/* ── WINNER BANNER (shown only when match is finished) ─────────── */}
+            {isMatchFinished && winnerName && (
+              <div
+                className="relative rounded-3xl overflow-hidden shadow-2xl border-2 animate-in fade-in zoom-in-95 duration-500"
+                style={{
+                  borderColor: 'var(--athlon-primary, #54AC68)',
+                  background: 'linear-gradient(135deg, #0a180f 0%, #0f2418 40%, #081309 100%)',
+                  boxShadow: '0 25px 60px -15px rgba(84,172,104,0.35)',
+                }}
+              >
+                {/* Radial glow */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(84,172,104,0.25)_0%,transparent_70%)] pointer-events-none" />
+                
+                <div className="relative z-10 p-6 text-center space-y-4">
+                  {/* Crown icon */}
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 rounded-3xl bg-primary flex items-center justify-center shadow-xl shadow-primary/40">
+                      <Crown className="w-8 h-8 fill-current text-black" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-widest text-primary/80 mb-1">🏆 Match Winner</p>
+                    <h2 className="text-2xl font-black text-foreground leading-tight">{winnerName}</h2>
+                    {loserName && (
+                      <p className="text-xs text-text-muted mt-1 font-medium">defeated <span className="text-foreground/70 font-bold">{loserName}</span></p>
+                    )}
+                  </div>
+
+                  {/* Final set scores */}
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {games.map((g: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-white/5 border border-white/10"
+                      >
+                        <span className="text-text-muted text-[10px] uppercase tracking-wider">G{idx + 1}</span>
+                        <span className={`font-mono ${g.winner === 'A' ? 'text-primary' : 'text-emerald-400'}`}>
+                          {g.scoreA}–{g.scoreB}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Match result summary */}
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {setsWonA > setsWonB ? `${setsWonA}–${setsWonB}` : `${setsWonB}–${setsWonA}`} Sets • Match Complete
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── SCOREBOARD CARD ──────────────────────────────────────────── */}
             <section className="space-y-4">
-              
-              {/* Scoreboard Card — Premium Design */}
               <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                {/* Dark gradient bg */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#0d1117] via-[#111827] to-[#0d1117]" />
-                {/* Subtle radial glow in center */}
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.06)_0%,transparent_70%)]" />
 
                 <div className="relative z-10 px-4 pt-4 pb-3">
-
                   {/* Top row: Set info + Best of */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                        Set {currentGameIndex + 1}
+                        {isMatchFinished ? (
+                          <CheckCircle2 className="w-3 h-3" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        )}
+                        {isMatchFinished ? 'Final Score' : `Set ${currentGameIndex + 1}`}
                       </span>
                       <span className="text-[10px] font-bold text-text-muted">
                         ({setsWonA} – {setsWonB})
@@ -314,15 +363,23 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
 
                   {/* Main score row */}
                   <div className="flex items-center justify-between gap-2">
-
                     {/* Team A */}
                     <div className="flex-1 flex flex-col items-center gap-2">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center">
-                        <span className="text-base font-black text-primary">{teamAName.charAt(0)}</span>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
+                        isMatchFinished && matchWinner === 'A' 
+                          ? 'bg-primary border-primary shadow-lg shadow-primary/30' 
+                          : 'bg-primary/20 border-primary/30'
+                      }`}>
+                        {isMatchFinished && matchWinner === 'A' 
+                          ? <Trophy className="w-5 h-5 text-black fill-current" />
+                          : <span className="text-base font-black text-primary">{teamAName.charAt(0)}</span>
+                        }
                       </div>
                       <div className="text-center">
                         <p className="text-[11px] font-black text-foreground leading-tight">{teamAName}</p>
+                        {isMatchFinished && matchWinner === 'A' && (
+                          <span className="text-[9px] font-black text-primary uppercase tracking-wider">Winner 🏆</span>
+                        )}
                         {setsWonA > 0 && (
                           <div className="flex items-center justify-center gap-1 mt-1">
                             {Array.from({ length: setsWonA }).map((_, i) => (
@@ -336,20 +393,36 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                     {/* Score */}
                     <div className="flex flex-col items-center gap-1.5 px-2">
                       <div className="flex items-end gap-3">
-                        <span className="text-5xl font-black font-mono text-primary tabular-nums leading-none">{scoreA}</span>
+                        <span className={`text-5xl font-black font-mono tabular-nums leading-none ${
+                          isMatchFinished && matchWinner === 'A' ? 'text-primary' : isMatchFinished ? 'text-text-muted/60' : 'text-primary'
+                        }`}>{scoreA}</span>
                         <span className="text-text-muted/30 text-2xl font-thin mb-1">:</span>
-                        <span className="text-5xl font-black font-mono text-emerald-400 tabular-nums leading-none">{scoreB}</span>
+                        <span className={`text-5xl font-black font-mono tabular-nums leading-none ${
+                          isMatchFinished && matchWinner === 'B' ? 'text-emerald-400' : isMatchFinished ? 'text-text-muted/60' : 'text-emerald-400'
+                        }`}>{scoreB}</span>
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-text-muted/50">Current Points</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-text-muted/50">
+                        {isMatchFinished ? 'Final Set Points' : 'Current Points'}
+                      </span>
                     </div>
 
                     {/* Team B */}
                     <div className="flex-1 flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center">
-                        <span className="text-base font-black text-emerald-400">{teamBName.charAt(0)}</span>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
+                        isMatchFinished && matchWinner === 'B' 
+                          ? 'bg-emerald-400 border-emerald-400 shadow-lg shadow-emerald-400/30' 
+                          : 'bg-emerald-400/20 border-emerald-400/30'
+                      }`}>
+                        {isMatchFinished && matchWinner === 'B' 
+                          ? <Trophy className="w-5 h-5 text-black fill-current" />
+                          : <span className="text-base font-black text-emerald-400">{teamBName.charAt(0)}</span>
+                        }
                       </div>
                       <div className="text-center">
                         <p className="text-[11px] font-black text-foreground leading-tight">{teamBName}</p>
+                        {isMatchFinished && matchWinner === 'B' && (
+                          <span className="text-[9px] font-black text-emerald-400 uppercase tracking-wider">Winner 🏆</span>
+                        )}
                         {setsWonB > 0 && (
                           <div className="flex items-center justify-center gap-1 mt-1">
                             {Array.from({ length: setsWonB }).map((_, i) => (
@@ -359,7 +432,6 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                         )}
                       </div>
                     </div>
-
                   </div>
 
                   {/* Game history pills */}
@@ -367,7 +439,7 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                     <div className="mt-4 pt-3 border-t border-white/5">
                       <div className="flex items-center justify-center gap-2 flex-wrap">
                         {games.map((g: any, idx: number) => {
-                          const isActive = idx === currentGameIndex;
+                          const isActive = !isMatchFinished && idx === currentGameIndex;
                           const won = g.winner === 'A' ? 'A' : g.winner === 'B' ? 'B' : null;
                           return (
                             <div
@@ -376,15 +448,15 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                                 isActive
                                   ? 'bg-primary/10 border-primary/30 text-primary'
                                   : won === 'A'
-                                  ? 'bg-primary/5 border-primary/10 text-primary/60'
+                                  ? 'bg-primary/10 border-primary/20 text-primary'
                                   : won === 'B'
-                                  ? 'bg-emerald-400/5 border-emerald-400/10 text-emerald-400/60'
+                                  ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-400'
                                   : 'bg-white/5 border-white/10 text-text-muted'
                               }`}
                             >
                               <span className="uppercase tracking-wider opacity-60">G{idx + 1}</span>
                               <span className="font-mono">{g.scoreA}–{g.scoreB}</span>
-                              {won && !isActive && (
+                              {won && (
                                 <span className={`text-[8px] uppercase font-black ${won === 'A' ? 'text-primary' : 'text-emerald-400'}`}>
                                   {won === 'A' ? teamAName.split(' ')[0] : teamBName.split(' ')[0]}
                                 </span>
@@ -396,8 +468,8 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                     </div>
                   )}
 
-                  {/* Live Umpire Call commentary pill */}
-                  {umpireCall && (
+                  {/* Live Umpire Call — only when not finished */}
+                  {umpireCall && !isMatchFinished && (
                     <div 
                       onClick={() => setIsMuted(prev => !prev)}
                       className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-3 bg-white/[0.02] hover:bg-white/[0.04] -mx-4 -mb-3 px-4 py-2.5 rounded-b-2xl cursor-pointer transition-colors group"
@@ -408,164 +480,243 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                           {!isMuted ? <Volume2 className="w-3 h-3 text-primary animate-pulse" /> : <VolumeX className="w-3 h-3 text-text-muted" />}
                         </div>
                         <p className="text-[11px] font-semibold text-foreground/90 truncate italic tracking-wide">
-                          "{umpireCall}"
+                          &ldquo;{umpireCall}&rdquo;
                         </p>
                       </div>
                       <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
-                        !isMuted 
-                          ? 'bg-primary/20 text-primary' 
-                          : 'text-text-muted group-hover:text-foreground'
+                        !isMuted ? 'bg-primary/20 text-primary' : 'text-text-muted group-hover:text-foreground'
                       }`}>
                         {!isMuted ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                       </div>
                     </div>
                   )}
-
                 </div>
               </div>
 
-
-              {/* REAL-TIME BADMINTON COURT VIEW */}
-              <div className="bg-gradient-to-b from-[#0F472E] via-[#0D3B26] to-[#0A3320] border-2 border-emerald-500/30 rounded-3xl p-4 shadow-2xl relative overflow-hidden">
-                <div className="flex items-center mb-3 text-[10px] font-black uppercase tracking-widest text-emerald-300">
-                  <span className="flex items-center gap-1">
-                    <Radio className="w-3 h-3 text-emerald-400 animate-pulse" /> Live Court Positions
-                  </span>
-                </div>
-
-                {/* Court Container */}
-                <div className="relative w-full aspect-[4/5] bg-[#0E422B] border-4 border-white/90 rounded-xl overflow-hidden shadow-inner flex flex-col">
-                  
-                  {/* Background Court Line Markings */}
-                  <div className="absolute inset-0 pointer-events-none z-0">
-                    {/* Outer Side Tramlines */}
-                    <div className="absolute top-0 bottom-0 left-[6%] w-[1px] bg-white/70" />
-                    <div className="absolute top-0 bottom-0 right-[6%] w-[1px] bg-white/70" />
-                    {/* Back Service Lines */}
-                    <div className="absolute left-0 right-0 top-[6%] h-[1px] bg-white/70" />
-                    <div className="absolute left-0 right-0 bottom-[6%] h-[1px] bg-white/70" />
-                    {/* Center Service Line Top */}
-                    <div className="absolute top-0 bottom-1/2 left-1/2 w-[1px] bg-white/70" />
-                    {/* Center Service Line Bottom */}
-                    <div className="absolute top-1/2 bottom-0 left-1/2 w-[1px] bg-white/70" />
-                    {/* Short Service Line Top */}
-                    <div className="absolute left-0 right-0 top-[38%] h-[1px] bg-white/70" />
-                    {/* Short Service Line Bottom */}
-                    <div className="absolute left-0 right-0 bottom-[38%] h-[1px] bg-white/70" />
-                  </div>
-
-                  {/* TEAM A HALF (Top Half - Facing Net) */}
-                  <div className="flex-1 relative flex z-10 border-b-2 border-amber-300">
-                    {/* Team A Badge */}
-                    <div className="absolute top-2 left-2 z-20 px-2 py-0.5 bg-black/60 backdrop-blur-sm text-primary rounded text-[9px] font-black uppercase tracking-wider border border-primary/30">
-                      Team A
-                    </div>
-
-                    {/* Team A Right Service Court (Screen Left from viewer perspective, Right from player perspective) */}
-                    <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromRightA ? 'bg-primary/20 ring-2 ring-primary ring-inset' : receiveRightA ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
-                      <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 text-primary font-black text-xs flex items-center justify-center mb-1 shadow-md">
-                        <User className="w-4 h-4" />
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">
-                        {playerARight}
-                      </span>
-                      {serveFromRightA && (
-                        <span className="mt-1 px-2 py-0.5 bg-primary text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">
-                          SERVE 🏸
-                        </span>
-                      )}
-                      {receiveRightA && (
-                        <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">
-                          RECEIVE
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Team A Left Service Court (Screen Right from viewer perspective, Left from player perspective) */}
-                    <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromLeftA ? 'bg-primary/20 ring-2 ring-primary ring-inset' : receiveLeftA ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
-                      <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 text-primary font-black text-xs flex items-center justify-center mb-1 shadow-md">
-                        <User className="w-4 h-4" />
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">
-                        {playerALeft}
-                      </span>
-                      {serveFromLeftA && (
-                        <span className="mt-1 px-2 py-0.5 bg-primary text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">
-                          SERVE 🏸
-                        </span>
-                      )}
-                      {receiveLeftA && (
-                        <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">
-                          RECEIVE
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* CENTER NET BAR */}
-                  <div className="h-3 bg-white/80 border-y border-black/30 relative z-30 flex items-center justify-center">
-                    <span className="text-[8px] font-black text-black uppercase tracking-widest bg-amber-300 px-2 py-0.2 rounded">
-                      NET
+              {/* ── LIVE COURT VIEW (only when match is NOT finished) ─────── */}
+              {!isMatchFinished && (
+                <div className="bg-gradient-to-b from-[#0F472E] via-[#0D3B26] to-[#0A3320] border-2 border-emerald-500/30 rounded-3xl p-4 shadow-2xl relative overflow-hidden">
+                  <div className="flex items-center mb-3 text-[10px] font-black uppercase tracking-widest text-emerald-300">
+                    <span className="flex items-center gap-1">
+                      <Radio className="w-3 h-3 text-emerald-400 animate-pulse" /> Live Court Positions
                     </span>
                   </div>
 
-                  {/* TEAM B HALF (Bottom Half) */}
-                  <div className="flex-1 relative flex z-10">
-                    {/* Team B Badge */}
-                    <div className="absolute bottom-2 right-2 z-20 px-2 py-0.5 bg-black/60 backdrop-blur-sm text-emerald-400 rounded text-[9px] font-black uppercase tracking-wider border border-emerald-500/30">
-                      Team B
+                  <div className="relative w-full aspect-[4/5] bg-[#0E422B] border-4 border-white/90 rounded-xl overflow-hidden shadow-inner flex flex-col">
+                    <div className="absolute inset-0 pointer-events-none z-0">
+                      <div className="absolute top-0 bottom-0 left-[6%] w-[1px] bg-white/70" />
+                      <div className="absolute top-0 bottom-0 right-[6%] w-[1px] bg-white/70" />
+                      <div className="absolute left-0 right-0 top-[6%] h-[1px] bg-white/70" />
+                      <div className="absolute left-0 right-0 bottom-[6%] h-[1px] bg-white/70" />
+                      <div className="absolute top-0 bottom-1/2 left-1/2 w-[1px] bg-white/70" />
+                      <div className="absolute top-1/2 bottom-0 left-1/2 w-[1px] bg-white/70" />
+                      <div className="absolute left-0 right-0 top-[38%] h-[1px] bg-white/70" />
+                      <div className="absolute left-0 right-0 bottom-[38%] h-[1px] bg-white/70" />
                     </div>
 
-                    {/* Team B Left Court Box */}
-                    <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromLeftB ? 'bg-emerald-500/20 ring-2 ring-emerald-400 ring-inset' : receiveLeftB ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-xs flex items-center justify-center mb-1 shadow-md">
-                        <User className="w-4 h-4" />
+                    {/* TEAM A HALF */}
+                    <div className="flex-1 relative flex z-10 border-b-2 border-amber-300">
+                      <div className="absolute top-2 left-2 z-20 px-2 py-0.5 bg-black/60 backdrop-blur-sm text-primary rounded text-[9px] font-black uppercase tracking-wider border border-primary/30">Team A</div>
+                      <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromRightA ? 'bg-primary/20 ring-2 ring-primary ring-inset' : receiveRightA ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
+                        <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 text-primary font-black text-xs flex items-center justify-center mb-1 shadow-md"><User className="w-4 h-4" /></div>
+                        <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">{playerARight}</span>
+                        {serveFromRightA && <span className="mt-1 px-2 py-0.5 bg-primary text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">SERVE 🏸</span>}
+                        {receiveRightA && <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">RECEIVE</span>}
                       </div>
-                      <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">
-                        {playerBLeft}
-                      </span>
-                      {serveFromLeftB && (
-                        <span className="mt-1 px-2 py-0.5 bg-emerald-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">
-                          SERVE 🏸
-                        </span>
-                      )}
-                      {receiveLeftB && (
-                        <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">
-                          RECEIVE
-                        </span>
-                      )}
+                      <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromLeftA ? 'bg-primary/20 ring-2 ring-primary ring-inset' : receiveLeftA ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
+                        <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 text-primary font-black text-xs flex items-center justify-center mb-1 shadow-md"><User className="w-4 h-4" /></div>
+                        <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">{playerALeft}</span>
+                        {serveFromLeftA && <span className="mt-1 px-2 py-0.5 bg-primary text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">SERVE 🏸</span>}
+                        {receiveLeftA && <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">RECEIVE</span>}
+                      </div>
                     </div>
 
-                    {/* Team B Right Court Box */}
-                    <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromRightB ? 'bg-emerald-500/20 ring-2 ring-emerald-400 ring-inset' : receiveRightB ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-xs flex items-center justify-center mb-1 shadow-md">
-                        <User className="w-4 h-4" />
+                    {/* NET */}
+                    <div className="h-3 bg-white/80 border-y border-black/30 relative z-30 flex items-center justify-center">
+                      <span className="text-[8px] font-black text-black uppercase tracking-widest bg-amber-300 px-2 py-0.2 rounded">NET</span>
+                    </div>
+
+                    {/* TEAM B HALF */}
+                    <div className="flex-1 relative flex z-10">
+                      <div className="absolute bottom-2 right-2 z-20 px-2 py-0.5 bg-black/60 backdrop-blur-sm text-emerald-400 rounded text-[9px] font-black uppercase tracking-wider border border-emerald-500/30">Team B</div>
+                      <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromLeftB ? 'bg-emerald-500/20 ring-2 ring-emerald-400 ring-inset' : receiveLeftB ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
+                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-xs flex items-center justify-center mb-1 shadow-md"><User className="w-4 h-4" /></div>
+                        <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">{playerBLeft}</span>
+                        {serveFromLeftB && <span className="mt-1 px-2 py-0.5 bg-emerald-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">SERVE 🏸</span>}
+                        {receiveLeftB && <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">RECEIVE</span>}
                       </div>
-                      <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">
-                        {playerBRight}
-                      </span>
-                      {serveFromRightB && (
-                        <span className="mt-1 px-2 py-0.5 bg-emerald-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">
-                          SERVE 🏸
-                        </span>
-                      )}
-                      {receiveRightB && (
-                        <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">
-                          RECEIVE
-                        </span>
-                      )}
+                      <div className={`flex-1 flex flex-col items-center justify-center p-2 relative transition-all ${serveFromRightB ? 'bg-emerald-500/20 ring-2 ring-emerald-400 ring-inset' : receiveRightB ? 'bg-amber-400/10 ring-2 ring-amber-400/50 ring-inset' : ''}`}>
+                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-xs flex items-center justify-center mb-1 shadow-md"><User className="w-4 h-4" /></div>
+                        <span className="text-[10px] sm:text-xs font-black text-white text-center leading-tight drop-shadow-md break-words max-w-full px-1">{playerBRight}</span>
+                        {serveFromRightB && <span className="mt-1 px-2 py-0.5 bg-emerald-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg animate-bounce">SERVE 🏸</span>}
+                        {receiveRightB && <span className="mt-1 px-2 py-0.5 bg-amber-400 text-black font-black text-[9px] uppercase tracking-widest rounded-full shadow-lg">RECEIVE</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* ── MATCH ANALYTICS (shown when match is finished) ──────────── */}
+            {isMatchFinished && (
+              <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+                {/* Section Header */}
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-black uppercase tracking-wider text-foreground">Match Analytics</span>
+                </div>
+
+                {/* Points Won % Bar */}
+                <div className="bg-surface border border-border/60 rounded-2xl p-4 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1">
+                      <Percent className="w-3 h-3" /> Points Won
+                    </span>
+                    <span className="text-[10px] font-bold text-text-muted">{totalPointsA} pts vs {totalPointsB} pts</span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-black">
+                      <span className="text-primary truncate max-w-[40%]">{teamAName.split(' ')[0]}</span>
+                      <span className="text-text-muted font-normal text-[10px]">{winPctA}% — {winPctB}%</span>
+                      <span className="text-emerald-400 truncate max-w-[40%] text-right">{teamBName.split(' ')[0]}</span>
+                    </div>
+                    <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden flex">
+                      <div
+                        className="h-full rounded-l-full transition-all duration-700"
+                        style={{ width: `${winPctA}%`, backgroundColor: 'var(--athlon-primary, #54AC68)' }}
+                      />
+                      <div
+                        className="h-full rounded-r-full"
+                        style={{ width: `${winPctB}%`, backgroundColor: '#34d399' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stat Grid: 4 key metrics */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Avg Rally Time */}
+                  <div className="bg-surface border border-border/60 rounded-2xl p-4 space-y-1 shadow-md">
+                    <div className="flex items-center gap-1.5 text-text-muted mb-1">
+                      <Timer className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Avg Rally</span>
+                    </div>
+                    <div className="text-xl font-black text-foreground">{formatMs(avgRallyMs)}</div>
+                    <p className="text-[10px] text-text-muted">per point</p>
+                  </div>
+
+                  {/* Total Rally Time */}
+                  <div className="bg-surface border border-border/60 rounded-2xl p-4 space-y-1 shadow-md">
+                    <div className="flex items-center gap-1.5 text-text-muted mb-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Match Duration</span>
+                    </div>
+                    <div className="text-xl font-black text-foreground">{formatMs(totalRallyTimeMs)}</div>
+                    <p className="text-[10px] text-text-muted">total rally time</p>
+                  </div>
+
+                  {/* Max Continuous Run A */}
+                  <div className="bg-surface border border-primary/20 rounded-2xl p-4 space-y-1 shadow-md">
+                    <div className="flex items-center gap-1.5 text-primary mb-1">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Best Run</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-black text-primary">{maxContinuousA}</span>
+                      <span className="text-[10px] text-text-muted">pts — {teamAName.split(' ')[0]}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2 border-t border-primary/10 pt-1 mt-1">
+                      <span className="text-lg font-black text-emerald-400">{maxContinuousB}</span>
+                      <span className="text-[10px] text-text-muted">pts — {teamBName.split(' ')[0]}</span>
                     </div>
                   </div>
 
+                  {/* Total Points */}
+                  <div className="bg-surface border border-border/60 rounded-2xl p-4 space-y-1 shadow-md">
+                    <div className="flex items-center gap-1.5 text-text-muted mb-1">
+                      <Target className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Total Points</span>
+                    </div>
+                    <div className="text-xl font-black text-foreground">{totalPoints}</div>
+                    <p className="text-[10px] text-text-muted">across {games.length} set{games.length !== 1 ? 's' : ''}</p>
+                  </div>
                 </div>
-              </div>
 
-            </section>
+                {/* Per-Set Breakdown Table */}
+                {games.length > 0 && (
+                  <div className="bg-surface border border-border/60 rounded-2xl overflow-hidden shadow-lg">
+                    <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-border/40">
+                      <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Activity className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <span className="text-xs font-black uppercase tracking-widest text-foreground">Set-by-Set Breakdown</span>
+                    </div>
 
-            {/* SECOND HALF: PLAYER & TOURNAMENT DETAILS */}
+                    {/* Header row */}
+                    <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr] gap-0 text-[10px] font-black uppercase tracking-wider text-text-muted bg-white/[0.02] px-4 py-2 border-b border-border/30">
+                      <div className="w-10">Set</div>
+                      <div className="text-center">Score</div>
+                      <div className="text-center">Winner</div>
+                      <div className="text-center">Rally</div>
+                      <div className="text-center">Best Run</div>
+                    </div>
+
+                    {games.map((g: any, idx: number) => {
+                      const setWinner = g.winner === 'A' ? teamAName : g.winner === 'B' ? teamBName : '—';
+                      const isWinnerA = g.winner === 'A';
+                      const bestRunA = g.maxContinuousPointsA || 0;
+                      const bestRunB = g.maxContinuousPointsB || 0;
+                      const rallyMs = g.totalRallyTimeMs || 0;
+                      const setPoints = (g.scoreA || 0) + (g.scoreB || 0);
+                      const setAvgRally = setPoints > 0 ? Math.round(rallyMs / setPoints) : 0;
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`grid grid-cols-[auto_1fr_1fr_1fr_1fr] gap-0 px-4 py-3 border-b last:border-0 border-border/20 items-center ${
+                            isWinnerA ? 'bg-primary/[0.03]' : 'bg-emerald-400/[0.03]'
+                          }`}
+                        >
+                          <div className="w-10">
+                            <span className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black text-text-muted">
+                              {idx + 1}
+                            </span>
+                          </div>
+                          <div className="text-center">
+                            <span className={`text-sm font-black font-mono ${isWinnerA ? 'text-primary' : 'text-emerald-400'}`}>
+                              {g.scoreA}–{g.scoreB}
+                            </span>
+                          </div>
+                          <div className="text-center">
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                              isWinnerA 
+                                ? 'text-primary bg-primary/10' 
+                                : 'text-emerald-400 bg-emerald-400/10'
+                            }`}>
+                              {isWinnerA ? teamAName.split(' ')[0] : teamBName.split(' ')[0]}
+                            </span>
+                          </div>
+                          <div className="text-center text-[10px] font-bold text-text-muted">{formatMs(setAvgRally)}</div>
+                          <div className="text-center text-[10px] font-black text-text-muted">
+                            <span className="text-primary">{bestRunA}</span>/<span className="text-emerald-400">{bestRunB}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* ── PLAYER & TOURNAMENT DETAILS ──────────────────────────────── */}
             <section className="space-y-4">
               
-              {/* Teams & Player Roster Card — Premium Player Cards */}
+              {/* Teams & Player Roster */}
               <div className="bg-surface border border-border/60 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
                 <div className="flex items-center gap-2 border-b border-border/40 pb-3">
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -576,15 +727,23 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Team A Roster */}
-                  <div className="bg-background/60 border border-primary/20 rounded-xl p-3.5 space-y-3">
+                  <div className={`bg-background/60 rounded-xl p-3.5 space-y-3 border ${
+                    isMatchFinished && matchWinner === 'A' ? 'border-primary/40' : 'border-primary/20'
+                  }`}>
                     <div className="flex items-center justify-between border-b border-primary/10 pb-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0" />
                         <span className="text-xs font-black text-foreground truncate">{teamAName}</span>
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 flex-shrink-0">Team A</span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {isMatchFinished && matchWinner === 'A' && (
+                          <span className="text-[9px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/30 flex items-center gap-1">
+                            <Trophy className="w-2.5 h-2.5" /> Winner
+                          </span>
+                        )}
+                        <span className="text-[9px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">Team A</span>
+                      </div>
                     </div>
-
                     <div className="space-y-2">
                       {teamAPlayers.map((p: string, idx: number) => (
                         <div key={idx} className="flex items-center gap-2.5 p-2 bg-surface/50 border border-border/30 rounded-lg">
@@ -601,15 +760,23 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                   </div>
 
                   {/* Team B Roster */}
-                  <div className="bg-background/60 border border-emerald-500/20 rounded-xl p-3.5 space-y-3">
+                  <div className={`bg-background/60 rounded-xl p-3.5 space-y-3 border ${
+                    isMatchFinished && matchWinner === 'B' ? 'border-emerald-500/40' : 'border-emerald-500/20'
+                  }`}>
                     <div className="flex items-center justify-between border-b border-emerald-500/10 pb-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0" />
                         <span className="text-xs font-black text-foreground truncate">{teamBName}</span>
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex-shrink-0">Team B</span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {isMatchFinished && matchWinner === 'B' && (
+                          <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1">
+                            <Trophy className="w-2.5 h-2.5" /> Winner
+                          </span>
+                        )}
+                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Team B</span>
+                      </div>
                     </div>
-
                     <div className="space-y-2">
                       {teamBPlayers.map((p: string, idx: number) => (
                         <div key={idx} className="flex items-center gap-2.5 p-2 bg-surface/50 border border-border/30 rounded-lg">
@@ -627,25 +794,21 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                 </div>
               </div>
 
-              {/* Tournament & Match Metadata Card — Premium Row Design */}
+              {/* Tournament & Match Info Card */}
               <div className="relative bg-surface border border-border/60 rounded-2xl overflow-hidden shadow-lg">
-                {/* Gradient accent top bar */}
-                <div className="h-[3px] w-full bg-gradient-to-r from-amber-400 via-primary to-emerald-400" />
+                <div className="h-[3px] w-full bg-gradient-to-r from-primary via-emerald-400 to-primary" />
 
-                {/* Header */}
                 <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-border/40">
-                  <div className="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center flex-shrink-0">
-                    <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Trophy className="w-3.5 h-3.5 text-primary" />
                   </div>
                   <span className="text-xs font-black uppercase tracking-widest text-foreground">Match Info</span>
                 </div>
 
-                {/* Row list */}
                 <div className="divide-y divide-border/30">
-                  {/* Tournament */}
                   <div className="flex items-center gap-3 px-4 py-3">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                      <Trophy className="w-4 h-4 text-amber-400" />
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Trophy className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-black uppercase tracking-wider text-text-muted leading-none mb-0.5">Tournament</p>
@@ -653,7 +816,6 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                     </div>
                   </div>
 
-                  {/* Sport & Category */}
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Feather className="w-4 h-4 text-primary" />
@@ -664,7 +826,6 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                     </div>
                   </div>
 
-                  {/* Court Location */}
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div className="w-8 h-8 rounded-xl bg-sky-500/10 flex items-center justify-center flex-shrink-0">
                       <MapPin className="w-4 h-4 text-sky-400" />
@@ -675,25 +836,33 @@ export default function LiveScoreDetailPage({ params }: { params: Promise<{ matc
                     </div>
                   </div>
 
-                  {/* Match Status */}
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                        <Activity className="w-4 h-4 text-red-400" />
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        isMatchFinished ? 'bg-emerald-500/10' : 'bg-red-500/10'
+                      }`}>
+                        <Activity className={`w-4 h-4 ${isMatchFinished ? 'text-emerald-400' : 'text-red-400'}`} />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-wider text-text-muted leading-none mb-0.5">Match Status</p>
-                        <p className="text-sm font-bold text-foreground leading-snug">In Progress</p>
+                        <p className="text-sm font-bold text-foreground leading-snug">
+                          {isMatchFinished ? 'Completed' : 'In Progress'}
+                        </p>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-400 border border-red-500/20 flex-shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                      Live
-                    </span>
+                    {isMatchFinished ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex-shrink-0">
+                        <CheckCircle2 className="w-3 h-3" /> Finished
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-400 border border-red-500/20 flex-shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        Live
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-
             </section>
           </>
         )}

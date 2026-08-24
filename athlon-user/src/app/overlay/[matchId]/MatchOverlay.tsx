@@ -139,7 +139,7 @@ function ScoreValue({ state, isTeamA, isBottomBar = false }: { state: any, isTea
   if (state.goalsA !== undefined) {
     // FOOTBALL
     return (
-      <span className={`text-lg font-bold ${widthClass} ${alignClass} text-[#1B9C56]`}>
+      <span className={`text-lg font-bold ${widthClass} ${alignClass} text-primary`}>
         {isTeamA ? state.goalsA : state.goalsB}
       </span>
     );
@@ -150,7 +150,7 @@ function ScoreValue({ state, isTeamA, isBottomBar = false }: { state: any, isTea
     const balls = isTeamA ? state.validBallsA : state.validBallsB;
     const oversStr = Math.floor(balls / 6) + "." + (balls % 6);
     return (
-      <span className={`text-2xl font-black ${isBottomBar ? '' : 'w-24 text-lg'} ${alignClass} text-[#1B9C56] tracking-tight`}>
+      <span className={`text-2xl font-black ${isBottomBar ? '' : 'w-24 text-lg'} ${alignClass} text-primary tracking-tight`}>
         {runs}/{wickets} <span className="text-base text-foreground/50 font-medium">({oversStr})</span>
       </span>
     );
@@ -162,8 +162,8 @@ function ScoreValue({ state, isTeamA, isBottomBar = false }: { state: any, isTea
     if (!currentGame) return null;
     
     const isServe = isTeamA ? (currentGame.currentServer === 'A') : (currentGame.currentServer === 'B');
-    const teamThemeClass = isServe ? 'text-[#1B9C56]' : 'text-[#3B82F6]';
-    const dotClass = isServe ? 'bg-[#1B9C56] shadow-[0_0_8px_#1B9C56]' : 'bg-transparent';
+    const teamThemeClass = isServe ? 'text-primary' : 'text-[#3B82F6]';
+    const dotClass = isServe ? 'bg-primary shadow-[0_0_8px_var(--athlon-primary)]' : 'bg-transparent';
 
     return (
       <>
@@ -190,7 +190,7 @@ function ScoreValue({ state, isTeamA, isBottomBar = false }: { state: any, isTea
     return (
       <div className={`flex items-center gap-4 ${isBottomBar && !isTeamA ? 'flex-row-reverse' : ''}`}>
         <span className={`text-xl font-medium ${isBottomBar ? '' : 'w-12'} ${alignClass} text-foreground/60`}>S{sets}</span>
-        <span className={`text-3xl font-black ${isBottomBar ? '' : 'w-8'} ${alignClass} text-[#1B9C56]`}>{points}</span>
+        <span className={`text-3xl font-black ${isBottomBar ? '' : 'w-8'} ${alignClass} text-primary`}>{points}</span>
       </div>
     );
   }

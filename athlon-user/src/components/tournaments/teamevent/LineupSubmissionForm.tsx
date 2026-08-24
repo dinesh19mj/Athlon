@@ -92,7 +92,7 @@ export const LineupSubmissionForm: React.FC<Props> = ({
                                     disabled={isDisabled}
                                     value={lineup[cat.id]?.[pIdx] || ""}
                                     onChange={(e) => handlePlayerSelect(cat.id, pIdx, e.target.value)}
-                                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] disabled:opacity-50 appearance-none"
+                                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50 appearance-none"
                                     required
                                 >
                                     <option value="">Select Player {pIdx + 1}</option>
@@ -110,7 +110,7 @@ export const LineupSubmissionForm: React.FC<Props> = ({
                 <button
                     type="submit"
                     disabled={isDisabled}
-                    className="w-full bg-[#1B9C56] hover:bg-[#158045] text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {isSubmitting ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -48,7 +48,7 @@ export default function ContextSwitcher() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-white/5 transition-colors border border-white/10 bg-[#1A1F2B]"
+        className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-white/5 transition-colors border border-border bg-surface"
       >
         <div className="w-8 h-8 rounded-md overflow-hidden bg-black/40 flex items-center justify-center border border-white/5 shrink-0">
           {isPersonal ? (
@@ -71,7 +71,7 @@ export default function ContextSwitcher() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#121824] border border-white/10 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
           
           {!isPersonal && (
             <>

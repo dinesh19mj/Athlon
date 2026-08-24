@@ -44,6 +44,8 @@ export interface UpdateUserRequest {
 export const UserService = {
   getUserByUuid: (uuid: string) => 
     api.get<ApiResponse<UserResponse>>(`/api/identity/users/getUserByUuid/${uuid}`),
+  getUserByPhone: (phone: string) =>
+    api.get<ApiResponse<UserResponse>>(`/api/identity/users/getUserByPhone/${encodeURIComponent(phone)}`),
   addSportsProfile: (data: CreateSportsProfileRequest) =>
     api.post<ApiResponse<SportsProfileResponse>>(`/api/identity/users/addSportsProfile`, data),
   updateUser: (data: UpdateUserRequest) =>

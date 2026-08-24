@@ -20,6 +20,7 @@ import { useMatchStore, GameCategory, Player } from '@/lib/store/useMatchStore';
 import { useCricketStore } from '@/lib/store/useCricketStore';
 import { useFootballStore } from '@/lib/store/useFootballStore';
 import { useVolleyballStore } from '@/lib/store/useVolleyballStore';
+import { usePracticeMatchStore } from '@/lib/store/usePracticeMatchStore';
 import { MatchService } from '@/lib/api/matches';
 import Image from 'next/image';
 
@@ -119,9 +120,10 @@ function MatchSetupContent() {
 
   const handleStartMatch = () => {
     if (sport === 'Cricket') {
+      const matchId = `match-${Date.now()}`;
       const setupCricketMatch = useCricketStore.getState().setupMatch;
       setupCricketMatch({
-        id: `match-${Date.now()}`,
+        id: matchId,
         sport: 'Cricket',
         totalOvers,
         playersPerTeam,
@@ -132,14 +134,27 @@ function MatchSetupContent() {
         tossWinner,
         tossDecision,
       });
+      if (!matchIdParam) {
+        usePracticeMatchStore.getState().addRecord({
+          id: matchId,
+          sport: 'Cricket',
+          category: `${totalOvers} Overs (${playersPerTeam}v${playersPerTeam})`,
+          teamALabel: teamA[0] || 'Team A',
+          teamBLabel: teamB[0] || 'Team B',
+          createdAt: new Date().toISOString(),
+          status: 'live',
+          liveRoute: '/scoring/live?sport=Cricket',
+        });
+      }
       router.push('/scoring/live?sport=Cricket');
       return;
     }
 
     if (sport === 'Football') {
+      const matchId = `match-${Date.now()}`;
       const setupFootballMatch = useFootballStore.getState().setupMatch;
       setupFootballMatch({
-        id: `match-${Date.now()}`,
+        id: matchId,
         sport: 'Football',
         halfLengthMinutes,
         playersPerTeam: footballPlayers,
@@ -150,14 +165,27 @@ function MatchSetupContent() {
         tossWinner: footballTossWinner,
         tossDecision: footballTossDecision as any,
       });
+      if (!matchIdParam) {
+        usePracticeMatchStore.getState().addRecord({
+          id: matchId,
+          sport: 'Football',
+          category: `${halfLengthMinutes}m Half (${footballPlayers}v${footballPlayers})`,
+          teamALabel: teamA[0] || 'Team A',
+          teamBLabel: teamB[0] || 'Team B',
+          createdAt: new Date().toISOString(),
+          status: 'live',
+          liveRoute: '/scoring/live?sport=Football',
+        });
+      }
       router.push('/scoring/live?sport=Football');
       return;
     }
 
     if (sport === 'Volleyball') {
+      const matchId = `match-${Date.now()}`;
       const setupVolleyballMatch = useVolleyballStore.getState().setupMatch;
       setupVolleyballMatch({
-        id: `match-${Date.now()}`,
+        id: matchId,
         sport: 'Volleyball',
         bestOfSets,
         pointsPerSet,
@@ -166,6 +194,18 @@ function MatchSetupContent() {
         teamAPlayers,
         teamBPlayers,
       });
+      if (!matchIdParam) {
+        usePracticeMatchStore.getState().addRecord({
+          id: matchId,
+          sport: 'Volleyball',
+          category: `Best of ${bestOfSets} (${pointsPerSet} pts)`,
+          teamALabel: teamA[0] || 'Team A',
+          teamBLabel: teamB[0] || 'Team B',
+          createdAt: new Date().toISOString(),
+          status: 'live',
+          liveRoute: '/scoring/live?sport=Volleyball',
+        });
+      }
       router.push('/scoring/live?sport=Volleyball');
       return;
     }
@@ -179,8 +219,10 @@ function MatchSetupContent() {
       if (!finalTeamB[0]) finalTeamB[0] = 'Player 1 (B)';
       if (isDoubles && !finalTeamB[1]) finalTeamB[1] = 'Player 2 (B)';
 
+      const generatedId = searchParams.get('matchId') || `match-${Date.now()}`;
+
       setupMatch({
-        id: searchParams.get('matchId') || `match-${Date.now()}`,
+        id: generatedId,
         category,
         bestOfSets: sets as 1 | 2 | 3,
         pointBreak: pointBreak,
@@ -192,6 +234,21 @@ function MatchSetupContent() {
         courtName: searchParams.get('courtName') || undefined,
         sportType: sport,
       });
+
+      if (!matchIdParam) {
+        usePracticeMatchStore.getState().addRecord({
+          id: generatedId,
+          sport: 'Badminton',
+          category: category || 'Doubles',
+          teamALabel: isDoubles ? `${finalTeamA[0]} & ${finalTeamA[1]}` : finalTeamA[0],
+          teamBLabel: isDoubles ? `${finalTeamB[0]} & ${finalTeamB[1]}` : finalTeamB[0],
+          createdAt: new Date().toISOString(),
+          status: 'live',
+          scoreA: '0',
+          scoreB: '0',
+          liveRoute: '/scoring/live?sport=Badminton',
+        });
+      }
 
       const categoryId = searchParams.get('categoryId');
       let url = '/scoring/live?sport=Badminton';
@@ -844,7 +901,7 @@ function MatchSetupContent() {
       </div>
 
       {/* FIXED BOTTOM ACTION BAR */}
-      <div className="fixed bottom-20 md:bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#0A0F1A] via-[#0A0F1A]/95 to-[#0A0F1A]/0 backdrop-blur-sm pt-12 z-40">
+      <div className="fixed bottom-20 md:bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-background via-background/95 to-background/0 backdrop-blur-sm pt-12 z-40">
         <button
           onClick={handleNext}
           className="w-full bg-red-500 text-foreground font-black uppercase tracking-widest py-4 rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-red-400 active:scale-[0.98] transition-all shadow-[0_10px_40px_rgba(239,68,68,0.3)] border border-red-400/50"

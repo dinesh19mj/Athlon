@@ -52,14 +52,14 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
             </Link>
             <div>
               <h1 className="text-xl md:text-2xl font-black uppercase tracking-wide">Draws & Brackets</h1>
-              <span className="text-[10px] font-bold text-[#1B9C56] uppercase tracking-widest">Men's Singles</span>
+              <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Men's Singles</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button className="hidden md:flex p-2 md:px-4 md:py-2 bg-surface border border-foreground/10 rounded-xl items-center gap-2 text-sm font-bold hover:bg-foreground/5 transition-colors">
               <Printer className="w-4 h-4" /> Print
             </button>
-            <button className="p-2 md:px-4 md:py-2 bg-[#1B9C56] text-black rounded-xl flex items-center gap-2 text-sm font-bold shadow-[0_0_15px_rgba(27,156,86,0.3)] hover:scale-105 active:scale-95 transition-all">
+            <button className="p-2 md:px-4 md:py-2 bg-primary text-black rounded-xl flex items-center gap-2 text-sm font-bold shadow-[0_0_15px_rgba(27,156,86,0.3)] hover:scale-105 active:scale-95 transition-all">
               <Share2 className="w-4 h-4" /> <span className="hidden md:inline">Share</span>
             </button>
           </div>
@@ -68,7 +68,7 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
         {/* Toolbar */}
         <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-            <button className="px-4 py-2 bg-[#1B9C56] text-black font-bold text-xs uppercase tracking-wider rounded-lg shrink-0">Men's Singles</button>
+            <button className="px-4 py-2 bg-primary text-black font-bold text-xs uppercase tracking-wider rounded-lg shrink-0">Men's Singles</button>
             <button className="px-4 py-2 bg-surface border border-foreground/10 text-foreground/60 font-bold text-xs uppercase tracking-wider rounded-lg hover:text-foreground shrink-0 transition-colors">Men's Doubles</button>
             <button className="px-4 py-2 bg-surface border border-foreground/10 text-foreground/60 font-bold text-xs uppercase tracking-wider rounded-lg hover:text-foreground shrink-0 transition-colors">Mixed</button>
             <button className="px-3 py-2 bg-foreground/5 text-foreground/80 rounded-lg shrink-0 flex items-center gap-1 text-xs font-bold"><PlusCircle className="w-4 h-4"/> Add</button>
@@ -80,7 +80,7 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
             <input 
               type="text" 
               placeholder="Find player..." 
-              className="w-full md:w-64 bg-background border border-foreground/10 rounded-xl py-2 pl-9 pr-4 text-sm font-bold focus:outline-none focus:border-[#1B9C56] transition-colors"
+              className="w-full md:w-64 bg-background border border-foreground/10 rounded-xl py-2 pl-9 pr-4 text-sm font-bold focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>
@@ -102,13 +102,13 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
             
             <div className="bg-foreground/5 rounded-xl p-4 flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-widest text-foreground/60">Total Registrations</span>
-              <span className="text-lg font-black text-[#1B9C56]">{registrations}</span>
+              <span className="text-lg font-black text-primary">{registrations}</span>
             </div>
 
             <div>
               <label className="block text-[10px] font-black text-foreground/50 uppercase tracking-widest mb-2">Draw Size</label>
               <select 
-                className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56]"
+                className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary"
                 value={drawSize}
                 onChange={(e) => setDrawSize(Number(e.target.value))}
               >
@@ -119,14 +119,14 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
               </select>
             </div>
 
-            <div className="bg-[#1B9C56]/10 border border-[#1B9C56]/20 rounded-xl p-4 flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-widest text-[#1B9C56]">Calculated Byes</span>
-              <span className="text-lg font-black text-[#1B9C56]">{calculatedByes}</span>
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-widest text-primary">Calculated Byes</span>
+              <span className="text-lg font-black text-primary">{calculatedByes}</span>
             </div>
 
             <div>
               <label className="block text-[10px] font-black text-foreground/50 uppercase tracking-widest mb-2">Seeding Method</label>
-              <select className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56]">
+              <select className="w-full bg-background border border-foreground/10 rounded-xl py-3 px-4 text-sm font-bold text-foreground focus:outline-none focus:border-primary">
                 <option>Random Draw</option>
                 <option>Manual Seeding</option>
                 <option>Rank Based</option>
@@ -137,7 +137,7 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
 
           <button 
             onClick={() => setIsDrawGenerated(true)}
-            className="bg-[#1B9C56] text-black font-black uppercase tracking-wide py-4 px-12 rounded-xl hover:scale-105 active:scale-95 transition-transform shadow-[0_10px_30px_rgba(27,156,86,0.3)] shrink-0 mb-8 md:mb-0"
+            className="bg-primary text-black font-black uppercase tracking-wide py-4 px-12 rounded-xl hover:scale-105 active:scale-95 transition-transform shadow-[0_10px_30px_rgba(27,156,86,0.3)] shrink-0 mb-8 md:mb-0"
           >
             Generate Bracket
           </button>
@@ -153,7 +153,7 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
                 {/* Round Header */}
                 <div className="text-center mb-8 shrink-0">
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground/50">{round.name}</h3>
-                  <div className="h-1 w-8 bg-[#1B9C56] mx-auto mt-2 rounded-full opacity-50" />
+                  <div className="h-1 w-8 bg-primary mx-auto mt-2 rounded-full opacity-50" />
                 </div>
 
                 {/* Matches Column */}
@@ -163,7 +163,7 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
                     return (
                       <div key={mIndex} className="relative group">
                         {/* Match Card */}
-                        <div className={`bg-surface border ${isCompleted ? 'border-foreground/20' : 'border-[#1B9C56]/30'} rounded-xl overflow-hidden shadow-lg hover:border-[#1B9C56] transition-colors relative z-10 cursor-pointer`}>
+                        <div className={`bg-surface border ${isCompleted ? 'border-foreground/20' : 'border-primary/30'} rounded-xl overflow-hidden shadow-lg hover:border-primary transition-colors relative z-10 cursor-pointer`}>
                           <div className="bg-foreground/5 px-3 py-1.5 flex justify-between items-center border-b border-foreground/5">
                             <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Match {match.id}</span>
                             <span className="text-[10px] font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">{match.time}</span>
@@ -171,15 +171,15 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
                           
                           <div className="flex flex-col">
                             {/* Player 1 */}
-                            <div className={`flex items-center justify-between px-3 py-2 ${match.winner === 1 ? 'bg-[#1B9C56]/10' : ''}`}>
+                            <div className={`flex items-center justify-between px-3 py-2 ${match.winner === 1 ? 'bg-primary/10' : ''}`}>
                               <span className={`text-sm font-black ${match.winner === 2 ? 'text-foreground/40 line-through' : 'text-foreground'}`}>{match.player1}</span>
-                              <span className={`text-sm font-bold ${match.winner === 1 ? 'text-[#1B9C56]' : 'text-foreground/50'}`}>{match.score1 ?? '-'}</span>
+                              <span className={`text-sm font-bold ${match.winner === 1 ? 'text-primary' : 'text-foreground/50'}`}>{match.score1 ?? '-'}</span>
                             </div>
                             <div className="h-[1px] w-full bg-foreground/5" />
                             {/* Player 2 */}
-                            <div className={`flex items-center justify-between px-3 py-2 ${match.winner === 2 ? 'bg-[#1B9C56]/10' : ''}`}>
+                            <div className={`flex items-center justify-between px-3 py-2 ${match.winner === 2 ? 'bg-primary/10' : ''}`}>
                               <span className={`text-sm font-black ${match.winner === 1 ? 'text-foreground/40 line-through' : 'text-foreground'}`}>{match.player2}</span>
-                              <span className={`text-sm font-bold ${match.winner === 2 ? 'text-[#1B9C56]' : 'text-foreground/50'}`}>{match.score2 ?? '-'}</span>
+                              <span className={`text-sm font-bold ${match.winner === 2 ? 'text-primary' : 'text-foreground/50'}`}>{match.score2 ?? '-'}</span>
                             </div>
                           </div>
                         </div>
@@ -210,10 +210,10 @@ export default function DrawsAndBracketsPage({ params }: { params: Promise<{ id:
             {/* Winner Section */}
             <div className="flex flex-col justify-center items-center relative w-48 -ml-8">
                <div className="hidden lg:block absolute right-full top-1/2 w-8 h-[1px] bg-foreground/20 -translate-y-1/2 -z-10" />
-               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#1B9C56] to-green-800 flex items-center justify-center shadow-[0_0_30px_rgba(27,156,86,0.5)] border-4 border-background z-10 mb-4 animate-pulse">
+               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-green-800 flex items-center justify-center shadow-[0_0_30px_rgba(27,156,86,0.5)] border-4 border-background z-10 mb-4 animate-pulse">
                   <Trophy className="w-10 h-10 text-black" />
                </div>
-               <h3 className="text-sm font-black text-[#1B9C56] uppercase tracking-widest">Champion</h3>
+               <h3 className="text-sm font-black text-primary uppercase tracking-widest">Champion</h3>
                <p className="text-foreground/50 text-xs font-bold mt-1">TBD</p>
             </div>
 

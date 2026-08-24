@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ScoringService } from '../api/scoring';
+import { usePracticeMatchStore } from './usePracticeMatchStore';
 
 export type GameCategory = 'Singles' | 'Doubles' | 'Mixed Doubles' | 'Team';
 export type PointBreak = 15 | 21 | 30 | 'Custom';
@@ -218,6 +219,19 @@ export const useMatchStore = create<MatchState>((set, get) => ({
       history: newHistory,
       matchWinner,
     });
+
+    // Update practice match store when match completes
+    if (matchWinner && state.config?.id) {
+      const finalGames = newGames;
+      const scoreA = finalGames.map(g => g.scoreA).join(',');
+      const scoreB = finalGames.map(g => g.scoreB).join(',');
+      usePracticeMatchStore.getState().updateRecord(state.config.id, {
+        status: 'completed',
+        winner: matchWinner,
+        scoreA,
+        scoreB,
+      });
+    }
     
     // API Call with Meta
     if (state.config.id) {

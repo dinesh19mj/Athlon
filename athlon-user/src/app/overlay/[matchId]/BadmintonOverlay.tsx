@@ -43,11 +43,11 @@ export default function BadmintonOverlay({ params }: { params: Promise<{ matchId
   const isServeB = currentGame.currentServer === 'B';
   const isOfficial = true; // Derived from match type if available
 
-  const teamAThemeClass = !teamsFlipped ? 'text-[#1B9C56]' : 'text-[#3B82F6]';
-  const teamADotClass = !teamsFlipped ? 'bg-[#1B9C56] shadow-[0_0_8px_#1B9C56]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
+  const teamAThemeClass = !teamsFlipped ? 'text-primary' : 'text-[#3B82F6]';
+  const teamADotClass = !teamsFlipped ? 'bg-primary shadow-[0_0_8px_var(--athlon-primary)]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
 
-  const teamBThemeClass = teamsFlipped ? 'text-[#1B9C56]' : 'text-[#3B82F6]';
-  const teamBDotClass = teamsFlipped ? 'bg-[#1B9C56] shadow-[0_0_8px_#1B9C56]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
+  const teamBThemeClass = teamsFlipped ? 'text-primary' : 'text-[#3B82F6]';
+  const teamBDotClass = teamsFlipped ? 'bg-primary shadow-[0_0_8px_var(--athlon-primary)]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
 
   return (
     <div className="min-h-screen bg-transparent p-8 font-sans antialiased text-foreground selection:bg-transparent relative w-full overflow-hidden">

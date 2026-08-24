@@ -72,7 +72,7 @@ export default function UmpireLayout({ children }: { children: React.ReactNode }
       <main className={`flex-1 overflow-auto bg-(--bg) ${isScoringLive ? '' : 'md:pb-0 pb-16'}`}>
         {/* Mobile Header (PWA Style - matches Home page) */}
         {!isScoringLive && (
-          <header className="dark md:hidden sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-[#0A0F1A]/90 backdrop-blur-md border-b border-white/10">
+          <header className="md:hidden sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-surface/90 backdrop-blur-md border-b border-border">
             <div className="flex items-center gap-2">
               <Image src="/athlon-logo-3.png" alt="Athlon" width={90} height={18} className="object-contain w-auto h-10" />
             </div>
@@ -87,14 +87,14 @@ export default function UmpireLayout({ children }: { children: React.ReactNode }
 
               {/* Dropdown Menu */}
               {isMenuOpen && (
-                <div className="absolute right-0 top-12 w-48 bg-surface border border-foreground/10 rounded-xl shadow-2xl py-2 flex flex-col z-50 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 top-12 w-48 bg-surface border border-border rounded-xl shadow-2xl py-2 flex flex-col z-50 animate-in fade-in zoom-in-95 duration-200">
                   <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-foreground/5 transition-colors">
                     <User className="w-4 h-4 text-red-500" /> Profile
                   </Link>
                   <Link href="/settings" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-foreground/5 transition-colors">
                     <Settings className="w-4 h-4 text-foreground/70" /> Settings
                   </Link>
-                  <div className="h-px bg-foreground/10 my-1 mx-2" />
+                  <div className="h-px bg-border my-1 mx-2" />
                   <button
                     onClick={() => {
                       setIsMenuOpen(false);
@@ -116,32 +116,32 @@ export default function UmpireLayout({ children }: { children: React.ReactNode }
 
       {/* Mobile Bottom Nav (PWA Style) */}
       {!isScoringLive && (
-        <nav className="dark md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0A0F1A]/95 backdrop-blur-xl border-t border-white/10 z-50 px-6 flex items-center justify-between">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface/95 backdrop-blur-xl border-t border-border z-50 px-6 flex items-center justify-between">
           <Link href="/umpire" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/umpire' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-            <Home className={`w-6 h-6 ${pathname === '/umpire' ? 'text-red-500' : 'text-white'}`} />
-            <span className={`text-[9px] font-bold ${pathname === '/umpire' ? 'text-red-500' : 'text-white'}`}>Home</span>
+            <Home className={`w-6 h-6 ${pathname === '/umpire' ? 'text-red-500' : 'text-foreground'}`} />
+            <span className={`text-[9px] font-bold ${pathname === '/umpire' ? 'text-red-500' : 'text-foreground'}`}>Home</span>
           </Link>
 
           <Link href="/match-setup" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/match-setup' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-            <Activity className={`w-6 h-6 ${pathname === '/match-setup' ? 'text-red-500' : 'text-white'}`} />
-            <span className={`text-[9px] font-bold ${pathname === '/match-setup' ? 'text-red-500' : 'text-white'}`}>Setup</span>
+            <Activity className={`w-6 h-6 ${pathname === '/match-setup' ? 'text-red-500' : 'text-foreground'}`} />
+            <span className={`text-[9px] font-bold ${pathname === '/match-setup' ? 'text-red-500' : 'text-foreground'}`}>Setup</span>
           </Link>
 
           {/* Elevated Center + Button */}
           <div className="relative -top-6 flex items-center justify-center">
-            <Link href="/match-setup" className="w-16 h-16 rounded-full bg-red-500 text-white shadow-[0_8px_30px_rgba(255,59,48,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 border-[#0A0F1A]">
+            <Link href="/match-setup" className="w-16 h-16 rounded-full bg-red-500 text-white shadow-[0_8px_30px_rgba(255,59,48,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 border-surface">
               <img src="/umpire.png" alt="Umpire" className="w-8 h-8 object-contain drop-shadow-md" />
             </Link>
           </div>
 
           <Link href="/umpire/schedule" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/umpire/schedule' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-            <Calendar className={`w-6 h-6 ${pathname === '/umpire/schedule' ? 'text-red-500' : 'text-white'}`} />
-            <span className={`text-[9px] font-bold ${pathname === '/umpire/schedule' ? 'text-red-500' : 'text-white'}`}>Schedule</span>
+            <Calendar className={`w-6 h-6 ${pathname === '/umpire/schedule' ? 'text-red-500' : 'text-foreground'}`} />
+            <span className={`text-[9px] font-bold ${pathname === '/umpire/schedule' ? 'text-red-500' : 'text-foreground'}`}>Schedule</span>
           </Link>
 
           <Link href="/profile" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/profile' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-            <UserCircle className={`w-6 h-6 ${pathname === '/profile' ? 'text-red-500' : 'text-white'}`} />
-            <span className={`text-[9px] font-bold ${pathname === '/profile' ? 'text-red-500' : 'text-white'}`}>Profile</span>
+            <UserCircle className={`w-6 h-6 ${pathname === '/profile' ? 'text-red-500' : 'text-foreground'}`} />
+            <span className={`text-[9px] font-bold ${pathname === '/profile' ? 'text-red-500' : 'text-foreground'}`}>Profile</span>
           </Link>
         </nav>
       )}

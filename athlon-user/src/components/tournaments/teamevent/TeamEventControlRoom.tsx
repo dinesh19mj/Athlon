@@ -115,7 +115,7 @@ export const TeamEventControlRoom: React.FC<Props> = ({ match, registrations, on
 
               {details?.teamALineup?.status === 'SUBMITTED' && rejectingTeam !== 'A' && (
                 <div className="flex gap-2 mb-6">
-                  <button onClick={() => handleApprove(details.teamALineup!.id)} className="flex-1 py-2 bg-[#1B9C56] text-white rounded-lg font-bold text-sm hover:bg-[#1B9C56]/90 transition-colors">
+                  <button onClick={() => handleApprove(details.teamALineup!.id)} className="flex-1 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors">
                     Approve Lineup
                   </button>
                   <button onClick={() => setRejectingTeam('A')} className="flex-1 py-2 bg-red-500/10 text-red-500 rounded-lg font-bold text-sm hover:bg-red-500 hover:text-white transition-colors">
@@ -202,7 +202,7 @@ export const TeamEventControlRoom: React.FC<Props> = ({ match, registrations, on
 
               {details?.teamBLineup?.status === 'SUBMITTED' && rejectingTeam !== 'B' && (
                 <div className="flex gap-2 mb-6">
-                  <button onClick={() => handleApprove(details.teamBLineup!.id)} className="flex-1 py-2 bg-[#1B9C56] text-white rounded-lg font-bold text-sm hover:bg-[#1B9C56]/90 transition-colors">
+                  <button onClick={() => handleApprove(details.teamBLineup!.id)} className="flex-1 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors">
                     Approve Lineup
                   </button>
                   <button onClick={() => setRejectingTeam('B')} className="flex-1 py-2 bg-red-500/10 text-red-500 rounded-lg font-bold text-sm hover:bg-red-500 hover:text-white transition-colors">

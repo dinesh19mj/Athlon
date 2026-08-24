@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -69,6 +70,8 @@ public class TournamentService {
 				request.getCreatedBy()
 		);
 
+		tournament.setRegistrationClosingDate(request.getRegistrationClosingDate());
+
 		if (poster != null && !poster.isEmpty()) {
 			String fileName = fileStorageUtil.saveFileToDir(poster, System.getProperty("tournament"), posterUploadDir);
 
@@ -113,21 +116,36 @@ public class TournamentService {
 
 	@Transactional(readOnly = true)
 	public List<TournamentResponse> getAllActiveTournaments() {
-		return tournamentRepository.findAll().stream().filter(Tournament::isActive).map(t -> {
-            TournamentResponse res = TournamentResponse.fromEntity(t);
-            populateTeamEventCategories(res, t);
-            return res;
-        }).collect(Collectors.toList());
+		return tournamentRepository.findAll().stream()
+				.filter(Tournament::isActive)
+				.sorted(Comparator.comparing(Tournament::getTournamentId, Comparator.nullsLast(Comparator.reverseOrder())))
+				.map(t -> {
+					TournamentResponse res = TournamentResponse.fromEntity(t);
+					populateTeamEventCategories(res, t);
+					return res;
+				}).collect(Collectors.toList());
 	}
 
 	@Transactional(readOnly = true)
 	public List<TournamentResponse> getTournamentsByOrganizationUuid(UUID orgUuid) {
 		return tournamentRepository.findByOrganizerUuidAndIsActive(orgUuid, 1).stream()
+				.sorted(Comparator.comparing(Tournament::getTournamentId, Comparator.nullsLast(Comparator.reverseOrder())))
 				.map(t -> {
-                    TournamentResponse res = TournamentResponse.fromEntity(t);
-                    populateTeamEventCategories(res, t);
-                    return res;
-                }).collect(Collectors.toList());
+					TournamentResponse res = TournamentResponse.fromEntity(t);
+					populateTeamEventCategories(res, t);
+					return res;
+				}).collect(Collectors.toList());
+	}
+
+	@Transactional
+	public TournamentResponse updateStatus(UUID uuid, String status) {
+		Tournament tournament = tournamentRepository.findByTournamentUuid(uuid)
+				.orElseThrow(() -> new ResourceNotFoundException("Tournament not found with UUID: " + uuid));
+		tournament.setStatus(status);
+		Tournament saved = tournamentRepository.save(tournament);
+		TournamentResponse res = TournamentResponse.fromEntity(saved);
+		populateTeamEventCategories(res, saved);
+		return res;
 	}
 
 	@Transactional

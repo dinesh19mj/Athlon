@@ -128,17 +128,17 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
         </div>
         
         <div className="flex flex-wrap items-center gap-1.5 md:gap-2 text-xs md:text-sm font-bold">
-          <div className={`px-2 md:px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 ${step === 1 ? 'bg-[#1B9C56] text-white' : 'bg-foreground/5 text-foreground/50'}`}>
+          <div className={`px-2 md:px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 ${step === 1 ? 'bg-primary text-white' : 'bg-foreground/5 text-foreground/50'}`}>
             <span className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-white/20 flex items-center justify-center text-[9px] md:text-[10px]">1</span>
             Pools
           </div>
           <ArrowRightIcon className="w-3 h-3 md:w-4 md:h-4 text-foreground/20 shrink-0" />
-          <div className={`px-2 md:px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 ${step === 2 ? 'bg-[#1B9C56] text-white' : 'bg-foreground/5 text-foreground/50'}`}>
+          <div className={`px-2 md:px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 ${step === 2 ? 'bg-primary text-white' : 'bg-foreground/5 text-foreground/50'}`}>
             <span className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-white/20 flex items-center justify-center text-[9px] md:text-[10px]">2</span>
             Teams
           </div>
           <ArrowRightIcon className="w-3 h-3 md:w-4 md:h-4 text-foreground/20 shrink-0" />
-          <div className={`px-2 md:px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 ${step === 3 ? 'bg-[#1B9C56] text-white' : 'bg-foreground/5 text-foreground/50'}`}>
+          <div className={`px-2 md:px-3 py-1.5 rounded-full flex items-center gap-1.5 md:gap-2 ${step === 3 ? 'bg-primary text-white' : 'bg-foreground/5 text-foreground/50'}`}>
             <span className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-white/20 flex items-center justify-center text-[9px] md:text-[10px]">3</span>
             Review
           </div>
@@ -164,13 +164,13 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
             <div className="flex items-center justify-between p-4 bg-surface border border-foreground/10 rounded-xl">
               <div>
                 <h3 className="font-bold text-foreground flex items-center gap-2">
-                  <SettingsIcon className="w-4 h-4 text-[#1B9C56]" />
+                  <SettingsIcon className="w-4 h-4 text-primary" />
                   Tournament Capacity Overview
                 </h3>
                 <p className="text-sm text-foreground/60 mt-1">Sum of pool capacities must equal {totalTeams}.</p>
               </div>
               <div className="text-right">
-                <div className={`text-2xl font-black ${isCapacityValid ? 'text-[#1B9C56]' : 'text-orange-500'}`}>
+                <div className={`text-2xl font-black ${isCapacityValid ? 'text-primary' : 'text-orange-500'}`}>
                   {totalCapacity} / {totalTeams}
                 </div>
                 <div className="text-xs font-bold text-foreground/40 uppercase tracking-widest">
@@ -198,7 +198,7 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
                         type="text" 
                         value={pool.name}
                         onChange={(e) => updatePool(pool.id, 'name', e.target.value)}
-                        className="w-full bg-background border border-foreground/10 rounded-lg px-3 py-2 text-sm font-semibold text-foreground focus:outline-none focus:border-[#1B9C56]"
+                        className="w-full bg-background border border-foreground/10 rounded-lg px-3 py-2 text-sm font-semibold text-foreground focus:outline-none focus:border-primary"
                       />
                     </div>
                     
@@ -219,7 +219,7 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
                             max={totalTeams}
                             value={pool.capacity}
                             onChange={(e) => updatePool(pool.id, 'capacity', parseInt(e.target.value) || 2)}
-                            className="w-full bg-background border-y border-foreground/10 px-2 py-2 text-sm font-semibold text-foreground focus:outline-none focus:border-[#1B9C56] text-center"
+                            className="w-full bg-background border-y border-foreground/10 px-2 py-2 text-sm font-semibold text-foreground focus:outline-none focus:border-primary text-center"
                           />
                           <button 
                             type="button"
@@ -246,7 +246,7 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
                             max={pool.capacity}
                             value={pool.qualifiers}
                             onChange={(e) => updatePool(pool.id, 'qualifiers', parseInt(e.target.value) || 1)}
-                            className="w-full bg-background border-y border-foreground/10 px-2 py-2 text-sm font-semibold text-foreground focus:outline-none focus:border-[#1B9C56] text-center"
+                            className="w-full bg-background border-y border-foreground/10 px-2 py-2 text-sm font-semibold text-foreground focus:outline-none focus:border-primary text-center"
                           />
                           <button 
                             type="button"
@@ -264,7 +264,7 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
               
               <button 
                 onClick={addPool}
-                className="bg-background border-2 border-dashed border-foreground/10 hover:border-[#1B9C56]/50 hover:bg-[#1B9C56]/5 rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-foreground/50 hover:text-[#1B9C56] transition-colors min-h-[160px]"
+                className="bg-background border-2 border-dashed border-foreground/10 hover:border-primary/50 hover:bg-primary/5 rounded-xl p-5 flex flex-col items-center justify-center gap-2 text-foreground/50 hover:text-primary transition-colors min-h-[160px]"
               >
                 <div className="w-10 h-10 rounded-full bg-foreground/5 flex items-center justify-center">
                   <PlusIcon className="w-5 h-5" />
@@ -299,10 +299,10 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
                 const slots = Array.from({ length: pool.capacity }, (_, i) => assignment?.teamUuids[i] || null);
                 
                 return (
-                  <div key={pool.id} className={`bg-surface border rounded-xl p-5 flex flex-col ${isFull ? 'border-[#1B9C56]/50 shadow-md shadow-[#1B9C56]/5' : 'border-foreground/10'}`}>
+                  <div key={pool.id} className={`bg-surface border rounded-xl p-5 flex flex-col ${isFull ? 'border-primary/50 shadow-md shadow-primary/5' : 'border-foreground/10'}`}>
                     <div className="flex items-center justify-between mb-4 border-b border-foreground/5 pb-4">
                       <h4 className="font-black text-lg text-foreground">{pool.name}</h4>
-                      <div className={`px-2.5 py-1 rounded text-xs font-bold ${isFull ? 'bg-[#1B9C56]/10 text-[#1B9C56]' : 'bg-foreground/5 text-foreground/50'}`}>
+                      <div className={`px-2.5 py-1 rounded text-xs font-bold ${isFull ? 'bg-primary/10 text-primary' : 'bg-foreground/5 text-foreground/50'}`}>
                         {assignedCount} / {pool.capacity}
                       </div>
                     </div>
@@ -328,7 +328,7 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
                           return (
                             <div key={`slot-${index}`} className="h-12 border-2 border-dashed border-foreground/10 rounded-lg flex items-center justify-between px-3">
                               <select 
-                                className="text-xs bg-background border border-foreground/10 text-foreground font-bold focus:outline-none focus:border-[#1B9C56] rounded px-2 py-1 flex-1 w-full truncate cursor-pointer"
+                                className="text-xs bg-background border border-foreground/10 text-foreground font-bold focus:outline-none focus:border-primary rounded px-2 py-1 flex-1 w-full truncate cursor-pointer"
                                 onChange={(e) => {
                                   if (e.target.value) {
                                     assignTeamToPool(e.target.value, pool.id);
@@ -368,9 +368,9 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
         {/* STEP 3: REVIEW & PUBLISH */}
         {step === 3 && (
           <div className="flex flex-col gap-6 max-w-2xl mx-auto">
-            <div className="bg-surface border border-[#1B9C56]/30 rounded-2xl p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#1B9C56]/10 mx-auto flex items-center justify-center mb-4">
-                <CheckCircleIcon className="w-8 h-8 text-[#1B9C56]" />
+            <div className="bg-surface border border-primary/30 rounded-2xl p-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 mx-auto flex items-center justify-center mb-4">
+                <CheckCircleIcon className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-xl font-black text-foreground mb-2">Draw Configuration Valid</h3>
               <p className="text-sm text-foreground/60 mb-6">
@@ -384,7 +384,7 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
                 </div>
                 <div className="bg-background rounded-xl p-4 border border-foreground/10">
                   <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest block mb-1">Total Matches</span>
-                  <span className="text-2xl font-black text-[#1B9C56]">
+                  <span className="text-2xl font-black text-primary">
                     {pools.reduce((sum, p) => sum + (p.capacity * (p.capacity - 1)) / 2, 0)}
                   </span>
                 </div>
@@ -393,7 +393,7 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
               <button
                 onClick={handleGenerateAndPublish}
                 disabled={isGenerating}
-                className="w-full py-4 bg-[#1B9C56] hover:bg-[#158045] text-white rounded-xl font-black uppercase tracking-widest text-sm transition-colors shadow-lg shadow-[#1B9C56]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-xl font-black uppercase tracking-widest text-sm transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGenerating ? 'Generating...' : 'Confirm & Publish Draw'}
               </button>

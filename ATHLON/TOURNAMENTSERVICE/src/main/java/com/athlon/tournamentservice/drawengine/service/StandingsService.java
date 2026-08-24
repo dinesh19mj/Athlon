@@ -76,14 +76,37 @@ public class StandingsService {
 
         // Flatten and rank
         List<PoolStandingDTO> result = new ArrayList<>();
-        for (Map.Entry<Long, Map<UUID, PoolStandingDTO>> entry : standingsMap.entrySet()) {
+        // Sort pool entries by poolId/poolName
+        List<Map.Entry<Long, Map<UUID, PoolStandingDTO>>> sortedEntries = new ArrayList<>(standingsMap.entrySet());
+        sortedEntries.sort(Comparator.comparing(e -> {
+            var map = e.getValue();
+            if (!map.isEmpty()) {
+                String pName = map.values().iterator().next().getPoolName();
+                if (pName != null) return pName;
+            }
+            return String.valueOf(e.getKey());
+        }));
+
+        for (Map.Entry<Long, Map<UUID, PoolStandingDTO>> entry : sortedEntries) {
             List<PoolStandingDTO> poolStandings = new ArrayList<>(entry.getValue().values());
             
-            // Sort by points descending, then won descending, then played ascending
-            poolStandings.sort(Comparator
-                    .comparingInt(PoolStandingDTO::getPoints).reversed()
-                    .thenComparingInt(PoolStandingDTO::getWon).reversed()
-                    .thenComparingInt(PoolStandingDTO::getPlayed));
+            // Sort teams in this pool:
+            // 1. Points (Descending)
+            // 2. Won (Descending)
+            // 3. Lost (Ascending)
+            // 4. Played (Descending)
+            poolStandings.sort((a, b) -> {
+                int ptsDiff = Integer.compare(b.getPoints(), a.getPoints());
+                if (ptsDiff != 0) return ptsDiff;
+
+                int wonDiff = Integer.compare(b.getWon(), a.getWon());
+                if (wonDiff != 0) return wonDiff;
+
+                int lostDiff = Integer.compare(a.getLost(), b.getLost());
+                if (lostDiff != 0) return lostDiff;
+
+                return Integer.compare(b.getPlayed(), a.getPlayed());
+            });
             
             for (int i = 0; i < poolStandings.size(); i++) {
                 poolStandings.get(i).setRank(i + 1);

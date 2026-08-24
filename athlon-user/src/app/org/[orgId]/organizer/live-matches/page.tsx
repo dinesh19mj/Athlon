@@ -55,7 +55,7 @@ export default function OrganizerLiveMatchesPage() {
           <div key={match.id} className="bg-surface border border-foreground/5 rounded-3xl p-5 shadow-xl relative overflow-hidden group">
             
             {/* Ambient Background Glow */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#1B9C56]/10 blur-3xl rounded-full" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl rounded-full" />
             
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-6">
@@ -63,7 +63,7 @@ export default function OrganizerLiveMatchesPage() {
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                   <span className="text-red-500 font-black text-xs tracking-widest uppercase">Live</span>
                 </div>
-                <span className="text-[#1B9C56] font-bold text-xs uppercase tracking-wider bg-[#1B9C56]/10 px-3 py-1 rounded-full border border-[#1B9C56]/20">
+                <span className="text-primary font-bold text-xs uppercase tracking-wider bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                   {match.court}
                 </span>
               </div>

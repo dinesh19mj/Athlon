@@ -29,7 +29,7 @@ export default function SchedulePage() {
         </div>
         
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B9C56] text-black text-sm font-black tracking-wide hover:bg-[#158045] transition-colors shadow-lg shadow-[#1B9C56]/20">
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4" /> Create Session
           </button>
         </div>
@@ -42,7 +42,7 @@ export default function SchedulePage() {
             <ChevronLeft className="w-5 h-5 text-foreground/70" />
           </button>
           <div className="flex items-center gap-2 font-black text-lg text-foreground min-w-[140px] justify-center">
-            <CalendarIcon className="w-5 h-5 text-[#1B9C56]" />
+            <CalendarIcon className="w-5 h-5 text-primary" />
             {selectedDate}
           </div>
           <button className="p-2 rounded-lg bg-foreground/5 hover:bg-foreground/10 transition-colors">
@@ -67,7 +67,7 @@ export default function SchedulePage() {
           <div key={session.id} className="bg-surface border border-foreground/5 rounded-[24px] p-6 flex flex-col md:flex-row md:items-center gap-6 shadow-sm hover:shadow-md transition-shadow group">
             
             {/* Time Block */}
-            <div className="md:w-48 shrink-0 flex flex-col justify-center border-l-4 border-[#1B9C56] pl-4">
+            <div className="md:w-48 shrink-0 flex flex-col justify-center border-l-4 border-primary pl-4">
               <span className="text-xs font-bold text-foreground/50 uppercase tracking-widest mb-1">Time</span>
               <div className="font-black text-foreground">{session.time.split(' - ')[0]}</div>
               <div className="text-sm font-medium text-foreground/60">{session.time.split(' - ')[1]}</div>
@@ -105,7 +105,7 @@ export default function SchedulePage() {
               <button className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-foreground/[0.03] hover:bg-foreground/[0.08] text-sm font-bold text-foreground transition-colors border border-transparent hover:border-foreground/10">
                 Edit Details
               </button>
-              <button className="flex-1 md:flex-none px-4 py-2 rounded-xl text-sm font-bold text-[#1B9C56] hover:bg-[#1B9C56]/10 transition-colors">
+              <button className="flex-1 md:flex-none px-4 py-2 rounded-xl text-sm font-bold text-primary hover:bg-primary/10 transition-colors">
                 View Roster
               </button>
             </div>

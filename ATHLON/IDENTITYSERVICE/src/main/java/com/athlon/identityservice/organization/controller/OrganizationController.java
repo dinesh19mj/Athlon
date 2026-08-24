@@ -1,21 +1,31 @@
 package com.athlon.identityservice.organization.controller;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.athlon.identityservice.dto.response.ApiResponse;
 import com.athlon.identityservice.organization.dto.request.CreateOrganizationRequest;
+import com.athlon.identityservice.organization.dto.request.SaveOrganizationProfileRequest;
 import com.athlon.identityservice.organization.dto.request.UpdateOrganizationRequest;
+import com.athlon.identityservice.organization.dto.response.OrganizationProfileResponse;
 import com.athlon.identityservice.organization.dto.response.OrganizationResponse;
 import com.athlon.identityservice.organization.service.OrganizationService;
+import com.athlon.identityservice.util.DocumentUtil;
 
 import jakarta.validation.Valid;
 
@@ -24,9 +34,11 @@ import jakarta.validation.Valid;
 public class OrganizationController {
 
     private final OrganizationService organizationService;
+    private final DocumentUtil documentUtil;
 
-    public OrganizationController(OrganizationService organizationService) {
+    public OrganizationController(OrganizationService organizationService, DocumentUtil documentUtil) {
         this.organizationService = organizationService;
+        this.documentUtil = documentUtil;
     }
 
     @PostMapping("/createOrganization")
@@ -46,6 +58,50 @@ public class OrganizationController {
         
         OrganizationResponse response = organizationService.updateOrganization(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Organization updated successfully", response));
+    }
+
+    @PostMapping("/saveProfile")
+    public ResponseEntity<ApiResponse<OrganizationProfileResponse>> saveOrganizationProfile(
+            @Valid @RequestBody SaveOrganizationProfileRequest request,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+        
+        OrganizationProfileResponse response = organizationService.saveOrganizationProfile(request, userId);
+        return ResponseEntity.ok(ApiResponse.success("Organization profile saved successfully", response));
+    }
+
+    @PostMapping(value = "/saveProfileMultipart", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<OrganizationProfileResponse>> saveOrganizationProfileMultipart(
+            @ModelAttribute SaveOrganizationProfileRequest request,
+            @RequestParam(value = "logoFile", required = false) MultipartFile logoFile,
+            @RequestParam(value = "bannerFile", required = false) MultipartFile bannerFile,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) throws IOException {
+        
+        OrganizationProfileResponse response = organizationService.saveOrganizationProfileWithMultipart(
+                request, logoFile, bannerFile, userId);
+        return ResponseEntity.ok(ApiResponse.success("Organization profile and media saved successfully", response));
+    }
+
+    @GetMapping("/getProfileByOrgUuid/{orgUuid}")
+    public ResponseEntity<ApiResponse<OrganizationProfileResponse>> getProfileByOrganizationUuid(@PathVariable("orgUuid") UUID orgUuid) {
+        OrganizationProfileResponse response = organizationService.getProfileByOrganizationUuid(orgUuid);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/logo/{fileName}")
+    public ResponseEntity<byte[]> getOrganizationLogo(@PathVariable("fileName") String fileName) {
+        String filePath = organizationService.getUploadBaseDir() + File.separator + "organizations" + File.separator + "logos" + File.separator + fileName;
+        return documentUtil.getFile(filePath);
+    }
+
+    @GetMapping("/banner/{fileName}")
+    public ResponseEntity<byte[]> getOrganizationBanner(@PathVariable("fileName") String fileName) {
+        String filePath = organizationService.getUploadBaseDir() + File.separator + "organizations" + File.separator + "banners" + File.separator + fileName;
+        return documentUtil.getFile(filePath);
+    }
+
+    @GetMapping("/file")
+    public ResponseEntity<byte[]> getFile(@RequestParam("filePath") String filePath) {
+        return documentUtil.getFile(filePath);
     }
 
     @PostMapping("/deleteOrganization/{uuid}")

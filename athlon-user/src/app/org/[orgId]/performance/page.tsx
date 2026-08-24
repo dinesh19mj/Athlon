@@ -43,7 +43,7 @@ export default function PerformancePage() {
           <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-foreground/10 text-sm font-bold text-foreground hover:bg-foreground/5 transition-colors">
             <Download className="w-4 h-4" /> Export Report
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B9C56] text-black text-sm font-black tracking-wide hover:bg-[#158045] transition-colors shadow-lg shadow-[#1B9C56]/20">
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4" /> Add Evaluation
           </button>
         </div>
@@ -63,7 +63,7 @@ export default function PerformancePage() {
 
         <div className="relative w-full sm:w-72 shrink-0">
           <select 
-            className="w-full appearance-none bg-background border border-foreground/10 rounded-xl px-4 py-3 text-sm font-bold text-foreground focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] cursor-pointer"
+            className="w-full appearance-none bg-background border border-foreground/10 rounded-xl px-4 py-3 text-sm font-bold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
             onChange={(e) => setSelectedStudent(MOCK_STUDENTS.find(s => s.id === e.target.value) || MOCK_STUDENTS[0])}
           >
             {MOCK_STUDENTS.map(student => (
@@ -80,7 +80,7 @@ export default function PerformancePage() {
         <div className="lg:col-span-1 space-y-6">
           
           {/* Overall Rating */}
-          <div className="bg-gradient-to-br from-[#1B9C56] to-[#158045] p-6 rounded-[24px] text-black shadow-lg shadow-[#1B9C56]/20 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-primary to-[#158045] p-6 rounded-[24px] text-black shadow-lg shadow-primary/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex items-center justify-between mb-4">
               <span className="text-xs font-black uppercase tracking-widest opacity-80">Overall Rating</span>
@@ -117,7 +117,7 @@ export default function PerformancePage() {
           <div className="bg-surface border border-foreground/5 rounded-[24px] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-black text-foreground">Skill Breakdown</h3>
-              <button className="text-xs font-bold text-[#1B9C56] hover:underline">View Historical Chart</button>
+              <button className="text-xs font-bold text-primary hover:underline">View Historical Chart</button>
             </div>
             
             <div className="space-y-5">
@@ -158,7 +158,7 @@ export default function PerformancePage() {
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-foreground/5 rounded-md text-[10px] font-bold text-foreground/60 uppercase tracking-widest">
                       <Clock className="w-3 h-3" /> {evaluation.date}
                     </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#1B9C56]/10 text-[#1B9C56] rounded-md text-[10px] font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-md text-[10px] font-bold uppercase tracking-widest">
                       <User className="w-3 h-3" /> {evaluation.coach}
                     </div>
                   </div>

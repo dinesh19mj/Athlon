@@ -21,8 +21,8 @@ const mockNotifications = [
     time: 'Yesterday',
     read: true,
     icon: CheckCircle2,
-    color: 'text-[#1B9C56]',
-    bgColor: 'bg-[#1B9C56]/10'
+    color: 'text-primary',
+    bgColor: 'bg-primary/10'
   },
   {
     id: 3,

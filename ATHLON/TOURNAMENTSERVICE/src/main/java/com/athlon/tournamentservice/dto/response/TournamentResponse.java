@@ -13,6 +13,7 @@ public class TournamentResponse {
     private String description;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private LocalDateTime registrationClosingDate;
 
     private Long organizerId;
     private UUID organizerUuid;
@@ -53,6 +54,7 @@ public class TournamentResponse {
         response.setDescription(tournament.getDescription());
         response.setStartDate(tournament.getStartDate());
         response.setEndDate(tournament.getEndDate());
+        response.setRegistrationClosingDate(tournament.getRegistrationClosingDate());
 
         response.setOrganizerId(tournament.getOrganizerId());
         response.setOrganizerUuid(tournament.getOrganizerUuid());
@@ -125,6 +127,14 @@ public class TournamentResponse {
 
     public void setEndDate(LocalDateTime endDate) {
         this.endDate = endDate;
+    }
+
+    public LocalDateTime getRegistrationClosingDate() {
+        return registrationClosingDate;
+    }
+
+    public void setRegistrationClosingDate(LocalDateTime registrationClosingDate) {
+        this.registrationClosingDate = registrationClosingDate;
     }
 
     public Long getOrganizerId() {

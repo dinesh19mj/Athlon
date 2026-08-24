@@ -59,6 +59,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     }),
     {
       name: 'workspace-storage',
+      version: 2,
       storage: createJSONStorage(() => localStorage),
     }
   )

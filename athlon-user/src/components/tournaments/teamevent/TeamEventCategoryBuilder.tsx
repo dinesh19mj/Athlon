@@ -15,7 +15,7 @@ interface Props {
 
 export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange }) => {
     
-    const inputClass = "w-full bg-[#0D1520] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all placeholder:text-white/25";
+    const inputClass = "w-full bg-[#0D1520] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-white/25";
     const labelClass = "block text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5";
 
     const handleAddCategory = () => {
@@ -40,7 +40,7 @@ export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange
                 <button
                     type="button"
                     onClick={handleAddCategory}
-                    className="flex items-center gap-1 text-[#1B9C56] text-xs font-bold hover:underline"
+                    className="flex items-center gap-1 text-primary text-xs font-bold hover:underline"
                 >
                     <PlusIcon className="w-4 h-4" /> Add Category
                 </button>

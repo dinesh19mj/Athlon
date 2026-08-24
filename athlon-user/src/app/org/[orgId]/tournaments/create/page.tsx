@@ -48,6 +48,8 @@ export default function CreateTournamentPage() {
     startTime: "",
     endDate: "",
     endTime: "",
+    registrationClosingDate: "",
+    registrationClosingTime: "",
     tournamentType: "KNOCKOUT",
     sport: "",
     category: "",
@@ -101,6 +103,12 @@ export default function CreateTournamentPage() {
         : "";
       if (endDateTime) form.append("endDate", endDateTime);
 
+      // Format registration closing date and time
+      const registrationClosingDateTime = formData.registrationClosingDate
+        ? `${formData.registrationClosingDate}T${formData.registrationClosingTime || '23:59'}:00`
+        : "";
+      if (registrationClosingDateTime) form.append("registrationClosingDate", registrationClosingDateTime);
+
       form.append("tournamentType", formData.tournamentType);
       form.append("sport", formData.sport);
       if (formData.tournamentType === 'TEAM_EVENT') {
@@ -141,7 +149,7 @@ export default function CreateTournamentPage() {
   };
 
   const inputClass =
-    "w-full bg-[#0D1520] border border-white/10 rounded-2xl px-4 py-4 text-white text-base focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all placeholder:text-white/25 font-medium";
+    "w-full bg-[#0D1520] border border-white/10 rounded-2xl px-4 py-4 text-white text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-white/25 font-medium";
 
   const labelClass = "block text-[10px] font-black text-white/50 uppercase tracking-widest mb-2";
 
@@ -153,7 +161,7 @@ export default function CreateTournamentPage() {
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#1B9C56]" />
+          <span className="w-2 h-2 rounded-full bg-primary" />
           <span className="text-white/50 text-sm font-bold tracking-widest uppercase"> CREATE TOURNAMENT</span>
         </div>
       </div>
@@ -172,15 +180,15 @@ export default function CreateTournamentPage() {
                 key={opt.value}
                 onClick={() => setFormData({ ...formData, type: opt.value })}
                 className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-all ${formData.type === opt.value
-                  ? "border-[#1B9C56] bg-[#1B9C56]/10"
+                  ? "border-primary bg-primary/10"
                   : "border-white/10 bg-[#0D1520]"
                   }`}
               >
                 {/* Radio dot */}
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.type === opt.value ? "border-[#1B9C56]" : "border-white/30"
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.type === opt.value ? "border-primary" : "border-white/30"
                   }`}>
                   {formData.type === opt.value && (
-                    <div className="w-2 h-2 rounded-full bg-[#1B9C56]" />
+                    <div className="w-2 h-2 rounded-full bg-primary" />
                   )}
                 </div>
                 <div>
@@ -196,7 +204,7 @@ export default function CreateTournamentPage() {
 
         {/* TOURNAMENT NAME */}
         <div>
-          <label className={labelClass}>Tournament Name <span className="text-[#1B9C56]">*</span></label>
+          <label className={labelClass}>Tournament Name <span className="text-primary">*</span></label>
           <input
             type="text"
             value={formData.name}
@@ -208,7 +216,7 @@ export default function CreateTournamentPage() {
 
         {/* SPORT */}
         <div>
-          <label className={labelClass}>Sport <span className="text-[#1B9C56]">*</span></label>
+          <label className={labelClass}>Sport <span className="text-primary">*</span></label>
           <div className="grid grid-cols-2 gap-2">
             {['Badminton', 'Cricket', 'Football', 'Volleyball'].map((sport) => (
               <button
@@ -221,11 +229,10 @@ export default function CreateTournamentPage() {
                   }
                   setFormData({ ...formData, ...updates });
                 }}
-                className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
-                  formData.sport === sport
-                    ? 'border-[#1B9C56] bg-[#1B9C56]/10 text-white'
+                className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${formData.sport === sport
+                    ? 'border-primary bg-primary/10 text-white'
                     : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
-                }`}
+                  }`}
               >
                 {sport}
               </button>
@@ -235,7 +242,7 @@ export default function CreateTournamentPage() {
 
         {/* TOURNAMENT TYPE */}
         <div>
-          <label className={labelClass}>Tournament Type <span className="text-[#1B9C56]">*</span></label>
+          <label className={labelClass}>Tournament Type <span className="text-primary">*</span></label>
           <div className="grid grid-cols-3 gap-2">
             {['KNOCKOUT', 'LEAGUE', 'TEAM_EVENT'].map((type) => (
               <button
@@ -249,11 +256,10 @@ export default function CreateTournamentPage() {
                   setFormData({ ...formData, ...updates });
                 }}
                 disabled={Boolean(formData.sport && formData.sport !== 'Badminton' && type === 'TEAM_EVENT')}
-                className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                  formData.tournamentType === type
-                    ? 'border-[#1B9C56] bg-[#1B9C56]/10 text-white'
+                className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${formData.tournamentType === type
+                    ? 'border-primary bg-primary/10 text-white'
                     : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
-                }`}
+                  }`}
               >
                 {type === 'KNOCKOUT' ? 'Knockout' : type === 'LEAGUE' ? 'League' : 'Team League'}
               </button>
@@ -266,7 +272,7 @@ export default function CreateTournamentPage() {
         <div className="space-y-7">
           {formData.tournamentType !== 'TEAM_EVENT' && (
             <div>
-              <label className={labelClass}>Match Format <span className="text-[#1B9C56]">*</span></label>
+              <label className={labelClass}>Match Format <span className="text-primary">*</span></label>
               <select
                 value={formData.matchFormat}
                 onChange={(e) => setFormData({ ...formData, matchFormat: e.target.value })}
@@ -284,12 +290,12 @@ export default function CreateTournamentPage() {
 
           {formData.tournamentType === 'TEAM_EVENT' && (
             <div className="space-y-7">
-              <TeamEventCategoryBuilder 
+              <TeamEventCategoryBuilder
                 categories={formData.teamEventCategories}
                 onChange={(categories) => setFormData({ ...formData, teamEventCategories: categories })}
               />
               <div>
-                <label className={labelClass}>Players Count <span className="text-[#1B9C56]">*</span></label>
+                <label className={labelClass}>Players Count <span className="text-primary">*</span></label>
                 <input
                   type="number"
                   min="1"
@@ -305,9 +311,9 @@ export default function CreateTournamentPage() {
 
         {/* VENUE */}
         <div>
-          <label className={labelClass}>Venue <span className="text-[#1B9C56]">*</span></label>
+          <label className={labelClass}>Venue <span className="text-primary">*</span></label>
           <div className="relative">
-            <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1B9C56]" />
+            <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
             <input
               type="text"
               value={formData.location}
@@ -339,7 +345,7 @@ export default function CreateTournamentPage() {
               href={formData.mapLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-2 text-[10px] font-bold text-[#1B9C56] hover:underline uppercase tracking-wider"
+              className="mt-2 inline-flex items-center gap-2 text-[10px] font-bold text-primary hover:underline uppercase tracking-wider"
             >
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -354,7 +360,7 @@ export default function CreateTournamentPage() {
         {/* DATES */}
         <div className="space-y-4">
           <div>
-            <label className={labelClass}>Start Date <span className="text-[#1B9C56]">*</span></label>
+            <label className={labelClass}>Tournament Start Date <span className="text-primary">*</span></label>
             <div className="grid grid-cols-2 gap-3">
               <div className="relative">
                 <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
@@ -362,7 +368,7 @@ export default function CreateTournamentPage() {
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all font-medium"
+                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                 />
               </div>
               <div className="relative">
@@ -370,14 +376,14 @@ export default function CreateTournamentPage() {
                   type="time"
                   value={formData.startTime}
                   onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all font-medium"
+                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <label className={labelClass}>End Date <span className="text-[#1B9C56]">*</span></label>
+            <label className={labelClass}>Tournament End Date <span className="text-primary">*</span></label>
             <div className="grid grid-cols-2 gap-3">
               <div className="relative">
                 <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
@@ -385,7 +391,7 @@ export default function CreateTournamentPage() {
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all font-medium"
+                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                 />
               </div>
               <div className="relative">
@@ -393,10 +399,34 @@ export default function CreateTournamentPage() {
                   type="time"
                   value={formData.endTime}
                   onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all font-medium"
+                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                 />
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Registration Closing Date</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <input
+                  type="date"
+                  value={formData.registrationClosingDate}
+                  onChange={(e) => setFormData({ ...formData, registrationClosingDate: e.target.value })}
+                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                />
+              </div>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={formData.registrationClosingTime}
+                  onChange={(e) => setFormData({ ...formData, registrationClosingTime: e.target.value })}
+                  className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-white/40 mt-1">Registrations will automatically lock after this date and time.</p>
           </div>
         </div>
 
@@ -423,10 +453,10 @@ export default function CreateTournamentPage() {
           ) : (
             <button
               onClick={() => posterInputRef.current?.click()}
-              className="w-full bg-[#0D1520] border-2 border-dashed border-white/15 rounded-2xl py-8 flex flex-col items-center gap-3 hover:border-[#1B9C56]/50 hover:bg-[#1B9C56]/5 transition-all group"
+              className="w-full bg-[#0D1520] border-2 border-dashed border-white/15 rounded-2xl py-8 flex flex-col items-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all group"
             >
-              <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#1B9C56]/10 transition-colors">
-                <ImageIcon className="w-6 h-6 text-white/30 group-hover:text-[#1B9C56] transition-colors" />
+              <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <ImageIcon className="w-6 h-6 text-white/30 group-hover:text-primary transition-colors" />
               </div>
               <div className="text-center">
                 <div className="text-sm font-bold text-white/50 group-hover:text-white/70 transition-colors">Tap to upload poster</div>
@@ -445,12 +475,12 @@ export default function CreateTournamentPage() {
             </label>
             <Link
               href={`/org/${orgUuid}/categories?returnTo=create-tournament`}
-              className="text-[10px] font-bold text-[#1B9C56] hover:text-[#158045] hover:underline uppercase tracking-wider flex items-center gap-1 transition-colors"
+              className="text-[10px] font-bold text-primary hover:text-primary-dark hover:underline uppercase tracking-wider flex items-center gap-1 transition-colors"
             >
               + Add Category
             </Link>
           </div>
-          
+
           {formData.tournamentType !== 'TEAM_EVENT' ? (
             <select
               value={formData.category}
@@ -484,11 +514,10 @@ export default function CreateTournamentPage() {
                         : [...formData.categories, c.categoryName];
                       setFormData({ ...formData, categories: newCategories });
                     }}
-                    className={`py-2 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
-                      formData.categories.includes(c.categoryName)
-                        ? 'border-[#1B9C56] bg-[#1B9C56]/10 text-white'
+                    className={`py-2 px-4 rounded-xl border-2 text-sm font-bold transition-all ${formData.categories.includes(c.categoryName)
+                        ? 'border-primary bg-primary/10 text-white'
                         : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
-                    }`}
+                      }`}
                   >
                     {c.categoryName}
                   </button>
@@ -496,7 +525,7 @@ export default function CreateTournamentPage() {
             </div>
           )}
           {!formData.sport && (
-            <div className="text-[10px] text-[#1B9C56] mt-2 ml-1">Please select a sport first to see categories</div>
+            <div className="text-[10px] text-primary mt-2 ml-1">Please select a sport first to see categories</div>
           )}
         </div>
 
@@ -544,7 +573,7 @@ export default function CreateTournamentPage() {
         <button
           onClick={handleSubmit}
           disabled={!formData.name.trim() || !formData.location.trim() || isSubmitting}
-          className="w-full bg-[#1B9C56] disabled:opacity-40 disabled:cursor-not-allowed text-black text-base font-black uppercase tracking-wider py-5 rounded-2xl transition-all hover:bg-[#158045] active:scale-95 shadow-[0_8px_30px_rgba(27,156,86,0.3)]"
+          className="w-full bg-primary disabled:opacity-40 disabled:cursor-not-allowed text-black text-base font-black uppercase tracking-wider py-5 rounded-2xl transition-all hover:bg-primary-dark active:scale-95 shadow-[0_8px_30px_rgba(27,156,86,0.3)]"
         >
           {isSubmitting ? "Creating..." : "Create Tournament"}
         </button>

@@ -17,11 +17,10 @@ export default function OrganizationLayout({ children }: { children: React.React
   const params = useParams();
   const router = useRouter();
   const { logout } = useAuthStore();
-  const { activeWorkspaceId, setActiveWorkspace, getActiveOrganization } = useWorkspaceStore();
+  const { activeWorkspaceId, setActiveWorkspace, getActiveOrganization, organizations } = useWorkspaceStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const orgId = params?.orgId as string;
-  const activeOrg = getActiveOrganization();
+  const orgId = (params?.orgId as string) || '';
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -35,12 +34,10 @@ export default function OrganizationLayout({ children }: { children: React.React
     }
   }, [orgId, activeWorkspaceId, setActiveWorkspace]);
 
-  // Fallback if organization doesn't exist (e.g. invalid URL)
-  useEffect(() => {
-    if (activeWorkspaceId !== 'PERSONAL' && !activeOrg) {
-      router.push('/home');
-    }
-  }, [activeWorkspaceId, activeOrg, router]);
+  // Robust activeOrg resolver: check by URL param, activeWorkspaceId, or default fallback
+  const activeOrg = organizations.find((o) => o.id === orgId) ||
+                    getActiveOrganization() ||
+                    (organizations.length > 0 ? organizations[0] : { id: orgId || 'matrix-org', name: 'Matrix', type: 'ORGANIZER' as const });
 
   // Close mobile menu on scroll
   useEffect(() => {
@@ -59,8 +56,7 @@ export default function OrganizationLayout({ children }: { children: React.React
     };
   }, [isMenuOpen]);
 
-  if (!isMounted) return null;
-  if (!activeOrg) return null;
+  if (!isMounted) return <div className="h-screen w-full bg-background animate-pulse" />;
 
   // Determine which nav links to show based on org type
   const getNavItems = () => {
@@ -114,36 +110,36 @@ export default function OrganizationLayout({ children }: { children: React.React
   return (
     <div className="flex h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
-      <aside className="dark w-64 border-r border-white/10 bg-[#0A0F1A] flex-col hidden md:flex z-50 relative overflow-y-auto">
-        <div className="p-4 border-b border-white/10 sticky top-0 bg-[#0A0F1A] z-10 space-y-4">
+      <aside className="w-64 border-r flex-col hidden md:flex z-50 relative overflow-y-auto" style={{ backgroundColor: 'var(--athlon-sidebar)', borderColor: 'var(--athlon-border)' }}>
+        <div className="p-4 border-b sticky top-0 z-10 space-y-4" style={{ backgroundColor: 'var(--athlon-sidebar)', borderColor: 'var(--athlon-border)' }}>
           <Image src="/athlon-logo-3.png" alt="Athlon Logo" width={120} height={32} className="object-contain w-auto h-10 opacity-70 hover:opacity-100 transition-opacity" />
           <ContextSwitcher />
         </div>
         
-        <nav className="dark flex-1 p-4 space-y-2">
-          <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 px-3">{activeOrg.name} Tools</div>
+        <nav className="flex-1 p-4 space-y-2">
+          <div className="text-[10px] font-bold uppercase tracking-widest mb-2 px-3" style={{ color: 'var(--athlon-text-muted)' }}>{activeOrg.name} Tools</div>
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-[#1B9C56]/10 text-[#1B9C56]'
-                    : 'text-white/50 hover:text-white hover:bg-white/5'
-                }`}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: isActive ? 'var(--athlon-navigation-hover)' : 'transparent',
+                  color: isActive ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-secondary)',
+                }}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className="w-5 h-5" style={{ color: 'var(--athlon-primary)' }} />
                 <span className="font-medium text-sm">{item.name}</span>
               </Link>
             );
           })}
         </nav>
         
-        <div className="p-4 border-t border-white/10 sticky bottom-0 bg-[#0A0F1A] z-10">
-          <Link href={`/org/${orgId}/settings`} className="flex items-center gap-3 text-white/50 hover:text-white transition-colors w-full px-3 py-2">
-            <Settings className="w-5 h-5" />
+        <div className="p-4 border-t sticky bottom-0 z-10" style={{ backgroundColor: 'var(--athlon-sidebar)', borderColor: 'var(--athlon-border)' }}>
+          <Link href={`/org/${orgId}/settings`} className="flex items-center gap-3 transition-colors w-full px-3 py-2 rounded-lg hover:bg-white/5" style={{ color: 'var(--athlon-text-muted)' }}>
+            <Settings className="w-5 h-5" style={{ color: 'var(--athlon-primary)' }} />
             <span className="font-medium">Org Settings</span>
           </Link>
         </div>
@@ -155,43 +151,54 @@ export default function OrganizationLayout({ children }: { children: React.React
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="dark md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0A0F1A]/95 backdrop-blur-xl border-t border-white/10 z-50 px-6 flex items-center justify-between">
-        
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-6 flex items-center justify-between"
+        style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
+      >
         {/* Item 1 */}
         {navItems[0] && Icon0 && (
-          <Link href={navItems[0].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[0].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-            <Icon0 className={`w-6 h-6 ${pathname === navItems[0].href ? 'text-[#1B9C56]' : 'text-white'}`} />
-            <span className={`text-[9px] font-bold ${pathname === navItems[0].href ? 'text-[#1B9C56]' : 'text-white'}`}>{navItems[0].name}</span>
+          <Link href={navItems[0].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[0].href ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}>
+            <Icon0 className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+            <span className="text-[9px] font-bold" style={{ color: pathname === navItems[0].href ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)' }}>{navItems[0].name}</span>
           </Link>
         )}
 
         {/* Item 2 */}
         {navItems[1] && Icon1 && (
-          <Link href={navItems[1].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[1].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-            <Icon1 className={`w-6 h-6 ${pathname === navItems[1].href ? 'text-[#1B9C56]' : 'text-white'}`} />
-            <span className={`text-[9px] font-bold ${pathname === navItems[1].href ? 'text-[#1B9C56]' : 'text-white'}`}>{navItems[1].name}</span>
+          <Link href={navItems[1].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[1].href ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}>
+            <Icon1 className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+            <span className="text-[9px] font-bold" style={{ color: pathname === navItems[1].href ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)' }}>{navItems[1].name}</span>
           </Link>
         )}
 
-        {/* Elevated Center + Button */}
+        {/* Elevated Center Button */}
         <div className="relative -top-6 flex items-center justify-center">
-          <Link href="/match-setup" className="w-16 h-16 rounded-full bg-[#1B9C56] text-black shadow-[0_8px_30px_rgba(27,156,86,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 border-[#0A0F1A]">
+          <Link
+            href="/match-setup"
+            className="w-16 h-16 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4"
+            style={{
+              backgroundColor: 'var(--athlon-primary)',
+              color: 'var(--athlon-primary-foreground)',
+              borderColor: 'var(--athlon-navigation)',
+              boxShadow: '0 8px 30px var(--athlon-glow)',
+            }}
+          >
             <img src="/umpire.png" alt="Umpire" className="w-8 h-8 object-contain drop-shadow-md" />
           </Link>
         </div>
 
         {/* Item 3 */}
         {navItems[2] && Icon2 && (
-          <Link href={navItems[2].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[2].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-            <Icon2 className={`w-6 h-6 ${pathname === navItems[2].href ? 'text-[#1B9C56]' : 'text-white'}`} />
-            <span className={`text-[9px] font-bold ${pathname === navItems[2].href ? 'text-[#1B9C56]' : 'text-white'}`}>{navItems[2].name}</span>
+          <Link href={navItems[2].href} className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === navItems[2].href ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}>
+            <Icon2 className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+            <span className="text-[9px] font-bold" style={{ color: pathname === navItems[2].href ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)' }}>{navItems[2].name}</span>
           </Link>
         )}
 
-        {/* Profile (replacing Item 4 / Results) */}
-        <Link href="/profile" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/profile' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
-          <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`} />
-          <span className={`text-[9px] font-bold ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`}>Profile</span>
+        {/* Profile */}
+        <Link href="/profile" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/profile' ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}>
+          <User className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+          <span className="text-[9px] font-bold" style={{ color: pathname === '/profile' ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)' }}>Profile</span>
         </Link>
       </nav>
     </div>

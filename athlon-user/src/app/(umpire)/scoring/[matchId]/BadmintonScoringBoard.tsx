@@ -332,7 +332,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
         onClick={() => {
           if (isZeroZero) store.setInitialServer(team);
         }}
-        className={`flex-1 flex items-center justify-center relative transition-colors ${isActive ? (isFirstHalf ? 'border border-[#1B9C56] bg-[#1B9C56]/[0.02]' : 'border border-[#3B82F6] bg-[#3B82F6]/[0.02]') : 'border border-transparent'} ${isZeroZero ? 'cursor-pointer hover:bg-foreground/5' : ''}`}
+        className={`flex-1 flex items-center justify-center relative transition-colors ${isActive ? (isFirstHalf ? 'border border-primary bg-primary/[0.02]' : 'border border-[#3B82F6] bg-[#3B82F6]/[0.02]') : 'border border-transparent'} ${isZeroZero ? 'cursor-pointer hover:bg-foreground/5' : ''}`}
       >
         {playerName ? (
           <div className="flex items-center gap-3 relative z-10">
@@ -347,9 +347,9 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
           <div className={`absolute 
             ${isPortrait ? (isFirstHalf ? 'bottom-4 left-1/2 -translate-x-1/2' : 'top-4 left-1/2 -translate-x-1/2')
               : (isFirstHalf ? 'right-4 top-1/2 -translate-y-1/2' : 'left-4 top-1/2 -translate-y-1/2')} 
-            w-8 h-8 rounded-full ${isFirstHalf ? 'bg-[#1B9C56]/10 border border-[#1B9C56]/40' : 'bg-[#3B82F6]/10 border border-[#3B82F6]/40'} flex items-center justify-center z-10`}
+            w-8 h-8 rounded-full ${isFirstHalf ? 'bg-primary/10 border border-primary/40' : 'bg-[#3B82F6]/10 border border-[#3B82F6]/40'} flex items-center justify-center z-10`}
           >
-            <div className={`w-3.5 h-3.5 rounded-full ${isFirstHalf ? 'bg-[#1B9C56] shadow-[0_0_10px_#1B9C56]' : 'bg-[#3B82F6] shadow-[0_0_10px_#3B82F6]'}`} />
+            <div className={`w-3.5 h-3.5 rounded-full ${isFirstHalf ? 'bg-primary shadow-[0_0_10px_var(--athlon-primary)]' : 'bg-[#3B82F6] shadow-[0_0_10px_#3B82F6]'}`} />
           </div>
         )}
       </div>
@@ -471,19 +471,19 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
 
       {/* OBS Copy Button */}
       <button onClick={handleCopyOBSUrl} title="Copy OBS Overlay URL" className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm">
-        <Cast className="w-5 h-5 text-foreground/70 hover:text-[#1B9C56] transition-colors" />
+        <Cast className="w-5 h-5 text-foreground/70 hover:text-primary transition-colors" />
       </button>
       <button
         onClick={() => setShowUmpireCall(!showUmpireCall)}
         className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm"
       >
-        <MessageSquare className={`w-5 h-5 ${showUmpireCall ? 'text-[#1B9C56]' : 'text-foreground/70'}`} />
+        <MessageSquare className={`w-5 h-5 ${showUmpireCall ? 'text-primary' : 'text-foreground/70'}`} />
       </button>
       <button
         onClick={() => setIsMuted(!isMuted)}
         className="w-10 h-10 bg-surface rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm"
       >
-        {isMuted ? <VolumeX className="w-5 h-5 text-foreground/70" /> : <Volume2 className="w-5 h-5 text-[#1B9C56]" />}
+        {isMuted ? <VolumeX className="w-5 h-5 text-foreground/70" /> : <Volume2 className="w-5 h-5 text-primary" />}
       </button>
     </>
   );
@@ -536,22 +536,22 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
     position: 'relative' as const
   };
 
-  const teamAThemeClass = !teamsFlipped ? 'text-[#1B9C56]' : 'text-[#3B82F6]';
-  const teamADotClass = !teamsFlipped ? 'bg-[#1B9C56] shadow-[0_0_8px_#1B9C56]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
+  const teamAThemeClass = !teamsFlipped ? 'text-primary' : 'text-[#3B82F6]';
+  const teamADotClass = !teamsFlipped ? 'bg-primary shadow-[0_0_8px_var(--athlon-primary)]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
 
-  const teamBThemeClass = teamsFlipped ? 'text-[#1B9C56]' : 'text-[#3B82F6]';
-  const teamBDotClass = teamsFlipped ? 'bg-[#1B9C56] shadow-[0_0_8px_#1B9C56]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
+  const teamBThemeClass = teamsFlipped ? 'text-primary' : 'text-[#3B82F6]';
+  const teamBDotClass = teamsFlipped ? 'bg-primary shadow-[0_0_8px_var(--athlon-primary)]' : 'bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]';
 
-  const teamABgClass = !teamsFlipped ? 'bg-[#1B9C56]' : 'bg-[#3B82F6]';
-  const teamBBgClass = teamsFlipped ? 'bg-[#1B9C56]' : 'bg-[#3B82F6]';
+  const teamABgClass = !teamsFlipped ? 'bg-primary' : 'bg-[#3B82F6]';
+  const teamBBgClass = teamsFlipped ? 'bg-primary' : 'bg-[#3B82F6]';
   const umpireBubbleBg = isServeB ? teamBBgClass : teamABgClass;
 
-  const teamABorderBClass = !teamsFlipped ? 'border-b-[#1B9C56]' : 'border-b-[#3B82F6]';
-  const teamBBorderBClass = teamsFlipped ? 'border-b-[#1B9C56]' : 'border-b-[#3B82F6]';
+  const teamABorderBClass = !teamsFlipped ? 'border-b-[var(--athlon-primary)]' : 'border-b-[#3B82F6]';
+  const teamBBorderBClass = teamsFlipped ? 'border-b-[var(--athlon-primary)]' : 'border-b-[#3B82F6]';
   const umpireBubbleBorderB = isServeB ? teamBBorderBClass : teamABorderBClass;
 
-  const teamABorderTClass = !teamsFlipped ? 'border-t-[#1B9C56]' : 'border-t-[#3B82F6]';
-  const teamBBorderTClass = teamsFlipped ? 'border-t-[#1B9C56]' : 'border-t-[#3B82F6]';
+  const teamABorderTClass = !teamsFlipped ? 'border-t-[var(--athlon-primary)]' : 'border-t-[#3B82F6]';
+  const teamBBorderTClass = teamsFlipped ? 'border-t-[var(--athlon-primary)]' : 'border-t-[#3B82F6]';
   const umpireBubbleBorderT = isServeB ? teamBBorderTClass : teamABorderTClass;
 
   return (
@@ -667,7 +667,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
             disabled={currentGame.isGameOver || !!matchWinner || (isMatchStarted && !isRallyActive)}
             className={`${isPortrait ? 'w-full py-3' : 'h-full w-16'} rounded-2xl bg-surface flex items-center justify-center hover:bg-[#1A2235] active:bg-foreground/10 transition-colors shadow-lg border border-foreground/5 disabled:opacity-30 disabled:cursor-not-allowed relative overflow-hidden group`}
           >
-            {!isPortrait && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#1B9C56] shadow-[0_0_20px_4px_rgba(27,156,86,0.5)]" />}
+            {!isPortrait && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary shadow-[0_0_20px_4px_rgba(27,156,86,0.5)]" />}
             <span className="text-foreground/60 font-medium text-lg relative z-10">+1</span>
           </button>
 
@@ -698,7 +698,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
                     setIsRallyActive(true);
                     setRallyStartTime(Date.now());
                   }}
-                  className={`absolute ${isPortrait ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'} px-6 py-2.5 bg-[#1B9C56] rounded-full flex gap-2 items-center justify-center hover:bg-[#15803d] active:scale-95 transition-all shadow-[0_8px_30px_rgba(27,156,86,0.4)] border border-[#1B9C56]/40 text-black font-black uppercase tracking-widest text-xs z-30 whitespace-nowrap`}
+                  className={`absolute ${isPortrait ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'} px-6 py-2.5 bg-primary rounded-full flex gap-2 items-center justify-center hover:bg-primary-dark active:scale-95 transition-all shadow-[0_8px_30px_rgba(27,156,86,0.4)] border border-primary/40 text-black font-black uppercase tracking-widest text-xs z-30 whitespace-nowrap`}
                 >
                   <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
                   Start Rally
@@ -706,9 +706,9 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
               )}
               {isMatchStarted && isRallyActive && (
                 <div
-                  className={`absolute ${isPortrait ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'} px-6 py-2.5 bg-[#1A2235] rounded-full flex gap-2 items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-foreground/10 text-[#1B9C56] font-black uppercase tracking-widest text-xs z-30 whitespace-nowrap`}
+                  className={`absolute ${isPortrait ? 'left-1/2 -translate-x-1/2' : 'top-1/2 -translate-y-1/2'} px-6 py-2.5 bg-[#1A2235] rounded-full flex gap-2 items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-foreground/10 text-primary font-black uppercase tracking-widest text-xs z-30 whitespace-nowrap`}
                 >
-                  <div className="w-2 h-2 rounded-full bg-[#1B9C56] animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   Rally Active
                 </div>
               )}
@@ -732,7 +732,10 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
         </div>
 
         {/* PORTRAIT BOTTOM ACTION BAR */}
-        <div className={`${isPortrait ? 'flex' : 'hidden'} shrink-0 p-3 bg-[#1a1d24] justify-between pb-[max(1rem,env(safe-area-inset-bottom))] gap-2 z-20 relative shadow-[0_-10px_20px_rgba(0,0,0,0.2)]`}>
+        <div 
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+          className={`${isPortrait ? 'flex' : 'hidden'} shrink-0 p-3 bg-[#1a1d24] justify-between gap-2 z-20 relative shadow-[0_-10px_20px_rgba(0,0,0,0.2)]`}
+        >
           <TopBarActions />
           <TopBarRightActions />
         </div>
@@ -748,7 +751,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
                       <Trophy className="w-8 h-8" />
                     </div>
                     <h2 className="text-2xl font-black text-white uppercase tracking-widest">Match Over</h2>
-                    <p className="text-sm font-extrabold text-[#1B9C56]">
+                    <p className="text-sm font-extrabold text-primary">
                       {matchWinner === 'A' ? (config.teamAName || config.teamA.join(' & ')) : (config.teamBName || config.teamB.join(' & '))} Wins!
                     </p>
                   </div>
@@ -778,7 +781,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
                   <div className="flex flex-col gap-2.5">
                     <button
                       onClick={() => router.push('/home')}
-                      className="w-full bg-gradient-to-r from-[#1B9C56] to-[#15803d] text-black font-black py-3 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-primary to-[#15803d] text-black font-black py-3 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-lg text-xs uppercase tracking-widest flex items-center justify-center gap-2"
                     >
                       Back to Home Page
                     </button>
@@ -798,7 +801,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
                   </p>
                   <div className="mb-5">
                     <p className="text-xs text-white/50 font-bold uppercase tracking-widest mb-1">Break Time</p>
-                    <p className="text-3xl font-black text-[#1B9C56] font-mono">
+                    <p className="text-3xl font-black text-primary font-mono">
                       {Math.floor(intervalSeconds / 60).toString().padStart(2, '0')}:{(intervalSeconds % 60).toString().padStart(2, '0')}
                     </p>
                   </div>
@@ -811,7 +814,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
                     </button>
                     <button
                       onClick={() => store.nextGame()}
-                      className="flex-[2] bg-gradient-to-r from-[#1B9C56] to-[#15803d] text-white font-black py-3 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-lg"
+                      className="flex-[2] bg-gradient-to-r from-primary to-[#15803d] text-white font-black py-3 rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-lg"
                     >
                       Continue
                     </button>

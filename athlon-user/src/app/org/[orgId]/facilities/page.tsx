@@ -37,7 +37,7 @@ export default function FacilitiesPage() {
           <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-foreground/10 text-sm font-bold text-foreground hover:bg-foreground/5 transition-colors">
             <Filter className="w-4 h-4" /> Filter
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B9C56] text-black text-sm font-black tracking-wide hover:bg-[#158045] transition-colors shadow-lg shadow-[#1B9C56]/20">
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4" /> Add Facility
           </button>
         </div>
@@ -46,7 +46,7 @@ export default function FacilitiesPage() {
       {/* Top Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-surface border border-foreground/5 p-6 rounded-[24px] shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#1B9C56]/10 text-[#1B9C56] flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Building className="w-6 h-6" />
           </div>
           <div>
@@ -84,7 +84,7 @@ export default function FacilitiesPage() {
           placeholder="Search facilities..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-surface border border-foreground/5 rounded-xl pl-12 pr-4 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all shadow-sm"
+          className="w-full bg-surface border border-foreground/5 rounded-xl pl-12 pr-4 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
         />
       </div>
 
@@ -121,7 +121,7 @@ export default function FacilitiesPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Current Status</span>
                   {facility.status === 'Available' ? (
-                    <span className="flex items-center gap-1 text-xs font-bold text-[#1B9C56]"><CheckCircle2 className="w-3.5 h-3.5" /> Available</span>
+                    <span className="flex items-center gap-1 text-xs font-bold text-primary"><CheckCircle2 className="w-3.5 h-3.5" /> Available</span>
                   ) : facility.status === 'In Use' ? (
                     <span className="flex items-center gap-1 text-xs font-bold text-blue-500"><Clock className="w-3.5 h-3.5" /> In Use</span>
                   ) : (
@@ -137,7 +137,7 @@ export default function FacilitiesPage() {
                   <div className="h-2 w-full bg-foreground/5 rounded-full overflow-hidden">
                     <div 
                       className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                        facility.utilization > 80 ? 'bg-blue-500' : facility.utilization > 40 ? 'bg-[#1B9C56]' : 'bg-foreground/20'
+                        facility.utilization > 80 ? 'bg-blue-500' : facility.utilization > 40 ? 'bg-primary' : 'bg-foreground/20'
                       }`}
                       style={{ width: `${facility.utilization}%` }}
                     />

@@ -62,7 +62,7 @@ function SetupWorkspaceForm() {
           } else if (pkg.name.toLowerCase().includes('academy')) {
             type = 'ACADEMY';
             icon = Users;
-            color = 'text-[#1B9C56]';
+            color = 'text-primary';
           } else if (pkg.name.toLowerCase().includes('club')) {
             type = 'CLUB';
             icon = Building;
@@ -162,7 +162,7 @@ function SetupWorkspaceForm() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <span className="w-8 h-8 border-4 border-[#1B9C56] border-t-transparent rounded-full animate-spin"></span>
+        <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
       </div>
     );
   }
@@ -195,11 +195,11 @@ function SetupWorkspaceForm() {
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-[#1B9C56]" />
+                  <Check className="w-5 h-5 text-primary" />
                   <span className="text-sm text-white/70 font-medium">Instant Provisioning</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-[#1B9C56]" />
+                  <Check className="w-5 h-5 text-primary" />
                   <span className="text-sm text-white/70 font-medium">Independent Dashboard</span>
                 </div>
               </div>
@@ -229,7 +229,7 @@ function SetupWorkspaceForm() {
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
                 placeholder={`e.g. Elite ${selectedModule.title}`}
-                className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all text-lg"
+                className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-lg"
                 autoFocus
               />
             </div>
@@ -243,7 +243,7 @@ function SetupWorkspaceForm() {
                     key={option.value}
                     onClick={() => setSelectedBilling(option.value)}
                     className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${selectedBilling === option.value
-                      ? 'border-[#1B9C56] bg-[#1B9C56]/5'
+                      ? 'border-primary bg-primary/5'
                       : 'border-foreground/5 hover:border-foreground/20'
                       }`}
                   >
@@ -287,7 +287,7 @@ export default function SetupWorkspacePage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-[60vh]">
-        <span className="w-8 h-8 border-4 border-[#1B9C56] border-t-transparent rounded-full animate-spin"></span>
+        <span className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
       </div>
     }>
       <SetupWorkspaceForm />

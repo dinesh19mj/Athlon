@@ -38,7 +38,7 @@ export default function RegistrationsPage() {
             <input 
               type="text" 
               placeholder="Search players..." 
-              className="w-full bg-background border border-foreground/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-[#1B9C56] text-foreground placeholder-white/30 font-medium transition-colors"
+              className="w-full bg-background border border-foreground/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-primary text-foreground placeholder-white/30 font-medium transition-colors"
             />
           </div>
         </div>
@@ -49,7 +49,7 @@ export default function RegistrationsPage() {
             <div key={i} className="p-4 sm:p-5 flex items-center justify-between hover:bg-foreground/5 transition-colors group cursor-pointer">
               
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-background border border-foreground/10 flex items-center justify-center font-black text-[#1B9C56] text-lg group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-background border border-foreground/10 flex items-center justify-center font-black text-primary text-lg group-hover:scale-110 transition-transform">
                   {`P${i}`}
                 </div>
                 <div>
@@ -63,7 +63,7 @@ export default function RegistrationsPage() {
                   <p className="font-bold text-sm">$50.00</p>
                   <p className="text-[10px] text-foreground/40 uppercase tracking-widest mt-0.5">Entry Fee</p>
                 </div>
-                <span className="px-3 py-1.5 bg-[#1B9C56]/20 text-[#1B9C56] text-[9px] uppercase font-black rounded-lg border border-[#1B9C56]/30">
+                <span className="px-3 py-1.5 bg-primary/20 text-primary text-[9px] uppercase font-black rounded-lg border border-primary/30">
                   Paid
                 </span>
               </div>

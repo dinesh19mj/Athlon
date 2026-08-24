@@ -22,6 +22,8 @@ public class TournamentCreateRequest {
     @Future(message = "End date must be in the future")
     private LocalDateTime endDate;
 
+    private LocalDateTime registrationClosingDate;
+
     @NotNull(message = "Organizer ID is required")
     private Long organizerId;
 
@@ -91,6 +93,14 @@ public class TournamentCreateRequest {
 
     public void setEndDate(LocalDateTime endDate) {
         this.endDate = endDate;
+    }
+
+    public LocalDateTime getRegistrationClosingDate() {
+        return registrationClosingDate;
+    }
+
+    public void setRegistrationClosingDate(LocalDateTime registrationClosingDate) {
+        this.registrationClosingDate = registrationClosingDate;
     }
 
     public Long getOrganizerId() {

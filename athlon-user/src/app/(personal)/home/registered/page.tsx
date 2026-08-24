@@ -33,10 +33,12 @@ export default function RegisteredTournamentsPage() {
         const allTournamentsRes = await TournamentService.getAll();
         const allTournaments = allTournamentsRes.data || [];
 
-        const enrichedRegistrations = userRegistrations.map(reg => {
-          const tournamentDetails = allTournaments.find(t => t.tournamentId === reg.tournamentId);
-          return { ...reg, tournamentDetails };
-        });
+        const enrichedRegistrations = userRegistrations
+          .map(reg => {
+            const tournamentDetails = allTournaments.find(t => t.tournamentId === reg.tournamentId);
+            return { ...reg, tournamentDetails };
+          })
+          .sort((a, b) => (b.registrationId || b.id || 0) - (a.registrationId || a.id || 0));
 
         setRegistrations(enrichedRegistrations);
       } catch (error) {
@@ -66,20 +68,20 @@ export default function RegisteredTournamentsPage() {
       <main className="p-4 md:p-8 max-w-4xl mx-auto space-y-4 mt-2">
         {loading ? (
           <div className="flex justify-center items-center h-48">
-            <div className="w-8 h-8 border-4 border-[#1B9C56] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : registrations.length > 0 ? (
           registrations.map((reg) => (
-            <div key={reg.id || reg.registrationUuid} className="bg-surface border border-foreground/10 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-[#1B9C56]/50 transition-colors group">
+            <div key={reg.id || reg.registrationUuid} className="bg-surface border border-foreground/10 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-primary/50 transition-colors group">
               
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-[#1B9C56]/10 text-[#1B9C56] border border-[#1B9C56]/20">
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
                     <CheckCircle2 className="w-3.5 h-3.5" /> {reg.status}
                   </span>
                 </div>
                 
-                <h3 className="text-xl font-black uppercase tracking-tight mb-3 group-hover:text-[#1B9C56] transition-colors">
+                <h3 className="text-xl font-black uppercase tracking-tight mb-3 group-hover:text-primary transition-colors">
                   {reg.tournamentDetails?.name || `Tournament #${reg.tournamentId}`}
                 </h3>
                 
@@ -97,7 +99,7 @@ export default function RegisteredTournamentsPage() {
                 <div className="hidden md:block h-px w-full bg-foreground/5 my-3" />
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-1">Fee Status</span>
-                  <span className="text-sm font-bold text-[#1B9C56]">{reg.paymentStatus}</span>
+                  <span className="text-sm font-bold text-primary">{reg.paymentStatus}</span>
                 </div>
               </div>
 
@@ -108,7 +110,7 @@ export default function RegisteredTournamentsPage() {
             <Trophy className="w-12 h-12 text-foreground/20 mb-4" />
             <h3 className="text-lg font-black uppercase tracking-widest text-foreground/70 mb-2">No Registrations Yet</h3>
             <p className="text-xs font-bold text-foreground/40 max-w-sm mb-6">You haven't registered for any tournaments. Browse the events page to find your next challenge.</p>
-            <Link href="/home/tournaments" className="px-6 py-3 bg-[#1B9C56] text-black text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform">
+            <Link href="/home/tournaments" className="px-6 py-3 bg-primary text-black text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform">
               Find Tournaments
             </Link>
           </div>

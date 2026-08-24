@@ -40,7 +40,7 @@ export default function MatchesPage() {
           <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-foreground/10 text-sm font-bold text-foreground hover:bg-foreground/5 transition-colors">
             <Filter className="w-4 h-4" /> Filter
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1B9C56] text-black text-sm font-black tracking-wide hover:bg-[#158045] transition-colors shadow-lg shadow-[#1B9C56]/20">
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20">
             <Plus className="w-4 h-4" /> Schedule Match
           </button>
         </div>
@@ -77,7 +77,7 @@ export default function MatchesPage() {
             placeholder="Search matches or players..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-surface border border-foreground/5 rounded-xl pl-12 pr-4 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:border-[#1B9C56] focus:ring-1 focus:ring-[#1B9C56] transition-all shadow-sm"
+            className="w-full bg-surface border border-foreground/5 rounded-xl pl-12 pr-4 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
           />
         </div>
       </div>
@@ -119,7 +119,7 @@ export default function MatchesPage() {
                 <div className="flex flex-col items-center justify-center px-4 shrink-0 relative z-10">
                   {match.status === 'Completed' ? (
                     <div className="text-center">
-                      <div className="text-2xl font-black text-[#1B9C56] mb-1">{match.score?.split(' ')[0]}</div>
+                      <div className="text-2xl font-black text-primary mb-1">{match.score?.split(' ')[0]}</div>
                       <div className="text-xs font-bold text-foreground/50">{match.score?.split(' ')[1]}</div>
                     </div>
                   ) : (
@@ -149,7 +149,7 @@ export default function MatchesPage() {
               </div>
               
               {match.status === 'Upcoming' && (
-                <button className="px-4 py-1.5 rounded-lg bg-[#1B9C56]/10 text-[#1B9C56] text-xs font-black uppercase tracking-widest hover:bg-[#1B9C56]/20 transition-colors">
+                <button className="px-4 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-black uppercase tracking-widest hover:bg-primary/20 transition-colors">
                   Start Match
                 </button>
               )}

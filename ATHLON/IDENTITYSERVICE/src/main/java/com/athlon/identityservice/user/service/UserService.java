@@ -14,10 +14,13 @@ import com.athlon.identityservice.user.repository.UserProfileRepository;
 import com.athlon.identityservice.user.repository.UserRepository;
 import com.athlon.identityservice.user.entity.SportsProfile;
 import com.athlon.identityservice.user.dto.response.SportsProfileResponse;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,6 +32,9 @@ public class UserService {
     private final UserProfileRepository userProfileRepository;
     private final SportsProfileRepository sportsProfileRepository;
     private final WebClient webClient;
+    
+    @Value("${athlo.gateway.url}")
+    private String gatewayPath;
 
     public UserService(UserRepository userRepository, UserProfileRepository userProfileRepository, SportsProfileRepository sportsProfileRepository) {
         this.userRepository = userRepository;
@@ -58,14 +64,14 @@ public class UserService {
         
         // Sync credential with AUTHSERVICE
         try {
-            var credentialRequest = new java.util.HashMap<String, Object>();
+            var credentialRequest = new HashMap<String, Object>();
             credentialRequest.put("userUuid", user.getUserUuid().toString());
             credentialRequest.put("email", request.getEmail());
             credentialRequest.put("phone", request.getPhone());
             credentialRequest.put("password", request.getPassword());
             
             webClient.post()
-                    .uri("http://localhost:5051/api/auth/internal/credentials")
+            		.uri(gatewayPath + "/api/auth/internal/credentials")
                     .bodyValue(credentialRequest)
                     .retrieve()
                     .bodyToMono(Void.class)
@@ -120,6 +126,40 @@ public class UserService {
         UserProfile profile = userProfileRepository.findByUserId(user.getUserId()).orElse(null);
         var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
 
+        return mapToResponse(user, profile, sportsProfiles);
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getUserByPhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return null;
+        }
+        String cleaned = phone.replaceAll("[^0-9]", "");
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+
+        UserProfile profile = userProfileRepository.findAll().stream()
+                .filter(p -> {
+                    if (p.getPhone() == null) return false;
+                    String pClean = p.getPhone().replaceAll("[^0-9]", "");
+                    if (cleaned.length() >= 10 && pClean.length() >= 10) {
+                        return pClean.endsWith(cleaned.substring(cleaned.length() - 10)) || cleaned.endsWith(pClean.substring(pClean.length() - 10));
+                    }
+                    return pClean.equals(cleaned);
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (profile == null) {
+            return null;
+        }
+
+        User user = userRepository.findById(profile.getUserId()).orElse(null);
+        if (user == null) {
+            return null;
+        }
+        var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
         return mapToResponse(user, profile, sportsProfiles);
     }
     

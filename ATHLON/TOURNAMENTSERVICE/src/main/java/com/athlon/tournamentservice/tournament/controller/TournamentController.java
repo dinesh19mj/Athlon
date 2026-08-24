@@ -59,6 +59,14 @@ public class TournamentController {
         return ResponseEntity.ok(ApiResponse.success("Tournaments retrieved successfully", response));
     }
 
+    @PostMapping("/updateStatus/{uuid}")
+    public ResponseEntity<ApiResponse<TournamentResponse>> updateTournamentStatus(
+            @PathVariable("uuid") UUID uuid,
+            @RequestParam("status") String status) {
+        TournamentResponse response = tournamentService.updateStatus(uuid, status);
+        return ResponseEntity.ok(ApiResponse.success("Tournament status updated successfully", response));
+    }
+
     @PostMapping("/deactivateTournament/{uuid}")
     public ResponseEntity<ApiResponse<Void>> deactivateTournament(@PathVariable("uuid") UUID uuid) {
         tournamentService.deactivateTournament(uuid);

@@ -35,7 +35,7 @@ export default function ManageTournamentPage({ params }: { params: Promise<{ id:
     { title: 'Registrations', icon: <Users className="w-6 h-6" />, desc: 'Manage entries and fees', link: `/organizer/tournaments/${id}/registrations`, color: 'bg-blue-500/10 text-blue-500' },
     { title: 'Draws & Brackets', icon: <LayoutGrid className="w-6 h-6" />, desc: 'Generate fixtures', link: `/organizer/tournaments/${id}/draws`, color: 'bg-purple-500/10 text-purple-500' },
     { title: 'Match Schedule', icon: <CalendarDays className="w-6 h-6" />, desc: 'Assign courts & times', link: `/organizer/tournaments/${id}/schedule`, color: 'bg-orange-500/10 text-orange-500' },
-    { title: 'Live Results', icon: <Trophy className="w-6 h-6" />, desc: 'Update match winners', link: `/organizer/results?t=${id}`, color: 'bg-[#1B9C56]/10 text-[#1B9C56]' },
+    { title: 'Live Results', icon: <Trophy className="w-6 h-6" />, desc: 'Update match winners', link: `/organizer/results?t=${id}`, color: 'bg-primary/10 text-primary' },
   ];
 
   return (
@@ -61,9 +61,9 @@ export default function ManageTournamentPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* Share Link Banner */}
-        <div className="bg-[#1B9C56]/10 border border-[#1B9C56]/20 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-black text-[#1B9C56] uppercase tracking-wide">Registration is Open!</h3>
+            <h3 className="text-sm font-black text-primary uppercase tracking-wide">Registration is Open!</h3>
             <p className="text-xs font-medium text-foreground/60 mt-1">Share this link with players to let them register online.</p>
           </div>
           <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export default function ManageTournamentPage({ params }: { params: Promise<{ id:
             </div>
             <button 
               onClick={copyLink}
-              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shrink-0 ${copied ? 'bg-[#1B9C56] text-black' : 'bg-[#1B9C56] text-black hover:scale-105 active:scale-95 shadow-[0_4px_15px_rgba(27,156,86,0.3)]'}`}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shrink-0 ${copied ? 'bg-primary text-black' : 'bg-primary text-black hover:scale-105 active:scale-95 shadow-[0_4px_15px_rgba(27,156,86,0.3)]'}`}
             >
               {copied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
             </button>
@@ -90,7 +90,7 @@ export default function ManageTournamentPage({ params }: { params: Promise<{ id:
           <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Registrations</span>
           <div className="flex items-end gap-2">
             <span className="text-2xl font-black">{tournament.registrations}</span>
-            <span className="text-xs font-bold text-[#1B9C56] flex items-center mb-1"><TrendingUp className="w-3 h-3 mr-0.5" /> +12</span>
+            <span className="text-xs font-bold text-primary flex items-center mb-1"><TrendingUp className="w-3 h-3 mr-0.5" /> +12</span>
           </div>
         </div>
         <div className="bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm flex flex-col gap-1">
@@ -106,7 +106,7 @@ export default function ManageTournamentPage({ params }: { params: Promise<{ id:
         </div>
         <div className="bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm flex flex-col gap-1">
           <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">Status</span>
-          <span className="text-lg font-black text-[#1B9C56] mt-1">{tournament.status}</span>
+          <span className="text-lg font-black text-primary mt-1">{tournament.status}</span>
         </div>
       </div>
 
