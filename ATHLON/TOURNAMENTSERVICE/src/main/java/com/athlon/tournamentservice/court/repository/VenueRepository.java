@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface VenueRepository extends JpaRepository<Venue, Long> {
-    Optional<Venue> findByUuid(UUID uuid);
+    Optional<Venue> findByVenueUuid(UUID uuid);
     List<Venue> findByCityIdAndIsActiveTrue(Long cityId);
 }
 

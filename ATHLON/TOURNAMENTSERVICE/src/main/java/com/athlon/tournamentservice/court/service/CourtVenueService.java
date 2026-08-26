@@ -53,7 +53,7 @@ public class CourtVenueService {
 
     @Transactional(readOnly = true)
     public VenueResponse getVenueByUuid(UUID uuid) {
-        Venue venue = venueRepository.findByUuid(uuid)
+        Venue venue = venueRepository.findByVenueUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found"));
         return VenueResponse.fromEntity(venue);
     }

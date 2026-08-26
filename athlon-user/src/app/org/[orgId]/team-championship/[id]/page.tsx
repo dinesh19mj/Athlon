@@ -1,0 +1,1296 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  Trophy,
+  Shield,
+  Users,
+  UserCheck,
+  Gavel,
+  Calendar,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Play,
+  Pause,
+  RotateCcw,
+  DollarSign,
+  Plus,
+  Coins,
+  ChevronRight,
+  ArrowLeft,
+  Search,
+  Filter,
+  Check,
+  X,
+  Swords,
+  Layers,
+  Sparkles,
+  Lock,
+  Eye,
+  Flame,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  TeamChampionshipService,
+  TeamChampionship,
+  ChampionshipTeamRegistration,
+  ChampionshipPlayerRegistration,
+  ChampionshipSquadPlayer,
+  TeamChampionshipFixture,
+  TeamChampionshipSubMatch,
+  TeamChampionshipPool,
+  StandingsRow,
+  TeamSquadAudit,
+} from "@/lib/api/teamChampionship";
+import {
+  AuctionService,
+  AuctionState,
+  AuctionPlayer,
+  AuctionTeamSummary,
+  AuctionBid,
+} from "@/lib/api/auction";
+import { useAuthStore } from "@/lib/store/useAuthStore";
+
+export default function TeamChampionshipDashboardPage() {
+  const params = useParams();
+  const orgUuid = params.orgId as string;
+  const championshipUuid = params.id as string;
+  const router = useRouter();
+  const { userId } = useAuthStore();
+
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "teams" | "players" | "auction" | "squads" | "fixtures" | "lineups" | "standings"
+  >("overview");
+
+  const [championship, setChampionship] = useState<TeamChampionship | null>(null);
+  const [teams, setTeams] = useState<ChampionshipTeamRegistration[]>([]);
+  const [players, setPlayers] = useState<ChampionshipPlayerRegistration[]>([]);
+  const [fixtures, setFixtures] = useState<TeamChampionshipFixture[]>([]);
+  const [pools, setPools] = useState<TeamChampionshipPool[]>([]);
+  const [standings, setStandings] = useState<StandingsRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Auction State
+  const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
+  const [auctionPlayers, setAuctionPlayers] = useState<AuctionPlayer[]>([]);
+  const [auctionTeams, setAuctionTeams] = useState<AuctionTeamSummary[]>([]);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("ALL");
+  const [searchPlayerQuery, setSearchPlayerQuery] = useState("");
+  const [customBidAmount, setCustomBidAmount] = useState<number>(0);
+
+  // Fixture & Lineup State
+  const [selectedFixtureId, setSelectedFixtureId] = useState<number | null>(null);
+  const [fixtureDetail, setFixtureDetail] = useState<any>(null);
+  const [selectedTeamForAudit, setSelectedTeamForAudit] = useState<number | null>(null);
+  const [teamAudit, setTeamAudit] = useState<TeamSquadAudit | null>(null);
+
+  // Team & Player Registration Modal States
+  const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
+  const [teamSubmitting, setTeamSubmitting] = useState(false);
+  const [teamForm, setTeamForm] = useState({
+    teamName: "",
+    captainName: "",
+    contactPhone: "",
+    contactEmail: "",
+  });
+
+  const [isAddPlayerModalOpen, setIsAddPlayerModalOpen] = useState(false);
+  const [playerSubmitting, setPlayerSubmitting] = useState(false);
+  const [playerForm, setPlayerForm] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    categoryId: 0,
+    basePrice: 0,
+  });
+
+  const loadData = async () => {
+    const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(championshipUuid);
+    if (!isValidUuid) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const [champRes, teamsRes, playersRes, fixturesRes, poolsRes, standingsRes] = await Promise.all([
+        TeamChampionshipService.getById(championshipUuid),
+        TeamChampionshipService.getTeams(championshipUuid),
+        TeamChampionshipService.getPlayers(championshipUuid),
+        TeamChampionshipService.getFixtures(championshipUuid),
+        TeamChampionshipService.getPools(championshipUuid),
+        TeamChampionshipService.getStandings(championshipUuid),
+      ]);
+
+      setChampionship(champRes);
+      setTeams(teamsRes || []);
+      setPlayers(playersRes || []);
+      setFixtures(fixturesRes || []);
+      setPools(poolsRes || []);
+      setStandings(standingsRes || []);
+
+      if (teamsRes && teamsRes.length > 0 && !selectedTeamForAudit) {
+        setSelectedTeamForAudit(teamsRes[0].teamId);
+      }
+    } catch (err) {
+      console.error("Failed to load championship data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [championshipUuid]);
+
+  // Load Auction State
+  const loadAuction = async () => {
+    if (!championship?.championshipId) return;
+    try {
+      // Find auction config
+      const state = await AuctionService.getState(championship.championshipId);
+      setAuctionState(state);
+      const [plRes, tmRes] = await Promise.all([
+        AuctionService.getPlayers(championship.championshipId),
+        AuctionService.getTeams(championship.championshipId),
+      ]);
+      setAuctionPlayers(plRes || []);
+      setAuctionTeams(tmRes || []);
+    } catch (err) {
+      console.error("Auction not initialized or failed to load", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "auction" && championship) {
+      loadAuction();
+      const interval = setInterval(loadAuction, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, championship]);
+
+  // Load Team Audit
+  useEffect(() => {
+    if (selectedTeamForAudit && championship?.championshipId) {
+      TeamChampionshipService.getSquadAudit(selectedTeamForAudit, championship.championshipId)
+        .then(setTeamAudit)
+        .catch(console.error);
+    }
+  }, [selectedTeamForAudit, championship]);
+
+  // Load Fixture Detail
+  useEffect(() => {
+    if (selectedFixtureId) {
+      TeamChampionshipService.getFixtureDetail(selectedFixtureId, true)
+        .then(setFixtureDetail)
+        .catch(console.error);
+    }
+  }, [selectedFixtureId]);
+
+  // Auction Actions
+  const handleCallPlayer = async (auctionPlayerId: number) => {
+    if (!championship?.championshipId) return;
+    await AuctionService.callPlayer(championship.championshipId, auctionPlayerId, userId ? Number(userId) : undefined);
+    loadAuction();
+  };
+
+  const handlePlaceBid = async (teamId: number, bidAmount: number) => {
+    if (!championship?.championshipId || !auctionState?.activePlayer) return;
+    await AuctionService.placeBid(
+      championship.championshipId,
+      auctionState.activePlayer.auctionPlayerId,
+      teamId,
+      bidAmount,
+      userId ? Number(userId) : undefined
+    );
+    loadAuction();
+  };
+
+  const handleAssignPlayer = async () => {
+    if (!championship?.championshipId || !auctionState?.activePlayer || !auctionState.winningTeamId) return;
+    await AuctionService.assignPlayer(
+      championship.championshipId,
+      auctionState.activePlayer.auctionPlayerId,
+      auctionState.winningTeamId,
+      auctionState.currentBid,
+      userId ? Number(userId) : undefined
+    );
+    loadAuction();
+    loadData();
+  };
+
+  const handleMarkUnsold = async () => {
+    if (!championship?.championshipId || !auctionState?.activePlayer) return;
+    await AuctionService.markUnsold(championship.championshipId, auctionState.activePlayer.auctionPlayerId);
+    loadAuction();
+  };
+
+  // Register Team Handler
+  const handleRegisterTeamSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamForm.teamName || !championship?.championshipId) return;
+    try {
+      setTeamSubmitting(true);
+      await TeamChampionshipService.registerTeam({
+        championshipId: championship.championshipId,
+        championshipUuid: championshipUuid,
+        teamName: teamForm.teamName,
+        captainName: teamForm.captainName,
+        contactPhone: teamForm.contactPhone,
+        contactEmail: teamForm.contactEmail,
+        paymentStatus: "PAID",
+        paymentAmount: championship.teamRegistrationFee || 0,
+      });
+      setTeamForm({ teamName: "", captainName: "", contactPhone: "", contactEmail: "" });
+      setIsAddTeamModalOpen(false);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || "Failed to register team");
+    } finally {
+      setTeamSubmitting(false);
+    }
+  };
+
+  // Register Player Handler
+  const handleRegisterPlayerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!playerForm.fullName || !championship?.championshipId) return;
+    try {
+      setPlayerSubmitting(true);
+      const selectedCat = championship.categories?.find((c) => c.categoryId === Number(playerForm.categoryId));
+      await TeamChampionshipService.registerPlayer({
+        championshipId: championship.championshipId,
+        championshipUuid: championshipUuid,
+        fullName: playerForm.fullName,
+        phone: playerForm.phone,
+        email: playerForm.email,
+        categoryId: playerForm.categoryId ? Number(playerForm.categoryId) : undefined,
+        categoryName: selectedCat ? selectedCat.name : "Open",
+        basePrice: playerForm.basePrice || selectedCat?.basePrice || 0,
+        paymentStatus: "PAID",
+        feeAmount: selectedCat?.registrationFee || championship.defaultPlayerFee || 0,
+      });
+      setPlayerForm({ fullName: "", phone: "", email: "", categoryId: 0, basePrice: 0 });
+      setIsAddPlayerModalOpen(false);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || "Failed to register player");
+    } finally {
+      setPlayerSubmitting(false);
+    }
+  };
+
+  // Generate Fixtures
+  const handleGeneratePools = async () => {
+    if (!championship?.championshipId) return;
+    await TeamChampionshipService.generatePoolFixtures(championship.championshipId, 2);
+    loadData();
+    setActiveTab("fixtures");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-foreground">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-black uppercase tracking-widest text-foreground/60">Loading Championship...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!championship) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-foreground p-6">
+        <div
+          className="text-center space-y-4 max-w-md p-8 rounded-3xl border shadow-xl"
+          style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto">
+            <Trophy className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-black text-foreground">Championship Not Found</h2>
+          <p className="text-xs text-foreground/60">
+            The requested championship ID is invalid or could not be located. Please check the URL or select a championship from your dashboard.
+          </p>
+          <Link
+            href={`/org/${orgUuid}/tournaments`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Tournaments
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currencyLabel = championship.auctionMode !== "NO_AUCTION" ? "pts" : "₹";
+
+  return (
+    <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-primary selection:text-black">
+      {/* Top Banner */}
+      <div
+        className="border-b px-4 sm:px-8 py-6 relative overflow-hidden"
+        style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+      >
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/org/${orgUuid}/tournaments`}
+                className="p-1.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-all text-foreground/70"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                {championship.sport} Championship
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-foreground/10 text-foreground/70">
+                {championship.stage}
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">{championship.name}</h1>
+            <p className="text-xs text-foreground/60 max-w-xl">{championship.location || "Venue details inside"}</p>
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={handleGeneratePools}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+            >
+              <Swords className="w-4 h-4" /> Generate Pool Fixtures
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div
+        className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 sm:px-8"
+        style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+      >
+        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto hide-scrollbar py-2.5">
+          {[
+            { id: "overview", label: "Overview", icon: Trophy },
+            { id: "teams", label: `Teams (${teams.length})`, icon: Users },
+            { id: "players", label: `Player Pool (${players.length})`, icon: UserCheck },
+            { id: "auction", label: "Live Auction Arena", icon: Gavel },
+            { id: "squads", label: "Squads & Participation", icon: Shield },
+            { id: "fixtures", label: `Fixtures (${fixtures.length})`, icon: Calendar },
+            { id: "standings", label: "Standings & Knockout", icon: Layers },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 border ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "border-transparent text-foreground/60 hover:text-foreground hover:bg-foreground/5"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-8 mt-8">
+        {/* TAB 1: OVERVIEW */}
+        {activeTab === "overview" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+              className="md:col-span-2 rounded-3xl border p-6 space-y-6"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              {championship.posterUrl && (
+                <div
+                  className="relative rounded-2xl overflow-hidden border max-h-64 flex items-center justify-center bg-black/40 shadow-sm"
+                  style={{ borderColor: "var(--athlon-border)" }}
+                >
+                  <img
+                    src={
+                      championship.posterUrl.startsWith("http") || championship.posterUrl.startsWith("data:")
+                        ? championship.posterUrl
+                        : `/api/tournament/team-championship/getFile?filePath=${encodeURIComponent(championship.posterUrl)}`
+                    }
+                    alt={championship.name}
+                    className="w-full h-auto max-h-64 object-cover"
+                  />
+                </div>
+              )}
+
+              <h3 className="text-base font-black uppercase tracking-wider text-foreground">Championship Details</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-3.5 rounded-2xl border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                  <span className="text-[10px] font-bold text-foreground/40 uppercase block">Sport</span>
+                  <span className="text-sm font-black text-primary">{championship.sport}</span>
+                </div>
+                <div className="p-3.5 rounded-2xl border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                  <span className="text-[10px] font-bold text-foreground/40 uppercase block">Max Teams</span>
+                  <span className="text-sm font-black text-foreground">{championship.maxTeams} Teams</span>
+                </div>
+                <div className="p-3.5 rounded-2xl border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                  <span className="text-[10px] font-bold text-foreground/40 uppercase block">Auction Mode</span>
+                  <span className="text-sm font-black text-primary">{championship.auctionMode}</span>
+                </div>
+              </div>
+
+              {/* Categories & Match Formats */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">Configured Categories</h4>
+                <div className="flex flex-wrap gap-2">
+                  {championship.categories?.map((c) => (
+                    <span
+                      key={c.categoryId}
+                      className="px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold"
+                    >
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">
+                  Competition Sub-Match Events ({championship.events?.length})
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {championship.events?.map((e) => (
+                    <div
+                      key={e.eventId}
+                      className="p-3 rounded-xl border flex items-center justify-between text-xs font-bold"
+                      style={{ borderColor: "var(--athlon-border-subtle)" }}
+                    >
+                      <span>{e.eventName}</span>
+                      <span className="text-primary font-black">{e.pointsWeight} pt</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Stage Progression Checklist */}
+            <div
+              className="rounded-3xl border p-6 space-y-4"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <h3 className="text-base font-black uppercase tracking-wider text-foreground">Stage Roadmap</h3>
+              <div className="space-y-3">
+                {[
+                  { title: "1. Team & Player Registration", done: teams.length > 0 },
+                  { title: "2. Player Auction / Squad Draft", done: championship.stage !== "REGISTRATION_OPEN" },
+                  { title: "3. Pool Fixtures Generation", done: fixtures.length > 0 },
+                  { title: "4. Lineups Submission & Toss", done: fixtures.some((f) => f.tossWinnerTeamId) },
+                  { title: "5. Live Match Scoring", done: fixtures.some((f) => f.status === "COMPLETED") },
+                  { title: "6. Knockout Progression", done: false },
+                ].map((s, idx) => (
+                  <div key={idx} className="flex items-center gap-3 text-xs font-bold">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${
+                        s.done
+                          ? "bg-emerald-500 text-black font-black"
+                          : "bg-foreground/10 text-foreground/40 font-bold"
+                      }`}
+                    >
+                      {s.done ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
+                    </div>
+                    <span className={s.done ? "text-foreground" : "text-foreground/50"}>{s.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: TEAMS */}
+        {activeTab === "teams" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-foreground">Registered Teams ({teams.length})</h3>
+              <button
+                onClick={() => setIsAddTeamModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20"
+              >
+                <Plus className="w-4 h-4" /> Register Team
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {teams.map((t) => (
+                <div
+                  key={t.teamId}
+                  className="rounded-2xl border p-5 space-y-3"
+                  style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-black text-foreground">{t.teamName}</h4>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                        t.paymentStatus === "PAID"
+                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
+                          : "bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                      }`}
+                    >
+                      {t.paymentStatus}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-foreground/60">
+                    Captain: <strong>{t.captainName || "N/A"}</strong>
+                  </p>
+
+                  <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                    <span className="text-[11px] text-foreground/40">{t.contactPhone || "No contact"}</span>
+                    <button
+                      onClick={() => {
+                        setSelectedTeamForAudit(t.teamId);
+                        setActiveTab("squads");
+                      }}
+                      className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                    >
+                      View Squad <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: PLAYERS POOL */}
+        {activeTab === "players" && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h3 className="text-base font-black text-foreground">Player Registration Pool ({players.length})</h3>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Search player..."
+                  value={searchPlayerQuery}
+                  onChange={(e) => setSearchPlayerQuery(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                  style={{ borderColor: "var(--athlon-border)" }}
+                />
+                <button
+                  onClick={() => setIsAddPlayerModalOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Register Player
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {players
+                .filter((p) => p.fullName.toLowerCase().includes(searchPlayerQuery.toLowerCase()))
+                .map((p) => (
+                  <div
+                    key={p.playerId}
+                    className="rounded-2xl border p-4 space-y-2.5"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-foreground truncate">{p.fullName}</h4>
+                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                        {p.categoryName || "Open"}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-foreground/50 truncate">
+                      Eligible: <strong>{p.eligibleFormats || "All Formats"}</strong>
+                    </p>
+
+                    <div className="flex items-center justify-between border-t pt-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                      <span className="text-[10px] font-bold text-foreground/40 uppercase">Base Price</span>
+                      <span className="text-xs font-black text-primary">{p.basePrice} pts</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: LIVE AUCTION ARENA */}
+        {activeTab === "auction" && (
+          <div className="space-y-6">
+            {/* Top Control Rail */}
+            <div
+              className="p-6 rounded-3xl border grid grid-cols-1 md:grid-cols-3 gap-6"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              {/* Active Auction Player Card */}
+              <div className="md:col-span-2 space-y-4">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5" /> Currently on the Auction Floor
+                </span>
+
+                {auctionState?.activePlayer ? (
+                  <div
+                    className="p-6 rounded-2xl border space-y-4 bg-gradient-to-br from-primary/10 via-transparent to-transparent"
+                    style={{ borderColor: "var(--athlon-border)" }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-black text-foreground">
+                          {auctionState.activePlayer.playerName}
+                        </h2>
+                        <span className="px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 text-xs font-bold uppercase mt-1 inline-block">
+                          {auctionState.activePlayer.categoryName || "Category"}
+                        </span>
+                      </div>
+
+                      {/* Timer */}
+                      <div className="text-right">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/40 block">
+                          Timer Remaining
+                        </span>
+                        <span className="text-2xl font-black text-amber-400 font-mono">
+                          {auctionState.remainingTimerSeconds}s
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t pt-4" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-foreground/40 block">Current High Bid</span>
+                        <span className="text-2xl font-black text-primary">
+                          {auctionState.currentBid} {currencyLabel}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-foreground/40 block">Winning Team Leader</span>
+                        <span className="text-base font-black text-foreground">
+                          {auctionState.winningTeamName || "No Bids Yet"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Organizer Action Buttons */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        onClick={handleAssignPlayer}
+                        disabled={!auctionState.winningTeamId}
+                        className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-40"
+                      >
+                        🔨 SOLD & ASSIGN PLAYER
+                      </button>
+                      <button
+                        onClick={handleMarkUnsold}
+                        className="px-6 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
+                      >
+                        MARK UNSOLD
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-8 rounded-2xl border border-dashed text-center" style={{ borderColor: "var(--athlon-border)" }}>
+                    <Gavel className="w-8 h-8 text-foreground/30 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-foreground/60 uppercase">No Player on the Floor</p>
+                    <p className="text-xs text-foreground/40 mt-1">Select a player from the pool below and click "Call Player".</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Bid Bidding Pad for Teams */}
+              <div
+                className="p-5 rounded-2xl border space-y-3"
+                style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+              >
+                <h4 className="text-xs font-black uppercase tracking-wider text-foreground/80">Place Bid (Simulation Pad)</h4>
+                <p className="text-[11px] text-foreground/50">Simulate team owner bidding increments or custom offers.</p>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto hide-scrollbar">
+                  {auctionTeams.map((at) => (
+                    <div
+                      key={at.team.teamId}
+                      className="p-2.5 rounded-xl border flex items-center justify-between text-xs"
+                      style={{ borderColor: "var(--athlon-border-subtle)" }}
+                    >
+                      <div>
+                        <span className="font-black text-foreground block">{at.team.teamName}</span>
+                        <span className="text-[10px] text-primary font-bold">
+                          Purse: {at.team.remainingBudget} {currencyLabel}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          const nextBid = (auctionState?.currentBid || 1000) + (auctionState?.config?.bidIncrement || 500);
+                          handlePlaceBid(at.team.teamId, nextBid);
+                        }}
+                        disabled={!auctionState?.activePlayer}
+                        className="px-3 py-1.5 rounded-lg bg-primary/15 text-primary border border-primary/25 font-black text-[11px] hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-30"
+                      >
+                        +{(auctionState?.config?.bidIncrement || 500)} Bid
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Auction Player Pool Grid */}
+            <div className="space-y-4">
+              <h3 className="text-base font-black text-foreground">Available Auction Pool</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {auctionPlayers
+                  .filter((p) => p.state === "WAITING" || p.state === "UNSOLD")
+                  .map((p) => (
+                    <div
+                      key={p.auctionPlayerId}
+                      className="rounded-2xl border p-4 space-y-3"
+                      style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-foreground truncate">{p.playerName}</h4>
+                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                          {p.categoryName || "Category"}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-foreground/50">
+                        Base: <strong>{p.basePrice} pts</strong>
+                      </p>
+
+                      <button
+                        onClick={() => handleCallPlayer(p.auctionPlayerId)}
+                        disabled={!!auctionState?.activePlayer}
+                        className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+                      >
+                        Call to Floor
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: SQUADS & PARTICIPATION AUDIT */}
+        {activeTab === "squads" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Team Picker Sidebar */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70 mb-3">Select Team</h4>
+              {teams.map((t) => (
+                <button
+                  key={t.teamId}
+                  onClick={() => setSelectedTeamForAudit(t.teamId)}
+                  className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                    selectedTeamForAudit === t.teamId
+                      ? "bg-primary/10 border-primary text-primary shadow-sm"
+                      : "bg-card border-foreground/10 text-foreground/70 hover:border-foreground/20"
+                  }`}
+                  style={{ backgroundColor: selectedTeamForAudit === t.teamId ? undefined : "var(--athlon-card)" }}
+                >
+                  <span className="text-xs font-black">{t.teamName}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ))}
+            </div>
+
+            {/* Squad Members & Audit Result */}
+            <div
+              className="md:col-span-2 rounded-3xl border p-6 space-y-6"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              {teamAudit ? (
+                <>
+                  <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                    <div>
+                      <h3 className="text-lg font-black text-foreground">{teamAudit.teamName} Squad</h3>
+                      <p className="text-xs text-foreground/60">
+                        {teamAudit.playersCount} / {teamAudit.squadCapacity} Players Acquired
+                      </p>
+                    </div>
+
+                    {/* Every Player Must Play Status Badge */}
+                    <div>
+                      {teamAudit.everyPlayerHasPlayedLeague ? (
+                        <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-xs font-black uppercase flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5" /> All Players Participated
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 text-xs font-black uppercase flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5" /> {teamAudit.unplayedPlayers.length} Unplayed Players
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Player Cards */}
+                  <div className="space-y-2.5">
+                    {teamAudit.players.map((sp) => (
+                      <div
+                        key={sp.squadId}
+                        className="p-3.5 rounded-2xl border flex items-center justify-between text-xs"
+                        style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              sp.matchesPlayedCount > 0 ? "bg-emerald-500" : "bg-amber-500"
+                            }`}
+                          />
+                          <div>
+                            <h4 className="font-black text-foreground">{sp.playerName}</h4>
+                            <span className="text-[10px] text-foreground/50">
+                              {sp.categoryName || "Open"} • Acquired via <strong>{sp.acquisitionType}</strong> (
+                              {sp.purchasePrice} pts)
+                            </span>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${
+                            sp.matchesPlayedCount > 0
+                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                              : "bg-foreground/5 text-foreground/40 border border-foreground/10"
+                          }`}
+                        >
+                          {sp.matchesPlayedCount > 0 ? "Played" : "Not Played"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="py-12 text-center text-foreground/40">Select a team to view squad details.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: FIXTURES */}
+        {activeTab === "fixtures" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-foreground">Championship Match Schedule ({fixtures.length} Fixtures)</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {fixtures.map((f) => (
+                <div
+                  key={f.fixtureId}
+                  className="rounded-3xl border p-6 space-y-4 hover:border-primary/50 transition-all cursor-pointer"
+                  style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  onClick={() => {
+                    setSelectedFixtureId(f.fixtureId);
+                    setActiveTab("lineups");
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                      {f.roundName} • Pool Stage
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-foreground/5 text-foreground/60">
+                      {f.status}
+                    </span>
+                  </div>
+
+                  {/* Team vs Team Card */}
+                  <div className="flex items-center justify-between py-2">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-black text-foreground">{f.teamAName}</h4>
+                      <span className="text-xl font-black text-primary">{f.teamAPoints}</span>
+                    </div>
+
+                    <span className="text-xs font-black text-foreground/40 uppercase">VS</span>
+
+                    <div className="space-y-1 text-right">
+                      <h4 className="text-sm font-black text-foreground">{f.teamBName}</h4>
+                      <span className="text-xl font-black text-primary">{f.teamBPoints}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                    <span className="text-[11px] text-foreground/40">{f.courtName || "Court 1"}</span>
+                    <span className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                      Lineups & Sub-Matches <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: LINEUPS & SUB-MATCHES (FIXTURE DRILLDOWN) */}
+        {activeTab === "lineups" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setActiveTab("fixtures")}
+                className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to Fixtures List
+              </button>
+            </div>
+
+            {fixtureDetail ? (
+              <div
+                className="rounded-3xl border p-6 sm:p-8 space-y-6"
+                style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                  <div>
+                    <h3 className="text-lg font-black text-foreground">
+                      {fixtureDetail.fixture.teamAName} vs {fixtureDetail.fixture.teamBName}
+                    </h3>
+                    <p className="text-xs text-foreground/60">
+                      Toss Winner: <strong>{fixtureDetail.toss?.tossWinnerTeamName || "Toss not conducted"}</strong>
+                    </p>
+                  </div>
+
+                  {/* Simultaneous Reveal Status */}
+                  <div>
+                    {fixtureDetail.lineupsRevealed ? (
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-xs font-black uppercase flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5" /> Lineups Public & Revealed
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 text-xs font-black uppercase flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" /> Secret Submission Stage
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sub-Matches Cards */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">
+                    Individual Sub-Match Events
+                  </h4>
+                  {fixtureDetail.subMatches?.map((sm: TeamChampionshipSubMatch) => (
+                    <div
+                      key={sm.subMatchId}
+                      className="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                      style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                    >
+                      <div className="space-y-1">
+                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                          Match #{sm.orderSequence} • {sm.eventName}
+                        </span>
+                        <div className="font-bold text-foreground">
+                          {sm.teamAPlayers || "Team A Lineup Pending"} vs {sm.teamBPlayers || "Team B Lineup Pending"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-black text-primary">{sm.scoreSummary || "0 - 0"}</span>
+                        <button
+                          onClick={() => router.push(`/live-score/${sm.subMatchId}`)}
+                          className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-[11px] font-black hover:scale-105 transition-all shadow-sm"
+                        >
+                          Live Score
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-foreground/40">Select a fixture from the list to manage lineups.</div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 8: STANDINGS */}
+        {activeTab === "standings" && (
+          <div className="space-y-6">
+            <h3 className="text-base font-black text-foreground">Pool Standings Table</h3>
+            <div
+              className="rounded-3xl border overflow-hidden shadow-xl"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b bg-foreground/[0.02]" style={{ borderColor: "var(--athlon-border)" }}>
+                      <th className="p-4 font-black uppercase text-foreground/50">Rank & Team</th>
+                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Played</th>
+                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Won</th>
+                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Lost</th>
+                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Sub-Matches Diff</th>
+                      <th className="p-4 font-black uppercase text-primary text-center">Points</th>
+                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row) => (
+                      <tr
+                        key={row.teamId}
+                        className="border-b hover:bg-foreground/[0.02] transition-colors"
+                        style={{ borderColor: "var(--athlon-border-subtle)" }}
+                      >
+                        <td className="p-4 font-black text-foreground flex items-center gap-3">
+                          <span className="w-6 h-6 rounded-lg bg-foreground/10 flex items-center justify-center text-xs">
+                            {row.rank}
+                          </span>
+                          <span>{row.teamName}</span>
+                        </td>
+                        <td className="p-4 text-center font-bold text-foreground/70">{row.played}</td>
+                        <td className="p-4 text-center font-bold text-emerald-400">{row.won}</td>
+                        <td className="p-4 text-center font-bold text-red-400">{row.lost}</td>
+                        <td className="p-4 text-center font-bold text-foreground/70">
+                          {row.subMatchDiff > 0 ? `+${row.subMatchDiff}` : row.subMatchDiff}
+                        </td>
+                        <td className="p-4 text-center font-black text-primary text-sm">{row.points}</td>
+                        <td className="p-4 text-center">
+                          {row.isQualified ? (
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-[10px] font-black uppercase">
+                              Qualified
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-foreground/40 font-bold uppercase">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: REGISTER TEAM */}
+        {isAddTeamModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+            <div
+              className="w-full max-w-md rounded-3xl border p-6 space-y-6 shadow-2xl relative"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-foreground">Register New Team</h3>
+                    <p className="text-xs text-foreground/60">Add a competing squad to the championship</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAddTeamModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleRegisterTeamSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground/70">Team Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Phoenix Smashers"
+                    value={teamForm.teamName}
+                    onChange={(e) => setTeamForm({ ...teamForm, teamName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                    style={{ borderColor: "var(--athlon-border)" }}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground/70">Captain Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rahul Sharma"
+                    value={teamForm.captainName}
+                    onChange={(e) => setTeamForm({ ...teamForm, captainName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                    style={{ borderColor: "var(--athlon-border)" }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground/70">Contact Phone</label>
+                    <input
+                      type="tel"
+                      placeholder="9876543210"
+                      value={teamForm.contactPhone}
+                      onChange={(e) => setTeamForm({ ...teamForm, contactPhone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                      style={{ borderColor: "var(--athlon-border)" }}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground/70">Contact Email</label>
+                    <input
+                      type="email"
+                      placeholder="captain@example.com"
+                      value={teamForm.contactEmail}
+                      onChange={(e) => setTeamForm({ ...teamForm, contactEmail: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                      style={{ borderColor: "var(--athlon-border)" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 flex items-center justify-between text-xs">
+                  <span className="font-bold text-foreground/70">Registration Fee</span>
+                  <span className="font-black text-primary">₹{championship?.teamRegistrationFee || 0}</span>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddTeamModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-foreground/60 hover:text-foreground transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={teamSubmitting || !teamForm.teamName}
+                    className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30 shadow-lg shadow-primary/20"
+                  >
+                    {teamSubmitting ? "Registering..." : "Confirm Registration"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: REGISTER PLAYER */}
+        {isAddPlayerModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+            <div
+              className="w-full max-w-md rounded-3xl border p-6 space-y-6 shadow-2xl relative"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-foreground">Register Player to Pool</h3>
+                    <p className="text-xs text-foreground/60">Add a player to the auction / draft pool</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAddPlayerModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleRegisterPlayerSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground/70">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Virat K"
+                    value={playerForm.fullName}
+                    onChange={(e) => setPlayerForm({ ...playerForm, fullName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                    style={{ borderColor: "var(--athlon-border)" }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground/70">Phone</label>
+                    <input
+                      type="tel"
+                      placeholder="9876543210"
+                      value={playerForm.phone}
+                      onChange={(e) => setPlayerForm({ ...playerForm, phone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                      style={{ borderColor: "var(--athlon-border)" }}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-foreground/70">Email</label>
+                    <input
+                      type="email"
+                      placeholder="player@example.com"
+                      value={playerForm.email}
+                      onChange={(e) => setPlayerForm({ ...playerForm, email: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                      style={{ borderColor: "var(--athlon-border)" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground/70">Category Tier *</label>
+                  <select
+                    value={playerForm.categoryId}
+                    onChange={(e) => {
+                      const catId = Number(e.target.value);
+                      const cat = championship?.categories?.find((c) => c.categoryId === catId);
+                      setPlayerForm({
+                        ...playerForm,
+                        categoryId: catId,
+                        basePrice: cat?.basePrice || 0,
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                    style={{ borderColor: "var(--athlon-border)" }}
+                  >
+                    <option value={0}>Select Category Tier</option>
+                    {championship?.categories?.map((c) => (
+                      <option key={c.categoryId} value={c.categoryId}>
+                        {c.name} ({c.basePrice} pts base)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground/70">Base Price (pts / ₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={playerForm.basePrice}
+                    onChange={(e) => setPlayerForm({ ...playerForm, basePrice: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                    style={{ borderColor: "var(--athlon-border)" }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddPlayerModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-foreground/60 hover:text-foreground transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={playerSubmitting || !playerForm.fullName}
+                    className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30 shadow-lg shadow-primary/20"
+                  >
+                    {playerSubmitting ? "Registering..." : "Add to Pool"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

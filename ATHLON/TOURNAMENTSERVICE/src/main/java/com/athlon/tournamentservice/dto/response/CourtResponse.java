@@ -19,8 +19,8 @@ public class CourtResponse {
     public static CourtResponse fromEntity(Court court) {
         if (court == null) return null;
         CourtResponse response = new CourtResponse();
-        response.setId(court.getId());
-        response.setUuid(court.getUuid());
+        response.setId(court.getCourtId());
+        response.setUuid(court.getCourtUuid());
         response.setVenueId(court.getVenueId());
         response.setName(court.getName());
         response.setSportType(court.getSportType());

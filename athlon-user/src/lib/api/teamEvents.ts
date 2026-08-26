@@ -11,6 +11,8 @@ export interface TeamEventCategoryMatch {
     displayOrder: number;
     status: string;
     winnerRegistrationId: number | null;
+    score?: string;
+    scoreMeta?: string;
 }
 
 export interface TeamEventFixtureDetails {

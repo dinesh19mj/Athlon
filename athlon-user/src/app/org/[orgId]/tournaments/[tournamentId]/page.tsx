@@ -41,6 +41,7 @@ import {
   ChevronDown,
   FileImage,
   FileText,
+  UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -331,7 +332,7 @@ export default function TournamentDashboardPage() {
               console.error('Failed to load courts', e);
             }
 
-            if (tData.tournamentType === 'LEAGUE') {
+            if (tData.tournamentType === 'LEAGUE' || tData.tournamentType === 'TEAM_EVENT' || tData.tournamentType === 'TEAM_LEAGUE') {
               try {
                 const sRes = await DrawService.getStandings(tData.tournamentUuid);
                 setStandings(sRes.data || sRes || []);
@@ -361,7 +362,7 @@ export default function TournamentDashboardPage() {
             .catch(() => {});
         }, 4000);
         return () => clearInterval(interval);
-      } else if (activeTab === 'standings' && tournament.tournamentType === 'LEAGUE') {
+      } else if (activeTab === 'standings' && (tournament.tournamentType === 'LEAGUE' || tournament.tournamentType === 'TEAM_EVENT' || tournament.tournamentType === 'TEAM_LEAGUE')) {
         DrawService.getStandings(tournament.tournamentUuid)
           .then((sRes) => {
             if (sRes) setStandings(sRes.data || sRes || []);
@@ -582,7 +583,7 @@ export default function TournamentDashboardPage() {
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'registrations', label: 'Registrations', icon: Users, badge: registrations.length },
     { id: 'draws', label: 'Draws & Brackets', icon: Swords, badge: matches.length > 0 ? matches.length : undefined },
-    ...(tournament?.tournamentType === 'LEAGUE' ? [{ id: 'standings', label: 'Standings', icon: Trophy }] : []),
+    ...(tournament?.tournamentType === 'LEAGUE' || tournament?.tournamentType === 'TEAM_EVENT' || tournament?.tournamentType === 'TEAM_LEAGUE' ? [{ id: 'standings', label: 'Standings', icon: Trophy }] : []),
     { id: 'matches', label: 'Matches', icon: Play, badge: liveMatches.length > 0 ? 'LIVE' : undefined },
     { id: 'livestream', label: 'Live Stream', icon: Radio },
     { id: 'match setup', label: 'Match Setup', icon: Sliders },
@@ -1040,6 +1041,18 @@ export default function TournamentDashboardPage() {
                   </h2>
 
                   <div className="space-y-2">
+                    <Link
+                      href={`/home/tournaments/${tournament.tournamentUuid || tournamentId}/register`}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border text-left hover:border-primary/50 transition-all text-xs font-bold group"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <UserPlus className="w-4 h-4 text-primary" />
+                        <span>{isTeamEvent ? 'Register a New Team' : 'Register a Player / Team'}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-foreground/40 group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+
                     <button
                       onClick={() => setActiveTab('registrations')}
                       className="w-full flex items-center justify-between p-3 rounded-xl border text-left hover:border-primary/50 transition-all text-xs font-bold"
@@ -1117,7 +1130,7 @@ export default function TournamentDashboardPage() {
         {activeTab === 'registrations' && (
           <div className="space-y-5">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg sm:text-xl font-black text-foreground">Team & Player Registrations</h3>
@@ -1128,6 +1141,25 @@ export default function TournamentDashboardPage() {
                 <p className="text-xs text-foreground/50 font-medium mt-0.5">
                   Review roster entries, approve players, and confirm fee payments.
                 </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  href={`/home/tournaments/${tournament.tournamentUuid || tournamentId}/register`}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>{isTeamEvent ? '+ Register a Team' : '+ Add Registration'}</span>
+                </Link>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                  title="Share Registration Link"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                  <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
+                </button>
               </div>
             </div>
 
@@ -1280,12 +1312,22 @@ export default function TournamentDashboardPage() {
                     Clear All Filters
                   </button>
                 ) : (
-                  <button
-                    onClick={handleShare}
-                    className="px-5 py-2.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider rounded-xl shadow-md hover:scale-105 transition-all"
-                  >
-                    {copied ? 'Link Copied!' : 'Copy Shareable Link'}
-                  </button>
+                  <div className="flex items-center gap-3 flex-wrap justify-center">
+                    <Link
+                      href={`/home/tournaments/${tournament.tournamentUuid || tournamentId}/register`}
+                      className="px-5 py-2.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider rounded-xl shadow-md hover:scale-105 transition-all flex items-center gap-1.5"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>{isTeamEvent ? 'Register First Team' : 'Add First Registration'}</span>
+                    </Link>
+                    <button
+                      onClick={handleShare}
+                      className="px-4 py-2.5 bg-white/10 hover:bg-white/15 text-foreground text-xs font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center gap-1.5"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>{copied ? 'Link Copied!' : 'Share Registration Link'}</span>
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (

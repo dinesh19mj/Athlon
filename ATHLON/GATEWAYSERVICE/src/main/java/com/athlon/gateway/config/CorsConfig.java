@@ -17,10 +17,10 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(Arrays.asList("*")); // Allow all patterns or configure specific domains
-        config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-User-Id", "X-User-Uuid"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setExposedHeaders(Arrays.asList("Authorization"));
+        config.setAllowedOriginPatterns(Arrays.asList("*"));
+        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST"));
+        config.setExposedHeaders(Arrays.asList("*"));
 
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);

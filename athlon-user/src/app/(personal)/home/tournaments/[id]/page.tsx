@@ -24,6 +24,7 @@ import {
   Table,
   RefreshCw,
   Award,
+  Ticket,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -81,8 +82,8 @@ export default function PersonalTournamentDetailsPage() {
             console.error('Failed to load matches', e);
           }
 
-          // Fetch standings if League
-          if (tData.tournamentType === 'LEAGUE') {
+          // Fetch standings if League or Team Event
+          if (tData.tournamentType === 'LEAGUE' || tData.tournamentType === 'TEAM_EVENT' || tData.tournamentType === 'TEAM_LEAGUE') {
             try {
               const sRes = await DrawService.getStandings(tData.tournamentUuid);
               setStandings(sRes.data || sRes || []);
@@ -118,7 +119,7 @@ export default function PersonalTournamentDetailsPage() {
       return () => clearInterval(interval);
     }
 
-    if (activeTab === 'standings' && tournament.tournamentType === 'LEAGUE') {
+    if (activeTab === 'standings' && (tournament.tournamentType === 'LEAGUE' || tournament.tournamentType === 'TEAM_EVENT' || tournament.tournamentType === 'TEAM_LEAGUE')) {
       const interval = setInterval(() => {
         DrawService.getStandings(tournament.tournamentUuid!)
           .then((sRes) => {
@@ -199,8 +200,8 @@ export default function PersonalTournamentDetailsPage() {
   const startInfo = parseDateTime(tournament.startDate);
   const endInfo = parseDateTime(tournament.endDate);
 
-  const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT';
-  const isLeague = tournament.tournamentType === 'LEAGUE';
+  const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT' || tournament.tournamentType === 'TEAM_LEAGUE';
+  const isLeague = tournament.tournamentType === 'LEAGUE' || tournament.tournamentType === 'TEAM_EVENT' || tournament.tournamentType === 'TEAM_LEAGUE';
 
   const isRegistrationClosed = tournament.status === 'REGISTRATION_CLOSED';
 
@@ -336,6 +337,19 @@ export default function PersonalTournamentDetailsPage() {
                 </div>
               )}
             </div>
+
+            {/* Prominent Hero Register CTA */}
+            {!isRegistrationClosed && tournament.status !== 'COMPLETED' && tournament.status !== 'FINISHED' && (
+              <div className="pt-2">
+                <button
+                  onClick={() => router.push(`/home/tournaments/${tournamentUuid}/register`)}
+                  className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>{isTeamEvent ? 'Register Your Team' : 'Register for Tournament'}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -506,6 +520,48 @@ export default function PersonalTournamentDetailsPage() {
                 </div>
               )}
             </div>
+
+            {/* TEAM EVENT CATEGORIES (if Team Event) */}
+            {isTeamEvent && tournament.teamEventCategories && (
+              <div
+                className="rounded-2xl p-5 border shadow-md space-y-3"
+                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              >
+                <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-primary" />
+                  Team Event Categories &amp; Lineup Format
+                </h2>
+                {(() => {
+                  try {
+                    const parsed = typeof tournament.teamEventCategories === 'string'
+                      ? JSON.parse(tournament.teamEventCategories)
+                      : tournament.teamEventCategories;
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                          {parsed.map((cat: any, idx: number) => (
+                            <div
+                              key={cat.id || idx}
+                              className="p-3 rounded-xl border flex items-center justify-between gap-2"
+                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                            >
+                              <div>
+                                <span className="text-xs font-black text-foreground block">{cat.name || `Category ${idx + 1}`}</span>
+                                <span className="text-[10px] text-primary font-bold uppercase">{cat.matchFormat}</span>
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 border border-white/10 text-foreground/60">
+                                {cat.playersRequired} Player{cat.playersRequired !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                  } catch {}
+                  return null;
+                })()}
+              </div>
+            )}
 
             {/* DESCRIPTION */}
             {tournament.description && (
@@ -780,7 +836,15 @@ export default function PersonalTournamentDetailsPage() {
             </span>
           </div>
 
-          {isRegistrationClosed ? (
+          {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
+            <button
+              disabled
+              className="px-8 py-3.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg opacity-90 cursor-not-allowed flex items-center gap-2"
+            >
+              <Trophy className="w-4 h-4" />
+              Tournament Finished
+            </button>
+          ) : isRegistrationClosed ? (
             <button
               disabled
               className="px-8 py-3.5 bg-red-500/15 border border-red-500/30 text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg cursor-not-allowed opacity-90"
@@ -792,7 +856,7 @@ export default function PersonalTournamentDetailsPage() {
               onClick={() => router.push(`/home/tournaments/${tournamentUuid}/register`)}
               className="px-8 py-3.5 bg-primary text-primary-foreground font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-95 transition-transform"
             >
-              Register for Tournament
+              {isTeamEvent ? 'Register Your Team' : 'Register for Tournament'}
             </button>
           )}
         </div>

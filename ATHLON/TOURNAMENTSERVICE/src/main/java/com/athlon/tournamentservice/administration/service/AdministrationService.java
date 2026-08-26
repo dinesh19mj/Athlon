@@ -40,7 +40,7 @@ public class AdministrationService {
     }
 
     public UmpireAssignment assignUmpire(UmpireAssignment assignment) {
-        assignment.setCreatedOn(LocalDateTime.now());
+        assignment.setCreatedAt(LocalDateTime.now());
         if (assignment.getStatus() == null) {
             assignment.setStatus("ASSIGNED");
         }

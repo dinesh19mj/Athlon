@@ -15,8 +15,9 @@ export const fetchClient = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
-  const url = `${baseUrl}${endpoint}`;
+  const isBrowser = typeof window !== 'undefined';
+  const baseUrl = isBrowser ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050');
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
 
   // Extract identity and auth token from Zustand store
   const { token, userId, userUuid } = useAuthStore.getState();
@@ -25,8 +26,10 @@ export const fetchClient = async <T>(
     ...options.headers as Record<string, string>,
   };
 
-  // Only set default Content-Type if it's not FormData
-  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+  const method = (options.method || 'GET').toUpperCase();
+
+  // Only set default Content-Type for request with a body and not FormData
+  if (method !== 'GET' && method !== 'HEAD' && !(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -35,11 +38,11 @@ export const fetchClient = async <T>(
   }
   
   if (userId) {
-    headers['X-User-Id'] = userId;
+    headers['X-User-Id'] = String(userId);
   }
 
   if (userUuid) {
-    headers['X-User-Uuid'] = userUuid;
+    headers['X-User-Uuid'] = String(userUuid);
   }
 
   try {

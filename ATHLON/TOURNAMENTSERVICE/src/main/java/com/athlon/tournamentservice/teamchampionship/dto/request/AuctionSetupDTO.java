@@ -1,0 +1,73 @@
+package com.athlon.tournamentservice.teamchampionship.dto.request;
+
+import java.util.List;
+
+public class AuctionSetupDTO {
+    private String auctionMode; // "FULL_AUCTION", "PARTIAL_AUCTION", "NO_AUCTION"
+    private String currencyType; // "POINTS", "REAL_MONEY"
+    private String currencySymbolOrLabel; // "pts", "₹", "$"
+    private String basePriceStrategy; // "CATEGORY_BASED", "FIXED_GLOBAL", "CUSTOM"
+    private Double defaultBasePrice;
+    private Double bidIncrement;
+    private Double teamBudget;
+    private Integer reservedPlayersPerTeam;
+    private Integer timerSeconds;
+    private Integer antiSnipingSeconds;
+    private List<CategoryBasePriceDTO> categoryBasePrices;
+
+    public AuctionSetupDTO() {}
+
+    public String getAuctionMode() { return auctionMode; }
+    public void setAuctionMode(String auctionMode) { this.auctionMode = auctionMode; }
+
+    public String getCurrencyType() { return currencyType; }
+    public void setCurrencyType(String currencyType) { this.currencyType = currencyType; }
+
+    public String getCurrencySymbolOrLabel() { return currencySymbolOrLabel; }
+    public void setCurrencySymbolOrLabel(String currencySymbolOrLabel) { this.currencySymbolOrLabel = currencySymbolOrLabel; }
+
+    public String getBasePriceStrategy() { return basePriceStrategy; }
+    public void setBasePriceStrategy(String basePriceStrategy) { this.basePriceStrategy = basePriceStrategy; }
+
+    public Double getDefaultBasePrice() { return defaultBasePrice; }
+    public void setDefaultBasePrice(Double defaultBasePrice) { this.defaultBasePrice = defaultBasePrice; }
+
+    public Double getBidIncrement() { return bidIncrement; }
+    public void setBidIncrement(Double bidIncrement) { this.bidIncrement = bidIncrement; }
+
+    public Double getTeamBudget() { return teamBudget; }
+    public void setTeamBudget(Double teamBudget) { this.teamBudget = teamBudget; }
+
+    public Integer getReservedPlayersPerTeam() { return reservedPlayersPerTeam; }
+    public void setReservedPlayersPerTeam(Integer reservedPlayersPerTeam) { this.reservedPlayersPerTeam = reservedPlayersPerTeam; }
+
+    public Integer getTimerSeconds() { return timerSeconds; }
+    public void setTimerSeconds(Integer timerSeconds) { this.timerSeconds = timerSeconds; }
+
+    public Integer getAntiSnipingSeconds() { return antiSnipingSeconds; }
+    public void setAntiSnipingSeconds(Integer antiSnipingSeconds) { this.antiSnipingSeconds = antiSnipingSeconds; }
+
+    public List<CategoryBasePriceDTO> getCategoryBasePrices() { return categoryBasePrices; }
+    public void setCategoryBasePrices(List<CategoryBasePriceDTO> categoryBasePrices) { this.categoryBasePrices = categoryBasePrices; }
+
+    public static class CategoryBasePriceDTO {
+        private Long categoryId;
+        private String categoryName;
+        private Double basePrice;
+        private Double minIncrement;
+
+        public CategoryBasePriceDTO() {}
+
+        public Long getCategoryId() { return categoryId; }
+        public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+
+        public String getCategoryName() { return categoryName; }
+        public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+
+        public Double getBasePrice() { return basePrice; }
+        public void setBasePrice(Double basePrice) { this.basePrice = basePrice; }
+
+        public Double getMinIncrement() { return minIncrement; }
+        public void setMinIncrement(Double minIncrement) { this.minIncrement = minIncrement; }
+    }
+}

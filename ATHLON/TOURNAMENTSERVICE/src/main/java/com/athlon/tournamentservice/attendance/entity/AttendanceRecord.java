@@ -34,11 +34,11 @@ public class AttendanceRecord {
     @Column(name = "remarks")
     private String remarks;
 
-    @Column(name = "createdby")
+    @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "createdon")
-    private LocalDateTime createdOn;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     public Long getAttendanceId() {
         return attendanceId;
@@ -96,12 +96,13 @@ public class AttendanceRecord {
         this.createdBy = createdBy;
     }
 
-    public LocalDateTime getCreatedOn() {
-        return createdOn;
-    }
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
 
-    public void setCreatedOn(LocalDateTime createdOn) {
-        this.createdOn = createdOn;
-    }
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
 }
 

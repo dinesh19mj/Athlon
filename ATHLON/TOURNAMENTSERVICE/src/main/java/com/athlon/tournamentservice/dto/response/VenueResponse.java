@@ -19,8 +19,8 @@ public class VenueResponse {
     public static VenueResponse fromEntity(Venue venue) {
         if (venue == null) return null;
         VenueResponse response = new VenueResponse();
-        response.setId(venue.getId());
-        response.setUuid(venue.getUuid());
+        response.setId(venue.getVenueId());
+        response.setUuid(venue.getVenueUuid());
         response.setName(venue.getName());
         response.setAddress(venue.getAddress());
         response.setCityId(venue.getCityId());

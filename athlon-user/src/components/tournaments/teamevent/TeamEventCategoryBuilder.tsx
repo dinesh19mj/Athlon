@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusIcon, TrashIcon } from 'lucide-react';
+import { PlusIcon, TrashIcon, ChevronDown } from 'lucide-react';
 
 export interface TeamEventCategoryConfig {
     id: string;
@@ -29,8 +29,8 @@ export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange
         onChange(categories.filter(c => c.id !== id));
     };
 
-    const handleUpdateCategory = (id: string, field: keyof TeamEventCategoryConfig, value: any) => {
-        onChange(categories.map(c => c.id === id ? { ...c, [field]: value } : c));
+    const handleUpdateCategory = (id: string, updates: Partial<TeamEventCategoryConfig>) => {
+        onChange(categories.map(c => c.id === id ? { ...c, ...updates } : c));
     };
 
     return (
@@ -69,29 +69,34 @@ export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange
                                     <input 
                                         type="text"
                                         value={cat.name}
-                                        onChange={(e) => handleUpdateCategory(cat.id, 'name', e.target.value)}
+                                        onChange={(e) => handleUpdateCategory(cat.id, { name: e.target.value })}
                                         placeholder="e.g. Open"
                                         className={inputClass}
                                     />
                                 </div>
                                 <div>
                                     <label className={labelClass}>Format</label>
-                                    <select
-                                        value={cat.matchFormat}
-                                        onChange={(e) => {
-                                            const format = e.target.value;
-                                            const isDoubles = format.includes("Doubles");
-                                            handleUpdateCategory(cat.id, 'matchFormat', format);
-                                            handleUpdateCategory(cat.id, 'playersRequired', isDoubles ? 2 : 1);
-                                        }}
-                                        className={`${inputClass} appearance-none`}
-                                    >
-                                        <option value="Men's Singles">Men's Singles</option>
-                                        <option value="Women's Singles">Women's Singles</option>
-                                        <option value="Men's Doubles">Men's Doubles</option>
-                                        <option value="Women's Doubles">Women's Doubles</option>
-                                        <option value="Mixed Doubles">Mixed Doubles</option>
-                                    </select>
+                                    <div className="relative">
+                                        <select
+                                            value={cat.matchFormat}
+                                            onChange={(e) => {
+                                                const format = e.target.value;
+                                                const isDoubles = format.includes("Doubles");
+                                                handleUpdateCategory(cat.id, {
+                                                    matchFormat: format,
+                                                    playersRequired: isDoubles ? 2 : 1
+                                                });
+                                            }}
+                                            className={`${inputClass} appearance-none pr-10`}
+                                        >
+                                            <option value="Men's Singles" className="bg-[#0D1520] text-white">Men's Singles</option>
+                                            <option value="Women's Singles" className="bg-[#0D1520] text-white">Women's Singles</option>
+                                            <option value="Men's Doubles" className="bg-[#0D1520] text-white">Men's Doubles</option>
+                                            <option value="Women's Doubles" className="bg-[#0D1520] text-white">Women's Doubles</option>
+                                            <option value="Mixed Doubles" className="bg-[#0D1520] text-white">Mixed Doubles</option>
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className={labelClass}>Players Required</label>
@@ -99,7 +104,7 @@ export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange
                                         type="number"
                                         min="1"
                                         value={cat.playersRequired}
-                                        onChange={(e) => handleUpdateCategory(cat.id, 'playersRequired', parseInt(e.target.value) || 1)}
+                                        onChange={(e) => handleUpdateCategory(cat.id, { playersRequired: parseInt(e.target.value) || 1 })}
                                         className={inputClass}
                                     />
                                 </div>

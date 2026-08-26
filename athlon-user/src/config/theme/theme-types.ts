@@ -1,7 +1,7 @@
 export type ThemeKey =
   | 'algae'
+  | 'cyan'
   | 'pulse'
-  | 'rush'
   | 'fire'
   | 'wine'
   | 'berry'

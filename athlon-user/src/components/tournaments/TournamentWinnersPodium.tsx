@@ -76,8 +76,8 @@ export function computeTournamentPodium(
   const winnerId = finalMatch.winnerRegistrationId;
 
   const isWinnerA =
-    (winnerUuid && (winnerUuid === finalMatch.teamARegistrationUuid || winnerUuid === finalMatch.teamARegistrationId)) ||
-    (winnerId && winnerId === finalMatch.teamARegistrationId);
+    (winnerUuid && (winnerUuid === finalMatch.teamARegistrationUuid || (finalMatch.teamARegistrationId != null && String(winnerUuid) === String(finalMatch.teamARegistrationId)))) ||
+    (winnerId != null && winnerId === finalMatch.teamARegistrationId);
 
   const champion = isWinnerA
     ? getTeamDetails(finalMatch.teamARegistrationUuid, finalMatch.teamARegistrationId, finalMatch.teamAName)
@@ -96,8 +96,8 @@ export function computeTournamentPodium(
       const sfWinnerUuid = sf.winnerRegistrationUuid;
       const sfWinnerId = sf.winnerRegistrationId;
       const sfIsWinnerA =
-        (sfWinnerUuid && (sfWinnerUuid === sf.teamARegistrationUuid || sfWinnerUuid === sf.teamARegistrationId)) ||
-        (sfWinnerId && sfWinnerId === sf.teamARegistrationId);
+        (sfWinnerUuid && (sfWinnerUuid === sf.teamARegistrationUuid || (sf.teamARegistrationId != null && String(sfWinnerUuid) === String(sf.teamARegistrationId)))) ||
+        (sfWinnerId != null && sfWinnerId === sf.teamARegistrationId);
 
       // Loser of semi-final is the 3rd/4th place semi-finalist
       const losingTeam = sfIsWinnerA

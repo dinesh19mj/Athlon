@@ -17,7 +17,7 @@ public class AttendanceService {
     private AttendanceRepository attendanceRepository;
 
     public AttendanceRecord markAttendance(AttendanceRecord record) {
-        record.setCreatedOn(LocalDateTime.now());
+        record.setCreatedAt(LocalDateTime.now());
         if (record.getAttendanceDate() == null) {
             record.setAttendanceDate(LocalDate.now());
         }

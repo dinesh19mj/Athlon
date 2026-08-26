@@ -77,11 +77,11 @@ const algae: AthlonTheme = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ATHLON PULSE — Futuristic Electric / Obsidian-Cyan Accent
+// ATHLON CYAN — Futuristic Electric / Obsidian-Cyan Accent
 // ─────────────────────────────────────────────────────────────────────────────
-const pulse: AthlonTheme = {
-  key: 'pulse',
-  name: 'Athlon Pulse',
+const cyan: AthlonTheme = {
+  key: 'cyan',
+  name: 'Athlon Cyan',
   description: 'Electric, futuristic technology aesthetic.',
   colors: {
     background: DARK_BG,
@@ -135,9 +135,9 @@ const pulse: AthlonTheme = {
 // ─────────────────────────────────────────────────────────────────────────────
 // ATHLON RUSH — Youthful Adrenaline / Crimson Accent
 // ─────────────────────────────────────────────────────────────────────────────
-const rush: AthlonTheme = {
-  key: 'rush',
-  name: 'Athlon Rush',
+const pulse: AthlonTheme = {
+  key: 'pulse',
+  name: 'Athlon Pulse',
   description: 'Bold youthful energy with crimson intensity.',
   colors: {
     background: DARK_BG,
@@ -473,8 +473,8 @@ const forest: AthlonTheme = {
 // ─────────────────────────────────────────────────────────────────────────────
 export const ATHLON_THEMES: Record<string, AthlonTheme> = {
   algae,
+  cyan,
   pulse,
-  rush,
   fire,
   wine,
   berry,
@@ -484,8 +484,8 @@ export const ATHLON_THEMES: Record<string, AthlonTheme> = {
 
 export const THEME_ORDER: AthlonTheme['key'][] = [
   'algae',
+  'cyan',
   'pulse',
-  'rush',
   'fire',
   'wine',
   'berry',
@@ -496,12 +496,14 @@ export const THEME_ORDER: AthlonTheme['key'][] = [
 export const THEME_VIDEOS: Record<string, string> = {
   fire: '/athlon-fire.mp4',
   forest: '/athlon-forest.mp4',
+  cyan: '/athlon-cyan.mp4',
   pulse: '/athlon-pulse.mp4',
+  berry: '/athlon-berry.mp4',
   slate: '/athlon-slate.mp4',
   wine: '/athlon-wine.mp4',
 };
 
-export const DEFAULT_THEME_VIDEO = '/athlon-background.mp4';
+export const DEFAULT_THEME_VIDEO = '/athlon-algae.mp4';
 
 export function getThemeVideo(themeKey?: string | null): string {
   if (!themeKey) return DEFAULT_THEME_VIDEO;

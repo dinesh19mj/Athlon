@@ -1,12 +1,23 @@
 import Link from 'next/link';
-import { Trophy as TrophyIcon, CalendarIcon, MapPinIcon, TicketIcon, UsersIcon, ActivityIcon, ChevronRight, Sparkles, Lock as LockIcon } from 'lucide-react';
+import {
+  Trophy,
+  Calendar,
+  MapPin,
+  ChevronRight,
+  Sparkles,
+  Users,
+  CheckCircle2,
+  Lock,
+  Clock,
+} from 'lucide-react';
 import { Tournament } from '@/lib/api/tournaments';
 
 interface PublicTournamentCardProps {
   tournament: Tournament;
+  hrefPrefix?: string;
 }
 
-export function PublicTournamentCard({ tournament }: PublicTournamentCardProps) {
+export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamentCardProps) {
   const formatDates = () => {
     try {
       const s = new Date(tournament.startDate);
@@ -14,239 +25,194 @@ export function PublicTournamentCard({ tournament }: PublicTournamentCardProps) 
       if (isNaN(s.getTime())) return 'Dates TBA';
       const sStr = s.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       const eStr = !isNaN(e.getTime()) ? e.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-      return eStr ? `${sStr} - ${eStr}` : sStr;
+      return eStr && eStr !== sStr ? `${sStr} – ${eStr}` : sStr;
     } catch {
       return 'Dates TBA';
     }
   };
 
-  const categories = tournament.category ? tournament.category.split(',').map(c => c.trim()).filter(Boolean) : [];
-  const formats = tournament.matchFormat ? tournament.matchFormat.split(',').map(f => f.trim()).filter(Boolean) : [];
+  const formatClosingDate = () => {
+    if (!tournament.registrationClosingDate) return null;
+    try {
+      const c = new Date(tournament.registrationClosingDate);
+      if (isNaN(c.getTime())) return null;
+      return c.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch {
+      return null;
+    }
+  };
+
+  const closingDate = formatClosingDate();
+  const categories = tournament.category
+    ? tournament.category.split(',').map((c) => c.trim()).filter(Boolean)
+    : [];
+  const formats = tournament.matchFormat
+    ? tournament.matchFormat.split(',').map((f) => f.trim()).filter(Boolean)
+    : [];
   const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT';
+  const isFinished = tournament.status === 'COMPLETED' || tournament.status === 'FINISHED';
+  const isClosed = tournament.status === 'REGISTRATION_CLOSED';
+
+  const href = hrefPrefix
+    ? `${hrefPrefix}/${tournament.tournamentUuid || tournament.tournamentId}`
+    : `/home/tournaments/${tournament.tournamentUuid || tournament.tournamentId}`;
 
   return (
-    <div
-      className="group relative rounded-[22px] overflow-hidden shadow-xl transition-all duration-300 h-full w-full flex flex-col justify-between hover:scale-[1.01]"
-      style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+    <Link
+      href={href}
+      className="group block h-full select-none"
     >
-      {/* Card Surface - Deep Dark Neutral */}
       <div
-        className="relative rounded-[22px] p-5 h-full flex flex-col justify-between border transition-colors"
+        className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group-hover:scale-[1.015] group-hover:border-primary/50"
         style={{
           backgroundColor: 'var(--athlon-card)',
           borderColor: 'var(--athlon-border)',
         }}
       >
-        {/* Subtle Top Accent Line */}
-        <div
-          className="absolute top-0 left-0 right-0 h-[2px] opacity-70 group-hover:opacity-100 transition-opacity"
-          style={{ background: 'linear-gradient(90deg, transparent, var(--athlon-primary), transparent)' }}
-        />
+        {/* Top Gradient Accent Line */}
+        <div className="h-[3px] w-full bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
 
-        <div>
-          {/* Top Row: Sport Badge + Format & Price Tag */}
-          <div className="flex items-center justify-between gap-2 mb-3.5 pt-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center gap-1 shadow-sm"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  color: 'var(--athlon-primary)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                <Sparkles className="w-3 h-3" style={{ color: 'var(--athlon-primary)' }} />
+        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+          {/* Header Row: Badges & Fee */}
+          <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+              {/* Sport Pill */}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
+                <Sparkles className="w-2.5 h-2.5 text-primary" />
                 {tournament.sport || 'Badminton'}
               </span>
-              <span
-                className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.03)',
-                  color: 'var(--athlon-text-muted)',
-                  border: '1px solid var(--athlon-border-subtle)',
-                }}
-              >
-                <ActivityIcon className="w-3 h-3" style={{ color: 'var(--athlon-primary)' }} />
+
+              {/* Tournament Format Pill */}
+              <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-surface border border-foreground/10 text-foreground/70 shrink-0">
                 {isTeamEvent ? 'Team League' : 'Knockout'}
               </span>
-              {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                  <TrophyIcon className="w-2.5 h-2.5" /> Finished
+
+              {/* Status Badge (if special) */}
+              {isFinished ? (
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
+                  <CheckCircle2 className="w-2.5 h-2.5" /> Finished
                 </span>
-              ) : tournament.status === 'REGISTRATION_CLOSED' ? (
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30">
-                  Closed
+              ) : isClosed ? (
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25 shrink-0">
+                  <Lock className="w-2.5 h-2.5" /> Closed
                 </span>
               ) : null}
             </div>
 
-            {/* Fee Pill */}
-            <div className="shrink-0">
-              <span
-                className="text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  color: 'var(--athlon-primary)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
+            {/* Fee Tag */}
+            <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black tracking-tight text-primary bg-primary/10 border border-primary/25 shrink-0">
+              {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
+            </span>
+          </div>
+
+          {/* Tournament Name & Trophy Icon */}
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
+              <Trophy className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3
+                className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug"
+                title={tournament.name}
               >
-                <TicketIcon className="w-3 h-3" style={{ color: 'var(--athlon-primary)' }} />
-                {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
-              </span>
+                {tournament.name}
+              </h3>
+              <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/45 truncate mt-0.5">
+                <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span className="truncate">{tournament.location || 'Venue TBA'}</span>
+              </div>
             </div>
           </div>
 
-          {/* Tournament Title */}
-          <h3
-            className="text-base font-black line-clamp-2 leading-snug tracking-tight mb-4 transition-colors group-hover:text-primary"
-            style={{ color: 'var(--athlon-text)' }}
-            title={tournament.name}
-          >
-            {tournament.name}
-          </h3>
-
-          {/* Info Bento Grid - Dark Surface */}
+          {/* Bento Detail Bar: Date, Closing Date & Categories */}
           <div
-            className="space-y-2 mb-4 p-3 rounded-xl"
+            className="rounded-xl p-2.5 border space-y-2 text-[11px]"
             style={{
               backgroundColor: 'var(--athlon-surface)',
-              border: '1px solid var(--athlon-border-subtle)',
+              borderColor: 'var(--athlon-border-subtle)',
             }}
           >
-            {/* Dates */}
-            <div className="flex items-center gap-2.5 text-xs font-semibold" style={{ color: 'var(--athlon-text-secondary)' }}>
-              <div
-                className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1px solid var(--athlon-border-subtle)',
-                }}
-              >
-                <CalendarIcon className="w-3.5 h-3.5" style={{ color: 'var(--athlon-primary)' }} />
+            {/* Dates & Formats */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-foreground/80 font-bold text-[10.5px] min-w-0">
+                <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="truncate">{formatDates()}</span>
               </div>
-              <span className="truncate">{formatDates()}</span>
-            </div>
-
-            {/* Location */}
-            <div className="flex items-center gap-2.5 text-xs font-semibold" style={{ color: 'var(--athlon-text-secondary)' }}>
-              <div
-                className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1px solid var(--athlon-border-subtle)',
-                }}
-              >
-                <MapPinIcon className="w-3.5 h-3.5" style={{ color: 'var(--athlon-primary)' }} />
-              </div>
-              <span className="truncate" title={tournament.location || 'Venue TBA'}>
-                {tournament.location || 'Venue TBA'}
-              </span>
-            </div>
-          </div>
-
-          {/* Categories & Match Formats Pills */}
-          {(categories.length > 0 || formats.length > 0) && (
-            <div className="pt-2 space-y-2" style={{ borderTop: '1px solid var(--athlon-border-subtle)' }}>
-              {categories.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <TrophyIcon className="w-3 h-3 shrink-0" style={{ color: 'var(--athlon-primary)' }} />
-                  <div className="flex flex-wrap gap-1">
-                    {categories.slice(0, 3).map((cat, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[9px] font-bold px-2 py-0.5 rounded-md truncate max-w-[130px]"
-                        style={{
-                          backgroundColor: 'rgba(255,255,255,0.04)',
-                          border: '1px solid var(--athlon-border-subtle)',
-                          color: 'var(--athlon-text-secondary)',
-                        }}
-                      >
-                        {cat}
-                      </span>
-                    ))}
-                    {categories.length > 3 && (
-                      <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.03)', color: 'var(--athlon-text-muted)' }}
-                      >
-                        +{categories.length - 3}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {formats.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <UsersIcon className="w-3 h-3 shrink-0" style={{ color: 'var(--athlon-primary)' }} />
-                  <div className="flex flex-wrap gap-1">
-                    {formats.slice(0, 2).map((fmt, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[9px] font-semibold px-2 py-0.5 rounded-md"
-                        style={{
-                          backgroundColor: 'rgba(255,255,255,0.03)',
-                          border: '1px solid var(--athlon-border-subtle)',
-                          color: 'var(--athlon-text-muted)',
-                        }}
-                      >
-                        {fmt}
-                      </span>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Users className="w-3 h-3 text-foreground/40 shrink-0" />
+                  <span className="text-[9px] font-bold text-foreground/60">
+                    {formats.slice(0, 2).join(', ')}
+                  </span>
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* Action Button */}
-        <div className="mt-5 pt-3.5" style={{ borderTop: '1px solid var(--athlon-border-subtle)' }}>
-          {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
-            <Link
-              href={`/home/tournaments/${tournament.tournamentUuid}`}
-              className="w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn active:scale-[0.98] hover:opacity-90"
-              style={{
-                backgroundColor: 'var(--athlon-primary-soft, rgba(84,172,104,0.12))',
-                border: '1px solid var(--athlon-primary, #54AC68)',
-                color: 'var(--athlon-primary, #54AC68)',
-              }}
-            >
-              <TrophyIcon className="w-3.5 h-3.5 shrink-0" />
-              <span>View Results &amp; Podium</span>
-              <ChevronRight className="w-3.5 h-3.5 ml-auto group-hover/btn:translate-x-1 transition-transform opacity-60" />
-            </Link>
-          ) : tournament.status === 'REGISTRATION_CLOSED' ? (
-            <Link
-              href={`/home/tournaments/${tournament.tournamentUuid}`}
-              className="w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn active:scale-[0.98] hover:opacity-90"
-              style={{
-                backgroundColor: 'rgba(239,68,68,0.12)',
-                border: '1px solid rgba(239,68,68,0.3)',
-                color: 'rgb(248,113,113)',
-              }}
-            >
-              <LockIcon className="w-3.5 h-3.5 shrink-0" />
-              <span>Registration Closed</span>
-              <ChevronRight className="w-3.5 h-3.5 ml-auto group-hover/btn:translate-x-1 transition-transform opacity-60" />
-            </Link>
-          ) : (
-            <Link
-              href={`/home/tournaments/${tournament.tournamentUuid}`}
-              className="w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 group/btn active:scale-[0.98] hover:opacity-90"
-              style={{
-                backgroundColor: 'var(--athlon-primary)',
-                color: 'var(--athlon-primary-foreground)',
-                boxShadow: '0 4px 20px var(--athlon-glow)',
-              }}
-            >
-              <span>View &amp; Register</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-            </Link>
-          )}
-        </div>
+            {/* Registration Closing Date Notice (if available) */}
+            {closingDate && !isFinished && (
+              <div className="flex items-center justify-between gap-2 text-[10px] bg-primary/10 border border-primary/20 px-2 py-1 rounded-lg">
+                <div className="flex items-center gap-1.5 text-primary font-bold">
+                  <Clock className="w-3 h-3 text-primary shrink-0" />
+                  <span>Registration Closes</span>
+                </div>
+                <span className="font-extrabold text-primary tabular-nums">
+                  {closingDate}
+                </span>
+              </div>
+            )}
 
+            {/* Categories Chips */}
+            {categories.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap border-t border-foreground/5 pt-1.5">
+                <span className="text-[8.5px] font-black uppercase tracking-wider text-foreground/40 shrink-0">
+                  Events:
+                </span>
+                {categories.slice(0, 3).map((cat, idx) => (
+                  <span
+                    key={idx}
+                    className="px-1.5 py-0.2 rounded bg-background border border-foreground/10 text-foreground/75 font-semibold text-[8.5px] truncate max-w-[90px]"
+                  >
+                    {cat}
+                  </span>
+                ))}
+                {categories.length > 3 && (
+                  <span className="px-1 py-0.2 rounded bg-background text-foreground/40 font-bold text-[8px]">
+                    +{categories.length - 3}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer Callout */}
+          <div className="flex items-center justify-between pt-1 border-t border-foreground/5 text-xs">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-foreground/40 flex items-center gap-1">
+              {!isFinished && !isClosed && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              )}
+              {isFinished ? 'Finished' : isClosed ? 'Closed' : 'Open Entry'}
+            </span>
+
+            <span
+              className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform ${
+                isFinished
+                  ? 'text-emerald-400'
+                  : isClosed
+                  ? 'text-red-400'
+                  : 'text-primary'
+              }`}
+            >
+              {isFinished
+                ? 'Podium & Results'
+                : isClosed
+                ? 'View Details'
+                : 'Register Now'}
+              <ChevronRight className="w-3.5 h-3.5" />
+            </span>
+          </div>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }

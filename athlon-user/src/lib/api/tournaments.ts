@@ -25,6 +25,7 @@ export interface Tournament {
   registrationFees: number;
   poster: string;
   registrationClosingDate?: string;
+  teamEventCategories?: string;
 }
 
 export const sortTournamentsDesc = (list: Tournament[] = []): Tournament[] => {
@@ -54,7 +55,7 @@ export const TournamentService = {
       .then((res) => ({ ...res, data: sortTournamentsDesc(res.data) })),
 
   updateStatus: (uuid: string, status: string) =>
-    api.post<{ data: Tournament }>(`/api/tournament/tournaments/updateStatus/${uuid}?status=${encodeURIComponent(status)}`),
+    api.post<{ data: Tournament }>(`/api/tournament/tournaments/updateStatus/${uuid}?status=${encodeURIComponent(status)}`, {}),
 
   create: (formData: FormData) => {
     // We must use fetchClient directly to avoid JSON.stringify on FormData
@@ -84,7 +85,17 @@ export interface Match {
   teamBRegistrationId: number | null;
   teamBRegistrationUuid: string | null;
   courtId: number | null;
+  courtName?: string | null;
   scheduledTime: string | null;
+  matchDate?: string | null;
+  matchTime?: string | null;
+  matchNumber?: number | null;
+  roundName?: string | null;
+  roundNumber?: number | null;
+  setScores?: any;
+  tournamentName?: string | null;
+  tournamentType?: string | null;
+  sportType?: string;
   status: string;
   winnerRegistrationId: number | null;
   winnerRegistrationUuid: string | null;
@@ -94,6 +105,8 @@ export interface Match {
   poolName?: string | null;
   teamAName?: string | null;
   teamBName?: string | null;
+  teamALineupStatus?: string | null;
+  teamBLineupStatus?: string | null;
 }
 
 export const MatchService = {
@@ -172,10 +185,12 @@ export const RegistrationService = {
 };
 
 export interface TeamEventRosterPlayer {
+  id?: string | number;
   rosterPlayerId?: number;
   rosterPlayerUuid?: string;
   tournamentId?: number;
   teamRegistrationId?: number;
+  userId?: number;
   playerName: string;
   phoneNumber?: string;
   playerId?: number;

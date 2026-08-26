@@ -10,7 +10,8 @@ import java.util.UUID;
 
 @Repository
 public interface CourtRepository extends JpaRepository<Court, Long> {
-    Optional<Court> findByUuid(UUID uuid);
-    List<Court> findByVenueIdAndIsActiveTrue(Long venueId);
-}
+	
+	Optional<Court> findByCourtUuid(UUID uuid);
 
+	List<Court> findByVenueIdAndIsActiveTrue(Long venueId);
+}

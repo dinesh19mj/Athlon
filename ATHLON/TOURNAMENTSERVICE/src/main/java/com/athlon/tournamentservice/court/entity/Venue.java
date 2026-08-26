@@ -1,29 +1,30 @@
 package com.athlon.tournamentservice.court.entity;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-
-import java.time.LocalDateTime;
-import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(name = "venues")
 public class Venue {
 
-    @Id
+	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "venueid", updatable = false, nullable = false)
-    private Long id;
+    private Long venueId;
 
     @Column(name = "venueuuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid;
+    private UUID venueUuid;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -37,90 +38,164 @@ public class Venue {
     @Column(name = "cityuuid")
     private UUID cityUuid;
 
-    @Column(name = "isactive", nullable = false)
-    private boolean isActive = true;
+    @Column(name = "isactive")
+    private Integer isActive = 1;
 
-    @Column(name = "createdon", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "modifiedon")
+    @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "createdby")
+    @Column(name = "created_by")
     private Long createdBy;
 
-    @Column(name = "modifiedby")
+    @Column(name = "updated_by")
     private Long updatedBy;
 
     public Venue() {
     }
 
-    public Venue(String name, String address, Long cityId, UUID cityUuid, Long createdBy) {
+    public Venue(
+            String name,
+            String address,
+            Long cityId,
+            UUID cityUuid,
+            Long createdBy) {
+
         this.name = name;
         this.address = address;
         this.cityId = cityId;
         this.cityUuid = cityUuid;
         this.createdBy = createdBy;
+        this.isActive = 1;
     }
 
-    @PrePersist
-    protected void onCreate() {
-        if (this.uuid == null) {
-            this.uuid = UUID.randomUUID();
-        }
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+    public Long getVenueId() {
+        return venueId;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public void setVenueId(Long venueId) {
+        this.venueId = venueId;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public UUID getUuid() { return uuid; }
-    public void setUuid(UUID uuid) { this.uuid = uuid; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-    public Long getCityId() { return cityId; }
-    public void setCityId(Long cityId) { this.cityId = cityId; }
-    public UUID getCityUuid() { return cityUuid; }
-    public void setCityUuid(UUID cityUuid) { this.cityUuid = cityUuid; }
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-    public Long getCreatedBy() { return createdBy; }
-    public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
-    public Long getUpdatedBy() { return updatedBy; }
-    public void setUpdatedBy(Long updatedBy) { this.updatedBy = updatedBy; }
+    public UUID getVenueUuid() {
+        return venueUuid;
+    }
+
+    public void setVenueUuid(UUID venueUuid) {
+        this.venueUuid = venueUuid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Long getCityId() {
+        return cityId;
+    }
+
+    public void setCityId(Long cityId) {
+        this.cityId = cityId;
+    }
+
+    public UUID getCityUuid() {
+        return cityUuid;
+    }
+
+    public void setCityUuid(UUID cityUuid) {
+        this.cityUuid = cityUuid;
+    }
+
+    public Integer getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Integer isActive) {
+        this.isActive = isActive;
+    }
+
+    public boolean isActive() {
+        return isActive != null && isActive == 1;
+    }
+
+    public void setActive(boolean active) {
+        this.isActive = active ? 1 : 0;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Long getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(Long updatedBy) {
+        this.updatedBy = updatedBy;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         Venue venue = (Venue) o;
-        return Objects.equals(id, venue.id) && Objects.equals(uuid, venue.uuid);
+
+        return Objects.equals(venueId, venue.venueId)
+                && Objects.equals(venueUuid, venue.venueUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, uuid);
+        return Objects.hash(venueId, venueUuid);
     }
 
     @Override
     public String toString() {
         return "Venue{" +
-                "id=" + id +
-                ", uuid=" + uuid +
+                "venueId=" + venueId +
+                ", venueUuid=" + venueUuid +
                 ", name='" + name + '\'' +
+                ", address='" + address + '\'' +
                 ", cityId=" + cityId +
+                ", cityUuid=" + cityUuid +
                 ", isActive=" + isActive +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", createdBy=" + createdBy +
+                ", updatedBy=" + updatedBy +
                 '}';
     }
 }

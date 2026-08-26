@@ -33,8 +33,8 @@ public class UmpireAssignment {
     @Column(name = "status")
     private String status;
 
-    @Column(name = "createdon")
-    private LocalDateTime createdOn;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     public Long getAssignmentId() {
         return assignmentId;
@@ -84,12 +84,13 @@ public class UmpireAssignment {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedOn() {
-        return createdOn;
-    }
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
 
-    public void setCreatedOn(LocalDateTime createdOn) {
-        this.createdOn = createdOn;
-    }
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
 }
 
