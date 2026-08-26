@@ -2481,43 +2481,45 @@ export default function TeamChampionshipDashboardPage() {
                   </div>
                 </div>
               )}
-              {/* 7. FRANCHISE PURSES MODAL (ON-DEMAND) */}
+              {/* 7. FRANCHISE PURSES MODAL (ON-DEMAND - BIG SCREEN THEATER SIZE) */}
               {isPurseModalOpen && (
-                <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-lg flex items-center justify-center p-4 sm:p-6">
                   <div
-                    className="max-w-2xl w-full p-6 sm:p-8 rounded-3xl border shadow-2xl space-y-6 animate-scaleIn max-h-[90vh] overflow-y-auto hide-scrollbar"
+                    className="max-w-5xl w-full p-6 sm:p-10 rounded-3xl border shadow-2xl space-y-6 animate-scaleIn max-h-[92vh] overflow-y-auto hide-scrollbar"
                     style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
-                    <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
-                          <Shield className="w-5 h-5" />
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between border-b pb-5" style={{ borderColor: "var(--athlon-border)" }}>
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shadow-inner shrink-0">
+                          <Shield className="w-6 h-6" />
                         </div>
                         <div>
-                          <h3 className="text-base sm:text-lg font-black text-foreground uppercase tracking-tight">
+                          <h3 className="text-xl sm:text-2xl font-black text-foreground uppercase tracking-tight">
                             Franchise Purse & Squad Standings
                           </h3>
-                          <p className="text-xs text-foreground/50">
-                            Live remaining budget and acquired squad counts for all participating franchises.
+                          <p className="text-xs sm:text-sm text-foreground/60 mt-0.5">
+                            Live remaining purse balance and acquired athlete counts for all {auctionTeams.length} participating franchises.
                           </p>
                         </div>
                       </div>
 
                       <button
                         onClick={() => setIsPurseModalOpen(false)}
-                        className="p-2 rounded-xl border border-foreground/10 hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-all"
+                        className="p-2.5 rounded-2xl border border-foreground/15 hover:bg-foreground/10 text-foreground/70 hover:text-foreground transition-all"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-5 h-5" />
                       </button>
                     </div>
 
-                    {/* Grid of Team Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* Grid of Team Cards (3-col large format) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                       {auctionTeams.map((at) => {
                         const initialBudget = at.team.initialBudget || 5000;
                         const remainingBudget = at.team.remainingBudget ?? initialBudget;
                         const spentBudget = at.team.spentBudget || (initialBudget - remainingBudget);
                         const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
+                        const isSelected = manualWinningTeamId === at.team.teamId;
 
                         return (
                           <div
@@ -2526,47 +2528,61 @@ export default function TeamChampionshipDashboardPage() {
                               setManualWinningTeamId(at.team.teamId);
                               setIsPurseModalOpen(false);
                             }}
-                            className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 shadow-sm ${
-                              manualWinningTeamId === at.team.teamId
-                                ? "bg-primary/15 border-primary ring-2 ring-primary/30"
-                                : "bg-surface hover:bg-white/5 border-foreground/10"
+                            className={`p-5 rounded-3xl border transition-all cursor-pointer space-y-4 shadow-md ${
+                              isSelected
+                                ? "bg-primary/20 border-primary ring-2 ring-primary/40 shadow-primary/10"
+                                : "bg-surface/70 hover:bg-surface border-foreground/15 hover:border-primary/40"
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h5 className="text-sm font-black text-foreground truncate">{at.team.teamName}</h5>
-                                <span className="text-[11px] text-foreground/50">
-                                  Squad: <strong className="text-foreground">{at.acquiredPlayers?.length || at.team.playersAcquiredCount || 0} players</strong>
+                              <div className="min-w-0 flex-1">
+                                <h5 className="text-base sm:text-lg font-black text-foreground truncate">
+                                  {at.team.teamName}
+                                </h5>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/70 mt-1">
+                                  <Users className="w-3 h-3 text-primary" />
+                                  <span>{at.acquiredPlayers?.length || at.team.playersAcquiredCount || 0} Drafted</span>
                                 </span>
                               </div>
+
                               <div className="text-right shrink-0">
-                                <span className="text-sm font-mono font-black text-primary block">
-                                  {remainingBudget} pts
+                                <span className="text-xl sm:text-2xl font-mono font-black text-primary block tracking-tight">
+                                  {remainingBudget} <span className="text-xs font-sans font-bold">pts</span>
                                 </span>
-                                <span className="text-[10px] text-foreground/40 font-bold">
+                                <span className="text-[11px] text-foreground/50 font-bold block mt-0.5">
                                   Spent: {spentBudget} pts
                                 </span>
                               </div>
                             </div>
 
-                            {/* Progress Bar */}
-                            <div className="w-full bg-foreground/10 h-2 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full transition-all ${
-                                  percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
-                                }`}
-                                style={{ width: `${percentLeft}%` }}
-                              />
+                            {/* Large Progress Bar with Percentage Tag */}
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-[11px] font-bold text-foreground/50">
+                                <span>Purse Remaining</span>
+                                <span>{Math.round(percentLeft)}%</span>
+                              </div>
+                              <div className="w-full bg-foreground/10 h-2.5 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all rounded-full ${
+                                    percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${percentLeft}%` }}
+                                />
+                              </div>
                             </div>
                           </div>
                         );
                       })}
                     </div>
 
-                    <div className="flex justify-end pt-2 border-t" style={{ borderColor: "var(--athlon-border)" }}>
+                    {/* Modal Footer */}
+                    <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "var(--athlon-border)" }}>
+                      <span className="text-xs text-foreground/50 font-bold">
+                        Click any team to map for the current floor player
+                      </span>
                       <button
                         onClick={() => setIsPurseModalOpen(false)}
-                        className="px-6 py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                        className="px-8 py-3 rounded-2xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 transition-all"
                       >
                         Done / Close
                       </button>
