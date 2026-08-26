@@ -116,6 +116,9 @@ export default function TeamChampionshipDashboardPage() {
   const [isCategorySectionExpanded, setIsCategorySectionExpanded] = useState<boolean>(false);
   const [isSpinningPlayer, setIsSpinningPlayer] = useState(false);
   const [spinningPlayerName, setSpinningPlayerName] = useState<string>("");
+  const [playerWheelRotation, setPlayerWheelRotation] = useState<number>(0);
+  const [playerWheelPlayers, setPlayerWheelPlayers] = useState<AuctionPlayer[]>([]);
+  const [playerWheelWinner, setPlayerWheelWinner] = useState<AuctionPlayer | null>(null);
 
   const CATEGORY_WHEEL_COLORS = [
     "#6366f1", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#8b5cf6", "#ef4444", "#14b8a6", "#f97316"
@@ -456,7 +459,7 @@ export default function TeamChampionshipDashboardPage() {
     }, 5100);
   };
 
-  // Spinner 2: Player Snipper within Selected Category
+  // Spinner 2: Round Wheel Player Snipper within Selected Category
   const runPlayerSnipper = () => {
     const activeCategory = championship?.categories?.find((c) => c.categoryId === selectedAuctionPhaseCatId);
     let eligiblePlayers = auctionPlayers.filter((p) => {
@@ -482,33 +485,59 @@ export default function TeamChampionshipDashboardPage() {
       return;
     }
 
+    if (eligiblePlayers.length === 1) {
+      handleCallPlayer(eligiblePlayers[0].auctionPlayerId);
+      playAudioEffect("win");
+      return;
+    }
+
+    const shuffled = [...eligiblePlayers];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setPlayerWheelPlayers(shuffled);
     setIsSpinningPlayer(true);
-    let counter = 0;
-    const totalTicks = 26 + Math.floor(Math.random() * 10);
-    let speed = 50;
+    setPlayerWheelWinner(null);
+    setSpinningPlayerName("");
 
-    const tick = () => {
-      counter++;
-      const pick = eligiblePlayers[counter % eligiblePlayers.length];
-      setSpinningPlayerName(pick.playerName);
+    const numPlayers = shuffled.length;
+    const winningIndex = Math.floor(Math.random() * numPlayers);
+    const sliceAngle = 360 / numPlayers;
+    const sliceCenter = winningIndex * sliceAngle + sliceAngle / 2;
+    const randomOffset = (Math.random() * 0.6 - 0.3) * sliceAngle;
+    const winningSliceTarget = sliceCenter + randomOffset;
+
+    const spins = 4 + Math.floor(Math.random() * 2);
+    const baseRotation = Math.ceil(playerWheelRotation / 360) * 360;
+    const targetRotation = baseRotation + spins * 360 + (360 - winningSliceTarget);
+
+    setTimeout(() => {
+      setPlayerWheelRotation(targetRotation);
+    }, 60);
+
+    // Audio tick ticker during wheel rotation
+    let tickCount = 0;
+    const tickInterval = setInterval(() => {
+      tickCount++;
       playAudioEffect("tick");
+      if (tickCount > 28) clearInterval(tickInterval);
+    }, 160);
 
-      if (counter < totalTicks) {
-        if (counter > totalTicks - 8) {
-          speed += 35;
-        }
-        setTimeout(tick, speed);
-      } else {
-        const winner = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
-        setSpinningPlayerName(winner.playerName);
-        playAudioEffect("win");
-        setTimeout(async () => {
-          setIsSpinningPlayer(false);
-          await handleCallPlayer(winner.auctionPlayerId);
-        }, 1200);
-      }
-    };
-    tick();
+    // After animation finishes (5 seconds)
+    setTimeout(() => {
+      clearInterval(tickInterval);
+      const selected = shuffled[winningIndex];
+      setPlayerWheelWinner(selected);
+      setSpinningPlayerName(selected.playerName);
+      playAudioEffect("win");
+
+      setTimeout(async () => {
+        setIsSpinningPlayer(false);
+        setPlayerWheelWinner(null);
+        await handleCallPlayer(selected.auctionPlayerId);
+      }, 2400);
+    }, 5100);
   };
 
   const isAuctionLive = championship?.stage === "AUCTION_STAGE";
@@ -2481,25 +2510,87 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
               )}
 
-              {/* 6. PLAYER SNIPPER MODAL / ROULETTE OVERLAY */}
+              {/* 6. ROUND WHEEL PLAYER SNIPPER MODAL (BIG SCREEN THEATER SIZE) */}
               {isSpinningPlayer && (
-                <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                  <div className="max-w-md w-full p-8 rounded-3xl border border-amber-500/40 bg-card text-center space-y-6 shadow-2xl shadow-amber-500/20 animate-scaleIn">
-                    <div className="w-20 h-20 rounded-3xl bg-amber-500/20 border border-amber-500 flex items-center justify-center text-amber-400 mx-auto shadow-inner animate-bounce">
-                      <Shuffle className="w-10 h-10 text-amber-400" />
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-xs font-black uppercase tracking-widest text-amber-400">
-                        🎰 Selecting Athlete from {activeCategory?.name || "Category"}...
+                <div className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+                  <div className="max-w-2xl w-full p-6 sm:p-10 rounded-3xl border border-amber-500/40 bg-card text-center space-y-6 shadow-2xl shadow-amber-500/30 animate-scaleIn relative overflow-hidden flex flex-col items-center">
+                    <div className="space-y-1.5 relative z-10">
+                      <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-amber-400 flex items-center justify-center gap-2">
+                        <Shuffle className="w-5 h-5 text-amber-400" /> Player Snipper • {activeCategory?.name || "All Categories"}
                       </span>
-                      <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight h-12 flex items-center justify-center">
-                        {spinningPlayerName || "Drawing..."}
-                      </h2>
+                      <h3 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                        {playerWheelWinner ? "Athlete Selected!" : "Spinning Player Wheel..."}
+                      </h3>
                     </div>
 
-                    <div className="w-full bg-foreground/10 h-2 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-400 animate-pulse w-full" />
+                    {/* Circular Spinning Wheel (Big 440px Theater Size) */}
+                    <div className="relative w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] my-2 flex items-center justify-center">
+                      {/* Top Pointer Arrow */}
+                      <div className="absolute -top-4 z-30 flex flex-col items-center pointer-events-none">
+                        <div className="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-[30px] sm:border-t-[36px] border-t-amber-400 drop-shadow-[0_6px_14px_rgba(245,158,11,0.9)]" />
+                        <div className="w-3 h-3 rounded-full bg-amber-200 -mt-1.5 shadow-md" />
+                      </div>
+
+                      {/* Rotating Wheel Disk */}
+                      <div
+                        className="w-full h-full rounded-full border-8 border-white/25 shadow-[0_0_60px_rgba(245,158,11,0.35)] relative overflow-hidden transition-transform ease-out"
+                        style={{
+                          transform: `rotate(${playerWheelRotation}deg)`,
+                          transitionDuration: "5000ms",
+                          transitionTimingFunction: "cubic-bezier(0.12, 0.8, 0.25, 1)",
+                          background: (() => {
+                            const pl = playerWheelPlayers.length > 0 ? playerWheelPlayers : categoryPlayers;
+                            if (pl.length === 0) return "#f59e0b";
+                            if (pl.length === 1) return CATEGORY_WHEEL_COLORS[0];
+                            const slice = 360 / pl.length;
+                            const parts = pl.map(
+                              (_, i) =>
+                                `${CATEGORY_WHEEL_COLORS[i % CATEGORY_WHEEL_COLORS.length]} ${i * slice}deg ${
+                                  (i + 1) * slice
+                                }deg`
+                            );
+                            return `conic-gradient(from 0deg, ${parts.join(", ")})`;
+                          })(),
+                        }}
+                      >
+                        {/* Slice Labels */}
+                        {(playerWheelPlayers.length > 0 ? playerWheelPlayers : categoryPlayers).map((p, i, arr) => {
+                          const sliceAngle = 360 / arr.length;
+                          const labelAngle = i * sliceAngle + sliceAngle / 2;
+
+                          return (
+                            <div
+                              key={p.auctionPlayerId || i}
+                              className="absolute top-1/2 left-1/2 origin-left -translate-y-1/2 flex items-center justify-end pointer-events-none w-[150px] sm:w-[210px]"
+                              style={{
+                                transform: `rotate(${labelAngle - 90}deg)`,
+                              }}
+                            >
+                              <span className="text-white font-black text-xs sm:text-sm tracking-wider uppercase drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] pr-3 sm:pr-4 truncate max-w-[110px] sm:max-w-[160px]">
+                                {p.playerName}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Center Jewel / Hub */}
+                      <div className="absolute z-20 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-surface border-4 sm:border-6 border-amber-400 shadow-2xl flex items-center justify-center text-amber-400 font-black text-xl">
+                        <Flame className="w-9 h-9 sm:w-11 sm:h-11 text-amber-400" />
+                      </div>
+                    </div>
+
+                    {/* Winner Banner or Ticker */}
+                    <div className="h-16 flex items-center justify-center relative z-10 w-full">
+                      {playerWheelWinner ? (
+                        <div className="px-8 py-3 rounded-2xl bg-amber-400 text-black font-black text-xl sm:text-2xl uppercase shadow-2xl shadow-amber-400/40 animate-bounce">
+                          🔥 {playerWheelWinner.playerName}
+                        </div>
+                      ) : (
+                        <div className="text-sm sm:text-base font-black text-foreground/50 uppercase tracking-widest animate-pulse">
+                          Selecting next athlete for auction floor...
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
