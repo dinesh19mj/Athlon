@@ -390,7 +390,7 @@ export default function TeamChampionshipDashboardPage() {
         (p) =>
           (p.categoryId === c.categoryId ||
             (p.categoryName && c.name && p.categoryName.toLowerCase().trim() === c.name.toLowerCase().trim())) &&
-          (p.state === "WAITING" || p.state === "UNSOLD")
+          p.state === "WAITING"
       );
       return catPlayers.length > 0;
     });
@@ -463,7 +463,8 @@ export default function TeamChampionshipDashboardPage() {
   const runPlayerSnipper = () => {
     const activeCategory = championship?.categories?.find((c) => c.categoryId === selectedAuctionPhaseCatId);
     let eligiblePlayers = auctionPlayers.filter((p) => {
-      if (p.state !== "WAITING" && p.state !== "UNSOLD") return false;
+      // Exclude SOLD, ASSIGNED, and UNSOLD players strictly
+      if (p.state !== "WAITING") return false;
       if (!selectedAuctionPhaseCatId) return true;
       if (p.categoryId === selectedAuctionPhaseCatId) return true;
       if (
@@ -477,11 +478,11 @@ export default function TeamChampionshipDashboardPage() {
     });
 
     if (eligiblePlayers.length === 0) {
-      eligiblePlayers = auctionPlayers.filter((p) => p.state === "WAITING" || p.state === "UNSOLD");
+      eligiblePlayers = auctionPlayers.filter((p) => p.state === "WAITING");
     }
 
     if (eligiblePlayers.length === 0) {
-      alert("No available waiting players left in this category to spin!");
+      alert("No waiting players left in this category to spin! (Sold & Unsold players are excluded from the wheel)");
       return;
     }
 
@@ -2539,7 +2540,7 @@ export default function TeamChampionshipDashboardPage() {
                           transitionDuration: "5000ms",
                           transitionTimingFunction: "cubic-bezier(0.12, 0.8, 0.25, 1)",
                           background: (() => {
-                            const pl = playerWheelPlayers.length > 0 ? playerWheelPlayers : categoryPlayers;
+                            const pl = playerWheelPlayers.length > 0 ? playerWheelPlayers : categoryPlayers.filter((p) => p.state === "WAITING");
                             if (pl.length === 0) return "#f59e0b";
                             if (pl.length === 1) return CATEGORY_WHEEL_COLORS[0];
                             const slice = 360 / pl.length;
@@ -2554,7 +2555,7 @@ export default function TeamChampionshipDashboardPage() {
                         }}
                       >
                         {/* Slice Labels */}
-                        {(playerWheelPlayers.length > 0 ? playerWheelPlayers : categoryPlayers).map((p, i, arr) => {
+                        {(playerWheelPlayers.length > 0 ? playerWheelPlayers : categoryPlayers.filter((p) => p.state === "WAITING")).map((p, i, arr) => {
                           const sliceAngle = 360 / arr.length;
                           const labelAngle = i * sliceAngle + sliceAngle / 2;
 
