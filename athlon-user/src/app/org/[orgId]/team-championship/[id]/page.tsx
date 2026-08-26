@@ -1008,11 +1008,9 @@ export default function TeamChampionshipDashboardPage() {
                             </div>
                           </div>
 
-                          {categoryConfig?.basePrice ? (
-                            <span className="text-xs font-mono font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20">
-                              Base: {categoryConfig.basePrice} pts
-                            </span>
-                          ) : null}
+                          <span className="text-xs font-mono font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20">
+                            Base: {categoryConfig?.basePrice || catPlayers[0]?.basePrice || 1000} pts
+                          </span>
                         </div>
 
                         {/* Players Grid in this Category */}
@@ -1032,6 +1030,12 @@ export default function TeamChampionshipDashboardPage() {
                               const isApproved = p.status === "APPROVED";
                               const isRejected = p.status === "REJECTED";
                               const isPaid = p.paymentStatus === "PAID";
+                              const playerCategory = championship?.categories?.find(
+                                (c) => c.name?.toLowerCase() === (p.categoryName || "").toLowerCase() || c.categoryId === p.categoryId
+                              );
+                              const effectiveBasePrice = playerCategory?.basePrice && playerCategory.basePrice > 0
+                                ? playerCategory.basePrice
+                                : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
                               const initials = p.fullName
                                 ? p.fullName
                                     .split(" ")
@@ -1215,7 +1219,7 @@ export default function TeamChampionshipDashboardPage() {
                                       Base Price
                                     </span>
                                     <span className="font-mono font-black text-primary">
-                                      {p.basePrice} pts
+                                      {effectiveBasePrice} pts
                                     </span>
                                   </div>
                                 </div>
@@ -1435,6 +1439,13 @@ export default function TeamChampionshipDashboardPage() {
                         ) : (
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {catPlayers.map((p) => {
+                              const playerCategory = championship?.categories?.find(
+                                (c) => c.name?.toLowerCase() === (p.categoryName || "").toLowerCase() || c.categoryId === p.categoryId
+                              );
+                              const effectiveBasePrice = playerCategory?.basePrice && playerCategory.basePrice > 0
+                                ? playerCategory.basePrice
+                                : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
+
                               const initials = p.fullName
                                 ? p.fullName
                                     .split(" ")
@@ -1548,7 +1559,7 @@ export default function TeamChampionshipDashboardPage() {
                                       Base Price
                                     </span>
                                     <span className="font-mono font-black text-primary">
-                                      {p.basePrice} pts
+                                      {effectiveBasePrice} pts
                                     </span>
                                   </div>
                                 </div>
@@ -1775,32 +1786,41 @@ export default function TeamChampionshipDashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {auctionPlayers
                   .filter((p) => p.state === "WAITING" || p.state === "UNSOLD")
-                  .map((p) => (
-                    <div
-                      key={p.auctionPlayerId}
-                      className="rounded-2xl border p-4 space-y-3"
-                      style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-black text-foreground truncate">{p.playerName}</h4>
-                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
-                          {p.categoryName || "Category"}
-                        </span>
-                      </div>
+                  .map((p) => {
+                    const playerCategory = championship?.categories?.find(
+                      (c) => c.name?.toLowerCase() === (p.categoryName || "").toLowerCase() || c.categoryId === p.categoryId
+                    );
+                    const effectiveBasePrice = playerCategory?.basePrice && playerCategory.basePrice > 0
+                      ? playerCategory.basePrice
+                      : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
 
-                      <p className="text-[11px] text-foreground/50">
-                        Base: <strong>{p.basePrice} pts</strong>
-                      </p>
-
-                      <button
-                        onClick={() => handleCallPlayer(p.auctionPlayerId)}
-                        disabled={!!auctionState?.activePlayer}
-                        className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+                    return (
+                      <div
+                        key={p.auctionPlayerId}
+                        className="rounded-2xl border p-4 space-y-3"
+                        style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                       >
-                        Call to Floor
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-black text-foreground truncate">{p.playerName}</h4>
+                          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                            {p.categoryName || "Category"}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-foreground/50">
+                          Base: <strong>{effectiveBasePrice} pts</strong>
+                        </p>
+
+                        <button
+                          onClick={() => handleCallPlayer(p.auctionPlayerId)}
+                          disabled={!!auctionState?.activePlayer}
+                          className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+                        >
+                          Call to Floor
+                        </button>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </div>

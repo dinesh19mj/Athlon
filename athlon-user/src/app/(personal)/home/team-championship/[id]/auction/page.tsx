@@ -46,6 +46,13 @@ export default function TeamOwnerAuctionArenaPage() {
   const [loading, setLoading] = useState(true);
   const [placingBid, setPlacingBid] = useState(false);
 
+  const getCategoryBasePrice = (categoryName?: string, categoryId?: number, fallbackBasePrice?: number) => {
+    const cat = championship?.categories?.find(
+      (c) => c.name?.toLowerCase() === (categoryName || "").toLowerCase() || (categoryId && c.categoryId === categoryId)
+    );
+    return cat?.basePrice && cat.basePrice > 0 ? cat.basePrice : (fallbackBasePrice && fallbackBasePrice > 0 ? fallbackBasePrice : 1000);
+  };
+
   const loadData = async () => {
     try {
       const champ = await TeamChampionshipService.getById(championshipUuid);
@@ -256,7 +263,7 @@ export default function TeamOwnerAuctionArenaPage() {
                             {auctionState.activePlayer.categoryName || "Open"}
                           </span>
                           <span className="text-xs text-foreground/60 font-semibold">
-                            Base: <strong className="text-primary font-mono">{auctionState.activePlayer.basePrice} {currencyLabel}</strong>
+                            Base: <strong className="text-primary font-mono">{getCategoryBasePrice(auctionState.activePlayer.categoryName, auctionState.activePlayer.categoryId, auctionState.activePlayer.basePrice)} {currencyLabel}</strong>
                           </span>
                         </div>
                       </div>
@@ -371,7 +378,7 @@ export default function TeamOwnerAuctionArenaPage() {
                         <span className="text-[10px] text-foreground/40">{p.categoryName || "Open"}</span>
                       </div>
                       <span className="text-[11px] font-mono font-black text-primary ml-1 shrink-0">
-                        {p.basePrice} pts
+                        {getCategoryBasePrice(p.categoryName, p.categoryId, p.basePrice)} pts
                       </span>
                     </div>
                   ))}

@@ -104,15 +104,30 @@ public class AuctionEngineService {
         AuctionPlayer player = playerRepository.findById(request.getAuctionPlayerId())
                 .orElseThrow(() -> new IllegalArgumentException("Player not found in auction"));
 
+        Double basePrice = player.getBasePrice();
+        if (basePrice == null || basePrice <= 0 || basePrice == 1000.0) {
+            List<AuctionCategoryConfig> accList = categoryConfigRepository.findByAuctionId(config.getAuctionId());
+            for (AuctionCategoryConfig acc : accList) {
+                if (player.getCategoryName() != null && acc.getCategoryName() != null &&
+                    player.getCategoryName().equalsIgnoreCase(acc.getCategoryName().trim())) {
+                    if (acc.getCategoryBasePrice() != null && acc.getCategoryBasePrice() > 0) {
+                        basePrice = acc.getCategoryBasePrice();
+                        player.setBasePrice(basePrice);
+                        break;
+                    }
+                }
+            }
+        }
+
         config.setStatus("ACTIVE");
         config.setActivePlayerId(player.getAuctionPlayerId());
-        config.setCurrentBid(player.getBasePrice());
+        config.setCurrentBid(basePrice != null ? basePrice : player.getBasePrice());
         config.setWinningTeamId(null);
         config.setTimerEndTime(LocalDateTime.now().plusSeconds(config.getTimerSeconds()));
         configRepository.save(config);
 
         player.setState("CALLED");
-        player.setFinalBid(player.getBasePrice());
+        player.setFinalBid(config.getCurrentBid());
         player.setWinningTeamId(null);
         player.setWinningTeamName(null);
         playerRepository.save(player);
@@ -297,7 +312,22 @@ public class AuctionEngineService {
     }
 
     public List<AuctionPlayer> getAuctionPlayers(Long auctionId) {
-        return playerRepository.findByAuctionId(auctionId);
+        List<AuctionPlayer> players = playerRepository.findByAuctionId(auctionId);
+        List<AuctionCategoryConfig> accList = categoryConfigRepository.findByAuctionId(auctionId);
+        for (AuctionPlayer p : players) {
+            if (p.getBasePrice() == null || p.getBasePrice() <= 0 || p.getBasePrice() == 1000.0) {
+                for (AuctionCategoryConfig acc : accList) {
+                    if (p.getCategoryName() != null && acc.getCategoryName() != null &&
+                        p.getCategoryName().equalsIgnoreCase(acc.getCategoryName().trim())) {
+                        if (acc.getCategoryBasePrice() != null && acc.getCategoryBasePrice() > 0) {
+                            p.setBasePrice(acc.getCategoryBasePrice());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return players;
     }
 
     public List<AuctionTeamSummaryDTO> getAuctionTeams(Long auctionId) {

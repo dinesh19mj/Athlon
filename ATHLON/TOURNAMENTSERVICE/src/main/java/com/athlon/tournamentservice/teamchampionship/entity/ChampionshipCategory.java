@@ -40,6 +40,12 @@ public class ChampionshipCategory {
     @Column(name = "max_players")
     private Integer maxPlayers;
 
+    @Column(name = "base_price")
+    private Double basePrice = 200.0;
+
+    @Column(name = "registration_fee")
+    private Double registrationFee = 0.0;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 
@@ -64,7 +70,8 @@ public class ChampionshipCategory {
         }
     }
 
-    public ChampionshipCategory() {}
+    public ChampionshipCategory() {
+    }
 
     public Long getCategoryId() {
         return categoryId;
@@ -160,5 +167,21 @@ public class ChampionshipCategory {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Double getBasePrice() {
+        return basePrice != null ? basePrice : 1000.0;
+    }
+
+    public void setBasePrice(Double basePrice) {
+        this.basePrice = basePrice;
+    }
+
+    public Double getRegistrationFee() {
+        return registrationFee != null ? registrationFee : 0.0;
+    }
+
+    public void setRegistrationFee(Double registrationFee) {
+        this.registrationFee = registrationFee;
     }
 }

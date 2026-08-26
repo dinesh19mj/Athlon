@@ -4,6 +4,8 @@ import com.athlon.tournamentservice.auction.entity.AuctionPlayer;
 import com.athlon.tournamentservice.auction.entity.AuctionTeam;
 import com.athlon.tournamentservice.auction.repository.AuctionPlayerRepository;
 import com.athlon.tournamentservice.auction.repository.AuctionTeamRepository;
+import com.athlon.tournamentservice.auction.entity.AuctionCategoryConfig;
+import com.athlon.tournamentservice.auction.repository.AuctionCategoryConfigRepository;
 import com.athlon.tournamentservice.auction.entity.AuctionConfig;
 import com.athlon.tournamentservice.auction.repository.AuctionConfigRepository;
 import com.athlon.tournamentservice.teamchampionship.dto.request.PlayerRegistrationRequest;
@@ -28,6 +30,7 @@ public class ChampionshipRegistrationService {
     private final ChampionshipRulesConfigRepository rulesConfigRepository;
     private final ChampionshipSquadRepository squadRepository;
     private final AuctionConfigRepository auctionConfigRepository;
+    private final AuctionCategoryConfigRepository auctionCategoryConfigRepository;
     private final AuctionTeamRepository auctionTeamRepository;
     private final AuctionPlayerRepository auctionPlayerRepository;
 
@@ -40,6 +43,7 @@ public class ChampionshipRegistrationService {
             ChampionshipRulesConfigRepository rulesConfigRepository,
             ChampionshipSquadRepository squadRepository,
             AuctionConfigRepository auctionConfigRepository,
+            AuctionCategoryConfigRepository auctionCategoryConfigRepository,
             AuctionTeamRepository auctionTeamRepository,
             AuctionPlayerRepository auctionPlayerRepository) {
         this.championshipRepository = championshipRepository;
@@ -49,6 +53,7 @@ public class ChampionshipRegistrationService {
         this.rulesConfigRepository = rulesConfigRepository;
         this.squadRepository = squadRepository;
         this.auctionConfigRepository = auctionConfigRepository;
+        this.auctionCategoryConfigRepository = auctionCategoryConfigRepository;
         this.auctionTeamRepository = auctionTeamRepository;
         this.auctionPlayerRepository = auctionPlayerRepository;
     }
@@ -153,7 +158,30 @@ public class ChampionshipRegistrationService {
         if (request.getEligibleFormats() != null) {
             player.setEligibleFormats(String.join(", ", request.getEligibleFormats()));
         }
-        player.setBasePrice(request.getBasePrice() != null ? request.getBasePrice() : 0.0);
+        // Resolve Category Base Price
+        Double resolvedBasePrice = request.getBasePrice();
+        if (resolvedBasePrice == null || resolvedBasePrice <= 0) {
+            if (request.getCategoryId() != null) {
+                Optional<ChampionshipCategory> catOpt = categoryRepository.findById(request.getCategoryId());
+                if (catOpt.isPresent() && catOpt.get().getBasePrice() != null && catOpt.get().getBasePrice() > 0) {
+                    resolvedBasePrice = catOpt.get().getBasePrice();
+                }
+            }
+        }
+        if (resolvedBasePrice == null || resolvedBasePrice <= 0) {
+            Optional<AuctionConfig> auctionOpt = auctionConfigRepository.findByChampionshipId(championship.getChampionshipId());
+            if (auctionOpt.isPresent() && request.getCategoryName() != null) {
+                List<AuctionCategoryConfig> accList = auctionCategoryConfigRepository.findByAuctionId(auctionOpt.get().getAuctionId());
+                for (AuctionCategoryConfig acc : accList) {
+                    if (acc.getCategoryName() != null && acc.getCategoryName().equalsIgnoreCase(request.getCategoryName().trim())) {
+                        resolvedBasePrice = acc.getCategoryBasePrice();
+                        break;
+                    }
+                }
+            }
+        }
+
+        player.setBasePrice(resolvedBasePrice != null && resolvedBasePrice > 0 ? resolvedBasePrice : 1000.0);
         player.setFeeAmount(request.getFeeAmount() != null ? request.getFeeAmount() : championship.getDefaultPlayerFee());
         player.setPaymentStatus(player.getFeeAmount() > 0 ? "PENDING" : "FREE");
         player.setStatus("APPROVED");
@@ -175,7 +203,7 @@ public class ChampionshipRegistrationService {
                 ap.setCategoryId(savedPlayer.getCategoryId());
                 ap.setCategoryName(savedPlayer.getCategoryName());
                 ap.setEligibleFormats(savedPlayer.getEligibleFormats());
-                ap.setBasePrice(savedPlayer.getBasePrice() > 0 ? savedPlayer.getBasePrice() : ac.getDefaultBasePrice());
+                ap.setBasePrice(savedPlayer.getBasePrice() != null && savedPlayer.getBasePrice() > 0 ? savedPlayer.getBasePrice() : ac.getDefaultBasePrice());
                 ap.setState("WAITING");
                 ap.setAvatarUrl(savedPlayer.getAvatarUrl());
                 auctionPlayerRepository.save(ap);
@@ -190,7 +218,43 @@ public class ChampionshipRegistrationService {
     }
 
     public List<ChampionshipPlayerRegistration> getPlayersByChampionship(UUID championshipUuid) {
-        return playerRegistrationRepository.findByChampionshipUuid(championshipUuid);
+        List<ChampionshipPlayerRegistration> players = playerRegistrationRepository.findByChampionshipUuid(championshipUuid);
+        Optional<TeamChampionship> champOpt = championshipRepository.findByChampionshipUuid(championshipUuid);
+        if (champOpt.isPresent()) {
+            List<ChampionshipCategory> categories = categoryRepository.findByChampionshipIdOrderByDisplayOrderAsc(champOpt.get().getChampionshipId());
+            Optional<AuctionConfig> auctionOpt = auctionConfigRepository.findByChampionshipId(champOpt.get().getChampionshipId());
+            List<AuctionCategoryConfig> accList = auctionOpt.isPresent()
+                    ? auctionCategoryConfigRepository.findByAuctionId(auctionOpt.get().getAuctionId())
+                    : List.of();
+
+            for (ChampionshipPlayerRegistration p : players) {
+                // Find matching category base price
+                Double catBasePrice = null;
+                for (ChampionshipCategory c : categories) {
+                    if ((p.getCategoryId() != null && p.getCategoryId().equals(c.getCategoryId())) ||
+                        (p.getCategoryName() != null && c.getName() != null && p.getCategoryName().equalsIgnoreCase(c.getName().trim()))) {
+                        if (c.getBasePrice() != null && c.getBasePrice() > 0 && c.getBasePrice() != 1000.0) {
+                            catBasePrice = c.getBasePrice();
+                            break;
+                        }
+                    }
+                }
+                if (catBasePrice == null) {
+                    for (AuctionCategoryConfig acc : accList) {
+                        if (p.getCategoryName() != null && acc.getCategoryName() != null && p.getCategoryName().equalsIgnoreCase(acc.getCategoryName().trim())) {
+                            if (acc.getCategoryBasePrice() != null && acc.getCategoryBasePrice() > 0) {
+                                catBasePrice = acc.getCategoryBasePrice();
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (catBasePrice != null && catBasePrice > 0) {
+                    p.setBasePrice(catBasePrice);
+                }
+            }
+        }
+        return players;
     }
 
     public List<ChampionshipSquad> getTeamSquad(Long teamId) {

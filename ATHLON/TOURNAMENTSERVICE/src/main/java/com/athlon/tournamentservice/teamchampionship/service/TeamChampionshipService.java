@@ -124,6 +124,8 @@ public class TeamChampionshipService {
                 category.setCode(catDto.getCode());
                 category.setDescription(catDto.getDescription());
                 category.setMaxPlayers(catDto.getMaxPlayers());
+                category.setBasePrice(catDto.getBasePrice() != null ? catDto.getBasePrice() : 1000.0);
+                category.setRegistrationFee(catDto.getRegistrationFee() != null ? catDto.getRegistrationFee() : 0.0);
                 category.setDisplayOrder(catDto.getDisplayOrder() != null ? catDto.getDisplayOrder() : order++);
                 category.setIsActive(catDto.getIsActive() != null ? catDto.getIsActive() : true);
                 ChampionshipCategory savedCat = categoryRepository.save(category);
@@ -292,7 +294,25 @@ public class TeamChampionshipService {
         dto.setStatus(championship.getStatus());
         dto.setVisibility(championship.getVisibility());
 
-        dto.setCategories(categoryRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId()));
+        List<ChampionshipCategory> categories = categoryRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId());
+        Optional<AuctionConfig> auctionOpt = auctionConfigRepository.findByChampionshipId(championship.getChampionshipId());
+        if (auctionOpt.isPresent()) {
+            List<AuctionCategoryConfig> accList = auctionCategoryConfigRepository.findByAuctionId(auctionOpt.get().getAuctionId());
+            Map<String, Double> basePriceMap = accList.stream().collect(Collectors.toMap(
+                acc -> acc.getCategoryName() != null ? acc.getCategoryName().toLowerCase().trim() : "",
+                AuctionCategoryConfig::getCategoryBasePrice,
+                (existing, replacement) -> existing
+            ));
+            for (ChampionshipCategory cat : categories) {
+                if ((cat.getBasePrice() == null || cat.getBasePrice() <= 0 || cat.getBasePrice() == 1000.0) && cat.getName() != null) {
+                    Double bp = basePriceMap.get(cat.getName().toLowerCase().trim());
+                    if (bp != null && bp > 0) {
+                        cat.setBasePrice(bp);
+                    }
+                }
+            }
+        }
+        dto.setCategories(categories);
         dto.setMatchFormats(matchFormatRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId()));
         dto.setEvents(eventRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId()));
         dto.setPools(poolRepository.findByChampionshipId(championship.getChampionshipId()));
