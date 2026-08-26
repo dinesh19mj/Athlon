@@ -2076,17 +2076,17 @@ export default function TeamChampionshipDashboardPage() {
 
               {/* 2. MAIN SINGLE-PAGE ARENA COCKPIT (Floor Spotlight + Category Queue Tray) */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                {/* LEFT 7 COLS: THE PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
-                <div className="lg:col-span-7 space-y-5">
+                {/* LEFT 9 COLS: MAXIMUM SIZE PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
+                <div className="lg:col-span-9 space-y-5">
                   <div
-                    className="p-5 sm:p-6 rounded-3xl border shadow-xl relative overflow-hidden space-y-5"
+                    className="p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden space-y-6"
                     style={{
                       backgroundColor: "var(--athlon-card)",
                       borderColor: activePlayer ? "var(--athlon-primary, #6366f1)" : "var(--athlon-border)",
                     }}
                   >
                     {/* Floor Header */}
-                    <div className="flex items-center justify-between border-b pb-3.5" style={{ borderColor: "var(--athlon-border)" }}>
+                    <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
                         <span className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
@@ -2098,7 +2098,7 @@ export default function TeamChampionshipDashboardPage() {
                         {/* Category Switch Quick Pill */}
                         <button
                           onClick={() => setIsCategoryModalOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                          className="px-3.5 py-2 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
                         >
                           <Layers className="w-3.5 h-3.5 text-indigo-400" />
                           <span>{activeCategory?.name || "Category"}</span>
@@ -2108,7 +2108,7 @@ export default function TeamChampionshipDashboardPage() {
                         {/* Franchise Purses Quick Click */}
                         <button
                           onClick={() => setIsPurseModalOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                          className="px-3.5 py-2 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
                         >
                           <Shield className="w-3.5 h-3.5 text-primary" />
                           <span>Purses ({auctionTeams.length})</span>
@@ -2117,63 +2117,63 @@ export default function TeamChampionshipDashboardPage() {
                     </div>
 
                     {activePlayer ? (
-                      <div className="space-y-5">
-                        {/* Athlete Hero Spotlight */}
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
+                      <div className="space-y-6">
+                        {/* Athlete Hero Spotlight (Large Theater Format) */}
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                           <div className="relative shrink-0">
-                            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-primary/30 to-amber-500/20 border-2 border-primary flex items-center justify-center text-3xl font-black text-primary shadow-2xl shadow-primary/25 overflow-hidden">
+                            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-tr from-primary/30 to-amber-500/20 border-2 border-primary flex items-center justify-center text-4xl font-black text-primary shadow-2xl shadow-primary/25 overflow-hidden">
                               {activePlayer.avatarUrl ? (
                                 <img src={activePlayer.avatarUrl} alt={activePlayer.playerName} className="w-full h-full object-cover" />
                               ) : (
                                 activePlayer.playerName.substring(0, 2).toUpperCase()
                               )}
                             </div>
-                            <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-md bg-black/90 border border-primary/50 text-[10px] font-mono font-black text-primary">
+                            <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-md bg-black/90 border border-primary/50 text-xs font-mono font-black text-primary">
                               #{activePlayer.auctionPlayerId}
                             </span>
                           </div>
 
-                          <div className="flex-1 text-center sm:text-left space-y-1">
-                            <span className="px-2.5 py-0.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-[11px] font-black uppercase inline-block">
+                          <div className="flex-1 text-center sm:text-left space-y-1.5">
+                            <span className="px-3 py-0.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-xs font-black uppercase inline-block">
                               {activePlayer.categoryName || activeCategory?.name || "Category"}
                             </span>
-                            <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                            <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
                               {activePlayer.playerName}
                             </h2>
                             {activePlayer.eligibleFormats && (
-                              <p className="text-xs text-foreground/60 font-semibold">
-                                Formats: <strong className="text-foreground/90">{activePlayer.eligibleFormats}</strong>
+                              <p className="text-xs sm:text-sm text-foreground/60 font-semibold">
+                                Eligible Formats: <strong className="text-foreground/90">{activePlayer.eligibleFormats}</strong>
                               </p>
                             )}
-                            <div className="pt-0.5">
-                              <span className="text-xs font-bold text-foreground/50">
-                                Base Price: <strong className="text-primary font-mono text-sm">{activePlayerBasePrice} pts</strong>
+                            <div className="pt-1">
+                              <span className="text-xs sm:text-sm font-bold text-foreground/50">
+                                Base Price: <strong className="text-primary font-mono text-base">{activePlayerBasePrice} pts</strong>
                               </span>
                             </div>
                           </div>
 
                           {/* Live Timer Clock */}
-                          <div className="text-center sm:text-right shrink-0 bg-surface/80 p-3 rounded-2xl border border-foreground/10 min-w-[110px]">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-foreground/40 block">
+                          <div className="text-center sm:text-right shrink-0 bg-surface/80 p-4 rounded-3xl border border-foreground/10 min-w-[130px]">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
                               Timer Remaining
                             </span>
-                            <span className="text-3xl font-black text-amber-400 font-mono">
+                            <span className="text-4xl font-black text-amber-400 font-mono">
                               {auctionState?.remainingTimerSeconds ?? 30}s
                             </span>
                           </div>
                         </div>
 
                         {/* Current Bid & Leading Team Board */}
-                        <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-surface border border-foreground/10">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-3xl bg-surface border border-foreground/10">
                           <div>
-                            <span className="text-[9px] font-black uppercase text-foreground/40 block">Current High Bid</span>
-                            <span className="text-2xl sm:text-3xl font-black text-primary font-mono">
+                            <span className="text-[10px] font-black uppercase text-foreground/40 block">Current High Bid</span>
+                            <span className="text-3xl sm:text-4xl font-black text-primary font-mono">
                               {auctionState?.currentBid || activePlayerBasePrice} pts
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] font-black uppercase text-foreground/40 block">Leader Franchise</span>
-                            <span className="text-sm sm:text-base font-black text-foreground truncate block mt-0.5">
+                            <span className="text-[10px] font-black uppercase text-foreground/40 block">Leader Franchise</span>
+                            <span className="text-lg sm:text-xl font-black text-foreground truncate block mt-0.5">
                               {auctionState?.winningTeamName || "Waiting for Opening Offer"}
                             </span>
                           </div>
@@ -2181,16 +2181,16 @@ export default function TeamChampionshipDashboardPage() {
 
                         {/* MANUAL BIDDING & TEAM LOCK DESK */}
                         <div
-                          className="p-4 sm:p-5 rounded-2xl border space-y-3.5 shadow-sm"
+                          className="p-5 sm:p-6 rounded-3xl border space-y-4 shadow-sm"
                           style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
                         >
-                          <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                            <h4 className="text-[11px] font-black uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
+                          <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
                               <Zap className="w-3.5 h-3.5 text-primary" /> Manual Bidding & Team Mapping Desk
                             </h4>
                             <button
                               onClick={() => setIsPurseModalOpen(true)}
-                              className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1"
+                              className="text-[11px] text-primary hover:underline font-bold flex items-center gap-1"
                             >
                               <Shield className="w-3 h-3" />
                               <span>Check Purses</span>
@@ -2198,9 +2198,9 @@ export default function TeamChampionshipDashboardPage() {
                           </div>
 
                           {/* Quick Increment Pad */}
-                          <div className="space-y-1">
-                            <span className="text-[9px] font-bold uppercase text-foreground/50 block">Quick Point Bumps</span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-bold uppercase text-foreground/50 block">Quick Point Bumps</span>
+                            <div className="flex items-center gap-2 flex-wrap">
                               {[100, 250, 500, 1000, 2000].map((inc) => (
                                 <button
                                   key={inc}
@@ -2208,24 +2208,24 @@ export default function TeamChampionshipDashboardPage() {
                                     const next = (manualWinningBid || activePlayerBasePrice) + inc;
                                     setManualWinningBid(next);
                                   }}
-                                  className="px-2.5 py-1 rounded-lg bg-surface hover:bg-primary/20 border border-foreground/15 hover:border-primary/40 text-foreground font-mono font-black text-xs transition-all"
+                                  className="px-3.5 py-1.5 rounded-xl bg-surface hover:bg-primary/20 border border-foreground/15 hover:border-primary/40 text-foreground font-mono font-black text-xs transition-all"
                                 >
-                                  +{inc}
+                                  +{inc} pts
                                 </button>
                               ))}
                               <button
                                 onClick={() => setManualWinningBid(activePlayerBasePrice)}
-                                className="px-2.5 py-1 rounded-lg bg-surface hover:bg-white/10 border border-foreground/15 text-foreground/60 font-bold text-xs transition-all"
+                                className="px-3.5 py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground/60 font-bold text-xs transition-all"
                               >
-                                Reset
+                                Reset to Base
                               </button>
                             </div>
                           </div>
 
                           {/* Inputs: Locked Points & Map To Team */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <label className="text-[9px] font-black uppercase text-foreground/60 block mb-1">
+                              <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
                                 Final Locked Points
                               </label>
                               <div className="relative">
@@ -2234,23 +2234,23 @@ export default function TeamChampionshipDashboardPage() {
                                   value={manualWinningBid || ""}
                                   onChange={(e) => setManualWinningBid(Number(e.target.value))}
                                   placeholder="Enter final points..."
-                                  className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-mono font-black text-sm outline-none focus:border-primary"
+                                  className="w-full px-4 py-2.5 rounded-xl border bg-background text-foreground font-mono font-black text-base outline-none focus:border-primary"
                                   style={{ borderColor: "var(--athlon-border)" }}
                                 />
-                                <span className="absolute right-3 top-2.5 text-xs font-bold text-foreground/40 pointer-events-none">
+                                <span className="absolute right-3 top-3 text-xs font-bold text-foreground/40 pointer-events-none">
                                   pts
                                 </span>
                               </div>
                             </div>
 
                             <div>
-                              <label className="text-[9px] font-black uppercase text-foreground/60 block mb-1">
+                              <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
                                 Map to Franchise Team
                               </label>
                               <select
                                 value={manualWinningTeamId || ""}
                                 onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
-                                className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-black text-xs outline-none focus:border-primary"
+                                className="w-full px-3 py-2.5 rounded-xl border bg-background text-foreground font-black text-xs outline-none focus:border-primary"
                                 style={{ borderColor: "var(--athlon-border)" }}
                               >
                                 <option value="">-- Select Team --</option>
@@ -2264,11 +2264,11 @@ export default function TeamChampionshipDashboardPage() {
                           </div>
 
                           {/* Action CTA Buttons */}
-                          <div className="flex items-center gap-2.5 pt-1">
+                          <div className="flex items-center gap-3 pt-2">
                             <button
                               onClick={handleAssignPlayerManual}
                               disabled={assigningLoading || !manualWinningTeamId}
-                              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
+                              className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-40"
                             >
                               <Gavel className="w-4 h-4" />
                               <span>{assigningLoading ? "Processing..." : "🔨 SOLD & MAP TO TEAM"}</span>
@@ -2276,33 +2276,33 @@ export default function TeamChampionshipDashboardPage() {
 
                             <button
                               onClick={handleMarkUnsold}
-                              className="px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
+                              className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
                             >
-                              UNSOLD
+                              MARK UNSOLD
                             </button>
                           </div>
                         </div>
                       </div>
                     ) : (
                       /* Standby Floor Display */
-                      <div className="p-8 sm:p-10 rounded-2xl border border-dashed text-center space-y-4" style={{ borderColor: "var(--athlon-border)" }}>
-                        <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mx-auto shadow-inner">
-                          <Gavel className="w-7 h-7 text-primary" />
+                      <div className="p-12 rounded-3xl border border-dashed text-center space-y-4" style={{ borderColor: "var(--athlon-border)" }}>
+                        <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mx-auto shadow-inner">
+                          <Gavel className="w-8 h-8 text-primary" />
                         </div>
                         <div className="space-y-1">
-                          <h4 className="text-base font-black text-foreground uppercase tracking-tight">
+                          <h4 className="text-lg font-black text-foreground uppercase tracking-tight">
                             No Athlete on the Floor
                           </h4>
-                          <p className="text-xs text-foreground/60 max-w-sm mx-auto">
+                          <p className="text-xs text-foreground/60 max-w-md mx-auto">
                             Phase: <strong>{activeCategory?.name || "All Categories"}</strong> ({waitingCategoryPlayers.length} athletes waiting).
                           </p>
                         </div>
 
-                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                           <button
                             onClick={runPlayerSnipper}
                             disabled={isSpinningPlayer || waitingCategoryPlayers.length === 0}
-                            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-xs shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-xs shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
                           >
                             <Shuffle className="w-4 h-4" />
                             <span>🎰 Spin Player from {activeCategory?.name || "Category"}</span>
@@ -2313,21 +2313,21 @@ export default function TeamChampionshipDashboardPage() {
                   </div>
                 </div>
 
-                {/* RIGHT 5 COLS: CATEGORY PLAYERS TRAY & QUEUE */}
-                <div className="lg:col-span-5 space-y-3">
+                {/* RIGHT 3 COLS: COMPACT CATEGORY PLAYERS TRAY & QUEUE */}
+                <div className="lg:col-span-3 space-y-3">
                   <div
-                    className="p-4 sm:p-5 rounded-3xl border shadow-md space-y-3"
+                    className="p-4 rounded-3xl border shadow-md space-y-3"
                     style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
                     <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border)" }}>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-primary" />
-                          <h4 className="text-xs font-black text-foreground uppercase tracking-tight">
+                          <Users className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <h4 className="text-xs font-black text-foreground uppercase tracking-tight truncate">
                             {activeCategory?.name || "Category"} Queue ({categoryPlayers.length})
                           </h4>
                         </div>
-                        <span className="text-[10px] text-foreground/50">
+                        <span className="text-[10px] text-foreground/50 block">
                           Base: <strong className="text-primary font-mono">{activeCategory?.basePrice || 1000} pts</strong>
                         </span>
                       </div>
@@ -2336,18 +2336,19 @@ export default function TeamChampionshipDashboardPage() {
                       <button
                         onClick={runPlayerSnipper}
                         disabled={isSpinningPlayer || waitingCategoryPlayers.length === 0}
-                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-[11px] shadow-md shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1 disabled:opacity-40"
+                        className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-[10px] shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center gap-1 shrink-0 disabled:opacity-40"
+                        title="Spin next waiting player"
                       >
                         <Shuffle className="w-3 h-3" />
-                        <span>Spin Player</span>
+                        <span>Spin</span>
                       </button>
                     </div>
 
                     {/* Scrollable Athlete List Container (Single Page Cockpit Height) */}
-                    <div className="max-h-[520px] overflow-y-auto hide-scrollbar space-y-2 pr-1">
+                    <div className="max-h-[540px] overflow-y-auto hide-scrollbar space-y-2 pr-0.5">
                       {categoryPlayers.length === 0 ? (
-                        <div className="p-8 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase">
-                          No athletes registered in this category.
+                        <div className="p-6 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase">
+                          No athletes in this category.
                         </div>
                       ) : (
                         categoryPlayers.map((p) => {
@@ -2361,7 +2362,7 @@ export default function TeamChampionshipDashboardPage() {
                           return (
                             <div
                               key={p.auctionPlayerId}
-                              className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                              className={`p-2.5 rounded-2xl border transition-all flex flex-col gap-2 ${
                                 isOnFloor
                                   ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
                                   : isSold
@@ -2371,8 +2372,8 @@ export default function TeamChampionshipDashboardPage() {
                                   : "bg-surface hover:bg-white/5 border-foreground/10"
                               }`}
                             >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
                                   {p.avatarUrl ? (
                                     <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
                                   ) : (
@@ -2380,7 +2381,7 @@ export default function TeamChampionshipDashboardPage() {
                                   )}
                                 </div>
 
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                   <h5 className="font-black text-xs text-foreground truncate">{p.playerName}</h5>
                                   <span className="text-[10px] text-foreground/50 block">
                                     Base: <strong className="text-primary font-mono">{effectiveBase} pts</strong>
@@ -2388,31 +2389,31 @@ export default function TeamChampionshipDashboardPage() {
                                 </div>
                               </div>
 
-                              <div className="shrink-0">
+                              <div>
                                 {isOnFloor ? (
-                                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase flex items-center gap-1">
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase flex items-center justify-center gap-1 w-full">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                                     On Floor
                                   </span>
                                 ) : isSold ? (
-                                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase">
+                                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase block text-center truncate">
                                     Sold: {p.winningTeamName || "Assigned"} ({p.finalBid} pts)
                                   </span>
                                 ) : isUnsold ? (
                                   <button
                                     onClick={() => handleCallPlayer(p.auctionPlayerId)}
                                     disabled={!!activePlayer}
-                                    className="px-2 py-1 rounded-lg bg-surface hover:bg-white/10 text-foreground/70 font-black text-[10px] border border-foreground/15"
+                                    className="w-full py-1 rounded-lg bg-surface hover:bg-white/10 text-foreground/70 font-black text-[10px] border border-foreground/15 text-center"
                                   >
-                                    Re-Call
+                                    Re-Call Unsold
                                   </button>
                                 ) : (
                                   <button
                                     onClick={() => handleCallPlayer(p.auctionPlayerId)}
                                     disabled={!!activePlayer}
-                                    className="px-3 py-1.5 rounded-xl bg-primary text-black font-black text-[11px] shadow-sm hover:scale-102 active:scale-98 transition-all disabled:opacity-30"
+                                    className="w-full py-1 rounded-xl bg-primary text-black font-black text-[10px] shadow-sm hover:scale-102 active:scale-98 transition-all disabled:opacity-30"
                                   >
-                                    Call 🔨
+                                    Call to Floor 🔨
                                   </button>
                                 )}
                               </div>
