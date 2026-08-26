@@ -102,6 +102,7 @@ export default function TeamChampionshipDashboardPage() {
   const [manualWinningBid, setManualWinningBid] = useState<number | null>(null);
   const [assigningLoading, setAssigningLoading] = useState(false);
   const [isPurseModalOpen, setIsPurseModalOpen] = useState(false);
+  const [highlightedTeamId, setHighlightedTeamId] = useState<number | null>(null);
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -2539,10 +2540,26 @@ export default function TeamChampionshipDashboardPage() {
                                 <h5 className="text-base sm:text-lg font-black text-foreground truncate">
                                   {at.team.teamName}
                                 </h5>
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/70 mt-1">
-                                  <Users className="w-3 h-3 text-primary" />
-                                  <span>{at.acquiredPlayers?.length || at.team.playersAcquiredCount || 0} Drafted</span>
-                                </span>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/70">
+                                    <Users className="w-3 h-3 text-primary" />
+                                    <span>{at.acquiredPlayers?.length || at.team.playersAcquiredCount || 0} Drafted</span>
+                                  </span>
+
+                                  {/* View Icon to inspect highlighted team details */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setHighlightedTeamId(at.team.teamId);
+                                    }}
+                                    className="p-1.5 rounded-xl bg-primary/15 hover:bg-primary text-primary hover:text-black border border-primary/30 font-black text-xs transition-all flex items-center gap-1 shadow-sm"
+                                    title="View full franchise details & drafted squad"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span className="text-[10px]">View</span>
+                                  </button>
+                                </div>
                               </div>
 
                               <div className="text-right shrink-0">
@@ -2578,7 +2595,7 @@ export default function TeamChampionshipDashboardPage() {
                     {/* Modal Footer */}
                     <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "var(--athlon-border)" }}>
                       <span className="text-xs text-foreground/50 font-bold">
-                        Click any team to map for the current floor player
+                        Click any team card to map for current player, or click "View" to see full squad details
                       </span>
                       <button
                         onClick={() => setIsPurseModalOpen(false)}
@@ -2590,6 +2607,177 @@ export default function TeamChampionshipDashboardPage() {
                   </div>
                 </div>
               )}
+
+              {/* 8. HIGHLIGHTED TEAM DETAILS SEPARATE MODAL */}
+              {highlightedTeamId && (() => {
+                const highlightedSummary = auctionTeams.find((at) => at.team.teamId === highlightedTeamId);
+                const matchingTeamReg = teams.find((t) => t.teamId === highlightedTeamId);
+                const teamName = highlightedSummary?.team.teamName || matchingTeamReg?.teamName || `Team #${highlightedTeamId}`;
+                const initialBudget = highlightedSummary?.team.initialBudget || 5000;
+                const remainingBudget = highlightedSummary?.team.remainingBudget ?? initialBudget;
+                const spentBudget = highlightedSummary?.team.spentBudget || (initialBudget - remainingBudget);
+                const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
+
+                const squadPlayers = auctionPlayers.filter(
+                  (p) =>
+                    p.winningTeamId === highlightedTeamId ||
+                    (p.winningTeamName && p.winningTeamName.toLowerCase().trim() === teamName.toLowerCase().trim()) ||
+                    highlightedSummary?.acquiredPlayers?.some((ap) => ap.auctionPlayerId === p.auctionPlayerId)
+                );
+
+                return (
+                  <div className="fixed inset-0 z-[10001] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8 animate-fadeIn">
+                    <div
+                      className="max-w-4xl w-full p-6 sm:p-10 rounded-3xl border shadow-2xl space-y-6 animate-scaleIn max-h-[92vh] overflow-y-auto hide-scrollbar"
+                      style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                    >
+                      {/* Top Header */}
+                      <div className="flex items-center justify-between border-b pb-5" style={{ borderColor: "var(--athlon-border)" }}>
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary/30 to-amber-500/20 border-2 border-primary flex items-center justify-center text-2xl font-black text-primary shadow-xl shadow-primary/25">
+                            <Shield className="w-7 h-7" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2.5 py-0.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-[10px] font-black uppercase">
+                                Franchise Showcase
+                              </span>
+                              {matchingTeamReg?.captainName && (
+                                <span className="text-xs text-foreground/50 font-bold">
+                                  Captain: {matchingTeamReg.captainName}
+                                </span>
+                              )}
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight mt-0.5">
+                              {teamName}
+                            </h2>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setHighlightedTeamId(null)}
+                          className="p-2.5 rounded-2xl border border-foreground/15 hover:bg-foreground/10 text-foreground/70 hover:text-foreground transition-all"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* 3 Metric Cards */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-4 rounded-2xl border bg-surface/60 border-foreground/10 space-y-1">
+                          <span className="text-[10px] font-black uppercase text-foreground/40 block">Initial Purse</span>
+                          <span className="text-xl sm:text-2xl font-mono font-black text-foreground">
+                            {initialBudget} <span className="text-xs font-sans font-bold text-foreground/40">pts</span>
+                          </span>
+                        </div>
+
+                        <div className="p-4 rounded-2xl border bg-surface/60 border-foreground/10 space-y-1">
+                          <span className="text-[10px] font-black uppercase text-foreground/40 block">Total Spent</span>
+                          <span className="text-xl sm:text-2xl font-mono font-black text-foreground">
+                            {spentBudget} <span className="text-xs font-sans font-bold text-foreground/40">pts</span>
+                          </span>
+                        </div>
+
+                        <div className="p-4 rounded-2xl border bg-primary/10 border-primary/30 space-y-1 shadow-sm">
+                          <span className="text-[10px] font-black uppercase text-primary block">Remaining Balance</span>
+                          <span className="text-2xl sm:text-3xl font-mono font-black text-primary">
+                            {remainingBudget} <span className="text-xs font-sans font-bold">pts</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Budget Health Progress Bar */}
+                      <div className="p-4 rounded-2xl bg-surface/40 border border-foreground/10 space-y-2">
+                        <div className="flex justify-between text-xs font-bold text-foreground/70">
+                          <span>Remaining Budget Health</span>
+                          <span className="text-primary font-mono">{Math.round(percentLeft)}%</span>
+                        </div>
+                        <div className="w-full bg-foreground/10 h-3 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all rounded-full ${
+                              percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
+                            }`}
+                            style={{ width: `${percentLeft}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Full Drafted Squad List */}
+                      <div className="space-y-4 pt-2">
+                        <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                          <h4 className="text-sm font-black text-foreground uppercase tracking-wider flex items-center gap-2">
+                            <Users className="w-4 h-4 text-primary" />
+                            <span>Acquired Squad Athletes ({squadPlayers.length})</span>
+                          </h4>
+                          <span className="text-xs text-foreground/50 font-bold">Auction Draft Results</span>
+                        </div>
+
+                        {squadPlayers.length === 0 ? (
+                          <div className="p-10 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase">
+                            No athletes drafted into this franchise yet.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            {squadPlayers.map((sp) => (
+                              <div
+                                key={sp.auctionPlayerId}
+                                className="p-4 rounded-2xl border bg-surface/80 border-foreground/10 flex items-center justify-between gap-3 shadow-sm"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-11 h-11 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
+                                    {sp.avatarUrl ? (
+                                      <img src={sp.avatarUrl} alt={sp.playerName} className="w-full h-full object-cover" />
+                                    ) : (
+                                      sp.playerName.substring(0, 2).toUpperCase()
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h5 className="text-sm font-black text-foreground truncate">{sp.playerName}</h5>
+                                    <span className="text-[10px] text-foreground/50 uppercase font-bold block">
+                                      {sp.categoryName || "Category"}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <span className="text-xs font-mono font-black text-emerald-400 block">
+                                    {sp.finalBid} pts
+                                  </span>
+                                  <span className="text-[9px] text-foreground/40 uppercase font-bold">
+                                    Bought
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Modal Actions */}
+                      <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "var(--athlon-border)" }}>
+                        <button
+                          onClick={() => {
+                            setManualWinningTeamId(highlightedTeamId);
+                            setHighlightedTeamId(null);
+                            setIsPurseModalOpen(false);
+                          }}
+                          className="px-6 py-3 rounded-2xl bg-emerald-500 text-black font-black text-xs shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Select this Team for Active Player</span>
+                        </button>
+
+                        <button
+                          onClick={() => setHighlightedTeamId(null)}
+                          className="px-6 py-3 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/5 text-foreground font-black text-xs transition-all"
+                        >
+                          Back to All Teams
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
