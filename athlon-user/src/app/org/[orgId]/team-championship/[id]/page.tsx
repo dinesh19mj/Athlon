@@ -817,133 +817,395 @@ export default function TeamChampionshipDashboardPage() {
         )}
 
         {/* TAB 3: PLAYERS POOL */}
-        {activeTab === "players" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h3 className="text-base font-black text-foreground">Player Registration Pool ({players.length})</h3>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Search player..."
-                  value={searchPlayerQuery}
-                  onChange={(e) => setSearchPlayerQuery(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
-                  style={{ borderColor: "var(--athlon-border)" }}
-                />
-              </div>
-            </div>
+        {activeTab === "players" && (() => {
+          // Extract unique categories
+          const categoriesList = Array.from(
+            new Set([
+              ...(championship?.categories?.map((c) => c.name) || []),
+              ...players.map((p) => p.categoryName || "Open"),
+            ])
+          ).filter(Boolean);
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {players
-                .filter((p) => p.fullName.toLowerCase().includes(searchPlayerQuery.toLowerCase()))
-                .map((p) => {
-                  const isApproved = p.status === "APPROVED";
-                  const isRejected = p.status === "REJECTED";
-                  const isPaid = p.paymentStatus === "PAID";
+          const filteredPlayers = players.filter(
+            (p) =>
+              p.fullName.toLowerCase().includes(searchPlayerQuery.toLowerCase()) ||
+              (p.phone && p.phone.includes(searchPlayerQuery)) ||
+              (p.categoryName && p.categoryName.toLowerCase().includes(searchPlayerQuery.toLowerCase()))
+          );
 
-                  return (
-                    <div
-                      key={p.playerId}
-                      className="rounded-2xl border p-4 space-y-3 shadow-sm flex flex-col justify-between"
-                      style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-1">
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-xs font-black text-foreground truncate">{p.fullName}</h4>
-                            <span className="text-[10px] text-foreground/40 font-mono">#{p.playerId}</span>
-                          </div>
-                          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase shrink-0">
-                            {p.categoryName || "Open"}
-                          </span>
-                        </div>
+          // Group by category
+          const groupedPlayers: Record<string, typeof players> = {};
+          categoriesList.forEach((catName) => {
+            const catPlayers = filteredPlayers.filter(
+              (p) => (p.categoryName || "Open").toLowerCase() === catName.toLowerCase()
+            );
+            if (catPlayers.length > 0 || selectedCategoryFilter === catName) {
+              groupedPlayers[catName] = catPlayers;
+            }
+          });
 
-                        {/* Status Badges */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
-                              isApproved
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                : isRejected
-                                ? "bg-red-500/15 text-red-400 border-red-500/30"
-                                : "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                            }`}
-                          >
-                            {p.status || "PENDING"}
-                          </span>
+          // Unassigned / Others
+          const otherPlayers = filteredPlayers.filter(
+            (p) => !categoriesList.some((c) => c.toLowerCase() === (p.categoryName || "Open").toLowerCase())
+          );
+          if (otherPlayers.length > 0) {
+            groupedPlayers["Other"] = otherPlayers;
+          }
 
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
-                              isPaid
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                : "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                            }`}
-                          >
-                            {isPaid ? "PAID" : "UNPAID"}
-                          </span>
-                        </div>
+          const displayedCategories = Object.entries(groupedPlayers).filter(
+            ([catName]) => selectedCategoryFilter === "ALL" || selectedCategoryFilter === catName
+          );
 
-                        <p className="text-[11px] text-foreground/60 truncate">
-                          Phone: <strong>{p.phone || "No contact"}</strong>
-                        </p>
-                        <p className="text-[10px] text-foreground/50 truncate">
-                          Eligible: <strong>{p.eligibleFormats || "All Formats"}</strong>
-                        </p>
+          return (
+            <div className="space-y-6">
+              {/* Top Controls: Title, Search, and Category Pills */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-base font-black text-foreground">
+                      Player Registration Pool ({players.length})
+                    </h3>
+                    <p className="text-xs text-foreground/50">
+                      Athletes registered for championship draft pool grouped by category
+                    </p>
+                  </div>
 
-                        {/* Organizer Player Actions */}
-                        <div className="space-y-1.5 pt-1">
-                          <div className="grid grid-cols-2 gap-1">
-                            <button
-                              onClick={() => handleUpdatePlayerStatus(p.playerId, isApproved ? "PENDING" : "APPROVED")}
-                              className={`py-1 px-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-0.5 border ${
-                                isApproved
-                                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                                  : "bg-surface hover:bg-emerald-500/10 hover:text-emerald-400 border-foreground/10 text-foreground/70"
-                              }`}
-                              title="Approve Player"
-                            >
-                              <Check className="w-3 h-3" />
-                              <span>{isApproved ? "Approved" : "Approve"}</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleUpdatePlayerStatus(p.playerId, isRejected ? "PENDING" : "REJECTED")}
-                              className={`py-1 px-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-0.5 border ${
-                                isRejected
-                                  ? "bg-red-500/20 text-red-400 border-red-500/40"
-                                  : "bg-surface hover:bg-red-500/10 hover:text-red-400 border-foreground/10 text-foreground/70"
-                              }`}
-                              title="Reject Player"
-                            >
-                              <X className="w-3 h-3" />
-                              <span>{isRejected ? "Rejected" : "Reject"}</span>
-                            </button>
-                          </div>
-
-                          <button
-                            onClick={() => handleUpdatePlayerPayment(p.playerId, isPaid ? "PENDING" : "PAID")}
-                            className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 border ${
-                              isPaid
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                : "bg-primary/15 text-primary border-primary/30 hover:bg-primary/25"
-                            }`}
-                          >
-                            <DollarSign className="w-3 h-3" />
-                            <span>{isPaid ? "Paid (Mark Unpaid)" : "Mark as Paid"}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t pt-2 mt-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                        <span className="text-[10px] font-bold text-foreground/40 uppercase">Base Price</span>
-                        <span className="text-xs font-black text-primary">{p.basePrice} pts</span>
-                      </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+                      <input
+                        type="text"
+                        placeholder="Search player or phone..."
+                        value={searchPlayerQuery}
+                        onChange={(e) => setSearchPlayerQuery(e.target.value)}
+                        className="pl-8 pr-3 py-2 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary w-52 sm:w-64 transition-all"
+                        style={{ borderColor: "var(--athlon-border)" }}
+                      />
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+
+                {/* Category Filter Pills */}
+                {categoriesList.length > 0 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    <button
+                      onClick={() => setSelectedCategoryFilter("ALL")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${
+                        selectedCategoryFilter === "ALL"
+                          ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                          : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                      }`}
+                    >
+                      <span>All Categories</span>
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/20 text-inherit">
+                        {players.length}
+                      </span>
+                    </button>
+
+                    {categoriesList.map((catName) => {
+                      const count = players.filter(
+                        (p) => (p.categoryName || "Open").toLowerCase() === catName.toLowerCase()
+                      ).length;
+                      const isSelected = selectedCategoryFilter === catName;
+
+                      return (
+                        <button
+                          key={catName}
+                          onClick={() => setSelectedCategoryFilter(isSelected ? "ALL" : catName)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${
+                            isSelected
+                              ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                              : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                          }`}
+                        >
+                          <span>{catName}</span>
+                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/20 text-inherit">
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Category-Wise Grouped Player Lists */}
+              {displayedCategories.length === 0 ? (
+                <div
+                  className="py-12 px-4 text-center rounded-2xl border flex flex-col items-center justify-center space-y-3"
+                  style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                >
+                  <Users className="w-10 h-10 text-foreground/30" />
+                  <div>
+                    <h4 className="text-sm font-black text-foreground">No Players Found</h4>
+                    <p className="text-xs text-foreground/50 mt-0.5">
+                      {searchPlayerQuery
+                        ? `No registered players match "${searchPlayerQuery}"`
+                        : "No athletes registered in this category yet."}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {displayedCategories.map(([catName, catPlayers]) => {
+                    const categoryConfig = championship?.categories?.find(
+                      (c) => c.name?.toLowerCase() === catName.toLowerCase()
+                    );
+
+                    return (
+                      <div key={catName} className="space-y-4">
+                        {/* Category Group Header Banner */}
+                        <div
+                          className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border backdrop-blur-md shadow-sm"
+                          style={{
+                            backgroundColor: "var(--athlon-card)",
+                            borderColor: "var(--athlon-border)",
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shadow-sm">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm sm:text-base font-black text-foreground tracking-tight">
+                                  {catName}
+                                </h4>
+                                <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25 text-[10px] font-black">
+                                  {catPlayers.length} {catPlayers.length === 1 ? "Athlete" : "Athletes"}
+                                </span>
+                              </div>
+                              {categoryConfig?.maxPlayers && (
+                                <span className="text-[11px] text-foreground/40 font-bold">
+                                  Quota: {catPlayers.length} / {categoryConfig.maxPlayers} Registered
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {categoryConfig?.basePrice ? (
+                            <span className="text-xs font-mono font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20">
+                              Base: {categoryConfig.basePrice} pts
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {/* Players Grid in this Category */}
+                        {catPlayers.length === 0 ? (
+                          <div
+                            className="p-6 text-center rounded-2xl border text-xs text-foreground/40"
+                            style={{
+                              backgroundColor: "var(--athlon-surface)",
+                              borderColor: "var(--athlon-border-subtle)",
+                            }}
+                          >
+                            No athletes currently registered in {catName}.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {catPlayers.map((p) => {
+                              const isApproved = p.status === "APPROVED";
+                              const isRejected = p.status === "REJECTED";
+                              const isPaid = p.paymentStatus === "PAID";
+                              const initials = p.fullName
+                                ? p.fullName
+                                    .split(" ")
+                                    .map((w) => w[0])
+                                    .slice(0, 2)
+                                    .join("")
+                                    .toUpperCase()
+                                : "PL";
+
+                              return (
+                                <div
+                                  key={p.playerId}
+                                  className="group relative rounded-[22px] border transition-all duration-300 hover:shadow-xl hover:border-primary/40 flex flex-col justify-between overflow-hidden"
+                                  style={{
+                                    backgroundColor: "var(--athlon-card)",
+                                    borderColor: "var(--athlon-border)",
+                                  }}
+                                >
+                                  {/* Top Status Gradient Bar */}
+                                  <div
+                                    className={`h-1 w-full bg-gradient-to-r ${
+                                      isApproved
+                                        ? "from-emerald-500 via-teal-400 to-primary"
+                                        : isRejected
+                                        ? "from-red-500 via-rose-400 to-amber-500"
+                                        : "from-amber-400 via-orange-400 to-primary"
+                                    }`}
+                                  />
+
+                                  <div className="p-4 space-y-3">
+                                    {/* Player Identity Header */}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2.5 min-w-0">
+                                        <div
+                                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner border shrink-0 ${
+                                            isApproved
+                                              ? "bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30"
+                                              : isRejected
+                                              ? "bg-gradient-to-br from-red-500/20 to-rose-500/10 text-red-400 border-red-500/30"
+                                              : "bg-gradient-to-br from-amber-500/20 to-primary/10 text-amber-400 border-amber-500/30"
+                                          }`}
+                                        >
+                                          {initials}
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                          <h4 className="text-xs font-black text-foreground truncate">
+                                            {p.fullName}
+                                          </h4>
+                                          <span className="text-[10px] text-foreground/40 font-mono block">
+                                            Draft #{p.playerId}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Dual Status Badges */}
+                                      <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <span
+                                          className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                            isApproved
+                                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                              : isRejected
+                                              ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                              : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                          }`}
+                                        >
+                                          {p.status || "PENDING"}
+                                        </span>
+                                        <span
+                                          className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                            isPaid
+                                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                                              : "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                                          }`}
+                                        >
+                                          {isPaid ? "PAID" : "UNPAID"}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Player Details Card */}
+                                    <div
+                                      className="p-2.5 rounded-xl border space-y-1 text-xs"
+                                      style={{
+                                        backgroundColor: "var(--athlon-surface)",
+                                        borderColor: "var(--athlon-border-subtle)",
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-foreground/40 font-bold">Phone:</span>
+                                        {p.phone ? (
+                                          <a
+                                            href={`tel:${p.phone}`}
+                                            className="font-mono font-bold text-foreground hover:text-primary transition-colors"
+                                          >
+                                            {p.phone}
+                                          </a>
+                                        ) : (
+                                          <span className="font-mono text-foreground/40">N/A</span>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-[11px] truncate">
+                                        <span className="text-foreground/40 font-bold">Eligible:</span>
+                                        <span className="font-semibold text-foreground/80 truncate">
+                                          {p.eligibleFormats || "All Formats"}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Organizer Action Buttons */}
+                                    <div className="space-y-1.5 pt-1">
+                                      <div className="grid grid-cols-2 gap-1.5">
+                                        <button
+                                          onClick={() =>
+                                            handleUpdatePlayerStatus(
+                                              p.playerId,
+                                              isApproved ? "PENDING" : "APPROVED"
+                                            )
+                                          }
+                                          className={`py-1.5 px-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 border shadow-sm active:scale-95 ${
+                                            isApproved
+                                              ? "bg-emerald-500 text-black border-emerald-400 font-black"
+                                              : "bg-surface hover:bg-emerald-500/10 text-foreground/80 hover:text-emerald-400 border-foreground/10"
+                                          }`}
+                                          title="Approve Player"
+                                        >
+                                          <Check className="w-3 h-3 stroke-[3]" />
+                                          <span>{isApproved ? "Approved" : "Approve"}</span>
+                                        </button>
+
+                                        <button
+                                          onClick={() =>
+                                            handleUpdatePlayerStatus(
+                                              p.playerId,
+                                              isRejected ? "PENDING" : "REJECTED"
+                                            )
+                                          }
+                                          className={`py-1.5 px-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 border shadow-sm active:scale-95 ${
+                                            isRejected
+                                              ? "bg-red-500 text-white border-red-400 font-black"
+                                              : "bg-surface hover:bg-red-500/10 text-foreground/80 hover:text-red-400 border-foreground/10"
+                                          }`}
+                                          title="Reject Player"
+                                        >
+                                          <X className="w-3 h-3 stroke-[3]" />
+                                          <span>{isRejected ? "Rejected" : "Reject"}</span>
+                                        </button>
+                                      </div>
+
+                                      <button
+                                        onClick={() =>
+                                          handleUpdatePlayerPayment(
+                                            p.playerId,
+                                            isPaid ? "PENDING" : "PAID"
+                                          )
+                                        }
+                                        className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1.5 border shadow-sm active:scale-95 ${
+                                          isPaid
+                                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-amber-500/15 hover:text-amber-400"
+                                            : "bg-gradient-to-r from-primary via-amber-400 to-primary text-black border-primary shadow-primary/20 hover:brightness-110"
+                                        }`}
+                                      >
+                                        <DollarSign className="w-3.5 h-3.5 stroke-[2.5]" />
+                                        <span>
+                                          {isPaid ? "Paid (Click to Mark Unpaid)" : "Mark Payment as Paid"}
+                                        </span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Card Footer: Base Price */}
+                                  <div
+                                    className="px-4 py-2.5 border-t flex items-center justify-between mt-1 text-[11px]"
+                                    style={{
+                                      backgroundColor: "var(--athlon-surface)",
+                                      borderColor: "var(--athlon-border-subtle)",
+                                    }}
+                                  >
+                                    <span className="font-bold text-foreground/40 uppercase text-[10px]">
+                                      Base Price
+                                    </span>
+                                    <span className="font-mono font-black text-primary">
+                                      {p.basePrice} pts
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB 4: LIVE AUCTION ARENA */}
         {activeTab === "auction" && (
