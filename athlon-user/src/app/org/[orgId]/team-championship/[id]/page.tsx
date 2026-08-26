@@ -308,6 +308,10 @@ export default function TeamChampionshipDashboardPage() {
   // Auction Actions
   const handleCallPlayer = async (auctionPlayerId: number) => {
     if (!championship?.championshipId) return;
+    if (championship.stage !== "AUCTION_STAGE") {
+      alert("Please start the Live Auction first before placing players on the bidding floor!");
+      return;
+    }
     await AuctionService.callPlayer(championship.championshipId, auctionPlayerId, userId ? Number(userId) : undefined);
     loadAuction();
   };
@@ -385,6 +389,11 @@ export default function TeamChampionshipDashboardPage() {
 
   // Spinner 1: Round Wheel Category Snipper
   const runCategorySnipper = () => {
+    if (championship?.stage !== "AUCTION_STAGE") {
+      alert("Please click 'Start Live Auction' above to begin the live session before spinning categories!");
+      return;
+    }
+
     const availableCategories = (championship?.categories || []).filter((c) => {
       const catPlayers = auctionPlayers.filter(
         (p) =>
@@ -461,6 +470,11 @@ export default function TeamChampionshipDashboardPage() {
 
   // Spinner 2: Round Wheel Player Snipper within Selected Category
   const runPlayerSnipper = () => {
+    if (championship?.stage !== "AUCTION_STAGE") {
+      alert("Please click 'Start Live Auction' above to begin the live session before spinning players!");
+      return;
+    }
+
     const categories = championship?.categories || [];
     const activeCategory = categories.find((c) => c.categoryId === selectedAuctionPhaseCatId) || categories[0];
     const activeCatId = activeCategory?.categoryId;
@@ -2298,14 +2312,29 @@ export default function TeamChampionshipDashboardPage() {
                         </div>
 
                         <div className="pt-2">
-                          <button
-                            onClick={runPlayerSnipper}
-                            disabled={isSpinningPlayer || waitingCategoryPlayers.length === 0}
-                            className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-xs shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
-                          >
-                            <Shuffle className="w-4 h-4" />
-                            <span>🎰 Spin Player from {activeCategory?.name || "Category"}</span>
-                          </button>
+                          {isAuctionLive ? (
+                            <button
+                              onClick={runPlayerSnipper}
+                              disabled={isSpinningPlayer || waitingCategoryPlayers.length === 0}
+                              className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-xs shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Shuffle className="w-4 h-4" />
+                              <span>🎰 Spin Player from {activeCategory?.name || "Category"}</span>
+                            </button>
+                          ) : (
+                            <div className="space-y-2">
+                              <button
+                                onClick={() => handleToggleAuctionStage("AUCTION_STAGE")}
+                                className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs shadow-lg shadow-red-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 mx-auto animate-pulse"
+                              >
+                                <Play className="w-4 h-4 fill-white" />
+                                <span>Start Live Auction to Begin Bidding</span>
+                              </button>
+                              <p className="text-[11px] text-amber-400 font-bold">
+                                Category and player spinners are locked until live auction is started.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -2333,10 +2362,20 @@ export default function TeamChampionshipDashboardPage() {
 
                       {/* Spin Player Shortcut Button */}
                       <button
-                        onClick={runPlayerSnipper}
-                        disabled={isSpinningPlayer || waitingCategoryPlayers.length === 0}
-                        className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-[10px] shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center gap-1 shrink-0 disabled:opacity-40"
-                        title="Spin next waiting player"
+                        onClick={() => {
+                          if (!isAuctionLive) {
+                            alert("Please click 'Start Live Auction' above before spinning players!");
+                            return;
+                          }
+                          runPlayerSnipper();
+                        }}
+                        disabled={!isAuctionLive || isSpinningPlayer || waitingCategoryPlayers.length === 0}
+                        className={`px-2.5 py-1.5 rounded-xl font-black text-[10px] shadow-sm transition-all flex items-center gap-1 shrink-0 ${
+                          isAuctionLive && waitingCategoryPlayers.length > 0
+                            ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-amber-500/20 hover:scale-105 active:scale-95 cursor-pointer"
+                            : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
+                        }`}
+                        title={isAuctionLive ? "Spin next waiting player" : "Start Live Auction first to enable"}
                       >
                         <Shuffle className="w-3 h-3" />
                         <span>Spin</span>
@@ -2363,12 +2402,18 @@ export default function TeamChampionshipDashboardPage() {
                             <div
                               key={p.auctionPlayerId}
                               onClick={() => {
+                                if (!isAuctionLive) {
+                                  alert("Please click 'Start Live Auction' above to begin the bidding session first!");
+                                  return;
+                                }
                                 if (!isOnFloor && !isSold && !activePlayer) {
                                   handleCallPlayer(p.auctionPlayerId);
                                 }
                               }}
                               className={`group p-2 sm:p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
-                                isOnFloor
+                                !isAuctionLive
+                                  ? "bg-surface/50 border-foreground/10 opacity-70 cursor-not-allowed"
+                                  : isOnFloor
                                   ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
                                   : isSold
                                   ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
@@ -2377,7 +2422,9 @@ export default function TeamChampionshipDashboardPage() {
                                   : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
                               }`}
                               title={
-                                isOnFloor
+                                !isAuctionLive
+                                  ? "Start live auction first"
+                                  : isOnFloor
                                   ? "Currently on Floor"
                                   : isSold
                                   ? `Sold to ${p.winningTeamName || "Team"} for ${p.finalBid} pts`
@@ -2953,10 +3000,20 @@ export default function TeamChampionshipDashboardPage() {
 
                       <button
                         onClick={() => {
+                          if (!isAuctionLive) {
+                            alert("Please click 'Start Live Auction' above before spinning the category wheel!");
+                            return;
+                          }
                           setIsCategoryModalOpen(false);
                           runCategorySnipper();
                         }}
-                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-primary text-white font-black text-xs shadow-lg shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shrink-0"
+                        disabled={!isAuctionLive}
+                        className={`px-6 py-2.5 rounded-xl font-black text-xs shadow-lg transition-all flex items-center gap-2 shrink-0 ${
+                          isAuctionLive
+                            ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-primary text-white shadow-indigo-600/30 hover:scale-105 active:scale-95 cursor-pointer"
+                            : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
+                        }`}
+                        title={isAuctionLive ? "Spin category wheel" : "Start Live Auction first to enable"}
                       >
                         <Dices className="w-4 h-4" />
                         <span>🎰 Spin Round Wheel</span>
