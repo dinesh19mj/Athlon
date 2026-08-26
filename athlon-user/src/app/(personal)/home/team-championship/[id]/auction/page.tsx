@@ -21,6 +21,8 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  Pause,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -151,7 +153,96 @@ export default function TeamOwnerAuctionArenaPage() {
     );
   }
 
-  const isLive = championship.stage === "AUCTION_STAGE" || auctionState?.config?.status === "ACTIVE";
+  // When the auction is paused by the organizer or offline, block spectator view
+  if (championship.stage !== "AUCTION_STAGE") {
+    const isPaused = championship.stage === "AUCTION_PAUSED";
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary selection:text-black font-sans">
+        {/* Header */}
+        <header
+          className="sticky top-0 z-40 backdrop-blur-xl border-b px-4 sm:px-8 py-3.5 flex items-center justify-between"
+          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+        >
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/home/team-championship/${championship.championshipUuid}`}
+              className="p-2 rounded-xl border border-foreground/10 hover:bg-foreground/5 transition-all text-foreground/70"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border bg-amber-500/15 text-amber-400 border-amber-500/30">
+                  {isPaused ? "AUCTION PAUSED" : "AUCTION STANDBY"}
+                </span>
+                <h1 className="text-sm sm:text-base font-black text-foreground truncate max-w-[200px] sm:max-w-md">
+                  {championship.name}
+                </h1>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={loadData}
+            className="px-3 py-1.5 rounded-xl border bg-surface hover:bg-white/10 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+            style={{ borderColor: "var(--athlon-border)" }}
+          >
+            <Radio className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span>Auto-Syncing</span>
+          </button>
+        </header>
+
+        {/* Billboard Paused Screen */}
+        <main className="max-w-lg mx-auto px-6 py-16 text-center flex flex-col items-center justify-center space-y-6">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-2xl shadow-amber-500/10">
+              <Pause className="w-12 h-12 text-amber-400 animate-pulse" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 animate-ping opacity-75" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>{isPaused ? "Auction Session Paused" : "Auction Floor Offline"}</span>
+            </div>
+            <h2 className="text-2xl font-black text-foreground tracking-tight">
+              {isPaused ? "Live Bidding on Hold" : "Auction Not Started Yet"}
+            </h2>
+            <p className="text-xs text-foreground/60 max-w-sm mx-auto leading-relaxed">
+              {isPaused
+                ? "The organizer has temporarily paused the live auction floor. Spectating and bidding are currently offline and will automatically resume once the session re-opens."
+                : "The organizer has not started the live auction for this championship yet. Please check back when the floor opens."}
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
+            <button
+              onClick={loadData}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <Radio className="w-4 h-4" />
+              <span>Refresh Floor Status</span>
+            </button>
+
+            <Link
+              href={`/home/team-championship/${championship.championshipUuid}`}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl border text-foreground/70 hover:text-foreground font-black text-xs hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+              style={{ borderColor: "var(--athlon-border)" }}
+            >
+              <span>Back to Championship</span>
+            </Link>
+          </div>
+        </main>
+
+        <footer className="text-center py-6 text-xs text-foreground/30 font-bold border-t" style={{ borderColor: "var(--athlon-border)" }}>
+          ATHLON Real-Time Auction Engine • 2s Live Auto-Polling
+        </footer>
+      </div>
+    );
+  }
+
+  const isLive = true;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-primary selection:text-black font-sans">

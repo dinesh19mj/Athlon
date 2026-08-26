@@ -260,8 +260,11 @@ export default function TeamChampionshipDashboardPage() {
   };
 
   const isAuctionLive = championship?.stage === "AUCTION_STAGE";
+  const isAuctionPaused = championship?.stage === "AUCTION_PAUSED";
 
-  const handleToggleAuctionStage = async (newStage: "AUCTION_STAGE" | "LEAGUE_STAGE" | "REGISTRATION_OPEN") => {
+  const handleToggleAuctionStage = async (
+    newStage: "AUCTION_STAGE" | "AUCTION_PAUSED" | "LEAGUE_STAGE" | "REGISTRATION_OPEN"
+  ) => {
     if (!championship) return;
     try {
       setChampionship((prev) => (prev ? { ...prev, stage: newStage } : null));
@@ -1618,6 +1621,8 @@ export default function TeamChampionshipDashboardPage() {
               className={`p-4 sm:p-5 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg ${
                 isAuctionLive
                   ? "bg-gradient-to-r from-red-500/15 via-primary/10 to-transparent border-red-500/30"
+                  : isAuctionPaused
+                  ? "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-500/30"
                   : "bg-surface/60 border-foreground/10"
               }`}
             >
@@ -1626,36 +1631,90 @@ export default function TeamChampionshipDashboardPage() {
                   className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shadow-inner border shrink-0 ${
                     isAuctionLive
                       ? "bg-red-500 text-white border-red-400 animate-pulse"
+                      : isAuctionPaused
+                      ? "bg-amber-500 text-black border-amber-400"
                       : "bg-primary/15 text-primary border-primary/30"
                   }`}
                 >
-                  <Radio className="w-5 h-5" />
+                  {isAuctionLive ? <Radio className="w-5 h-5" /> : isAuctionPaused ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-black text-foreground tracking-tight">
-                      {isAuctionLive ? "🔴 LIVE PLAYER AUCTION IN PROGRESS" : "Live Auction Arena (Standby)"}
+                      {isAuctionLive
+                        ? "🔴 LIVE PLAYER AUCTION IN PROGRESS"
+                        : isAuctionPaused
+                        ? "⏸️ LIVE PLAYER AUCTION PAUSED"
+                        : "Live Auction Arena (Standby)"}
                     </h3>
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                         isAuctionLive
                           ? "bg-red-500/20 text-red-400 border-red-500/40 animate-pulse"
-                          : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          : isAuctionPaused
+                          ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                          : "bg-surface text-foreground/50 border-foreground/20"
                       }`}
                     >
-                      {isAuctionLive ? "BROADCASTING PUBLICLY" : "OFFLINE"}
+                      {isAuctionLive
+                        ? "BROADCASTING PUBLICLY"
+                        : isAuctionPaused
+                        ? "PAUSED • SPECTATORS BLOCKED"
+                        : "OFFLINE"}
                     </span>
                   </div>
                   <p className="text-xs text-foreground/60 mt-0.5">
                     {isAuctionLive
-                      ? "Auction is currently live! All users, athletes, and the market home page can spectate bids in real time."
-                      : "Click 'Start Live Auction' to broadcast player bidding live to all users and the market homepage."}
+                      ? "Auction is currently live! All users and spectators can watch floor bids in real-time."
+                      : isAuctionPaused
+                      ? "The auction is paused. Spectators and users see a 'Session Paused' standby screen and cannot view bids until resumed."
+                      : "Click 'Start Live Auction' to open the bidding floor and broadcast live to spectators."}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-                {!isAuctionLive ? (
+                {isAuctionLive ? (
+                  <>
+                    <button
+                      onClick={() => handleToggleAuctionStage("AUCTION_PAUSED")}
+                      className="px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                      title="Pause auction so spectators cannot view"
+                    >
+                      <Pause className="w-3.5 h-3.5" />
+                      <span>Pause Auction</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleAuctionStage("LEAGUE_STAGE")}
+                      className="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 font-black text-xs transition-all flex items-center gap-1.5"
+                      title="Conclude auction and proceed to fixtures"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Conclude Auction</span>
+                    </button>
+                  </>
+                ) : isAuctionPaused ? (
+                  <>
+                    <button
+                      onClick={() => handleToggleAuctionStage("AUCTION_STAGE")}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-red-500/25 flex items-center gap-2 animate-pulse"
+                      title="Resume live auction broadcasting"
+                    >
+                      <Play className="w-4 h-4 fill-white" />
+                      <span>Resume Live Auction</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleAuctionStage("LEAGUE_STAGE")}
+                      className="px-4 py-2.5 rounded-xl bg-surface hover:bg-white/10 text-foreground/80 border border-foreground/15 font-black text-xs transition-all flex items-center gap-1.5"
+                      title="Conclude auction"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Conclude</span>
+                    </button>
+                  </>
+                ) : (
                   <button
                     onClick={() => handleToggleAuctionStage("AUCTION_STAGE")}
                     className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-red-500/25 flex items-center gap-2"
@@ -1663,26 +1722,6 @@ export default function TeamChampionshipDashboardPage() {
                     <Play className="w-4 h-4 fill-white" />
                     <span>Start Live Auction</span>
                   </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleToggleAuctionStage("REGISTRATION_OPEN")}
-                      className="px-4 py-2 rounded-xl bg-surface hover:bg-white/10 text-foreground/80 border border-foreground/15 font-black text-xs transition-all flex items-center gap-1.5"
-                      title="Pause auction"
-                    >
-                      <Pause className="w-3.5 h-3.5" />
-                      <span>Pause</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleToggleAuctionStage("LEAGUE_STAGE")}
-                      className="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 font-black text-xs transition-all flex items-center gap-1.5"
-                      title="Conclude auction and proceed to fixtures"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Conclude Auction</span>
-                    </button>
-                  </>
                 )}
 
                 {/* Maximize to Fullscreen for Projectors / Big Screens */}
