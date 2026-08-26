@@ -2344,8 +2344,8 @@ export default function TeamChampionshipDashboardPage() {
                       </button>
                     </div>
 
-                    {/* Scrollable Athlete List Container (Single Page Cockpit Height) */}
-                    <div className="max-h-[540px] overflow-y-auto hide-scrollbar space-y-2 pr-0.5">
+                    {/* Scrollable Athlete List Container (Viewport Constrained Height with Internal Scroll) */}
+                    <div className="h-[520px] max-h-[calc(100vh-270px)] overflow-y-auto hide-scrollbar space-y-1.5 pr-0.5">
                       {categoryPlayers.length === 0 ? (
                         <div className="p-6 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase">
                           No athletes in this category.
@@ -2355,6 +2355,7 @@ export default function TeamChampionshipDashboardPage() {
                           const isOnFloor = activePlayer?.auctionPlayerId === p.auctionPlayerId;
                           const isSold = p.state === "SOLD" || p.state === "ASSIGNED";
                           const isUnsold = p.state === "UNSOLD";
+                          const isWaiting = p.state === "WAITING";
                           const effectiveBase = activeCategory?.basePrice && activeCategory.basePrice > 0
                             ? activeCategory.basePrice
                             : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
@@ -2362,17 +2363,32 @@ export default function TeamChampionshipDashboardPage() {
                           return (
                             <div
                               key={p.auctionPlayerId}
-                              className={`p-2.5 rounded-2xl border transition-all flex flex-col gap-2 ${
+                              onClick={() => {
+                                if (!isOnFloor && !isSold && !activePlayer) {
+                                  handleCallPlayer(p.auctionPlayerId);
+                                }
+                              }}
+                              className={`group p-2 sm:p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
                                 isOnFloor
                                   ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
                                   : isSold
-                                  ? "bg-emerald-500/5 border-emerald-500/20 opacity-70"
+                                  ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
                                   : isUnsold
-                                  ? "bg-surface/40 border-foreground/10 opacity-60"
-                                  : "bg-surface hover:bg-white/5 border-foreground/10"
+                                  ? "bg-red-500/5 border-red-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer"
+                                  : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
                               }`}
+                              title={
+                                isOnFloor
+                                  ? "Currently on Floor"
+                                  : isSold
+                                  ? `Sold to ${p.winningTeamName || "Team"} for ${p.finalBid} pts`
+                                  : isUnsold
+                                  ? "Click to re-call unsold athlete to floor"
+                                  : "Click to call athlete to floor"
+                              }
                             >
-                              <div className="flex items-center gap-2 min-w-0">
+                              {/* Athlete Avatar & Info */}
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                                 <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
                                   {p.avatarUrl ? (
                                     <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
@@ -2382,39 +2398,40 @@ export default function TeamChampionshipDashboardPage() {
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                  <h5 className="font-black text-xs text-foreground truncate">{p.playerName}</h5>
+                                  <h5 className="font-black text-xs text-foreground truncate group-hover:text-primary transition-colors">
+                                    {p.playerName}
+                                  </h5>
                                   <span className="text-[10px] text-foreground/50 block">
                                     Base: <strong className="text-primary font-mono">{effectiveBase} pts</strong>
                                   </span>
                                 </div>
                               </div>
 
-                              <div>
+                              {/* Right Status Indicator */}
+                              <div className="shrink-0">
                                 {isOnFloor ? (
-                                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase flex items-center justify-center gap-1 w-full">
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                                    On Floor
+                                    Floor
                                   </span>
                                 ) : isSold ? (
-                                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase block text-center truncate">
-                                    Sold: {p.winningTeamName || "Assigned"} ({p.finalBid} pts)
+                                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase block truncate max-w-[85px]">
+                                    Sold
                                   </span>
                                 ) : isUnsold ? (
-                                  <button
-                                    onClick={() => handleCallPlayer(p.auctionPlayerId)}
-                                    disabled={!!activePlayer}
-                                    className="w-full py-1 rounded-lg bg-surface hover:bg-white/10 text-foreground/70 font-black text-[10px] border border-foreground/15 text-center"
-                                  >
-                                    Re-Call Unsold
-                                  </button>
+                                  <span className="px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-black uppercase block group-hover:hidden">
+                                    Unsold
+                                  </span>
                                 ) : (
-                                  <button
-                                    onClick={() => handleCallPlayer(p.auctionPlayerId)}
-                                    disabled={!!activePlayer}
-                                    className="w-full py-1 rounded-xl bg-primary text-black font-black text-[10px] shadow-sm hover:scale-102 active:scale-98 transition-all disabled:opacity-30"
-                                  >
-                                    Call to Floor 🔨
-                                  </button>
+                                  <span className="text-[10px] text-foreground/30 group-hover:text-primary font-black opacity-0 group-hover:opacity-100 transition-all">
+                                    Call 🔨
+                                  </span>
+                                )}
+
+                                {isUnsold && (
+                                  <span className="text-[9px] font-black text-amber-400 hidden group-hover:inline-block">
+                                    Re-Call 🔨
+                                  </span>
                                 )}
                               </div>
                             </div>
