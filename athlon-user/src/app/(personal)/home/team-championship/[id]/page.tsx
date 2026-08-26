@@ -36,6 +36,7 @@ import {
   Radio,
   Maximize2,
   X,
+  ArrowRight,
 } from 'lucide-react';
 import {
   TeamChampionshipService,
@@ -463,8 +464,47 @@ export default function PublicTeamChampionshipPage() {
           </div>
 
           {/* Action Cards */}
+            {/* Live Auction Arena Spotlight if Stage is AUCTION_STAGE */}
+            {championship.stage === 'AUCTION_STAGE' && (
+              <div
+                className="p-5 rounded-[22px] border relative overflow-hidden space-y-3 bg-gradient-to-br from-red-500/15 via-transparent to-transparent shadow-xl"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'rgba(239, 68, 68, 0.4)',
+                  boxShadow: '0 8px 30px rgba(239, 68, 68, 0.15)',
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                    <span className="text-red-500 font-black text-xs uppercase tracking-wider">🔴 LIVE PLAYER AUCTION</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-black uppercase">
+                    ARENA ACTIVE
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-black text-foreground">Real-Time Player Draft & Bidding</h3>
+                  <p className="text-[11px] text-foreground/60 mt-0.5 leading-snug">
+                    Franchises are calling athletes and placing live bids on the auction floor.
+                  </p>
+                </div>
+
+                <Link
+                  href={`/home/team-championship/${championship.championshipUuid}/auction`}
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-[0.98] transition-all"
+                >
+                  <Gavel className="w-4 h-4" />
+                  <span>ENTER LIVE AUCTION ARENA</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+
+            {/* Quick Registration Cards Grid */}
           {isRegistrationOpen && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div
                 className="p-4 rounded-[22px] border relative overflow-hidden flex flex-col justify-between space-y-3"
                 style={{
@@ -1076,7 +1116,19 @@ export default function PublicTeamChampionshipPage() {
                 </div>
 
                 {/* Direct CTA Buttons */}
-                {isRegistrationOpen && (
+                {championship.stage === 'AUCTION_STAGE' ? (
+                  <div className="pt-3">
+                    <Link
+                      href={`/home/team-championship/${championship.championshipUuid}/auction`}
+                      className="px-8 py-4 rounded-2xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-sm shadow-xl shadow-red-500/25 hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-2.5"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                      <Gavel className="w-4 h-4" />
+                      <span>ENTER LIVE AUCTION ARENA</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ) : isRegistrationOpen ? (
                   <div className="flex items-center gap-4 pt-3">
                     <Link
                       href={teamRegUrl}
@@ -1098,7 +1150,7 @@ export default function PublicTeamChampionshipPage() {
                       <span>{isAuthenticated ? 'Join Player Draft Pool' : 'Login to Join Pool'}</span>
                     </Link>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Right Poster */}

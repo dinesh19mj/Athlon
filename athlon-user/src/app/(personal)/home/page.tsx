@@ -283,6 +283,7 @@ export default function PersonalHomePage() {
   }
 
   const pendingLineups = rawUserMatches.filter((m) => m.status === 'WAITING_FOR_LINEUPS');
+  const liveAuctionChampionship = publicChampionships.find((c) => c.stage === 'AUCTION_STAGE');
 
   return (
     <div className="bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-black">
@@ -386,6 +387,46 @@ export default function PersonalHomePage() {
                 </div>
               </div>
             </div>
+
+            {/* Live Player Auction Banner if Active */}
+            {liveAuctionChampionship && (
+              <div className="px-6 mb-4">
+                <Link
+                  href={`/home/team-championship/${liveAuctionChampionship.championshipUuid}/auction`}
+                  className="block rounded-[22px] p-4 border shadow-xl relative overflow-hidden group transition-all active:scale-[0.98]"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'rgba(239, 68, 68, 0.4)',
+                    boxShadow: '0 8px 25px rgba(239, 68, 68, 0.15)',
+                  }}
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                      <span className="text-red-500 font-black text-xs uppercase tracking-wider">LIVE PLAYER AUCTION</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase">
+                      Bids Active
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-black text-foreground tracking-tight truncate">
+                    {liveAuctionChampionship.name}
+                  </h3>
+                  <p className="text-[11px] text-foreground/60 mt-0.5 truncate">
+                    {liveAuctionChampionship.location || liveAuctionChampionship.venue || 'Badminton League'} • Tap to enter live bidding arena
+                  </p>
+
+                  <div className="mt-3 flex items-center justify-between pt-2 border-t border-foreground/10 text-xs">
+                    <span className="text-foreground/50 font-bold text-[11px]">Real-Time Squad Draft</span>
+                    <span className="text-primary font-black flex items-center gap-1">
+                      Enter Arena <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
+                  </div>
+                </Link>
+              </div>
+            )}
 
             {/* Quick Actions */}
             <div className="px-6 pt-2 pb-3 mb-2 overflow-hidden">
@@ -1264,6 +1305,44 @@ export default function PersonalHomePage() {
                 </div>
               </div>
             </div>
+
+            {/* Live Player Auction Banner in Desktop if Active */}
+            {liveAuctionChampionship && (
+              <div className="mt-6">
+                <Link
+                  href={`/home/team-championship/${liveAuctionChampionship.championshipUuid}/auction`}
+                  className="block rounded-3xl p-5 border shadow-xl relative overflow-hidden group transition-all hover:scale-[1.005]"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'rgba(239, 68, 68, 0.4)',
+                    boxShadow: '0 8px 30px rgba(239, 68, 68, 0.15)',
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400 font-black shadow-inner">
+                        <Radio className="w-6 h-6 animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-red-500 font-black text-xs uppercase tracking-wider">🔴 LIVE PLAYER AUCTION</span>
+                          <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase">
+                            BROADCASTING
+                          </span>
+                        </div>
+                        <h3 className="text-base font-black text-foreground mt-0.5">{liveAuctionChampionship.name}</h3>
+                        <p className="text-xs text-foreground/60">{liveAuctionChampionship.location || liveAuctionChampionship.venue || 'Badminton League'} • Live franchise bidding & player floor draft</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs px-5 py-3 rounded-2xl shadow-lg shadow-red-500/25">
+                      <span>WATCH LIVE AUCTION</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            )}
 
             {/* Quick Action Navigation Strip */}
             <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t" style={{ borderColor: 'var(--athlon-border)' }}>

@@ -24,9 +24,11 @@ import {
   Flame,
   Layers,
   RefreshCw,
+  Gavel,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ScoreService, LiveScore } from '@/lib/api/scores';
+import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
@@ -35,6 +37,7 @@ export default function LiveScorePage() {
   const [activeTab, setActiveTab] = useState<'live' | 'finished'>('live');
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [allScores, setAllScores] = useState<LiveScore[]>([]);
+  const [liveAuctions, setLiveAuctions] = useState<TeamChampionship[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -51,9 +54,10 @@ export default function LiveScorePage() {
 
   const fetchScores = async () => {
     try {
-      const [liveRes, allRes] = await Promise.all([
+      const [liveRes, allRes, champRes] = await Promise.all([
         ScoreService.getLive().catch(() => ({ data: [] })),
         ScoreService.getAll().catch(() => ({ data: [] })),
+        TeamChampionshipService.getAllPublic().catch(() => []),
       ]);
 
       if (liveRes && liveRes.data) {
@@ -62,6 +66,8 @@ export default function LiveScorePage() {
       if (allRes && allRes.data) {
         setAllScores(allRes.data);
       }
+      const champList = (Array.isArray(champRes) ? champRes : ((champRes as any)?.data || [])) as TeamChampionship[];
+      setLiveAuctions(champList.filter((c: TeamChampionship) => c.stage === 'AUCTION_STAGE'));
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to load live/finished scores', err);
@@ -340,7 +346,48 @@ export default function LiveScorePage() {
           {/* Mobile LIVE TAB */}
           {!loading && activeTab === 'live' && (
             <div className="space-y-5 animate-in fade-in duration-300">
-              {displayedLiveMatches.length === 0 ? (
+              {/* Live Player Auctions List */}
+              {liveAuctions.map((champ) => (
+                <section
+                  key={champ.championshipUuid}
+                  className="rounded-[24px] border p-5 shadow-2xl space-y-4 relative overflow-hidden bg-gradient-to-br from-red-500/10 via-transparent to-transparent"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'rgba(239, 68, 68, 0.4)',
+                    boxShadow: '0 8px 30px rgba(239, 68, 68, 0.15)',
+                  }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-primary animate-pulse" />
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                      <span className="text-red-500 font-black text-xs uppercase tracking-wider">LIVE PLAYER AUCTION</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase">
+                      BROADCASTING
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-black text-foreground tracking-tight">{champ.name}</h3>
+                    <p className="text-xs text-foreground/60 mt-0.5">
+                      {champ.location || champ.venue || 'Badminton Championship'} • Squad Floor Draft & Live Franchise Bids
+                    </p>
+                  </div>
+
+                  <Link
+                    href={`/home/team-championship/${champ.championshipUuid}/auction`}
+                    className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    <Gavel className="w-4 h-4" />
+                    <span>ENTER LIVE AUCTION FLOOR</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </section>
+              ))}
+
+              {displayedLiveMatches.length === 0 && liveAuctions.length === 0 ? (
                 <div
                   className="rounded-2xl border border-dashed p-10 text-center"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}

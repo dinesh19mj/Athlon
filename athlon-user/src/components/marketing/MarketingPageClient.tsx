@@ -98,6 +98,7 @@ export function MarketingPageClient() {
   }, []);
 
   const currentLive = liveScores[0];
+  const liveAuctionChampionship = championships.find((c) => c.stage === 'AUCTION_STAGE');
   const meta = currentLive?.scoreMeta || {};
   const teamAName = meta.config?.teamAName || (meta.config?.teamA ? meta.config.teamA.join(' & ') : 'Team A');
   const teamBName = meta.config?.teamBName || (meta.config?.teamB ? meta.config.teamB.join(' & ') : 'Team B');
@@ -218,6 +219,58 @@ export function MarketingPageClient() {
               );
             })}
           </section>
+
+          {/* 2.5 Live Player Auction Banner Card */}
+          {liveAuctionChampionship && (
+            <section
+              className="rounded-[24px] p-5 border shadow-2xl relative overflow-hidden space-y-4"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'rgba(239, 68, 68, 0.4)',
+                boxShadow: '0 10px 30px rgba(239, 68, 68, 0.15)',
+              }}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                  <span className="text-red-500 font-black text-xs tracking-wider uppercase">LIVE PLAYER AUCTION</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase">
+                  Bidding In Progress
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-base font-black text-foreground tracking-tight">
+                  {liveAuctionChampionship.name}
+                </h3>
+                <p className="text-xs text-foreground/60 mt-0.5">
+                  {liveAuctionChampionship.location || liveAuctionChampionship.venue || 'Badminton Championship'} • Squad Draft Floor & Live Bids
+                </p>
+              </div>
+
+              <div
+                className="p-3 rounded-xl border flex items-center justify-between text-xs"
+                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+              >
+                <div className="flex items-center gap-2">
+                  <Gavel className="w-4 h-4 text-primary" />
+                  <span className="text-foreground/70 font-semibold">Live Floor Stream:</span>
+                </div>
+                <span className="font-black text-primary uppercase text-[11px]">Real-Time Draft</span>
+              </div>
+
+              <Link
+                href={`/home/team-championship/${liveAuctionChampionship.championshipUuid}/auction`}
+                className="w-full py-3.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary rounded-xl text-white font-black text-xs flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-red-500/25"
+              >
+                <span>ENTER LIVE AUCTION ARENA</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </section>
+          )}
 
           {/* 3. Live Match Card */}
           {liveScores.length > 0 && currentLive && (
@@ -716,7 +769,45 @@ export function MarketingPageClient() {
             </div>
 
             {/* Right 5 Columns: Interactive Match / Championship Spotlight Widget */}
-            <div className="col-span-5">
+            <div className="col-span-5 space-y-4">
+              {liveAuctionChampionship && (
+                <div
+                  className="rounded-[32px] border p-6 shadow-2xl backdrop-blur-2xl space-y-4"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'rgba(239, 68, 68, 0.4)',
+                    boxShadow: '0 20px 50px rgba(239, 68, 68, 0.15)',
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                      <span className="text-red-500 font-black text-xs uppercase tracking-wider">LIVE PLAYER AUCTION</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase">
+                      BROADCASTING NOW
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-black text-foreground tracking-tight">
+                      {liveAuctionChampionship.name}
+                    </h3>
+                    <p className="text-xs text-foreground/60 mt-0.5">
+                      {liveAuctionChampionship.location || liveAuctionChampionship.venue || 'Badminton League'} • Live franchise bidding & player floor draft
+                    </p>
+                  </div>
+
+                  <Link
+                    href={`/home/team-championship/${liveAuctionChampionship.championshipUuid}/auction`}
+                    className="w-full py-3.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary rounded-xl text-white font-black text-xs flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-red-500/25"
+                  >
+                    <span>WATCH LIVE AUCTION ARENA</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
+
               {liveScores.length > 0 && currentLive ? (
                 <div
                   className="rounded-[32px] border p-7 shadow-2xl backdrop-blur-2xl space-y-5"
