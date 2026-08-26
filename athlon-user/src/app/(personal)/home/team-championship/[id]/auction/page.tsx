@@ -19,6 +19,8 @@ import {
   Eye,
   Activity,
   Layers,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -45,6 +47,31 @@ export default function TeamOwnerAuctionArenaPage() {
   const [activeTab, setActiveTab] = useState<"floor" | "purses" | "sold">("floor");
   const [loading, setLoading] = useState(true);
   const [placingBid, setPlacingBid] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      setIsFullscreen(true);
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      setIsFullscreen(false);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      if (!document.fullscreenElement) {
+        setIsFullscreen(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
 
   const getCategoryBasePrice = (categoryName?: string, categoryId?: number, fallbackBasePrice?: number) => {
     const cat = championship?.categories?.find(
@@ -159,30 +186,55 @@ export default function TeamOwnerAuctionArenaPage() {
           </div>
         </div>
 
-        {/* Team Selector & Purse Badge */}
-        {auctionTeams.length > 0 && (
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedMyTeamId || ""}
-              onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
-              className="px-2.5 py-1.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary hidden sm:inline-block"
-              style={{ borderColor: "var(--athlon-border)" }}
-            >
-              {auctionTeams.map((t) => (
-                <option key={t.team.teamId} value={t.team.teamId}>
-                  {t.team.teamName} ({t.team.remainingBudget} {currencyLabel})
-                </option>
-              ))}
-            </select>
+        {/* Right Actions: Team Selector, Purse Badge, & Maximize Fullscreen */}
+        <div className="flex items-center gap-2">
+          {auctionTeams.length > 0 && (
+            <>
+              <select
+                value={selectedMyTeamId || ""}
+                onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
+                className="px-2.5 py-1.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary hidden sm:inline-block"
+                style={{ borderColor: "var(--athlon-border)" }}
+              >
+                {auctionTeams.map((t) => (
+                  <option key={t.team.teamId} value={t.team.teamId}>
+                    {t.team.teamName} ({t.team.remainingBudget} {currencyLabel})
+                  </option>
+                ))}
+              </select>
 
-            {myTeamSummary && (
-              <div className="px-3 py-1.5 rounded-xl bg-primary/15 border border-primary/30 text-primary font-black text-xs shadow-sm flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5" />
-                <span>{myTeamSummary.team.remainingBudget} {currencyLabel}</span>
-              </div>
+              {myTeamSummary && (
+                <div className="px-3 py-1.5 rounded-xl bg-primary/15 border border-primary/30 text-primary font-black text-xs shadow-sm flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5" />
+                  <span>{myTeamSummary.team.remainingBudget} {currencyLabel}</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Maximize to Fullscreen for Projectors / Big Screens */}
+          <button
+            onClick={toggleFullscreen}
+            className={`p-2 sm:px-3 sm:py-1.5 rounded-xl border font-black text-xs transition-all flex items-center gap-1.5 shadow-sm ${
+              isFullscreen
+                ? "bg-amber-500 text-black border-amber-400 hover:bg-amber-400"
+                : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
+            }`}
+            title={isFullscreen ? "Exit Fullscreen" : "Maximize to Fullscreen for Projector Screen"}
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Exit Fullscreen</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5 text-primary" />
+                <span className="hidden sm:inline">Maximize</span>
+              </>
             )}
-          </div>
-        )}
+          </button>
+        </div>
       </header>
 
       {/* 2. Main Content Area */}

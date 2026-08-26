@@ -32,6 +32,9 @@ import {
   Flame,
   Radio,
   ExternalLink,
+  Maximize2,
+  Minimize2,
+  Tv,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -83,6 +86,31 @@ export default function TeamChampionshipDashboardPage() {
   const [selectedAuctionCategoryFilter, setSelectedAuctionCategoryFilter] = useState<string>("ALL");
   const [searchAuctionPlayerQuery, setSearchAuctionPlayerQuery] = useState("");
   const [customBidAmount, setCustomBidAmount] = useState<number>(0);
+  const [isAuctionFullscreen, setIsAuctionFullscreen] = useState(false);
+
+  const toggleAuctionFullscreen = () => {
+    if (!isAuctionFullscreen) {
+      setIsAuctionFullscreen(true);
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      setIsAuctionFullscreen(false);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      if (!document.fullscreenElement) {
+        setIsAuctionFullscreen(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
 
   // Fixture & Lineup State
   const [selectedFixtureId, setSelectedFixtureId] = useState<number | null>(null);
@@ -1578,7 +1606,13 @@ export default function TeamChampionshipDashboardPage() {
 
         {/* TAB 4: LIVE AUCTION ARENA */}
         {activeTab === "auction" && (
-          <div className="space-y-6">
+          <div
+            className={
+              isAuctionFullscreen
+                ? "fixed inset-0 z-[9999] bg-background w-screen h-screen overflow-y-auto p-4 sm:p-8 space-y-6"
+                : "space-y-6"
+            }
+          >
             {/* Live Broadcast Status & Stage Switcher */}
             <div
               className={`p-4 sm:p-5 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg ${
@@ -1650,6 +1684,29 @@ export default function TeamChampionshipDashboardPage() {
                     </button>
                   </>
                 )}
+
+                {/* Maximize to Fullscreen for Projectors / Big Screens */}
+                <button
+                  onClick={toggleAuctionFullscreen}
+                  className={`px-4 py-2.5 rounded-xl border font-black text-xs transition-all flex items-center gap-2 shadow-sm ${
+                    isAuctionFullscreen
+                      ? "bg-amber-500 text-black border-amber-400 hover:bg-amber-400"
+                      : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
+                  }`}
+                  title={isAuctionFullscreen ? "Exit Fullscreen" : "Maximize to Fullscreen for Projector Screen"}
+                >
+                  {isAuctionFullscreen ? (
+                    <>
+                      <Minimize2 className="w-3.5 h-3.5" />
+                      <span>Exit Fullscreen</span>
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="w-3.5 h-3.5 text-primary" />
+                      <span>Maximize Screen</span>
+                    </>
+                  )}
+                </button>
 
                 <Link
                   href={`/home/team-championship/${championshipUuid}/auction`}
