@@ -219,28 +219,33 @@ public class ChampionshipRegistrationService {
 
     public List<ChampionshipPlayerRegistration> getPlayersByChampionship(UUID championshipUuid) {
         List<ChampionshipPlayerRegistration> players = playerRegistrationRepository.findByChampionshipUuid(championshipUuid);
+        if (players == null) return new ArrayList<>();
         Optional<TeamChampionship> champOpt = championshipRepository.findByChampionshipUuid(championshipUuid);
         if (champOpt.isPresent()) {
             List<ChampionshipCategory> categories = categoryRepository.findByChampionshipIdOrderByDisplayOrderAsc(champOpt.get().getChampionshipId());
             Optional<AuctionConfig> auctionOpt = auctionConfigRepository.findByChampionshipId(champOpt.get().getChampionshipId());
-            List<AuctionCategoryConfig> accList = auctionOpt.isPresent()
+            List<AuctionCategoryConfig> accList = (auctionOpt.isPresent() && auctionOpt.get().getAuctionId() != null)
                     ? auctionCategoryConfigRepository.findByAuctionId(auctionOpt.get().getAuctionId())
-                    : List.of();
+                    : new ArrayList<>();
 
             for (ChampionshipPlayerRegistration p : players) {
-                // Find matching category base price
+                if (p == null) continue;
                 Double catBasePrice = null;
-                for (ChampionshipCategory c : categories) {
-                    if ((p.getCategoryId() != null && p.getCategoryId().equals(c.getCategoryId())) ||
-                        (p.getCategoryName() != null && c.getName() != null && p.getCategoryName().equalsIgnoreCase(c.getName().trim()))) {
-                        if (c.getBasePrice() != null && c.getBasePrice() > 0 && c.getBasePrice() != 1000.0) {
-                            catBasePrice = c.getBasePrice();
-                            break;
+                if (categories != null) {
+                    for (ChampionshipCategory c : categories) {
+                        if (c == null) continue;
+                        if ((p.getCategoryId() != null && p.getCategoryId().equals(c.getCategoryId())) ||
+                            (p.getCategoryName() != null && c.getName() != null && p.getCategoryName().equalsIgnoreCase(c.getName().trim()))) {
+                            if (c.getBasePrice() != null && c.getBasePrice() > 0 && c.getBasePrice() != 1000.0) {
+                                catBasePrice = c.getBasePrice();
+                                break;
+                            }
                         }
                     }
                 }
-                if (catBasePrice == null) {
+                if (catBasePrice == null && accList != null) {
                     for (AuctionCategoryConfig acc : accList) {
+                        if (acc == null) continue;
                         if (p.getCategoryName() != null && acc.getCategoryName() != null && p.getCategoryName().equalsIgnoreCase(acc.getCategoryName().trim())) {
                             if (acc.getCategoryBasePrice() != null && acc.getCategoryBasePrice() > 0) {
                                 catBasePrice = acc.getCategoryBasePrice();

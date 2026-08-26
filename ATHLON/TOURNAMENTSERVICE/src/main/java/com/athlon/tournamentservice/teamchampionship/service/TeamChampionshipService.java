@@ -296,18 +296,21 @@ public class TeamChampionshipService {
 
         List<ChampionshipCategory> categories = categoryRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId());
         Optional<AuctionConfig> auctionOpt = auctionConfigRepository.findByChampionshipId(championship.getChampionshipId());
-        if (auctionOpt.isPresent()) {
+        if (auctionOpt.isPresent() && categories != null) {
             List<AuctionCategoryConfig> accList = auctionCategoryConfigRepository.findByAuctionId(auctionOpt.get().getAuctionId());
-            Map<String, Double> basePriceMap = accList.stream().collect(Collectors.toMap(
-                acc -> acc.getCategoryName() != null ? acc.getCategoryName().toLowerCase().trim() : "",
-                AuctionCategoryConfig::getCategoryBasePrice,
-                (existing, replacement) -> existing
-            ));
-            for (ChampionshipCategory cat : categories) {
-                if ((cat.getBasePrice() == null || cat.getBasePrice() <= 0 || cat.getBasePrice() == 1000.0) && cat.getName() != null) {
-                    Double bp = basePriceMap.get(cat.getName().toLowerCase().trim());
-                    if (bp != null && bp > 0) {
-                        cat.setBasePrice(bp);
+            if (accList != null) {
+                Map<String, Double> basePriceMap = new HashMap<>();
+                for (AuctionCategoryConfig acc : accList) {
+                    if (acc != null && acc.getCategoryName() != null && acc.getCategoryBasePrice() != null) {
+                        basePriceMap.put(acc.getCategoryName().toLowerCase().trim(), acc.getCategoryBasePrice());
+                    }
+                }
+                for (ChampionshipCategory cat : categories) {
+                    if (cat != null && (cat.getBasePrice() == null || cat.getBasePrice() <= 0 || cat.getBasePrice() == 1000.0) && cat.getName() != null) {
+                        Double bp = basePriceMap.get(cat.getName().toLowerCase().trim());
+                        if (bp != null && bp > 0) {
+                            cat.setBasePrice(bp);
+                        }
                     }
                 }
             }
