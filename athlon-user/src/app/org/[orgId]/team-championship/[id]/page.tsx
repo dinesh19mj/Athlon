@@ -17,6 +17,8 @@ import {
   RotateCcw,
   DollarSign,
   Plus,
+  ChevronDown,
+  ChevronUp,
   Coins,
   ChevronRight,
   ArrowLeft,
@@ -107,8 +109,16 @@ export default function TeamChampionshipDashboardPage() {
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
   const [spinningCategoryName, setSpinningCategoryName] = useState<string>("");
+  const [categoryWheelRotation, setCategoryWheelRotation] = useState<number>(0);
+  const [categoryWheelCategories, setCategoryWheelCategories] = useState<any[]>([]);
+  const [categoryWheelWinner, setCategoryWheelWinner] = useState<any | null>(null);
+  const [isCategorySectionExpanded, setIsCategorySectionExpanded] = useState<boolean>(false);
   const [isSpinningPlayer, setIsSpinningPlayer] = useState(false);
   const [spinningPlayerName, setSpinningPlayerName] = useState<string>("");
+
+  const CATEGORY_WHEEL_COLORS = [
+    "#6366f1", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#8b5cf6", "#ef4444", "#14b8a6", "#f97316"
+  ];
 
   // Synthesized Web Audio Sound Effects
   const playAudioEffect = (type: "tick" | "win" | "gavel") => {
@@ -369,7 +379,7 @@ export default function TeamChampionshipDashboardPage() {
     }
   }, [auctionState?.activePlayer?.auctionPlayerId, auctionState?.currentBid, auctionState?.winningTeamId]);
 
-  // Spinner 1: Category Snipper
+  // Spinner 1: Round Wheel Category Snipper
   const runCategorySnipper = () => {
     const availableCategories = (championship?.categories || []).filter((c) => {
       const catPlayers = auctionPlayers.filter(
@@ -387,33 +397,62 @@ export default function TeamChampionshipDashboardPage() {
       return;
     }
 
+    if (candidateList.length === 1) {
+      setSelectedAuctionPhaseCatId(candidateList[0].categoryId || null);
+      setIsCategorySectionExpanded(false);
+      playAudioEffect("win");
+      return;
+    }
+
+    const shuffled = [...candidateList];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setCategoryWheelCategories(shuffled);
     setIsSpinningCategory(true);
-    let counter = 0;
-    const totalTicks = 22 + Math.floor(Math.random() * 8);
-    let speed = 60;
+    setCategoryWheelWinner(null);
+    setSpinningCategoryName("");
 
-    const tick = () => {
-      counter++;
-      const pick = candidateList[counter % candidateList.length];
-      setSpinningCategoryName(pick.name);
+    const numCats = shuffled.length;
+    const winningIndex = Math.floor(Math.random() * numCats);
+    const sliceAngle = 360 / numCats;
+    const sliceCenter = winningIndex * sliceAngle + sliceAngle / 2;
+    const randomOffset = (Math.random() * 0.6 - 0.3) * sliceAngle;
+    const winningSliceTarget = sliceCenter + randomOffset;
+
+    // 4 to 5 full rotations + landing slice under top pointer (270deg offset in CSS wheel)
+    const spins = 4 + Math.floor(Math.random() * 2);
+    const baseRotation = Math.ceil(categoryWheelRotation / 360) * 360;
+    const targetRotation = baseRotation + spins * 360 + (360 - winningSliceTarget);
+
+    setTimeout(() => {
+      setCategoryWheelRotation(targetRotation);
+    }, 60);
+
+    // Audio tick ticker during wheel rotation
+    let tickCount = 0;
+    const tickInterval = setInterval(() => {
+      tickCount++;
       playAudioEffect("tick");
+      if (tickCount > 28) clearInterval(tickInterval);
+    }, 160);
 
-      if (counter < totalTicks) {
-        if (counter > totalTicks - 7) {
-          speed += 40;
-        }
-        setTimeout(tick, speed);
-      } else {
-        const winner = candidateList[Math.floor(Math.random() * candidateList.length)];
-        setSpinningCategoryName(winner.name);
-        setSelectedAuctionPhaseCatId(winner.categoryId || null);
-        playAudioEffect("win");
-        setTimeout(() => {
-          setIsSpinningCategory(false);
-        }, 1200);
-      }
-    };
-    tick();
+    // After animation finishes (5 seconds)
+    setTimeout(() => {
+      clearInterval(tickInterval);
+      const selected = shuffled[winningIndex];
+      setCategoryWheelWinner(selected);
+      setSpinningCategoryName(selected.name);
+      setSelectedAuctionPhaseCatId(selected.categoryId || null);
+      setIsCategorySectionExpanded(false);
+      playAudioEffect("win");
+
+      setTimeout(() => {
+        setIsSpinningCategory(false);
+        setCategoryWheelWinner(null);
+      }, 2400);
+    }, 5100);
   };
 
   // Spinner 2: Player Snipper within Selected Category
@@ -2003,73 +2042,158 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
               </div>
 
-              {/* 2. CATEGORY PHASE CONTROLLER & SPINNER 1 */}
-              <div
-                className="p-5 sm:p-6 rounded-3xl border space-y-4 shadow-md"
-                style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-md bg-primary/20 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/30">
-                        Phase 1 Selection
-                      </span>
-                      <h4 className="text-sm sm:text-base font-black text-foreground uppercase tracking-tight">
-                        Championship Categories ({categories.length})
-                      </h4>
+              {/* 2. CATEGORY PHASE CONTROLLER (SMART COLLAPSIBLE + ROUND SNIPPER) */}
+              {activeCategory && !isCategorySectionExpanded ? (
+                /* Compact Active Phase Spotlight Banner */
+                <div
+                  className="p-4 sm:p-5 rounded-3xl border shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all animate-fadeIn"
+                  style={{
+                    backgroundColor: "var(--athlon-card)",
+                    borderColor: "var(--athlon-primary, #6366f1)",
+                  }}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary/30 to-indigo-500/20 border-2 border-primary flex items-center justify-center text-primary shadow-lg shadow-primary/20 shrink-0">
+                      <Layers className="w-6 h-6" />
                     </div>
-                    <p className="text-xs text-foreground/60 mt-0.5">
-                      Select a category phase manually or use the Category Snipper to randomly select the next auction phase.
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-wider">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" /> Active Phase
+                        </span>
+                        <span className="text-xs text-foreground/50 font-bold">
+                          Base: <strong className="text-primary font-mono">{activeCategory.basePrice || 1000} pts</strong>
+                        </span>
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight mt-0.5">
+                        {activeCategory.name}
+                      </h3>
+                      <div className="text-xs text-foreground/60 font-semibold mt-0.5">
+                        Pool: <strong className="text-foreground">{waitingCategoryPlayers.length} Waiting</strong> •{" "}
+                        <span>{categoryPlayers.filter((p) => p.state === "SOLD" || p.state === "ASSIGNED").length} Sold</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={runCategorySnipper}
-                    disabled={isSpinningCategory}
-                    className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-primary text-white font-black text-xs shadow-lg shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start sm:self-auto"
-                  >
-                    <Dices className={`w-4 h-4 ${isSpinningCategory ? "animate-spin" : ""}`} />
-                    <span>🎰 Spin Category (Snipper)</span>
-                  </button>
+                  <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+                    <button
+                      onClick={runCategorySnipper}
+                      disabled={isSpinningCategory}
+                      className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-primary text-white font-black text-xs shadow-lg shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                      <Dices className={`w-4 h-4 ${isSpinningCategory ? "animate-spin" : ""}`} />
+                      <span>🎰 Spin Next Category</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsCategorySectionExpanded(true)}
+                      className="px-4 py-2.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                    >
+                      <span>Switch Category</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-foreground/50" />
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                /* Full Redesigned Category Selection Deck */
+                <div
+                  className="p-5 sm:p-6 rounded-3xl border space-y-4 shadow-md transition-all animate-fadeIn"
+                  style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-md bg-primary/20 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/30">
+                          Phase Selection
+                        </span>
+                        <h4 className="text-sm sm:text-base font-black text-foreground uppercase tracking-tight">
+                          Championship Categories ({categories.length})
+                        </h4>
+                      </div>
+                      <p className="text-xs text-foreground/60 mt-0.5">
+                        Select a category manually or spin the Round Snipper to draw the next auction category.
+                      </p>
+                    </div>
 
-                {/* Category Pills Strip */}
-                <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1">
-                  {categories.map((cat) => {
-                    const catPlayers = auctionPlayers.filter(
-                      (p) =>
-                        (p.categoryId === cat.categoryId ||
-                          (p.categoryName && cat.name && p.categoryName.toLowerCase().trim() === cat.name.toLowerCase().trim()))
-                    );
-                    const waitingCount = catPlayers.filter((p) => p.state === "WAITING" || p.state === "UNSOLD").length;
-                    const soldCount = catPlayers.filter((p) => p.state === "SOLD" || p.state === "ASSIGNED").length;
-                    const isSelected = activeCategory?.categoryId === cat.categoryId;
-
-                    return (
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
                       <button
-                        key={cat.categoryId}
-                        onClick={() => setSelectedAuctionPhaseCatId(cat.categoryId || null)}
-                        className={`p-3.5 rounded-2xl border text-left shrink-0 transition-all flex flex-col gap-1.5 min-w-[170px] ${
-                          isSelected
-                            ? "bg-primary/15 border-primary text-foreground shadow-md ring-2 ring-primary/30"
-                            : "bg-surface hover:bg-white/5 border-foreground/10 text-foreground/80"
-                        }`}
+                        onClick={runCategorySnipper}
+                        disabled={isSpinningCategory}
+                        className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-primary text-white font-black text-xs shadow-lg shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-black text-xs truncate">{cat.name}</span>
-                          {isSelected && (
-                            <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] text-foreground/60">
-                          <span>Base: <strong className="text-primary font-mono">{cat.basePrice || 1000} pts</strong></span>
-                          <span>{waitingCount} waiting • {soldCount} sold</span>
-                        </div>
+                        <Dices className={`w-4 h-4 ${isSpinningCategory ? "animate-spin" : ""}`} />
+                        <span>🎰 Spin Category (Round Snipper)</span>
                       </button>
-                    );
-                  })}
+
+                      {activeCategory && (
+                        <button
+                          onClick={() => setIsCategorySectionExpanded(false)}
+                          className="p-2.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground/70 hover:text-foreground transition-all"
+                          title="Collapse category selection"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Redesigned Category Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                    {categories.map((cat, idx) => {
+                      const catPlayers = auctionPlayers.filter(
+                        (p) =>
+                          (p.categoryId === cat.categoryId ||
+                            (p.categoryName && cat.name && p.categoryName.toLowerCase().trim() === cat.name.toLowerCase().trim()))
+                      );
+                      const waitingCount = catPlayers.filter((p) => p.state === "WAITING" || p.state === "UNSOLD").length;
+                      const soldCount = catPlayers.filter((p) => p.state === "SOLD" || p.state === "ASSIGNED").length;
+                      const isSelected = activeCategory?.categoryId === cat.categoryId;
+                      const accentColor = CATEGORY_WHEEL_COLORS[idx % CATEGORY_WHEEL_COLORS.length];
+
+                      return (
+                        <div
+                          key={cat.categoryId}
+                          onClick={() => {
+                            setSelectedAuctionPhaseCatId(cat.categoryId || null);
+                            setIsCategorySectionExpanded(false);
+                          }}
+                          className={`p-4 rounded-3xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 shadow-sm hover:scale-102 ${
+                            isSelected
+                              ? "bg-primary/20 border-primary ring-2 ring-primary/40 shadow-primary/10"
+                              : "bg-surface/80 hover:bg-surface border-foreground/15 hover:border-primary/40"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: accentColor }}
+                              />
+                              <span className="font-black text-sm text-foreground truncate">{cat.name}</span>
+                            </div>
+                            {isSelected && (
+                              <span className="px-2 py-0.5 rounded-full bg-primary text-black font-black text-[9px] uppercase">
+                                Active
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5 pt-1 border-t border-foreground/10">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-foreground/50">Base Price</span>
+                              <strong className="text-primary font-mono">{cat.basePrice || 1000} pts</strong>
+                            </div>
+                            <div className="flex items-center justify-between text-[11px] text-foreground/60 font-semibold">
+                              <span>{waitingCount} waiting</span>
+                              <span>{soldCount} sold</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* 3. MAIN ARENA: FULL-WIDTH PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
               <div className="space-y-6">
@@ -2435,25 +2559,88 @@ export default function TeamChampionshipDashboardPage() {
                 )}
               </div>
 
-              {/* 5. CATEGORY SNIPPER MODAL / ROULETTE OVERLAY */}
+              {/* 5. ROUND WHEEL CATEGORY SNIPPER MODAL */}
               {isSpinningCategory && (
-                <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                  <div className="max-w-md w-full p-8 rounded-3xl border border-primary/40 bg-card text-center space-y-6 shadow-2xl shadow-primary/20 animate-scaleIn">
-                    <div className="w-20 h-20 rounded-3xl bg-primary/20 border border-primary flex items-center justify-center text-primary mx-auto shadow-inner animate-bounce">
-                      <Dices className="w-10 h-10 text-primary" />
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-xs font-black uppercase tracking-widest text-primary">
-                        🎰 Category Snipper Spinning...
+                <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+                  <div className="max-w-md w-full p-8 rounded-3xl border border-primary/40 bg-card text-center space-y-6 shadow-2xl shadow-primary/25 animate-scaleIn relative overflow-hidden flex flex-col items-center">
+                    <div className="space-y-1 relative z-10">
+                      <span className="text-xs font-black uppercase tracking-widest text-primary flex items-center justify-center gap-1.5">
+                        <Dices className="w-4 h-4" /> Category Snipper
                       </span>
-                      <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight h-12 flex items-center justify-center">
-                        {spinningCategoryName || "Choosing..."}
-                      </h2>
+                      <h3 className="text-2xl font-black text-foreground tracking-tight">
+                        {categoryWheelWinner ? "Category Selected!" : "Spinning Wheel..."}
+                      </h3>
                     </div>
 
-                    <div className="w-full bg-foreground/10 h-2 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary animate-pulse w-full" />
+                    {/* Circular Spinning Wheel */}
+                    <div className="relative w-72 h-72 my-2 flex items-center justify-center">
+                      {/* Top Pointer Arrow */}
+                      <div className="absolute -top-3 z-30 flex flex-col items-center pointer-events-none">
+                        <div className="w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[24px] border-t-amber-400 drop-shadow-[0_4px_10px_rgba(245,158,11,0.8)]" />
+                        <div className="w-2 h-2 rounded-full bg-amber-200 -mt-1 shadow-sm" />
+                      </div>
+
+                      {/* Rotating Wheel Disk */}
+                      <div
+                        className="w-full h-full rounded-full border-4 border-white/20 shadow-2xl relative overflow-hidden transition-transform ease-out"
+                        style={{
+                          transform: `rotate(${categoryWheelRotation}deg)`,
+                          transitionDuration: "5000ms",
+                          transitionTimingFunction: "cubic-bezier(0.12, 0.8, 0.25, 1)",
+                          background: (() => {
+                            const cats = categoryWheelCategories.length > 0 ? categoryWheelCategories : categories;
+                            if (cats.length === 0) return "#6366f1";
+                            if (cats.length === 1) return CATEGORY_WHEEL_COLORS[0];
+                            const slice = 360 / cats.length;
+                            const parts = cats.map(
+                              (_, i) =>
+                                `${CATEGORY_WHEEL_COLORS[i % CATEGORY_WHEEL_COLORS.length]} ${i * slice}deg ${
+                                  (i + 1) * slice
+                                }deg`
+                            );
+                            return `conic-gradient(from 0deg, ${parts.join(", ")})`;
+                          })(),
+                        }}
+                      >
+                        {/* Slice Labels */}
+                        {(categoryWheelCategories.length > 0 ? categoryWheelCategories : categories).map((cat, i, arr) => {
+                          const sliceAngle = 360 / arr.length;
+                          const labelAngle = i * sliceAngle + sliceAngle / 2;
+
+                          return (
+                            <div
+                              key={cat.categoryId || i}
+                              className="absolute top-1/2 left-1/2 origin-left -translate-y-1/2 flex items-center justify-end pointer-events-none"
+                              style={{
+                                width: "135px",
+                                transform: `rotate(${labelAngle - 90}deg)`,
+                              }}
+                            >
+                              <span className="text-white font-black text-xs tracking-wider uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pr-3 truncate max-w-[100px]">
+                                {cat.name}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Center Jewel / Hub */}
+                      <div className="absolute z-20 w-16 h-16 rounded-full bg-surface border-4 border-primary shadow-2xl flex items-center justify-center text-primary font-black text-lg">
+                        <Award className="w-7 h-7 text-primary" />
+                      </div>
+                    </div>
+
+                    {/* Winner Banner or Ticker */}
+                    <div className="h-14 flex items-center justify-center relative z-10 w-full">
+                      {categoryWheelWinner ? (
+                        <div className="px-6 py-2 rounded-2xl bg-emerald-500 text-black font-black text-lg uppercase shadow-xl shadow-emerald-500/30 animate-bounce">
+                          🎉 {categoryWheelWinner.name}
+                        </div>
+                      ) : (
+                        <div className="text-sm font-black text-foreground/50 uppercase tracking-widest animate-pulse">
+                          Drawing next phase...
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
