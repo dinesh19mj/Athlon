@@ -1117,7 +1117,11 @@ export default function CreateTournamentPage() {
                     <div className="space-y-1 text-xs text-foreground/60">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span>{formData.startDate || 'Start Date'} - {formData.endDate || 'End Date'}</span>
+                        <span>
+                          {formData.startDate && formData.endDate && formData.startDate === formData.endDate
+                            ? formData.startDate
+                            : `${formData.startDate || 'Start Date'} - ${formData.endDate || 'End Date'}`}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

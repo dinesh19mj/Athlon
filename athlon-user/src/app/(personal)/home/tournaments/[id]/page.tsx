@@ -274,16 +274,23 @@ export default function PersonalTournamentDetailsPage() {
           }}
         >
           {posterUrl ? (
-            <div className="w-full h-56 sm:h-72 relative bg-black/40 border-b border-white/10">
-              <img
-                src={posterUrl}
-                alt={`${tournament.name} Poster`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
+            <div className="w-full relative bg-black/70 border-b overflow-hidden" style={{ borderColor: 'var(--athlon-border)' }}>
+              {/* Blurred Ambient Backdrop */}
+              <div
+                className="absolute inset-0 bg-cover bg-center filter blur-2xl scale-125 opacity-40 pointer-events-none"
+                style={{ backgroundImage: `url(${posterUrl})` }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1D] via-transparent to-black/20" />
+              <div className="w-full relative flex items-center justify-center p-2.5 sm:p-4 min-h-[360px] max-h-[580px]">
+                <img
+                  src={posterUrl}
+                  alt={`${tournament.name} Poster`}
+                  className="w-auto h-auto max-w-full max-h-[540px] object-contain rounded-2xl shadow-2xl relative z-10"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-black/30 pointer-events-none z-10" />
+              </div>
             </div>
           ) : (
             <div className="w-full h-32 relative bg-gradient-to-br from-primary/20 via-surface to-background border-b border-white/10 flex items-center justify-center">

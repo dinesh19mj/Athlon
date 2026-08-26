@@ -52,6 +52,25 @@ export default function TournamentsPage() {
     }
   };
 
+  const formatEventDates = (start?: string, end?: string) => {
+    if (!start) return 'Dates TBA';
+    try {
+      const s = new Date(start);
+      const e = end ? new Date(end) : null;
+      if (isNaN(s.getTime())) return 'Dates TBA';
+
+      if (!e || isNaN(e.getTime()) || s.toDateString() === e.toDateString()) {
+        return s.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+
+      const sStr = s.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const eStr = e.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      return `${sStr} – ${eStr}`;
+    } catch {
+      return 'Dates TBA';
+    }
+  };
+
   const [eventType, setEventType] = useState<'all' | 'tournaments' | 'championships'>('all');
   const [activeTab, setActiveTab] = useState<'all' | 'public' | 'private'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -428,7 +447,7 @@ export default function TournamentsPage() {
                             <div className="flex items-center justify-between text-[11px] text-foreground/70">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3 text-primary" />
-                                <span>{startDate}</span>
+                                <span>{formatEventDates(champ.startDate, champ.endDate)}</span>
                               </div>
                               <div className="flex items-center gap-1 font-bold text-foreground">
                                 <Users className="w-3 h-3 text-primary" />
@@ -506,7 +525,7 @@ export default function TournamentsPage() {
                             <div className="flex items-center justify-between text-[11px] text-foreground/70">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3 text-primary" />
-                                <span>{startDate}</span>
+                                <span>{formatEventDates(tournament.startDate, tournament.endDate)}</span>
                               </div>
                               {tournament.location && (
                                 <div className="flex items-center gap-1 truncate max-w-[150px]">
@@ -975,7 +994,7 @@ export default function TournamentsPage() {
                                 <div className="space-y-1.5 text-xs text-foreground/75">
                                   <div className="flex items-center gap-2 font-medium">
                                     <Calendar className="w-4 h-4 text-primary shrink-0" />
-                                    <span>{startDate} {endDate ? `- ${endDate}` : ''}</span>
+                                    <span>{formatEventDates(champ.startDate, champ.endDate)}</span>
                                   </div>
 
                                   <div className="flex items-center gap-2 font-medium">
@@ -1154,7 +1173,7 @@ export default function TournamentsPage() {
                                 <div className="space-y-1.5 text-xs text-foreground/75">
                                   <div className="flex items-center gap-2 font-medium">
                                     <Calendar className="w-4 h-4 text-primary shrink-0" />
-                                    <span>{startDate} - {endDate}</span>
+                                    <span>{formatEventDates(tournament.startDate, tournament.endDate)}</span>
                                   </div>
 
                                   {tournament.location && (

@@ -634,6 +634,29 @@ export default function ProfilePage() {
 
           <MyOrganizationsList />
 
+          {/* APPEARANCE & THEMES (Color + 2D/3D Icons) */}
+          <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
+            <div className="px-4 py-3 border-b border-foreground/5 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">Appearance &amp; Style</span>
+              <span className="text-[10px] font-bold text-primary uppercase">Customize</span>
+            </div>
+            <button
+              onClick={() => setIsThemeModalOpen(true)}
+              className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Palette className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white">Theme &amp; Icon Mode</div>
+                  <div className="text-xs text-foreground/50">Change color palette and 2D / 3D icon graphics</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-foreground/30" />
+            </button>
+          </section>
+
           {/* REWARDS */}
           <section className="bg-surface border border-primary/20 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-primary/10">

@@ -25,6 +25,7 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { usePracticeMatchStore } from '@/lib/store/usePracticeMatchStore';
 import ContextSwitcher from '@/components/ContextSwitcher';
 import PracticeMatchDrawer from '@/components/home/PracticeMatchDrawer';
+import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
 export default function PersonalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -319,21 +320,21 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto bg-background md:pb-0 pb-16">{children}</main>
 
-      {/* Mobile Bottom Nav (100% untouched) */}
+      {/* Mobile Bottom Nav */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-6 flex items-center justify-between"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto"
         style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
       >
         <Link
           href={homeHref}
-          className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-            isHomeActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+            isHomeActive ? 'opacity-100' : 'opacity-80 hover:opacity-100'
           }`}
         >
-          <Home className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+          <Athlon3DIcon type="home" size={32} active={isHomeActive} />
           <span
-            className="text-[9px] font-bold"
-            style={{ color: isHomeActive ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)' }}
+            className={`text-[9.5px] font-bold leading-tight ${isHomeActive ? 'text-primary' : ''}`}
+            style={{ color: isHomeActive ? undefined : 'var(--athlon-text-muted)' }}
           >
             Home
           </span>
@@ -341,70 +342,75 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
 
         <Link
           href={eventsHref}
-          className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-            isEventsActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+            isEventsActive ? 'opacity-100' : 'opacity-80 hover:opacity-100'
           }`}
         >
-          <Trophy className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+          <Athlon3DIcon type="tournaments" size={32} active={isEventsActive} />
           <span
-            className="text-[9px] font-bold"
-            style={{
-              color: isEventsActive ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)',
-            }}
+            className={`text-[9.5px] font-bold leading-tight ${isEventsActive ? 'text-primary' : ''}`}
+            style={{ color: isEventsActive ? undefined : 'var(--athlon-text-muted)' }}
           >
             Events
           </span>
         </Link>
 
-        {/* Elevated Center Button */}
-        <div className="relative -top-6 flex items-center justify-center">
+        {/* 3D Circular Elevated Umpire Button */}
+        <div className="relative -top-5 flex items-center justify-center">
           <button
             onClick={() => setIsDrawerOpen(true)}
-            className="w-16 h-16 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 relative"
+            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
             style={{
               backgroundColor: 'var(--athlon-primary)',
-              color: 'var(--athlon-primary-foreground)',
               borderColor: 'var(--athlon-navigation)',
-              boxShadow: hasLiveMatch ? '0 8px 30px rgba(239, 68, 68, 0.6)' : '0 8px 30px var(--athlon-glow)',
+              boxShadow: hasLiveMatch
+                ? '0 10px 28px rgba(239, 68, 68, 0.7), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)'
+                : '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
             }}
           >
-            <img src="/umpire.png" alt="Umpire" className="w-8 h-8 object-contain drop-shadow-md" />
+            {/* 3D Glass Specular Reflection Arc */}
+            <div className="absolute inset-x-1 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none" />
+
+            <img
+              src="/umpire.png"
+              alt="Umpire"
+              className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+            />
+
             {hasLiveMatch && (
-              <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background animate-ping" />
+              <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background animate-ping z-20" />
             )}
             {hasLiveMatch && (
-              <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background" />
+              <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background z-20" />
             )}
           </button>
         </div>
 
         <Link
-          href={alertsHref}
-          className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-            isAlertsActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+          href="/live-score"
+          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+            pathname.startsWith('/live-score') ? 'opacity-100' : 'opacity-80 hover:opacity-100'
           }`}
         >
-          <Bell className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+          <Athlon3DIcon type="live-score" size={32} active={pathname.startsWith('/live-score')} />
           <span
-            className="text-[9px] font-bold"
-            style={{
-              color: isAlertsActive ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)',
-            }}
+            className={`text-[9.5px] font-bold leading-tight ${pathname.startsWith('/live-score') ? 'text-red-400' : ''}`}
+            style={{ color: pathname.startsWith('/live-score') ? undefined : 'var(--athlon-text-muted)' }}
           >
-            Alerts
+            Live
           </span>
         </Link>
 
         <Link
           href={profileHref}
-          className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-            isProfileActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+            isProfileActive ? 'opacity-100' : 'opacity-80 hover:opacity-100'
           }`}
         >
-          <User className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
+          <Athlon3DIcon type="profile" size={32} active={isProfileActive} />
           <span
-            className="text-[9px] font-bold"
-            style={{ color: isProfileActive ? 'var(--athlon-navigation-active)' : 'var(--athlon-text-muted)' }}
+            className={`text-[9.5px] font-bold leading-tight ${isProfileActive ? 'text-primary' : ''}`}
+            style={{ color: isProfileActive ? undefined : 'var(--athlon-text-muted)' }}
           >
             Profile
           </span>

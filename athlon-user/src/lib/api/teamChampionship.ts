@@ -343,6 +343,20 @@ export const TeamChampionshipService = {
     return unwrap<TeamSquadAudit>(res);
   },
 
+  updateTeamStatus: async (teamId: number, status: string): Promise<ChampionshipTeamRegistration> => {
+    const res = await fetchClient<any>(`/api/tournament/team-championship/registrations/teams/${teamId}/status?status=${status}`, {
+      method: 'POST',
+    });
+    return unwrap<ChampionshipTeamRegistration>(res);
+  },
+
+  updatePlayerStatus: async (playerId: number, status: string): Promise<ChampionshipPlayerRegistration> => {
+    const res = await fetchClient<any>(`/api/tournament/team-championship/registrations/players/${playerId}/status?status=${status}`, {
+      method: 'POST',
+    });
+    return unwrap<ChampionshipPlayerRegistration>(res);
+  },
+
   updateTeamPayment: async (teamId: number, status: string): Promise<ChampionshipTeamRegistration> => {
     const res = await fetchClient<any>(`/api/tournament/team-championship/registrations/teams/${teamId}/payment-status?status=${status}`, {
       method: 'POST',

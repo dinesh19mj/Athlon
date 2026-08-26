@@ -28,6 +28,30 @@ import {
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import ContextSwitcher from '@/components/ContextSwitcher';
+import { Athlon3DIcon, Athlon3DIconProps } from '@/components/common/Athlon3DIcon';
+
+function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
+  const n = name.toLowerCase();
+  if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
+  if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
+  if (n.includes('student') || n.includes('pupil')) return 'students';
+  if (n.includes('coach') || n.includes('trainer')) return 'coaches';
+  if (n.includes('member') || n.includes('staff') || n.includes('squad') || n.includes('team')) return 'members';
+  if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
+  if (n.includes('schedule') || n.includes('calendar') || n.includes('slot') || n.includes('booking')) return 'schedule';
+  if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic')) return 'performance';
+  if (n.includes('match') || n.includes('fixture') || n.includes('sparring')) return 'matches';
+  if (n.includes('setup') || n.includes('console') || n.includes('officiat')) return 'setup';
+  if (n.includes('umpire') || n.includes('referee')) return 'umpire';
+  if (n.includes('leaderboard') || n.includes('rank') || n.includes('standing') || n.includes('result')) return 'rankings';
+  if (n.includes('inventory') || n.includes('equipment') || n.includes('shuttle') || n.includes('gear')) return 'inventory';
+  if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card')) return 'finances';
+  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('map') || n.includes('venue')) return 'facilities';
+  if (n.includes('setting') || n.includes('config')) return 'settings';
+  if (n.includes('registration') || n.includes('register') || n.includes('approv') || n.includes('entry') || n.includes('pass')) return 'registered';
+  if (n.includes('academ') || n.includes('club')) return 'academies';
+  return 'home';
+}
 
 export default function OrganizationLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -360,22 +384,26 @@ export default function OrganizationLayout({ children }: { children: React.React
       <main className="flex-1 overflow-auto bg-background md:pb-0 pb-16">{children}</main>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MOBILE BOTTOM NAV - 100% EXACT ORIGINAL UNTOUCHED CODE & STYLING
+          MOBILE BOTTOM NAV
          ══════════════════════════════════════════════════════════════════════ */}
-      <nav className="dark md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0A0F1A]/95 backdrop-blur-xl border-t border-white/10 z-50 px-6 flex items-center justify-between">
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto"
+        style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
+      >
         {/* Item 1 */}
-        {navItems[0] && Icon0 && (
+        {navItems[0] && (
           <Link
             href={navItems[0].href}
-            className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-              pathname === navItems[0].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'
+            className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+              pathname === navItems[0].href ? 'opacity-100' : 'opacity-80 hover:opacity-100'
             }`}
           >
-            <Icon0 className={`w-6 h-6 ${pathname === navItems[0].href ? 'text-[#1B9C56]' : 'text-white'}`} />
+            <Athlon3DIcon type="home" size={32} active={pathname === navItems[0].href} />
             <span
-              className={`text-[9px] font-bold ${
-                pathname === navItems[0].href ? 'text-[#1B9C56]' : 'text-white'
+              className={`text-[9.5px] font-bold leading-tight ${
+                pathname === navItems[0].href ? 'text-primary' : ''
               }`}
+              style={{ color: pathname === navItems[0].href ? undefined : 'var(--athlon-text-muted)' }}
             >
               {navItems[0].name}
             </span>
@@ -383,62 +411,89 @@ export default function OrganizationLayout({ children }: { children: React.React
         )}
 
         {/* Item 2 */}
-        {navItems[1] && Icon1 && (
+        {navItems[1] && (
           <Link
             href={navItems[1].href}
-            className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-              pathname === navItems[1].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'
+            className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+              pathname === navItems[1].href ? 'opacity-100' : 'opacity-80 hover:opacity-100'
             }`}
           >
-            <Icon1 className={`w-6 h-6 ${pathname === navItems[1].href ? 'text-[#1B9C56]' : 'text-white'}`} />
+            <Athlon3DIcon
+              type={getOrg3DIconType(navItems[1].name)}
+              size={32}
+              active={pathname === navItems[1].href}
+            />
             <span
-              className={`text-[9px] font-bold ${
-                pathname === navItems[1].href ? 'text-[#1B9C56]' : 'text-white'
+              className={`text-[9.5px] font-bold leading-tight ${
+                pathname === navItems[1].href ? 'text-primary' : ''
               }`}
+              style={{ color: pathname === navItems[1].href ? undefined : 'var(--athlon-text-muted)' }}
             >
               {navItems[1].name}
             </span>
           </Link>
         )}
 
-        {/* Elevated Center + Button */}
-        <div className="relative -top-6 flex items-center justify-center">
+        {/* 3D Circular Elevated Umpire Button */}
+        <div className="relative -top-5 flex items-center justify-center">
           <Link
             href="/match-setup"
-            className="w-16 h-16 rounded-full bg-[#1B9C56] text-black shadow-[0_8px_30px_rgba(27,156,86,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4 border-[#0A0F1A]"
+            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+            style={{
+              backgroundColor: 'var(--athlon-primary)',
+              borderColor: 'var(--athlon-navigation)',
+              boxShadow: '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
+            }}
           >
-            <img src="/umpire.png" alt="Umpire" className="w-8 h-8 object-contain drop-shadow-md" />
+            {/* 3D Glass Specular Reflection Arc */}
+            <div className="absolute inset-x-1 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none" />
+
+            <img
+              src="/umpire.png"
+              alt="Umpire"
+              className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+            />
           </Link>
         </div>
 
         {/* Item 3 */}
-        {navItems[2] && Icon2 && (
+        {navItems[2] && (
           <Link
             href={navItems[2].href}
-            className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-              pathname === navItems[2].href ? 'opacity-100' : 'opacity-50 hover:opacity-100'
+            className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+              pathname === navItems[2].href ? 'opacity-100' : 'opacity-80 hover:opacity-100'
             }`}
           >
-            <Icon2 className={`w-6 h-6 ${pathname === navItems[2].href ? 'text-[#1B9C56]' : 'text-white'}`} />
+            <Athlon3DIcon
+              type={getOrg3DIconType(navItems[2].name)}
+              size={32}
+              active={pathname === navItems[2].href}
+            />
             <span
-              className={`text-[9px] font-bold ${
-                pathname === navItems[2].href ? 'text-[#1B9C56]' : 'text-white'
+              className={`text-[9.5px] font-bold leading-tight ${
+                pathname === navItems[2].href ? 'text-primary' : ''
               }`}
+              style={{ color: pathname === navItems[2].href ? undefined : 'var(--athlon-text-muted)' }}
             >
               {navItems[2].name}
             </span>
           </Link>
         )}
 
-        {/* Profile (replacing Item 4 / Results) */}
+        {/* Profile */}
         <Link
           href="/profile"
-          className={`flex flex-col items-center gap-1 w-16 transition-opacity ${
-            pathname === '/profile' ? 'opacity-100' : 'opacity-50 hover:opacity-100'
+          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
+            pathname === '/profile' ? 'opacity-100' : 'opacity-80 hover:opacity-100'
           }`}
         >
-          <User className={`w-6 h-6 ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`} />
-          <span className={`text-[9px] font-bold ${pathname === '/profile' ? 'text-[#1B9C56]' : 'text-white'}`}>
+          <Athlon3DIcon type="profile" size={32} active={pathname === '/profile'} />
+          <span
+            className={`text-[9.5px] font-bold leading-tight ${
+              pathname === '/profile' ? 'text-primary' : ''
+            }`}
+            style={{ color: pathname === '/profile' ? undefined : 'var(--athlon-text-muted)' }}
+          >
             Profile
           </span>
         </Link>

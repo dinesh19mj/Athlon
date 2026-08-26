@@ -25,14 +25,19 @@ import {
   X,
   Clock,
   Award,
+  LayoutGrid,
+  List,
+  GalleryHorizontal,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthStore } from '@/lib/store/useAuthStore';
+import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
 export default function AcademiesPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'carousel'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
 
   const academies = [
@@ -157,160 +162,606 @@ export default function AcademiesPage() {
     { id: '24_7', label: 'Open 24/7' },
   ];
 
+  const mobileFiltersList = [
+    { id: 'all', label: 'All', icon: '⚡' },
+    { id: 'near_me', label: 'Near Me', icon: '📍' },
+    { id: 'top_rated', label: 'Top Rated', icon: '⭐' },
+    { id: 'coaching', label: 'Coaching', icon: '🏆' },
+    { id: 'bwf', label: 'BWF Certified', icon: '🏸' },
+    { id: '24_7', label: 'Open 24/7', icon: '⏰' },
+  ];
+
+  // Mobile Filtered List
+  const mobileFilteredAcademies = useMemo(() => {
+    return academies.filter((a) => {
+      if (activeFilter === 'top_rated' && parseFloat(a.rating) < 4.7) return false;
+      if (activeFilter === 'coaching' && !a.tags.some((t) => t.toLowerCase().includes('coaching') || t.toLowerCase().includes('training'))) return false;
+      if (activeFilter === 'bwf' && !a.tags.some((t) => t.toLowerCase().includes('bwf'))) return false;
+      if (activeFilter === '24_7' && !a.tags.some((t) => t.toLowerCase().includes('24/7') || a.openTiming.includes('24 Hours'))) return false;
+      if (activeFilter === 'near_me' && parseFloat(a.distance) > 4.0) return false;
+
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.name.toLowerCase().includes(q) ||
+        a.location.toLowerCase().includes(q) ||
+        a.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    });
+  }, [academies, activeFilter, searchQuery]);
+
   return (
     <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - EXACT PRESERVED MOBILE EXPERIENCE
+          1. MOBILE VIEW ONLY (< md) - REDESIGNED STYLISH & COMPACT EXPERIENCE
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-24 overflow-y-auto">
-        {/* Top Navbar */}
-        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-background/90 backdrop-blur-md border-b border-foreground/5">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="p-2 -ml-2 text-foreground hover:text-primary transition-colors">
-              <ArrowLeft className="w-6 h-6" />
+      <div className="block md:hidden pb-28 min-h-screen">
+        {/* Compact Sticky Top Navbar */}
+        <header
+          className="sticky top-0 z-40 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-navigation)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Link
+              href="/"
+              className="w-8 h-8 rounded-xl flex items-center justify-center border text-foreground/80 hover:text-foreground transition-all hover:scale-105 active:scale-95 shrink-0"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+              aria-label="Back to Home"
+            >
+              <ArrowLeft className="w-4 h-4" />
             </Link>
-            <h1 className="text-lg font-bold uppercase tracking-wider">Academies</h1>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xs font-black uppercase tracking-wider text-foreground truncate">
+                  Academies & Clubs
+                </h1>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-primary/15 text-primary border border-primary/25 font-mono shrink-0">
+                  {mobileFilteredAcademies.length}
+                </span>
+              </div>
+              <p className="text-[10px] text-foreground/50 font-bold truncate">
+                Book certified courts and training
+              </p>
+            </div>
           </div>
 
-          <button className="p-2 -mr-2 text-foreground hover:text-primary transition-colors">
-            <Search className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <MapPin className="w-3 h-3 text-primary" />
+              <span className="text-foreground/80">Bangalore</span>
+            </div>
+          </div>
         </header>
 
-        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-6 pt-4">
-          {/* Filters / Quick Search */}
-          <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-2">
-            {['Near Me', 'Top Rated', 'Coaching', 'BWF Certified', 'Open Now'].map((filter, idx) => (
+        <main className="w-full max-w-lg mx-auto px-3.5 flex flex-col gap-3.5 pt-3">
+          {/* Search Bar & Instant Clear */}
+          <div className="relative w-full">
+            <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search academy, area, or amenities..."
+              className="w-full pl-9 pr-8 py-2 rounded-xl border text-xs font-medium outline-none focus:border-primary transition-all text-foreground placeholder:text-foreground/40"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            />
+            {searchQuery && (
               <button
-                key={idx}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
-                  idx === 0
-                    ? 'bg-primary text-black'
-                    : 'bg-surface border border-foreground/10 text-foreground/70 hover:text-foreground'
-                }`}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-0.5"
+                aria-label="Clear search"
               >
-                {filter}
+                <X className="w-3.5 h-3.5" />
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Featured Academy Card */}
-          {featured && (
-            <section className="relative w-full h-[320px] rounded-[24px] overflow-hidden bg-surface border border-foreground/10 shadow-[0_10px_40px_rgba(0,136,255,0.15)] group cursor-pointer">
-              <div className="absolute inset-0 z-0">
-                <img
-                  src={featured.image}
-                  alt={featured.name}
-                  className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1A] via-[#0A0F1A]/80 to-transparent" />
-              </div>
-
-              <div className="absolute top-4 left-4 z-10 bg-primary px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg">
-                <ShieldCheck className="w-3.5 h-3.5 text-foreground" />
-                <span className="text-[9px] font-black uppercase tracking-wider text-foreground">Top Pick</span>
-              </div>
-
-              <div className="absolute bottom-0 left-0 right-0 p-5 z-10 flex flex-col justify-end">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-2xl font-black leading-tight text-foreground drop-shadow-md">
-                    {featured.name}
-                  </h2>
-                  <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg border border-foreground/10">
-                    <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                    <span className="text-xs font-bold text-foreground">{featured.rating}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-xs text-foreground/80 mb-4">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#FF7722]" />
-                    <span>{featured.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Navigation className="w-3.5 h-3.5 text-primary" />
-                    <span>{featured.distance}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-5">
-                  {featured.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded border border-foreground/20 bg-foreground/10 backdrop-blur-md text-[9px] font-medium text-foreground"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-[#0A0F1A] text-xs font-black px-4 py-3 rounded-xl hover:opacity-90 transition-opacity">
-                    BOOK COURT <ChevronRight className="w-4 h-4" />
-                  </button>
-                  <button className="w-12 h-12 rounded-xl bg-foreground/10 backdrop-blur-md border border-foreground/20 flex items-center justify-center hover:bg-foreground/20 transition-colors">
-                    <Phone className="w-5 h-5 text-foreground" />
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Regular Academies List */}
-          <section>
-            <h3 className="text-xs font-bold text-foreground/50 tracking-wider uppercase mb-4 mt-2">More Academies</h3>
-            <div className="flex flex-col gap-4">
-              {others.map((academy) => (
-                <div
-                  key={academy.id}
-                  className="bg-surface border border-foreground/5 hover:border-foreground/20 rounded-[20px] p-3 flex gap-4 transition-colors shadow-lg cursor-pointer group"
+          {/* Quick Filter Pills (Smooth Horizontal Scroll) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scroll-px-3 hide-scrollbar -mx-3.5 px-3.5">
+            {mobileFiltersList.map((f) => {
+              const isSelected = activeFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFilter(f.id)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-primary text-black border-primary shadow-sm shadow-primary/20 scale-[1.02]'
+                      : 'border-transparent text-foreground/70 hover:text-foreground hover:bg-white/5'
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? undefined : 'var(--athlon-surface)',
+                    borderColor: isSelected ? undefined : 'var(--athlon-border)',
+                  }}
                 >
-                  <div className="w-24 h-24 shrink-0 rounded-xl overflow-hidden relative">
-                    <img
-                      src={academy.image}
-                      alt={academy.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80"
-                    />
-                    <div className="absolute top-1 left-1 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded flex items-center gap-1 border border-foreground/10">
-                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      <span className="text-[10px] font-bold text-foreground">{academy.rating}</span>
+                  <span className="text-xs">{f.icon}</span>
+                  <span>{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* View Mode Switcher Header */}
+          <div className="flex items-center justify-between px-0.5 pt-0.5">
+            <div className="text-[10.5px] font-bold text-foreground/60">
+              Showing <span className="text-foreground font-black font-mono">{mobileFilteredAcademies.length}</span> {mobileFilteredAcademies.length === 1 ? 'academy' : 'academies'}
+            </div>
+
+            {/* View Mode Switcher: Grid, List, Scroll */}
+            <div
+              className="flex items-center p-0.5 rounded-xl border"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <button
+                onClick={() => setViewMode('grid')}
+                title="Grid View"
+                aria-label="Grid View"
+                className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                  viewMode === 'grid'
+                    ? 'bg-primary text-black font-black shadow-sm'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="text-[9.5px] font-bold hidden sm:inline">Grid</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('list')}
+                title="List View"
+                aria-label="List View"
+                className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                  viewMode === 'list'
+                    ? 'bg-primary text-black font-black shadow-sm'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="text-[9.5px] font-bold hidden sm:inline">List</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('carousel')}
+                title="Horizontal Scroll View"
+                aria-label="Horizontal Scroll View"
+                className={`p-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                  viewMode === 'carousel'
+                    ? 'bg-primary text-black font-black shadow-sm'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <GalleryHorizontal className="w-3.5 h-3.5" />
+                <span className="text-[9.5px] font-bold hidden sm:inline">Scroll</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Academies Content Section */}
+          <div className="flex flex-col gap-3.5 pt-0.5">
+            {mobileFilteredAcademies.length === 0 ? (
+              <div
+                className="py-12 px-4 text-center rounded-2xl border flex flex-col items-center justify-center space-y-3"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="w-12 h-12 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center justify-center text-foreground/40">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
+                    No Academies Found
+                  </h3>
+                  <p className="text-[11px] text-foreground/50 mt-1 max-w-xs mx-auto">
+                    {searchQuery || activeFilter !== 'all'
+                      ? 'No facilities match your current search and filter settings.'
+                      : 'There are no active academies registered in this area.'}
+                  </p>
+                </div>
+
+                {(searchQuery || activeFilter !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setActiveFilter('all');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/25 text-primary text-[11px] font-bold hover:bg-primary/20 transition-all"
+                  >
+                    Reset Filters
+                  </button>
+                )}
+              </div>
+            ) : viewMode === 'grid' ? (
+              /* ── 1. GRID VIEW (Rich Bento Cards) ── */
+              <div className="space-y-3.5">
+                {mobileFilteredAcademies.map((academy) => (
+                  <div
+                    key={academy.id}
+                    className="rounded-[22px] overflow-hidden border shadow-lg transition-all group"
+                    style={{
+                      backgroundColor: 'var(--athlon-card)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    {/* Image Header with Overlay Badges */}
+                    <div className="relative h-36 w-full overflow-hidden">
+                      <img
+                        src={academy.image}
+                        alt={academy.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+                      {/* Top Left Badges */}
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                        {academy.featured && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary text-black shadow-sm">
+                            Top Pick
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 shadow-sm">
+                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          <span className="text-[10px] font-bold text-white">{academy.rating}</span>
+                          <span className="text-[9px] text-white/50">({academy.reviews})</span>
+                        </div>
+                      </div>
+
+                      {/* Top Right Price Tag */}
+                      <div className="absolute top-2.5 right-2.5">
+                        <span className="px-2.5 py-1 rounded-xl text-xs font-mono font-black tracking-tight text-primary bg-black/70 backdrop-blur-md border border-primary/30 shadow-md">
+                          {academy.price}
+                        </span>
+                      </div>
+
+                      {/* Bottom Title on Image */}
+                      <div className="absolute bottom-2.5 left-3 right-3">
+                        <h3 className="text-sm font-black text-white leading-tight drop-shadow truncate">
+                          {academy.name}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Card Content Details */}
+                    <div className="p-3.5 space-y-3">
+                      {/* Location & Timings */}
+                      <div
+                        className="p-2.5 rounded-xl border space-y-1.5 text-[11px]"
+                        style={{
+                          backgroundColor: 'var(--athlon-surface)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-foreground/80 font-bold min-w-0">
+                            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="truncate">{academy.location}</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-foreground/50 shrink-0">
+                            {academy.distance}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-foreground/5 text-[10px]">
+                          <div className="flex items-center gap-1.5 text-foreground/60">
+                            <Clock className="w-3 h-3 text-primary shrink-0" />
+                            <span>{academy.openTiming}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-primary font-bold">
+                            <Dumbbell className="w-3 h-3 shrink-0" />
+                            <span>{academy.courts} Courts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tags Chips */}
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {academy.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 rounded-lg border text-[9.5px] font-medium text-foreground/70"
+                            style={{
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border)',
+                            }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Action CTAs */}
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <Link
+                          href="/bookings"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-primary text-black font-black text-xs shadow-md shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Book Court</span>
+                        </Link>
+
+                        <a
+                          href={`tel:${academy.phone}`}
+                          className="w-10 h-10 rounded-xl border flex items-center justify-center text-foreground/80 hover:text-primary transition-all shrink-0"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                          aria-label="Call Academy"
+                        >
+                          <Phone className="w-4 h-4 text-primary" />
+                        </a>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            ) : viewMode === 'list' ? (
+              /* ── 2. LIST VIEW (Compact High-Density Rows) ── */
+              <div className="space-y-2">
+                {mobileFilteredAcademies.map((academy) => (
+                  <Link
+                    href="/bookings"
+                    key={academy.id}
+                    className="flex items-center justify-between p-2.5 rounded-2xl border transition-all hover:scale-[1.01] active:scale-[0.99] group shadow-sm"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {/* Image Thumbnail */}
+                      <div className="w-14 h-14 rounded-xl overflow-hidden relative shrink-0 border border-foreground/10">
+                        <img
+                          src={academy.image}
+                          alt={academy.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                        <div className="absolute bottom-0 inset-x-0 bg-black/70 py-0.2 flex items-center justify-center gap-0.5">
+                          <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                          <span className="text-[8.5px] font-bold text-white">{academy.rating}</span>
+                        </div>
+                      </div>
 
-                  <div className="flex flex-col flex-1 justify-center">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-bold text-foreground leading-tight group-hover:text-[#FF7722] transition-colors">
-                        {academy.name}
-                      </h4>
-                      <span className="text-[10px] font-black text-primary">{academy.price}</span>
+                      {/* Info */}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">
+                          {academy.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 text-[10px] text-foreground/55 font-medium truncate mt-0.5">
+                          <span className="truncate">{academy.location}</span>
+                          <span>•</span>
+                          <span className="text-primary font-bold">{academy.distance}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[9px] text-foreground/45 mt-0.5">
+                          <span>{academy.courts} Courts</span>
+                          <span>•</span>
+                          <span className="truncate">{academy.tags[0]}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1 text-[10px] text-foreground/50 mb-2">
-                      <MapPin className="w-3 h-3 text-foreground/40" />
-                      <span className="truncate">
-                        {academy.location} ({academy.distance})
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-[10px] font-mono font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">
+                        {academy.price}
                       </span>
+                      <ChevronRight className="w-4 h-4 text-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              /* ── 3. HORIZONTAL SCROLL / CAROUSEL VIEW ── */
+              <div className="space-y-4">
+                {/* Featured Spotlight Card */}
+                {featured && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-0.5">
+                      <span className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5" /> Featured Center
+                      </span>
+                      <span className="text-[9.5px] font-bold text-foreground/40 uppercase">Top Rated</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 flex-wrap mt-auto">
-                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-background border border-foreground/5 text-[9px] text-foreground/70">
-                        <Dumbbell className="w-3 h-3 text-purple-400" /> {academy.courts} Courts
-                      </span>
-                      {academy.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="px-1.5 py-0.5 rounded bg-background border border-foreground/5 text-[9px] text-foreground/70 whitespace-nowrap"
+                    <div
+                      className="relative rounded-2xl overflow-hidden border shadow-xl p-4 min-h-[190px] flex flex-col justify-end"
+                      style={{
+                        backgroundColor: 'var(--athlon-card)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="absolute inset-0 z-0">
+                        <img
+                          src={featured.image}
+                          alt={featured.name}
+                          className="w-full h-full object-cover opacity-60"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20" />
+                      </div>
+
+                      <div className="relative z-10 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-black">
+                            {featured.price}
+                          </span>
+                          <div className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full text-[10px] font-bold text-white">
+                            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                            <span>{featured.rating}</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-black text-white leading-tight">{featured.name}</h3>
+                          <p className="text-[10px] text-white/70 mt-0.5">{featured.location} • {featured.distance}</p>
+                        </div>
+
+                        <Link
+                          href="/bookings"
+                          className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-xl bg-primary text-black font-black text-xs shadow-md"
                         >
-                          {tag}
-                        </span>
-                      ))}
+                          <span>Book Court Now</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Horizontal Carousel of More Academies */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between px-0.5">
+                    <span className="text-xs font-black uppercase tracking-wider text-foreground">
+                      All Sports Facilities ({mobileFilteredAcademies.length})
+                    </span>
+                    <span className="text-[9.5px] font-bold text-foreground/40 uppercase tracking-widest flex items-center gap-0.5">
+                      Swipe <ArrowRight className="w-2.5 h-2.5" />
+                    </span>
+                  </div>
+
+                  <div className="flex items-stretch gap-3.5 overflow-x-auto pb-3 snap-x scroll-px-3.5 hide-scrollbar -mx-3.5 px-3.5">
+                    {mobileFilteredAcademies.map((academy) => (
+                      <div
+                        key={academy.id}
+                        className="snap-start shrink-0 w-[84vw] sm:w-[320px] max-w-[340px]"
+                      >
+                        <div
+                          className="rounded-2xl overflow-hidden border shadow-md flex flex-col justify-between h-full"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="relative h-28 w-full overflow-hidden">
+                            <img
+                              src={academy.image}
+                              alt={academy.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold text-white">
+                              <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                              <span>{academy.rating}</span>
+                            </div>
+                            <div className="absolute top-2 right-2">
+                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-black text-primary bg-black/70 font-mono">
+                                {academy.price}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
+                            <div>
+                              <h4 className="text-xs font-black text-foreground truncate">{academy.name}</h4>
+                              <p className="text-[10px] text-foreground/50 truncate mt-0.5">
+                                {academy.location} ({academy.distance})
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {academy.tags.slice(0, 2).map((t, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-1.5 py-0.2 rounded border text-[8.5px] text-foreground/60"
+                                  style={{
+                                    backgroundColor: 'var(--athlon-surface)',
+                                    borderColor: 'var(--athlon-border)',
+                                  }}
+                                >
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+
+                            <Link
+                              href="/bookings"
+                              className="w-full py-2 rounded-xl bg-primary text-black font-bold text-[11px] flex items-center justify-center gap-1 shadow-sm"
+                            >
+                              <span>Book Court</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
+              </div>
+            )}
+          </div>
         </main>
+
+        {/* Mobile Fixed Bottom Nav */}
+        <nav
+          className="fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto"
+          style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
+        >
+          <Link href="/" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+            <Athlon3DIcon type="home" size={32} active={false} />
+            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+              Home
+            </span>
+          </Link>
+
+          <Link href="/tournaments" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+            <Athlon3DIcon type="tournaments" size={32} active={false} />
+            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+              Tournaments
+            </span>
+          </Link>
+
+          {/* 3D Circular Elevated Umpire Button */}
+          <div className="relative -top-5 flex items-center justify-center">
+            <Link
+              href="/match-setup"
+              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+              style={{
+                backgroundColor: 'var(--athlon-primary)',
+                borderColor: 'var(--athlon-navigation)',
+                boxShadow: '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
+              }}
+            >
+              {/* 3D Glass Specular Reflection Arc */}
+              <div className="absolute inset-x-1 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none" />
+
+              <img
+                src="/umpire.png"
+                alt="Umpire"
+                className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+              />
+            </Link>
+          </div>
+
+          <Link href="/academies" className="flex flex-col items-center gap-0.5 w-16 group">
+            <Athlon3DIcon type="academies" size={32} active={true} />
+            <span className="text-[9.5px] font-bold text-primary leading-tight">
+              Academy
+            </span>
+          </Link>
+
+          <Link href={isAuthenticated ? '/home' : '/login'} className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+            <Athlon3DIcon type="profile" size={32} active={false} />
+            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+              Profile
+            </span>
+          </Link>
+        </nav>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

@@ -198,6 +198,22 @@ public class ChampionshipRegistrationService {
     }
 
     @Transactional
+    public ChampionshipTeamRegistration updateTeamStatus(Long teamId, String status) {
+        ChampionshipTeamRegistration team = teamRegistrationRepository.findById(teamId)
+                .orElseThrow(() -> new IllegalArgumentException("Team not found"));
+        team.setStatus(status);
+        return teamRegistrationRepository.save(team);
+    }
+
+    @Transactional
+    public ChampionshipPlayerRegistration updatePlayerStatus(Long playerId, String status) {
+        ChampionshipPlayerRegistration player = playerRegistrationRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Player not found"));
+        player.setStatus(status);
+        return playerRegistrationRepository.save(player);
+    }
+
+    @Transactional
     public ChampionshipTeamRegistration updateTeamPaymentStatus(Long teamId, String paymentStatus) {
         ChampionshipTeamRegistration team = teamRegistrationRepository.findById(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("Team not found"));

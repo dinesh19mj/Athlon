@@ -30,11 +30,37 @@ import {
   Layers,
   Clock,
   CheckCircle2,
+  SlidersHorizontal,
+  UserCheck,
 } from 'lucide-react';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
+import { Athlon3DIcon, Athlon3DIconProps } from '@/components/common/Athlon3DIcon';
+
+function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
+  const n = name.toLowerCase();
+  if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
+  if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
+  if (n.includes('student') || n.includes('pupil')) return 'students';
+  if (n.includes('coach') || n.includes('trainer')) return 'coaches';
+  if (n.includes('member') || n.includes('staff') || n.includes('squad') || n.includes('team')) return 'members';
+  if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
+  if (n.includes('schedule') || n.includes('calendar') || n.includes('slot') || n.includes('booking')) return 'schedule';
+  if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic')) return 'performance';
+  if (n.includes('match') || n.includes('fixture') || n.includes('sparring')) return 'matches';
+  if (n.includes('setup') || n.includes('console') || n.includes('officiat')) return 'setup';
+  if (n.includes('umpire') || n.includes('referee')) return 'umpire';
+  if (n.includes('leaderboard') || n.includes('rank') || n.includes('standing') || n.includes('result')) return 'rankings';
+  if (n.includes('inventory') || n.includes('equipment') || n.includes('shuttle') || n.includes('gear')) return 'inventory';
+  if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card')) return 'finances';
+  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('map') || n.includes('venue')) return 'facilities';
+  if (n.includes('setting') || n.includes('config')) return 'settings';
+  if (n.includes('registration') || n.includes('register') || n.includes('approv') || n.includes('entry') || n.includes('pass')) return 'registered';
+  if (n.includes('academ') || n.includes('club')) return 'academies';
+  return 'home';
+}
 
 export default function OrganizationDashboard() {
   const params = useParams();
@@ -82,7 +108,7 @@ export default function OrganizationDashboard() {
         id: `/org/${org.id}/coaches`,
         label: 'Coaches',
         description: 'Staff & coaching roster',
-        icon: Users,
+        icon: UserCheck,
         color: 'text-purple-400',
         bg: 'bg-purple-500/10',
       });
@@ -90,7 +116,7 @@ export default function OrganizationDashboard() {
         id: `/org/${org.id}/members`,
         label: 'Staff',
         description: 'Administration & roles',
-        icon: Users,
+        icon: ShieldCheck,
         color: 'text-foreground/70',
         bg: 'bg-white/5',
       });
@@ -120,9 +146,9 @@ export default function OrganizationDashboard() {
       });
       actions.push({
         id: `/org/${org.id}/match-setup`,
-        label: 'Match Setup',
+        label: 'Setup',
         description: 'Quick court launch console',
-        icon: Play,
+        icon: SlidersHorizontal,
         color: 'text-amber-500',
         bg: 'bg-amber-500/10',
       });
@@ -153,9 +179,9 @@ export default function OrganizationDashboard() {
       });
       actions.push({
         id: `/org/${org.id}/match-setup`,
-        label: 'Match Setup',
+        label: 'Setup',
         description: 'Officiating console',
-        icon: Play,
+        icon: SlidersHorizontal,
         color: 'text-amber-500',
         bg: 'bg-amber-500/10',
       });
@@ -198,7 +224,7 @@ export default function OrganizationDashboard() {
         id: `/org/${org.id}/match-setup`,
         label: 'Setup',
         description: 'Digital Umpire Console',
-        icon: Play,
+        icon: SlidersHorizontal,
         color: 'text-amber-500',
         bg: 'bg-amber-500/10',
       });
@@ -437,25 +463,22 @@ export default function OrganizationDashboard() {
         {/* Horizontal Quick Actions */}
         <div className="px-6 max-w-7xl mx-auto mt-4 space-y-6">
           <div className="flex items-center justify-between gap-3 overflow-x-auto pb-2 hide-scrollbar">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link key={action.id} href={action.id} className="flex flex-col items-center gap-1.5 shrink-0">
-                  <div
-                    className="w-[68px] h-[68px] rounded-[16px] flex flex-col items-center justify-center transition-all shadow-lg cursor-pointer hover:scale-105 active:scale-95"
-                    style={{ backgroundColor: 'var(--athlon-surface)', border: '1px solid var(--athlon-border)' }}
-                  >
-                    <Icon className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} strokeWidth={1.5} />
-                  </div>
-                  <span
-                    className="text-[10px] font-medium text-center"
-                    style={{ color: 'var(--athlon-text-secondary)' }}
-                  >
-                    {action.label}
-                  </span>
-                </Link>
-              );
-            })}
+            {quickActions.map((action) => (
+              <Link key={action.id} href={action.id} className="flex flex-col items-center gap-1.5 shrink-0 group">
+                <div
+                  className="w-[68px] h-[68px] rounded-[18px] flex flex-col items-center justify-center transition-all shadow-lg cursor-pointer hover:scale-105 active:scale-95 border"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <Athlon3DIcon type={getOrg3DIconType(action.label)} size={38} active={true} />
+                </div>
+                <span
+                  className="text-[10px] font-semibold text-center transition-colors group-hover:text-primary"
+                  style={{ color: 'var(--athlon-text-secondary)' }}
+                >
+                  {action.label}
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       </div>
@@ -632,39 +655,36 @@ export default function OrganizationDashboard() {
               ref={toolsTrackRef}
               className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
             >
-              {quickActions.map((action) => {
-                const IconComponent = action.icon;
-                return (
-                  <Link
-                    key={action.id}
-                    href={action.id}
-                    className="snap-start shrink-0 w-[240px] p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-2xl transition-all group"
-                    style={{
-                      backgroundColor: 'var(--athlon-card)',
-                      borderColor: 'var(--athlon-border)',
-                    }}
-                  >
-                    <div className="space-y-3">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${action.bg} ${action.color} transition-transform group-hover:scale-110`}>
-                        <IconComponent className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
-                          {action.label}
-                        </h3>
-                        <p className="text-xs text-foreground/50 mt-1 leading-relaxed line-clamp-2">
-                          {action.description}
-                        </p>
-                      </div>
+              {quickActions.map((action) => (
+                <Link
+                  key={action.id}
+                  href={action.id}
+                  className="snap-start shrink-0 w-[240px] p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-2xl transition-all group"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="space-y-3">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-surface border border-white/10 shadow-inner group-hover:scale-110 transition-transform shrink-0">
+                      <Athlon3DIcon type={getOrg3DIconType(action.label)} size={36} active={true} />
                     </div>
+                    <div>
+                      <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
+                        {action.label}
+                      </h3>
+                      <p className="text-xs text-foreground/50 mt-1 leading-relaxed line-clamp-2">
+                        {action.description}
+                      </p>
+                    </div>
+                  </div>
 
-                    <div className="flex items-center gap-1 text-xs font-bold text-primary pt-3 border-t mt-4" style={{ borderColor: 'var(--athlon-border)' }}>
-                      <span>Open Tool</span>
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-                    </div>
-                  </Link>
-                );
-              })}
+                  <div className="flex items-center gap-1 text-xs font-bold text-primary pt-3 border-t mt-4" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <span>Open Tool</span>
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              ))}
             </div>
           </section>
 

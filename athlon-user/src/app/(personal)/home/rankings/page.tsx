@@ -19,7 +19,12 @@ import {
   Trophy,
   Activity,
   Star,
+  X,
+  ChevronUp,
+  ChevronDown,
+  Minus,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 
 // Extended Mock data for rankings
@@ -31,7 +36,7 @@ const initialRankings = [
     elo: 1850,
     winRate: '92%',
     streak: '8W',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'up',
     change: 0,
     isCurrentUser: false,
@@ -44,7 +49,7 @@ const initialRankings = [
     elo: 1790,
     winRate: '88%',
     streak: '5W',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'up',
     change: 2,
     isCurrentUser: false,
@@ -57,7 +62,7 @@ const initialRankings = [
     elo: 1720,
     winRate: '84%',
     streak: '3W',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'down',
     change: -1,
     isCurrentUser: false,
@@ -70,7 +75,7 @@ const initialRankings = [
     elo: 1650,
     winRate: '79%',
     streak: '4W',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'up',
     change: 5,
     isCurrentUser: true,
@@ -83,7 +88,7 @@ const initialRankings = [
     elo: 1580,
     winRate: '75%',
     streak: '2W',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'same',
     change: 0,
     isCurrentUser: false,
@@ -96,7 +101,7 @@ const initialRankings = [
     elo: 1520,
     winRate: '71%',
     streak: '1L',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'down',
     change: -1,
     isCurrentUser: false,
@@ -109,7 +114,7 @@ const initialRankings = [
     elo: 1460,
     winRate: '68%',
     streak: '2L',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'down',
     change: -2,
     isCurrentUser: false,
@@ -122,7 +127,7 @@ const initialRankings = [
     elo: 1410,
     winRate: '65%',
     streak: '3W',
-    category: 'Men\'s Singles',
+    category: "Men's Singles",
     trend: 'up',
     change: 3,
     isCurrentUser: false,
@@ -157,6 +162,7 @@ export default function PlayerRankingsPage() {
 
   const podiumPlayers = filteredRankings.slice(0, 3);
   const otherPlayers = filteredRankings.slice(3);
+  const currentUserPlayer = initialRankings.find((p) => p.isCurrentUser);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]" />;
@@ -168,107 +174,398 @@ export default function PlayerRankingsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
+          1. MOBILE VIEW ONLY (< md) - REDESIGNED ATHLON SPORTS RANKINGS
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-32">
-        {/* Ambient Glow */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[#3B82F6]/10 rounded-full blur-[100px] pointer-events-none" />
-
-        {/* HEADER */}
-        <header className="px-4 py-6 flex items-center justify-between shrink-0 relative z-10">
-          <button
-            onClick={() => router.push('/player')}
-            className="p-3 -ml-3 text-foreground/70 hover:text-foreground transition-colors bg-foreground/0 hover:bg-foreground/5 rounded-full"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div className="flex flex-col items-center">
-            <h1 className="text-xl font-black uppercase tracking-widest text-foreground drop-shadow-md">
-              Global Rankings
-            </h1>
-            <div className="flex items-center gap-1.5 mt-1">
-              <TrendingUp className="w-3 h-3 text-[#3B82F6]" />
-              <span className="text-[10px] font-bold text-[#3B82F6] uppercase tracking-widest">Season 2026</span>
+      <div className="block md:hidden pb-28 min-h-screen">
+        {/* Compact Sticky Top Navbar */}
+        <header
+          className="sticky top-0 z-40 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-navigation)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Link
+              href="/home"
+              className="w-8 h-8 rounded-xl flex items-center justify-center border text-foreground/80 hover:text-foreground transition-all hover:scale-105 active:scale-95 shrink-0"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+              aria-label="Back to Home"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xs font-black uppercase tracking-wider text-foreground truncate">
+                  Rankings
+                </h1>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-primary/15 text-primary border border-primary/25 font-mono shrink-0">
+                  {filteredRankings.length}
+                </span>
+              </div>
+              <p className="text-[10px] text-foreground/50 font-bold truncate">
+                Global Season 2026 ELO Ladder
+              </p>
             </div>
           </div>
-          <button className="p-3 -mr-3 text-foreground/70 hover:text-foreground transition-colors bg-foreground/0 hover:bg-foreground/5 rounded-full">
-            <Filter className="w-6 h-6" />
-          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black bg-primary/10 border border-primary/20 text-primary">
+              <Zap className="w-3 h-3 text-primary" />
+              <span>Season 2026</span>
+            </span>
+          </div>
         </header>
 
-        {/* SEARCH & FILTER */}
-        <div className="px-4 pb-6 relative z-10 shrink-0">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/30" />
+        <main className="w-full max-w-lg mx-auto px-3.5 flex flex-col gap-3.5 pt-3">
+          {/* Live Search Bar */}
+          <div className="relative w-full">
+            <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search players..."
-              className="w-full bg-surface border border-foreground/5 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-foreground placeholder-white/30 focus:outline-none focus:border-[#3B82F6]/50 focus:shadow-[0_0_15px_rgba(59,130,246,0.15)] transition-all shadow-xl"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search athlete by name..."
+              className="w-full pl-9 pr-8 py-2 rounded-xl border text-xs font-medium outline-none focus:border-primary transition-all text-foreground placeholder:text-foreground/40"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-0.5"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Category Chips */}
-          <div className="flex gap-2 mt-4 overflow-x-auto hide-scrollbar pb-1 -mx-4 px-4">
-            <button className="px-4 py-2 bg-[#3B82F6] text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap shadow-[0_4px_15px_rgba(59,130,246,0.3)]">
-              Men's Singles
-            </button>
-            <button className="px-4 py-2 bg-surface border border-foreground/5 text-foreground/60 hover:text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-colors">
-              Women's Singles
-            </button>
-            <button className="px-4 py-2 bg-surface border border-foreground/5 text-foreground/60 hover:text-foreground rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-colors">
-              Mixed Doubles
-            </button>
-          </div>
-        </div>
-
-        {/* RANKINGS LIST */}
-        <div className="overflow-y-auto px-4 relative z-10 hide-scrollbar space-y-3">
-          {initialRankings.map((player, i) => (
-            <div
-              key={player.rank}
-              className={`flex items-center gap-4 p-4 rounded-2xl transition-all relative overflow-hidden ${
-                player.isCurrentUser
-                  ? 'bg-[#3B82F6]/10 border border-[#3B82F6]/30 shadow-lg shadow-[#3B82F6]/5'
-                  : 'bg-surface border border-foreground/5 hover:bg-foreground/5'
-              }`}
-            >
-              {player.isCurrentUser && <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#3B82F6]" />}
-
-              <div className="w-8 flex justify-center shrink-0">{getRankIcon(player.rank)}</div>
-
-              <div className="flex-1 min-w-0">
-                <h3
-                  className={`font-extrabold truncate ${
-                    player.isCurrentUser ? 'text-[#3B82F6] text-base' : 'text-foreground text-sm'
+          {/* Category Filter Chips (Horizontal Scroll) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scroll-px-3 hide-scrollbar -mx-3.5 px-3.5">
+            {categories.map((cat) => {
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-primary text-black border-primary shadow-sm shadow-primary/20 scale-[1.02] font-black'
+                      : 'border-transparent text-foreground/70 hover:text-foreground hover:bg-white/5'
                   }`}
+                  style={{
+                    backgroundColor: isSelected ? undefined : 'var(--athlon-surface)',
+                    borderColor: isSelected ? undefined : 'var(--athlon-border)',
+                  }}
                 >
-                  {player.isCurrentUser ? displayName : player.name}
-                </h3>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-foreground/40">
-                    {player.points.toLocaleString()} PTS
+                  <span>{cat}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ─── 3D-STYLE VISUAL PODIUM STAGE (TOP 3) ─── */}
+          {!searchQuery && podiumPlayers.length === 3 && (
+            <div
+              className="p-4 rounded-2xl border relative overflow-hidden shadow-xl"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+                <div className="flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-yellow-500" />
+                  <span className="text-[10.5px] font-mono font-black uppercase tracking-wider text-yellow-400">
+                    Podium Champions
                   </span>
+                </div>
+                <span className="text-[9.5px] font-bold text-foreground/40 font-mono">Top 3 Standings</span>
+              </div>
+
+              {/* Podium Pedestals Row */}
+              <div className="flex items-end justify-center gap-2 pt-2">
+                {/* 🥈 Rank 2 (Silver) */}
+                <div className="flex flex-col items-center flex-1 max-w-[100px]">
+                  <div className="relative mb-1.5">
+                    <div className="w-11 h-11 rounded-full bg-zinc-800 border-2 border-zinc-300 flex items-center justify-center font-black text-xs text-zinc-200 shadow-md">
+                      {podiumPlayers[1]?.name.charAt(0)}
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-700 border border-zinc-300 flex items-center justify-center text-[9px] font-black text-zinc-200">
+                      2
+                    </span>
+                  </div>
+                  <div className="text-center min-w-0 w-full mb-1">
+                    <div className="text-[10.5px] font-black truncate text-foreground">
+                      {podiumPlayers[1]?.name}
+                    </div>
+                    <div className="text-[9px] font-bold text-primary font-mono">
+                      {podiumPlayers[1]?.points.toLocaleString()} PTS
+                    </div>
+                  </div>
+                  <div className="h-16 w-full bg-gradient-to-t from-zinc-500/20 to-zinc-500/5 rounded-t-xl border-t-2 border-zinc-300/60 flex flex-col items-center justify-center">
+                    <span className="text-[10px] font-mono font-black text-zinc-300">
+                      {podiumPlayers[1]?.elo} ELO
+                    </span>
+                    <span className="text-[8px] font-bold text-emerald-400">
+                      {podiumPlayers[1]?.winRate} WR
+                    </span>
+                  </div>
+                </div>
+
+                {/* 👑 Rank 1 (Gold - Center & Elevated) */}
+                <div className="flex flex-col items-center flex-1 max-w-[115px] -mt-3">
+                  <div className="relative mb-1.5">
+                    <div className="w-14 h-14 rounded-full bg-yellow-950/40 border-2 border-yellow-400 flex items-center justify-center font-black text-sm text-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                      {podiumPlayers[0]?.name.charAt(0)}
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-yellow-500 border border-yellow-200 flex items-center justify-center text-[10px] font-black text-black">
+                      👑
+                    </span>
+                  </div>
+                  <div className="text-center min-w-0 w-full mb-1">
+                    <div className="text-xs font-black truncate text-yellow-400">
+                      {podiumPlayers[0]?.name}
+                    </div>
+                    <div className="text-[9.5px] font-black text-primary font-mono">
+                      {podiumPlayers[0]?.points.toLocaleString()} PTS
+                    </div>
+                  </div>
+                  <div className="h-24 w-full bg-gradient-to-t from-yellow-500/25 to-yellow-500/5 rounded-t-xl border-t-2 border-yellow-400 flex flex-col items-center justify-center">
+                    <span className="text-xs font-mono font-black text-yellow-300">
+                      {podiumPlayers[0]?.elo} ELO
+                    </span>
+                    <span className="text-[9px] font-bold text-emerald-400">
+                      {podiumPlayers[0]?.winRate} WR · {podiumPlayers[0]?.streak}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 🥉 Rank 3 (Bronze) */}
+                <div className="flex flex-col items-center flex-1 max-w-[100px]">
+                  <div className="relative mb-1.5">
+                    <div className="w-11 h-11 rounded-full bg-amber-950/40 border-2 border-amber-600 flex items-center justify-center font-black text-xs text-amber-300 shadow-md">
+                      {podiumPlayers[2]?.name.charAt(0)}
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-800 border border-amber-500 flex items-center justify-center text-[9px] font-black text-amber-200">
+                      3
+                    </span>
+                  </div>
+                  <div className="text-center min-w-0 w-full mb-1">
+                    <div className="text-[10.5px] font-black truncate text-foreground">
+                      {podiumPlayers[2]?.name}
+                    </div>
+                    <div className="text-[9px] font-bold text-primary font-mono">
+                      {podiumPlayers[2]?.points.toLocaleString()} PTS
+                    </div>
+                  </div>
+                  <div className="h-12 w-full bg-gradient-to-t from-amber-600/20 to-amber-600/5 rounded-t-xl border-t-2 border-amber-600/60 flex flex-col items-center justify-center">
+                    <span className="text-[10px] font-mono font-black text-amber-400">
+                      {podiumPlayers[2]?.elo} ELO
+                    </span>
+                    <span className="text-[8px] font-bold text-emerald-400">
+                      {podiumPlayers[2]?.winRate} WR
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── YOUR CURRENT STANDING HIGHLIGHT (Pinned Card) ─── */}
+          {currentUserPlayer && !searchQuery && (
+            <div
+              className="p-3 rounded-2xl border flex items-center justify-between shadow-lg relative overflow-hidden"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-primary)',
+              }}
+            >
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+              <div className="flex items-center gap-2.5 min-w-0 pl-1.5">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-primary)',
+                    color: 'var(--athlon-primary)',
+                  }}
+                >
+                  #{currentUserPlayer.rank}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-black truncate text-foreground">
+                      {displayName}
+                    </span>
+                    <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-primary/20 text-primary border border-primary/30 shrink-0">
+                      You
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-foreground/60 mt-0.5">
+                    <span className="font-mono">{currentUserPlayer.elo} ELO</span>
+                    <span>•</span>
+                    <span className="text-emerald-400">{currentUserPlayer.winRate} Win</span>
+                    <span>•</span>
+                    <span className="text-amber-400">{currentUserPlayer.streak}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="flex flex-col items-end shrink-0">
-                {player.change > 0 ? (
-                  <div className="flex items-center gap-0.5 text-green-500">
-                    <TrendingUp className="w-3 h-3" />
-                    <span className="text-[10px] font-bold">+{player.change}</span>
-                  </div>
-                ) : player.change < 0 ? (
-                  <div className="flex items-center gap-0.5 text-red-500">
-                    <TrendingUp className="w-3 h-3 rotate-180" />
-                    <span className="text-[10px] font-bold">{player.change}</span>
-                  </div>
-                ) : (
-                  <span className="text-[10px] font-bold text-foreground/20">-</span>
+                <span className="text-xs font-black font-mono text-primary">
+                  {currentUserPlayer.points.toLocaleString()}
+                </span>
+                <span className="text-[8.5px] font-bold text-foreground/40 uppercase tracking-widest">
+                  PTS
+                </span>
+                {currentUserPlayer.change > 0 && (
+                  <span className="text-[9px] font-bold text-emerald-400 flex items-center gap-0.5 mt-0.5">
+                    <ChevronUp className="w-3 h-3" /> +{currentUserPlayer.change}
+                  </span>
                 )}
               </div>
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* ─── FULL LEADERBOARD LADDER ─── */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between px-0.5">
+              <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-foreground/60">
+                {searchQuery ? 'Search Results' : 'Complete Division Ladder'}
+              </span>
+              <span className="text-[9.5px] font-bold text-foreground/40 font-mono">
+                {filteredRankings.length} Athletes
+              </span>
+            </div>
+
+            {filteredRankings.length === 0 ? (
+              <div
+                className="py-12 px-4 text-center rounded-2xl border flex flex-col items-center justify-center space-y-3"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="w-12 h-12 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center justify-center text-foreground/40">
+                  <User className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
+                    No Athletes Found
+                  </h3>
+                  <p className="text-[11px] text-foreground/50 mt-1 max-w-xs mx-auto">
+                    No ranking records match "{searchQuery}".
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredRankings.map((player) => {
+                  const isTop3 = player.rank <= 3;
+                  const isGold = player.rank === 1;
+                  const isSilver = player.rank === 2;
+                  const isBronze = player.rank === 3;
+
+                  return (
+                    <div
+                      key={player.rank}
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all shadow-sm ${
+                        player.isCurrentUser ? 'ring-1' : ''
+                      }`}
+                      style={{
+                        backgroundColor: player.isCurrentUser ? 'var(--athlon-card)' : 'var(--athlon-surface)',
+                        borderColor: player.isCurrentUser ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {/* Rank Badge */}
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 border ${
+                            isGold
+                              ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40'
+                              : isSilver
+                              ? 'bg-zinc-300/20 text-zinc-300 border-zinc-300/40'
+                              : isBronze
+                              ? 'bg-amber-600/20 text-amber-400 border-amber-600/40'
+                              : 'bg-black/20 text-foreground/60 border-white/5'
+                          }`}
+                        >
+                          #{player.rank}
+                        </div>
+
+                        {/* Avatar / Initial */}
+                        <div
+                          className="w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs shrink-0"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                            color: 'var(--athlon-text)',
+                          }}
+                        >
+                          {player.name.charAt(0)}
+                        </div>
+
+                        {/* Player Info */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h4
+                              className={`text-xs font-black truncate ${
+                                player.isCurrentUser ? 'text-primary' : 'text-foreground'
+                              }`}
+                            >
+                              {player.isCurrentUser ? displayName : player.name}
+                            </h4>
+                            {player.isCurrentUser && (
+                              <span className="px-1.5 py-0.2 rounded bg-primary/20 text-primary border border-primary/30 text-[8px] font-black uppercase shrink-0">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[9.5px] text-foreground/55 font-medium truncate mt-0.5">
+                            <span className="font-mono font-bold text-foreground/75">{player.elo} ELO</span>
+                            <span>•</span>
+                            <span className="text-emerald-400 font-bold">{player.winRate} Win</span>
+                            <span>•</span>
+                            <span>{player.matchesPlayed} Matches</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Points & Delta */}
+                      <div className="flex flex-col items-end shrink-0 ml-2">
+                        <span className="text-xs font-black font-mono text-primary">
+                          {player.points.toLocaleString()}
+                        </span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {player.change > 0 ? (
+                            <span className="text-[9px] font-bold text-emerald-400 flex items-center gap-0.5">
+                              <ChevronUp className="w-3 h-3" /> +{player.change}
+                            </span>
+                          ) : player.change < 0 ? (
+                            <span className="text-[9px] font-bold text-red-400 flex items-center gap-0.5">
+                              <ChevronDown className="w-3 h-3" /> {player.change}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-foreground/30 flex items-center gap-0.5">
+                              <Minus className="w-2.5 h-2.5" /> 0
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

@@ -21,11 +21,17 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
   const formatDates = () => {
     try {
       const s = new Date(tournament.startDate);
-      const e = new Date(tournament.endDate);
+      const e = tournament.endDate ? new Date(tournament.endDate) : null;
       if (isNaN(s.getTime())) return 'Dates TBA';
+
+      // If no end date or start and end fall on the exact same calendar day, display only one date
+      if (!e || isNaN(e.getTime()) || s.toDateString() === e.toDateString()) {
+        return s.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+
       const sStr = s.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      const eStr = !isNaN(e.getTime()) ? e.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-      return eStr && eStr !== sStr ? `${sStr} – ${eStr}` : sStr;
+      const eStr = e.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      return `${sStr} – ${eStr}`;
     } catch {
       return 'Dates TBA';
     }
@@ -69,8 +75,8 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
           borderColor: 'var(--athlon-border)',
         }}
       >
-        {/* Top Gradient Accent Line */}
-        <div className="h-[3px] w-full bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
+        {/* Top Theme Primary Accent Line */}
+        <div className="h-[3px] w-full bg-primary" />
 
         <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
           {/* Header Row: Badges & Fee */}
@@ -89,11 +95,11 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
 
               {/* Status Badge (if special) */}
               {isFinished ? (
-                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
                   <CheckCircle2 className="w-2.5 h-2.5" /> Finished
                 </span>
               ) : isClosed ? (
-                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25 shrink-0">
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-foreground/10 text-foreground/60 border border-foreground/20 shrink-0">
                   <Lock className="w-2.5 h-2.5" /> Closed
                 </span>
               ) : null}
@@ -118,7 +124,7 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
                 {tournament.name}
               </h3>
               <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/45 truncate mt-0.5">
-                <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="truncate">{tournament.location || 'Venue TBA'}</span>
               </div>
             </div>
@@ -189,7 +195,7 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
           <div className="flex items-center justify-between pt-1 border-t border-foreground/5 text-xs">
             <span className="text-[9px] font-bold uppercase tracking-wider text-foreground/40 flex items-center gap-1">
               {!isFinished && !isClosed && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               )}
               {isFinished ? 'Finished' : isClosed ? 'Closed' : 'Open Entry'}
             </span>
@@ -197,9 +203,9 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
             <span
               className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform ${
                 isFinished
-                  ? 'text-emerald-400'
+                  ? 'text-primary'
                   : isClosed
-                  ? 'text-red-400'
+                  ? 'text-foreground/50'
                   : 'text-primary'
               }`}
             >

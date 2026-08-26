@@ -36,6 +36,8 @@ import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamC
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 
+import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+
 export function MarketingPageClient() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { themeKey } = useAthlonTheme();
@@ -108,11 +110,11 @@ export function MarketingPageClient() {
   const category = meta.config?.category || 'Doubles';
   const courtName = meta.config?.courtName || 'Court 1';
 
-  const mobileCategories = [
-    { id: 'tournaments', label: 'Tournaments', icon: Trophy },
-    { id: 'academies', label: 'Academies', icon: Building },
-    { id: 'bookings', label: 'Bookings', icon: CalendarDays },
-    { id: 'live-score', label: 'Live Score', icon: Tv },
+  const mobileCategories: Array<{ id: 'tournaments' | 'academies' | 'bookings' | 'live-score'; label: string }> = [
+    { id: 'tournaments', label: 'Tournaments' },
+    { id: 'academies', label: 'Academies' },
+    { id: 'bookings', label: 'Bookings' },
+    { id: 'live-score', label: 'Live Score' },
   ];
 
   return (
@@ -171,24 +173,50 @@ export function MarketingPageClient() {
             </div>
           </section>
 
-          {/* 2. Primary Categories (Horizontal Scroll) */}
-          <section className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
-            {mobileCategories.map((cat) => (
-              <Link href={`/${cat.id}`} key={cat.id} className="flex flex-col items-center gap-1.5 shrink-0 snap-start">
-                <div
-                  className="w-[68px] h-[68px] rounded-[16px] flex flex-col items-center justify-center transition-all shadow-lg cursor-pointer hover:scale-105 active:scale-95"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    border: '1px solid var(--athlon-border)',
-                  }}
+          {/* 2. Primary Categories with 3D Icons (Evenly Spaced with 68px Size) */}
+          <section className="flex items-center justify-between w-full pt-1 pb-1 px-1">
+            {mobileCategories.map((cat) => {
+              const isLiveScore = cat.id === 'live-score';
+              const hasLive = isLiveScore && liveScores.length > 0;
+
+              return (
+                <Link
+                  href={`/${cat.id}`}
+                  key={cat.id}
+                  className="flex flex-col items-center gap-1.5 shrink-0 group"
                 >
-                  <cat.icon className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} strokeWidth={1.5} />
-                </div>
-                <span className="text-[10px] font-medium" style={{ color: 'var(--athlon-text-secondary)' }}>
-                  {cat.label}
-                </span>
-              </Link>
-            ))}
+                  <div
+                    className="relative w-[68px] h-[68px] rounded-[18px] flex flex-col items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 border overflow-hidden"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                      boxShadow: '0 6px 20px -2px var(--athlon-primary-soft, rgba(0,0,0,0.3)), 0 2px 6px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    {/* Top Glass Bevel Highlight */}
+                    <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
+
+                    {hasLive && (
+                      <span className="absolute top-1.5 right-1.5 flex h-2 w-2 z-10">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                      </span>
+                    )}
+
+                    <Athlon3DIcon
+                      type={cat.id}
+                      size={40}
+                    />
+                  </div>
+                  <span
+                    className="text-[10px] font-bold text-center tracking-tight transition-colors group-hover:text-primary"
+                    style={{ color: 'var(--athlon-text-secondary)' }}
+                  >
+                    {cat.label}
+                  </span>
+                </Link>
+              );
+            })}
           </section>
 
           {/* 3. Live Match Card */}
@@ -440,48 +468,55 @@ export function MarketingPageClient() {
 
         {/* Mobile Fixed Bottom Nav */}
         <nav
-          className="fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-6 flex items-center justify-between max-w-lg mx-auto"
+          className="fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto"
           style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
         >
-          <Link href="/" className="flex flex-col items-center gap-1 w-16">
-            <Home className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
-            <span className="text-[9px] font-bold" style={{ color: 'var(--athlon-navigation-active)' }}>
+          <Link href="/" className="flex flex-col items-center gap-0.5 w-16 group">
+            <Athlon3DIcon type="home" size={32} active={true} />
+            <span className="text-[9.5px] font-bold text-primary leading-tight">
               Home
             </span>
           </Link>
 
-          <Link href="/tournaments" className="flex flex-col items-center gap-1 w-16 opacity-70 hover:opacity-100 transition-opacity">
-            <Trophy className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
-            <span className="text-[9px] font-bold" style={{ color: 'var(--athlon-text-muted)' }}>
+          <Link href="/tournaments" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+            <Athlon3DIcon type="tournaments" size={32} active={false} />
+            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
               Tournaments
             </span>
           </Link>
 
-          <div className="relative -top-6 flex items-center justify-center">
+          {/* 3D Circular Elevated Umpire Button */}
+          <div className="relative -top-5 flex items-center justify-center">
             <Link
               href="/match-setup"
-              className="w-16 h-16 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border-4"
+              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
               style={{
                 backgroundColor: 'var(--athlon-primary)',
-                color: 'var(--athlon-primary-foreground)',
                 borderColor: 'var(--athlon-navigation)',
-                boxShadow: '0 8px 30px var(--athlon-glow)',
+                boxShadow: '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
               }}
             >
-              <img src="/umpire.png" alt="Umpire" className="w-8 h-8 object-contain drop-shadow-md" />
+              {/* 3D Glass Specular Reflection Arc */}
+              <div className="absolute inset-x-1 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none" />
+
+              <img
+                src="/umpire.png"
+                alt="Umpire"
+                className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+              />
             </Link>
           </div>
 
-          <Link href="/academies" className="flex flex-col items-center gap-1 w-16 opacity-70 hover:opacity-100 transition-opacity">
-            <Building className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
-            <span className="text-[9px] font-bold" style={{ color: 'var(--athlon-text-muted)' }}>
+          <Link href="/academies" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+            <Athlon3DIcon type="academies" size={32} active={false} />
+            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
               Academy
             </span>
           </Link>
 
-          <Link href={isAuthenticated ? '/home' : '/login'} className="flex flex-col items-center gap-1 w-16 opacity-70 hover:opacity-100 transition-opacity">
-            <User className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} />
-            <span className="text-[9px] font-bold" style={{ color: 'var(--athlon-text-muted)' }}>
+          <Link href={isAuthenticated ? '/home' : '/login'} className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+            <Athlon3DIcon type="profile" size={32} active={false} />
+            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
               Profile
             </span>
           </Link>

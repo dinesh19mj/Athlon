@@ -6,50 +6,10 @@ import {
   Search,
   SlidersHorizontal,
   X,
-  User,
-  Shield,
-  Trophy,
-  GraduationCap,
-  Landmark,
-  MapPin,
-  LayoutGrid,
+  Plus,
 } from 'lucide-react';
 import { useWorkspaceStore, Organization } from '@/lib/store/useWorkspaceStore';
-
-/* ─── Upward Arch Surrounding Strictly The Heading Section ───────────────── */
-
-function ActiveHeadingUpwardArch() {
-  return (
-    <div className="absolute inset-0 pointer-events-none z-20 overflow-visible">
-      {/* Top subtle radiant glow */}
-      <div
-        className="absolute inset-0 rounded-t-2xl opacity-40 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 50% 0%, var(--athlon-primary-soft), transparent 80%)',
-        }}
-      />
-      {/* Single seamless connected line extending to both ends */}
-      <svg
-        className="w-full h-full overflow-visible"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M -3000 100 L -18 100 C -6 100 0 92 0 80 L 0 18 C 0 6 6 0 18 0 L 82 0 C 94 0 100 6 100 18 L 100 80 C 100 92 106 100 118 100 L 3000 100"
-          fill="none"
-          stroke="var(--athlon-primary)"
-          strokeWidth="1.8"
-          vectorEffect="non-scaling-stroke"
-          style={{
-            filter: 'drop-shadow(0 0 6px var(--athlon-primary-glow))',
-          }}
-        />
-      </svg>
-    </div>
-  );
-}
-
-/* ─── HomeRoleHeader Component ───────────────────────────────────────────── */
+import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
 interface HomeRoleHeaderProps {
   activeRole?: string;
@@ -115,20 +75,19 @@ export default function HomeRoleHeader({
     return type;
   };
 
-  const getOrgIcon = (type: string) => {
-    const cls = 'w-6 h-6 transition-all duration-200';
-    if (type === 'ORGANIZER') return <Trophy className={cls} strokeWidth={1.8} />;
-    if (type === 'CLUB') return <Shield className={cls} strokeWidth={1.8} />;
-    if (type === 'ACADEMY') return <GraduationCap className={cls} strokeWidth={1.8} />;
-    if (type === 'ASSOCIATION') return <Landmark className={cls} strokeWidth={1.8} />;
-    if (type === 'COURT') return <MapPin className={cls} strokeWidth={1.8} />;
-    return <Shield className={cls} strokeWidth={1.8} />;
+  const getOrg3DType = (type: string) => {
+    if (type === 'ORGANIZER') return 'tournaments';
+    if (type === 'CLUB') return 'members';
+    if (type === 'ACADEMY') return 'students';
+    if (type === 'ASSOCIATION') return 'rankings';
+    if (type === 'COURT') return 'facilities';
+    return 'academies';
   };
 
   const isPlayerActive = currentActiveRole === 'PLAYER' || currentActiveRole === 'PERSONAL';
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-3 select-none">
       {/* ─── 1. OPTIONAL SEARCH BAR ─── */}
       {showSearch && (
         <div className="w-full">
@@ -177,130 +136,91 @@ export default function HomeRoleHeader({
         </div>
       )}
 
-      {/* ─── 2. CATEGORY ROLE NAVIGATION ─── */}
-      <div className="relative pt-1 pb-1 overflow-x-clip">
-        {/* Scrollable Categories Row */}
-        <div className="flex items-end gap-1 sm:gap-2 overflow-x-auto pb-0 hide-scrollbar px-1">
-          {/* PLAYER (ME) TAB */}
-          <button
-            onClick={() => handleRoleClick('PLAYER')}
-            className="group relative flex-1 min-w-[78px] sm:min-w-[96px] max-w-[135px] flex flex-col items-center text-center select-none cursor-pointer active:scale-[0.98] transition-transform duration-150"
-          >
-            {/* Section 1: Icon (Placed Above) */}
-            <div
-              className="h-10 sm:h-11 w-full flex items-center justify-center relative z-20 transition-all duration-200"
+      {/* ─── 2. SLEEK HORIZONTAL ROLE SEGMENTED DOCK ─── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-1 px-1">
+
+        {/* 👤 PLAYER (ME) PILL */}
+        <button
+          onClick={() => handleRoleClick('PLAYER')}
+          className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 rounded-full border transition-all duration-200 active:scale-95 cursor-pointer ${isPlayerActive
+              ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
+              : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
+            }`}
+          style={{
+            backgroundColor: isPlayerActive ? 'var(--athlon-surface)' : 'rgba(255, 255, 255, 0.03)',
+          }}
+        >
+          <div className="shrink-0 transition-transform duration-200 group-hover:scale-110">
+            <Athlon3DIcon type="profile" size={24} active={isPlayerActive} />
+          </div>
+
+          <div className="flex items-center gap-1.5 leading-none">
+            <span
+              className={`text-xs font-black tracking-tight ${isPlayerActive ? 'text-primary' : 'text-white'
+                }`}
+            >
+              Me
+            </span>
+            <span className="text-[10px] text-white/40 font-medium">
+              • Player
+            </span>
+          </div>
+
+          {isPlayerActive && (
+            <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] ml-0.5" />
+          )}
+        </button>
+
+        {/* 🏢 ORGANIZATIONS PILLS */}
+        {orgsList.map((org) => {
+          const isOrgActive = currentActiveRole === org.id;
+          const org3DIconType = getOrg3DType(org.type);
+          const roleLabel = getOrgRoleLabel(org.type);
+
+          return (
+            <button
+              key={org.id}
+              onClick={() => handleRoleClick(org.id)}
+              className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 rounded-full border transition-all duration-200 active:scale-95 cursor-pointer max-w-[200px] ${isOrgActive
+                  ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
+                  : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
+                }`}
               style={{
-                color: isPlayerActive ? 'var(--athlon-primary)' : 'rgba(255, 255, 255, 0.65)',
+                backgroundColor: isOrgActive ? 'var(--athlon-surface)' : 'rgba(255, 255, 255, 0.03)',
               }}
             >
-              <User
-                className={`w-6 h-6 transition-transform duration-200 ${isPlayerActive
-                    ? 'scale-110 drop-shadow-[0_0_8px_var(--athlon-primary-glow)]'
-                    : 'group-hover:scale-105 group-hover:text-white'
-                  }`}
-                strokeWidth={1.8}
-              />
-            </div>
+              <div className="shrink-0 transition-transform duration-200">
+                <Athlon3DIcon type={org3DIconType} size={24} active={isOrgActive} />
+              </div>
 
-            {/* Section 2: Heading (Enclosed by Upward Arch when Active) */}
-            <div className="relative w-full h-[46px] px-1.5 flex flex-col items-center justify-center transition-all z-20">
-              {/* Upward Arch looping over the heading */}
-              {isPlayerActive && <ActiveHeadingUpwardArch />}
-
-              <span
-                className="text-xs sm:text-[13px] font-bold tracking-tight leading-tight transition-colors truncate max-w-full relative z-30"
-                style={{
-                  color: isPlayerActive ? 'var(--athlon-primary)' : '#FFFFFF',
-                  textShadow: isPlayerActive ? '0 0 10px var(--athlon-primary-glow)' : 'none',
-                }}
-              >
-                Me
-              </span>
-              <span
-                className="text-[10px] sm:text-[11px] font-normal tracking-tight leading-tight mt-0.5 transition-colors truncate max-w-full relative z-30"
-                style={{
-                  color: isPlayerActive ? 'var(--athlon-text-secondary, rgba(255, 255, 255, 0.75))' : 'var(--athlon-text-muted, rgba(255, 255, 255, 0.4))',
-                }}
-              >
-                Player
-              </span>
-            </div>
-          </button>
-
-          {/* ORGANIZATIONS TABS */}
-          {orgsList.map((org) => {
-            const isOrgActive = currentActiveRole === org.id;
-            return (
-              <button
-                key={org.id}
-                onClick={() => handleRoleClick(org.id)}
-                className="group relative flex-1 min-w-[78px] sm:min-w-[96px] max-w-[135px] flex flex-col items-center text-center select-none cursor-pointer active:scale-[0.98] transition-transform duration-150"
-              >
-                {/* Section 1: Icon (Placed Above) */}
-                <div
-                  className="h-10 sm:h-11 w-full flex items-center justify-center relative z-20 transition-all duration-200"
-                  style={{
-                    color: isOrgActive ? 'var(--athlon-primary)' : 'rgba(255, 255, 255, 0.65)',
-                  }}
+              <div className="flex items-center gap-1.5 leading-none min-w-0">
+                <span
+                  className={`text-xs font-black tracking-tight truncate ${isOrgActive ? 'text-primary' : 'text-white'
+                    }`}
+                  title={org.name}
                 >
-                  <div
-                    className={`transition-transform duration-200 ${isOrgActive
-                        ? 'scale-110 drop-shadow-[0_0_8px_var(--athlon-primary-glow)]'
-                        : 'group-hover:scale-105 group-hover:text-white'
-                      }`}
-                  >
-                    {getOrgIcon(org.type)}
-                  </div>
-                </div>
+                  {org.name}
+                </span>
+                <span className="text-[10px] text-white/40 font-medium shrink-0">
+                  • {roleLabel}
+                </span>
+              </div>
 
-                {/* Section 2: Heading (Enclosed by Upward Arch when Active) */}
-                <div className="relative w-full h-[46px] px-1.5 flex flex-col items-center justify-center transition-all z-20">
-                  {/* Upward Arch looping over the heading */}
-                  {isOrgActive && <ActiveHeadingUpwardArch />}
+              {isOrgActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] ml-0.5 shrink-0" />
+              )}
+            </button>
+          );
+        })}
 
-                  <span
-                    className="text-xs sm:text-[13px] font-bold tracking-tight leading-tight transition-colors truncate max-w-full relative z-30"
-                    style={{
-                      color: isOrgActive ? 'var(--athlon-primary)' : '#FFFFFF',
-                      textShadow: isOrgActive ? '0 0 10px var(--athlon-primary-glow)' : 'none',
-                    }}
-                  >
-                    {org.name}
-                  </span>
-                  <span
-                    className="text-[10px] sm:text-[11px] font-normal tracking-tight leading-tight mt-0.5 transition-colors truncate max-w-full relative z-30"
-                    style={{
-                      color: isOrgActive ? 'var(--athlon-text-secondary, rgba(255, 255, 255, 0.75))' : 'var(--athlon-text-muted, rgba(255, 255, 255, 0.4))',
-                    }}
-                  >
-                    {getOrgRoleLabel(org.type)}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-
-          {/* MORE / ADD ORG TAB */}
-          <button
-            onClick={onAddClick || (() => { router.push('/subscription'); })}
-            className="group relative flex-1 min-w-[75px] sm:min-w-[90px] max-w-[125px] flex flex-col items-center text-center select-none cursor-pointer active:scale-[0.98] transition-transform duration-150"
-          >
-            {/* Section 1: Icon (Above) */}
-            <div className="h-10 sm:h-11 w-full flex items-center justify-center relative z-20 text-white/60 group-hover:text-white transition-colors">
-              <LayoutGrid className="w-6 h-6 group-hover:scale-105 transition-transform duration-150" strokeWidth={1.8} />
-            </div>
-
-            {/* Section 2: Heading */}
-            <div className="relative w-full h-[46px] px-1.5 flex flex-col items-center justify-center transition-all z-20">
-              <span className="text-xs sm:text-[13px] font-bold tracking-tight leading-tight text-white/80 group-hover:text-white transition-colors truncate max-w-full">
-                More
-              </span>
-              <span className="text-[10px] sm:text-[11px] font-normal tracking-tight leading-tight mt-0.5 text-white/40 group-hover:text-white/60 transition-colors truncate max-w-full">
-                Add +
-              </span>
-            </div>
-          </button>
-        </div>
+        {/* ➕ ADD NEW HUB BUTTON */}
+        <button
+          onClick={onAddClick || (() => { router.push('/subscription'); })}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full border border-dashed border-white/20 hover:border-primary/50 text-white/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 active:scale-95 text-xs font-bold cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+          <span>Add Hub</span>
+        </button>
       </div>
     </div>
   );

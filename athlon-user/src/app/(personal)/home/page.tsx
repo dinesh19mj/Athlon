@@ -49,14 +49,15 @@ import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
+import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
-const quickActions = [
-  { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, desc: 'Events & Brackets' },
-  { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, desc: 'Global ELO Standings' },
-  { id: '/home/matches', label: 'Matches', icon: Activity, desc: 'Schedule & Scores' },
-  { id: '/home/registered', label: 'Registered', icon: ClipboardList, desc: 'My Entries' },
+const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments' | 'rankings' | 'matches' | 'registered'; desc: string }[] = [
+  { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, icon3d: 'tournaments', desc: 'Events & Brackets' },
+  { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, icon3d: 'rankings', desc: 'Global ELO Standings' },
+  { id: '/home/matches', label: 'Matches', icon: Activity, icon3d: 'matches', desc: 'Schedule & Scores' },
+  { id: '/home/registered', label: 'Registered', icon: ClipboardList, icon3d: 'registered', desc: 'My Entries' },
 ];
 
 function orgIcon(type: string, cls = 'w-7 h-7') {
@@ -390,14 +391,14 @@ export default function PersonalHomePage() {
             <div className="px-6 pt-2 pb-3 mb-2 overflow-hidden">
               <section className="flex items-center justify-between">
                 {quickActions.map((action) => (
-                  <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0">
+                  <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0 group">
                     <div
-                      className="w-[68px] h-[68px] rounded-[16px] flex flex-col items-center justify-center transition-all shadow-lg cursor-pointer hover:scale-105 active:scale-95"
-                      style={{ backgroundColor: 'var(--athlon-surface)', border: '1px solid var(--athlon-border)' }}
+                      className="w-[68px] h-[68px] rounded-[18px] flex flex-col items-center justify-center transition-all shadow-lg cursor-pointer hover:scale-105 active:scale-95 border"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                     >
-                      <action.icon className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} strokeWidth={1.5} />
+                      <Athlon3DIcon type={action.icon3d} size={40} active={true} />
                     </div>
-                    <span className="text-[10px] font-medium" style={{ color: 'var(--athlon-text-secondary)' }}>
+                    <span className="text-[10.5px] font-semibold transition-colors group-hover:text-primary" style={{ color: 'var(--athlon-text-secondary)' }}>
                       {action.label}
                     </span>
                   </Link>
@@ -1270,11 +1271,11 @@ export default function PersonalHomePage() {
                 <Link
                   key={action.id}
                   href={action.id}
-                  className="p-3.5 rounded-2xl border flex items-center gap-3 bg-surface/50 hover:bg-surface hover:border-primary/40 transition-all group shadow-sm"
+                  className="p-3.5 rounded-2xl border flex items-center gap-3.5 bg-surface/50 hover:bg-surface hover:border-primary/40 transition-all group shadow-sm"
                   style={{ borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                    <action.icon className="w-5 h-5" />
+                  <div className="w-12 h-12 rounded-xl bg-surface border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0 shadow-inner">
+                    <Athlon3DIcon type={action.icon3d} size={32} active={true} />
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-black text-foreground group-hover:text-primary transition-colors">{action.label}</div>

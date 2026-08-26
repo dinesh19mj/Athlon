@@ -227,6 +227,56 @@ export default function TeamChampionshipDashboardPage() {
     loadAuction();
   };
 
+  // Team Status & Payment Handlers
+  const handleUpdateTeamStatus = async (teamId: number, status: string) => {
+    try {
+      setTeams((prev) =>
+        prev.map((t) => (t.teamId === teamId ? { ...t, status } : t))
+      );
+      await TeamChampionshipService.updateTeamStatus(teamId, status);
+    } catch (err: any) {
+      console.error("Failed to update team status:", err);
+      TeamChampionshipService.getTeams(championshipUuid).then((res) => setTeams(res || []));
+    }
+  };
+
+  const handleUpdateTeamPayment = async (teamId: number, paymentStatus: string) => {
+    try {
+      setTeams((prev) =>
+        prev.map((t) => (t.teamId === teamId ? { ...t, paymentStatus } : t))
+      );
+      await TeamChampionshipService.updateTeamPayment(teamId, paymentStatus);
+    } catch (err: any) {
+      console.error("Failed to update team payment:", err);
+      TeamChampionshipService.getTeams(championshipUuid).then((res) => setTeams(res || []));
+    }
+  };
+
+  // Player Status & Payment Handlers
+  const handleUpdatePlayerStatus = async (playerId: number, status: string) => {
+    try {
+      setPlayers((prev) =>
+        prev.map((p) => (p.playerId === playerId ? { ...p, status } : p))
+      );
+      await TeamChampionshipService.updatePlayerStatus(playerId, status);
+    } catch (err: any) {
+      console.error("Failed to update player status:", err);
+      TeamChampionshipService.getPlayers(championshipUuid).then((res) => setPlayers(res || []));
+    }
+  };
+
+  const handleUpdatePlayerPayment = async (playerId: number, paymentStatus: string) => {
+    try {
+      setPlayers((prev) =>
+        prev.map((p) => (p.playerId === playerId ? { ...p, paymentStatus } : p))
+      );
+      await TeamChampionshipService.updatePlayerPayment(playerId, paymentStatus);
+    } catch (err: any) {
+      console.error("Failed to update player payment:", err);
+      TeamChampionshipService.getPlayers(championshipUuid).then((res) => setPlayers(res || []));
+    }
+  };
+
   // Register Team Handler
   const handleRegisterTeamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -516,54 +566,253 @@ export default function TeamChampionshipDashboardPage() {
         {activeTab === "teams" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-foreground">Registered Teams ({teams.length})</h3>
-              <button
-                onClick={() => setIsAddTeamModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20"
+              <div>
+                <h3 className="text-base font-black text-foreground">Registered Teams ({teams.length})</h3>
+                <p className="text-xs text-foreground/50">Manage franchise entries, approval verification, and payment status</p>
+              </div>
+            </div>
+
+            {teams.length === 0 ? (
+              <div
+                className="py-12 px-4 text-center rounded-2xl border flex flex-col items-center justify-center space-y-3"
+                style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
               >
-                <Plus className="w-4 h-4" /> Register Team
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {teams.map((t) => (
-                <div
-                  key={t.teamId}
-                  className="rounded-2xl border p-5 space-y-3"
-                  style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
-                >
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-black text-foreground">{t.teamName}</h4>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                        t.paymentStatus === "PAID"
-                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
-                          : "bg-amber-500/15 text-amber-400 border border-amber-500/25"
-                      }`}
-                    >
-                      {t.paymentStatus}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-foreground/60">
-                    Captain: <strong>{t.captainName || "N/A"}</strong>
-                  </p>
-
-                  <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                    <span className="text-[11px] text-foreground/40">{t.contactPhone || "No contact"}</span>
-                    <button
-                      onClick={() => {
-                        setSelectedTeamForAudit(t.teamId);
-                        setActiveTab("squads");
-                      }}
-                      className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                    >
-                      View Squad <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                <Shield className="w-10 h-10 text-foreground/30" />
+                <div>
+                  <h4 className="text-sm font-black text-foreground">No Teams Registered Yet</h4>
+                  <p className="text-xs text-foreground/50 mt-0.5">Share the championship registration link with franchises to receive entries.</p>
                 </div>
-              ))}
+              </div>
+            ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {teams.map((t) => {
+                const isApproved = t.status === "APPROVED";
+                const isRejected = t.status === "REJECTED";
+                const isPaid = t.paymentStatus === "PAID";
+                const teamInitials = t.teamName
+                  ? t.teamName
+                      .split(" ")
+                      .map((w) => w[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase()
+                  : "TM";
+
+                return (
+                  <div
+                    key={t.teamId}
+                    className="group relative rounded-[24px] border transition-all duration-300 hover:shadow-2xl hover:border-primary/40 flex flex-col justify-between overflow-hidden"
+                    style={{
+                      backgroundColor: "var(--athlon-card)",
+                      borderColor: "var(--athlon-border)",
+                    }}
+                  >
+                    {/* Top Status Gradient Bar */}
+                    <div
+                      className={`h-1.5 w-full bg-gradient-to-r ${
+                        isApproved
+                          ? "from-emerald-500 via-teal-400 to-primary"
+                          : isRejected
+                          ? "from-red-500 via-rose-400 to-amber-500"
+                          : "from-amber-400 via-orange-400 to-primary"
+                      }`}
+                    />
+
+                    <div className="p-4 sm:p-5 space-y-4">
+                      {/* Header: Franchise Crest & Identity */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Team Avatar Shield */}
+                          <div
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm uppercase shadow-inner border shrink-0 transition-transform duration-300 group-hover:scale-105 ${
+                              isApproved
+                                ? "bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30"
+                                : isRejected
+                                ? "bg-gradient-to-br from-red-500/20 to-rose-500/10 text-red-400 border-red-500/30"
+                                : "bg-gradient-to-br from-amber-500/20 to-primary/10 text-amber-400 border-amber-500/30"
+                            }`}
+                          >
+                            {teamInitials}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="text-base font-black text-foreground tracking-tight truncate">
+                                {t.teamName}
+                              </h4>
+                              {isApproved && (
+                                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 fill-emerald-500/20" />
+                              )}
+                            </div>
+                            <span className="text-[11px] font-mono font-bold text-foreground/40 block">
+                              Franchise #{t.teamId}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Dual Status Capsule Pills */}
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          {/* Approval Badge */}
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border backdrop-blur-md flex items-center gap-1.5 ${
+                              isApproved
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                : isRejected
+                                ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isApproved
+                                  ? "bg-emerald-400 animate-pulse"
+                                  : isRejected
+                                  ? "bg-red-400"
+                                  : "bg-amber-400 animate-pulse"
+                              }`}
+                            />
+                            {t.status || "PENDING"}
+                          </span>
+
+                          {/* Payment Badge */}
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                              isPaid
+                                ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                                : "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                            }`}
+                          >
+                            {isPaid ? "PAID" : "UNPAID"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Captain & Contact Quick Card */}
+                      <div
+                        className="p-3 sm:p-3.5 rounded-2xl border space-y-2"
+                        style={{
+                          backgroundColor: "var(--athlon-surface)",
+                          borderColor: "var(--athlon-border-subtle)",
+                        }}
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-foreground/50 font-bold flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-primary" /> Captain
+                          </span>
+                          <span className="font-extrabold text-foreground tracking-tight">
+                            {t.captainName || "Not assigned"}
+                          </span>
+                        </div>
+
+                        <div
+                          className="flex items-center justify-between text-xs border-t pt-2"
+                          style={{ borderColor: "var(--athlon-border-subtle)" }}
+                        >
+                          <span className="text-foreground/50 font-bold flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-emerald-400" /> Phone
+                          </span>
+                          {t.contactPhone ? (
+                            <a
+                              href={`tel:${t.contactPhone}`}
+                              className="font-mono font-black text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                            >
+                              <span>{t.contactPhone}</span>
+                            </a>
+                          ) : (
+                            <span className="font-mono text-foreground/40">No contact</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Organizer Action Deck */}
+                      <div className="space-y-2 pt-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40">
+                            Organizer Actions
+                          </span>
+                        </div>
+
+                        {/* Approval & Rejection Segmented Buttons */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() =>
+                              handleUpdateTeamStatus(t.teamId, isApproved ? "PENDING" : "APPROVED")
+                            }
+                            className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 border shadow-sm active:scale-95 ${
+                              isApproved
+                                ? "bg-emerald-500 text-black border-emerald-400 shadow-emerald-500/25 font-black"
+                                : "bg-surface hover:bg-emerald-500/10 text-foreground/80 hover:text-emerald-400 border-foreground/10"
+                            }`}
+                            title={isApproved ? "Click to set back to Pending" : "Approve Team Franchise"}
+                          >
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            <span>{isApproved ? "Approved" : "Approve"}</span>
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              handleUpdateTeamStatus(t.teamId, isRejected ? "PENDING" : "REJECTED")
+                            }
+                            className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 border shadow-sm active:scale-95 ${
+                              isRejected
+                                ? "bg-red-500 text-white border-red-400 shadow-red-500/25 font-black"
+                                : "bg-surface hover:bg-red-500/10 text-foreground/80 hover:text-red-400 border-foreground/10"
+                            }`}
+                            title={isRejected ? "Click to set back to Pending" : "Reject Team Registration"}
+                          >
+                            <X className="w-3.5 h-3.5 stroke-[3]" />
+                            <span>{isRejected ? "Rejected" : "Reject"}</span>
+                          </button>
+                        </div>
+
+                        {/* Payment Action Button */}
+                        <button
+                          onClick={() =>
+                            handleUpdateTeamPayment(t.teamId, isPaid ? "PENDING" : "PAID")
+                          }
+                          className={`w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-sm active:scale-95 ${
+                            isPaid
+                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-amber-500/15 hover:text-amber-400 hover:border-amber-500/30"
+                              : "bg-gradient-to-r from-primary via-amber-400 to-primary text-black border-primary shadow-primary/20 hover:brightness-110"
+                          }`}
+                        >
+                          <DollarSign className="w-4 h-4 stroke-[2.5]" />
+                          <span>{isPaid ? "Payment Verified (Click to Mark Unpaid)" : "Mark Payment as Paid"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card Bottom Footer: Fee & View Squad CTA */}
+                    <div
+                      className="p-3 sm:p-4 border-t flex items-center justify-between mt-1"
+                      style={{
+                        backgroundColor: "var(--athlon-surface)",
+                        borderColor: "var(--athlon-border-subtle)",
+                      }}
+                    >
+                      <div className="flex items-center gap-1 text-foreground/60 text-xs">
+                        <span className="text-[10px] uppercase font-bold text-foreground/40">Fee:</span>
+                        <span className="font-mono font-black text-foreground">
+                          {championship?.teamRegistrationFee ? `₹${championship.teamRegistrationFee}` : "FREE ENTRY"}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSelectedTeamForAudit(t.teamId);
+                          setActiveTab("squads");
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-black border border-primary/30 text-xs font-black transition-all flex items-center gap-1 shadow-sm active:scale-95"
+                      >
+                        <span>View Squad</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+            )}
           </div>
         )}
 
@@ -581,41 +830,117 @@ export default function TeamChampionshipDashboardPage() {
                   className="px-3 py-1.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
                   style={{ borderColor: "var(--athlon-border)" }}
                 />
-                <button
-                  onClick={() => setIsAddPlayerModalOpen(true)}
-                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 shrink-0"
-                >
-                  <Plus className="w-4 h-4" /> Register Player
-                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {players
                 .filter((p) => p.fullName.toLowerCase().includes(searchPlayerQuery.toLowerCase()))
-                .map((p) => (
-                  <div
-                    key={p.playerId}
-                    className="rounded-2xl border p-4 space-y-2.5"
-                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-foreground truncate">{p.fullName}</h4>
-                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
-                        {p.categoryName || "Open"}
-                      </span>
-                    </div>
+                .map((p) => {
+                  const isApproved = p.status === "APPROVED";
+                  const isRejected = p.status === "REJECTED";
+                  const isPaid = p.paymentStatus === "PAID";
 
-                    <p className="text-[11px] text-foreground/50 truncate">
-                      Eligible: <strong>{p.eligibleFormats || "All Formats"}</strong>
-                    </p>
+                  return (
+                    <div
+                      key={p.playerId}
+                      className="rounded-2xl border p-4 space-y-3 shadow-sm flex flex-col justify-between"
+                      style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-1">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs font-black text-foreground truncate">{p.fullName}</h4>
+                            <span className="text-[10px] text-foreground/40 font-mono">#{p.playerId}</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase shrink-0">
+                            {p.categoryName || "Open"}
+                          </span>
+                        </div>
 
-                    <div className="flex items-center justify-between border-t pt-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                      <span className="text-[10px] font-bold text-foreground/40 uppercase">Base Price</span>
-                      <span className="text-xs font-black text-primary">{p.basePrice} pts</span>
+                        {/* Status Badges */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
+                              isApproved
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                : isRejected
+                                ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                            }`}
+                          >
+                            {p.status || "PENDING"}
+                          </span>
+
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
+                              isPaid
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                            }`}
+                          >
+                            {isPaid ? "PAID" : "UNPAID"}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-foreground/60 truncate">
+                          Phone: <strong>{p.phone || "No contact"}</strong>
+                        </p>
+                        <p className="text-[10px] text-foreground/50 truncate">
+                          Eligible: <strong>{p.eligibleFormats || "All Formats"}</strong>
+                        </p>
+
+                        {/* Organizer Player Actions */}
+                        <div className="space-y-1.5 pt-1">
+                          <div className="grid grid-cols-2 gap-1">
+                            <button
+                              onClick={() => handleUpdatePlayerStatus(p.playerId, isApproved ? "PENDING" : "APPROVED")}
+                              className={`py-1 px-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-0.5 border ${
+                                isApproved
+                                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                                  : "bg-surface hover:bg-emerald-500/10 hover:text-emerald-400 border-foreground/10 text-foreground/70"
+                              }`}
+                              title="Approve Player"
+                            >
+                              <Check className="w-3 h-3" />
+                              <span>{isApproved ? "Approved" : "Approve"}</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleUpdatePlayerStatus(p.playerId, isRejected ? "PENDING" : "REJECTED")}
+                              className={`py-1 px-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-0.5 border ${
+                                isRejected
+                                  ? "bg-red-500/20 text-red-400 border-red-500/40"
+                                  : "bg-surface hover:bg-red-500/10 hover:text-red-400 border-foreground/10 text-foreground/70"
+                              }`}
+                              title="Reject Player"
+                            >
+                              <X className="w-3 h-3" />
+                              <span>{isRejected ? "Rejected" : "Reject"}</span>
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => handleUpdatePlayerPayment(p.playerId, isPaid ? "PENDING" : "PAID")}
+                            className={`w-full py-1 px-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 border ${
+                              isPaid
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                : "bg-primary/15 text-primary border-primary/30 hover:bg-primary/25"
+                            }`}
+                          >
+                            <DollarSign className="w-3 h-3" />
+                            <span>{isPaid ? "Paid (Mark Unpaid)" : "Mark as Paid"}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between border-t pt-2 mt-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                        <span className="text-[10px] font-bold text-foreground/40 uppercase">Base Price</span>
+                        <span className="text-xs font-black text-primary">{p.basePrice} pts</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         )}

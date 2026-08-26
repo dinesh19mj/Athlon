@@ -62,6 +62,20 @@ public class TeamChampionshipRegistrationController {
         return ResponseEntity.ok(standingsService.getTeamParticipationAudit(teamId, championshipId));
     }
 
+    @PostMapping("/teams/{teamId}/status")
+    public ResponseEntity<ChampionshipTeamRegistration> updateTeamStatus(
+            @PathVariable("teamId") Long teamId,
+            @RequestParam("status") String status) {
+        return ResponseEntity.ok(registrationService.updateTeamStatus(teamId, status));
+    }
+
+    @PostMapping("/players/{playerId}/status")
+    public ResponseEntity<ChampionshipPlayerRegistration> updatePlayerStatus(
+            @PathVariable("playerId") Long playerId,
+            @RequestParam("status") String status) {
+        return ResponseEntity.ok(registrationService.updatePlayerStatus(playerId, status));
+    }
+
     @PostMapping("/teams/{teamId}/payment-status")
     public ResponseEntity<ChampionshipTeamRegistration> updateTeamPayment(
             @PathVariable("teamId") Long teamId,
