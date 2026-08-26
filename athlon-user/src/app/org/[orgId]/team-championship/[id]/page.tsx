@@ -101,6 +101,7 @@ export default function TeamChampionshipDashboardPage() {
   const [manualWinningTeamId, setManualWinningTeamId] = useState<number | null>(null);
   const [manualWinningBid, setManualWinningBid] = useState<number | null>(null);
   const [assigningLoading, setAssigningLoading] = useState(false);
+  const [isPurseModalOpen, setIsPurseModalOpen] = useState(false);
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -1956,6 +1957,16 @@ export default function TeamChampionshipDashboardPage() {
                     </button>
                   )}
 
+                  {/* Franchise Purses On-Demand Trigger */}
+                  <button
+                    onClick={() => setIsPurseModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                    title="View Franchise Purses & Balances"
+                  >
+                    <Shield className="w-3.5 h-3.5 text-primary" />
+                    <span>Franchise Purses ({auctionTeams.length})</span>
+                  </button>
+
                   {/* Maximize to Fullscreen for Projectors / Big Screens */}
                   <button
                     onClick={toggleAuctionFullscreen}
@@ -2059,26 +2070,34 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
               </div>
 
-              {/* 3. MAIN ARENA: 2-COLUMN COCKPIT (Floor Spotlight + Franchise Purses) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* LEFT 7 COLS: THE PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
-                <div className="lg:col-span-7 space-y-6">
-                  {/* Spotlight Banner */}
-                  <div
-                    className="p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden space-y-6"
-                    style={{
-                      backgroundColor: "var(--athlon-card)",
-                      borderColor: activePlayer ? "var(--athlon-primary, #6366f1)" : "var(--athlon-border)",
-                    }}
-                  >
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                        <span className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
-                          <Flame className="w-4 h-4 text-primary" /> Player Call Floor
-                        </span>
-                      </div>
+              {/* 3. MAIN ARENA: FULL-WIDTH PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
+              <div className="space-y-6">
+                {/* Spotlight Banner */}
+                <div
+                  className="p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden space-y-6"
+                  style={{
+                    backgroundColor: "var(--athlon-card)",
+                    borderColor: activePlayer ? "var(--athlon-primary, #6366f1)" : "var(--athlon-border)",
+                  }}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                      <span className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                        <Flame className="w-4 h-4 text-primary" /> Player Call Floor
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Franchise Purses Quick Click */}
+                      <button
+                        onClick={() => setIsPurseModalOpen(true)}
+                        className="px-3.5 py-2 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-primary" />
+                        <span>Franchise Purses ({auctionTeams.length})</span>
+                      </button>
 
                       {/* Snipper 2: Player Spinner Button */}
                       <button
@@ -2090,260 +2109,218 @@ export default function TeamChampionshipDashboardPage() {
                         <span>🎰 Spin Player (Snipper)</span>
                       </button>
                     </div>
+                  </div>
 
-                    {activePlayer ? (
-                      <div className="space-y-6">
-                        {/* Athlete Hero Spotlight */}
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                          <div className="relative shrink-0">
-                            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-primary/30 to-amber-500/20 border-2 border-primary flex items-center justify-center text-3xl font-black text-primary shadow-2xl shadow-primary/25 overflow-hidden">
-                              {activePlayer.avatarUrl ? (
-                                <img src={activePlayer.avatarUrl} alt={activePlayer.playerName} className="w-full h-full object-cover" />
-                              ) : (
-                                activePlayer.playerName.substring(0, 2).toUpperCase()
-                              )}
-                            </div>
-                            <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-md bg-black/90 border border-primary/50 text-[10px] font-mono font-black text-primary">
-                              #{activePlayer.auctionPlayerId}
+                  {activePlayer ? (
+                    <div className="space-y-6">
+                      {/* Athlete Hero Spotlight */}
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div className="relative shrink-0">
+                          <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-tr from-primary/30 to-amber-500/20 border-2 border-primary flex items-center justify-center text-4xl font-black text-primary shadow-2xl shadow-primary/25 overflow-hidden">
+                            {activePlayer.avatarUrl ? (
+                              <img src={activePlayer.avatarUrl} alt={activePlayer.playerName} className="w-full h-full object-cover" />
+                            ) : (
+                              activePlayer.playerName.substring(0, 2).toUpperCase()
+                            )}
+                          </div>
+                          <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-md bg-black/90 border border-primary/50 text-xs font-mono font-black text-primary">
+                            #{activePlayer.auctionPlayerId}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 text-center sm:text-left space-y-2">
+                          <span className="px-3 py-0.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-xs font-black uppercase inline-block">
+                            {activePlayer.categoryName || activeCategory?.name || "Category"}
+                          </span>
+                          <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                            {activePlayer.playerName}
+                          </h2>
+                          {activePlayer.eligibleFormats && (
+                            <p className="text-xs text-foreground/60 font-semibold">
+                              Eligible Formats: <strong className="text-foreground/90">{activePlayer.eligibleFormats}</strong>
+                            </p>
+                          )}
+                          <div className="pt-1">
+                            <span className="text-xs font-bold text-foreground/50">
+                              Base Price: <strong className="text-primary font-mono text-base">{activePlayerBasePrice} pts</strong>
                             </span>
                           </div>
+                        </div>
 
-                          <div className="flex-1 text-center sm:text-left space-y-1.5">
-                            <span className="px-2.5 py-0.5 rounded-md bg-primary/20 text-primary border border-primary/30 text-xs font-black uppercase inline-block">
-                              {activePlayer.categoryName || activeCategory?.name || "Category"}
-                            </span>
-                            <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-                              {activePlayer.playerName}
-                            </h2>
-                            {activePlayer.eligibleFormats && (
-                              <p className="text-xs text-foreground/60 font-semibold">
-                                Formats: <strong className="text-foreground/80">{activePlayer.eligibleFormats}</strong>
-                              </p>
-                            )}
-                            <div className="pt-1">
-                              <span className="text-xs font-bold text-foreground/50">
-                                Base Price: <strong className="text-primary font-mono text-sm">{activePlayerBasePrice} pts</strong>
+                        {/* Live Timer Clock */}
+                        <div className="text-center sm:text-right shrink-0 bg-surface/80 p-4 rounded-3xl border border-foreground/10 min-w-[140px]">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
+                            Timer Remaining
+                          </span>
+                          <span className="text-4xl font-black text-amber-400 font-mono">
+                            {auctionState?.remainingTimerSeconds ?? 30}s
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Current Bid & Leading Team Board */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-3xl bg-surface border border-foreground/10">
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-foreground/40 block">Current High Bid</span>
+                          <span className="text-3xl sm:text-4xl font-black text-primary font-mono">
+                            {auctionState?.currentBid || activePlayerBasePrice} pts
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-foreground/40 block">Leader Franchise</span>
+                          <span className="text-lg sm:text-xl font-black text-foreground truncate block mt-0.5">
+                            {auctionState?.winningTeamName || "Waiting for Opening Offer"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 4. MANUAL BIDDING & TEAM LOCK DESK (ORGANIZER CONTROL PAD) */}
+                      <div
+                        className="p-6 rounded-3xl border space-y-4 shadow-sm"
+                        style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+                      >
+                        <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                          <h4 className="text-xs font-black uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
+                            <Zap className="w-3.5 h-3.5 text-primary" /> Manual Bidding & Team Mapping Desk
+                          </h4>
+                          <button
+                            onClick={() => setIsPurseModalOpen(true)}
+                            className="text-[11px] text-primary hover:underline font-bold flex items-center gap-1"
+                          >
+                            <Shield className="w-3 h-3" />
+                            <span>Check All Purses</span>
+                          </button>
+                        </div>
+
+                        {/* Quick Increment Pad */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold uppercase text-foreground/50 block">Quick Point Bumps</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {[100, 250, 500, 1000, 2000].map((inc) => (
+                              <button
+                                key={inc}
+                                onClick={() => {
+                                  const next = (manualWinningBid || activePlayerBasePrice) + inc;
+                                  setManualWinningBid(next);
+                                }}
+                                className="px-3.5 py-1.5 rounded-xl bg-surface hover:bg-primary/20 border border-foreground/15 hover:border-primary/40 text-foreground font-mono font-black text-xs transition-all"
+                              >
+                                +{inc} pts
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => setManualWinningBid(activePlayerBasePrice)}
+                              className="px-3.5 py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground/60 font-bold text-xs transition-all"
+                            >
+                              Reset to Base
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Inputs: Locked Points & Map To Team */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
+                              Final Locked Points
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={manualWinningBid || ""}
+                                onChange={(e) => setManualWinningBid(Number(e.target.value))}
+                                placeholder="Enter final points..."
+                                className="w-full px-4 py-2.5 rounded-xl border bg-background text-foreground font-mono font-black text-base outline-none focus:border-primary"
+                                style={{ borderColor: "var(--athlon-border)" }}
+                              />
+                              <span className="absolute right-3 top-3 text-xs font-bold text-foreground/40 pointer-events-none">
+                                pts
                               </span>
                             </div>
                           </div>
 
-                          {/* Live Timer Clock */}
-                          <div className="text-center sm:text-right shrink-0 bg-surface/80 p-3 rounded-2xl border border-foreground/10">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
-                              Timer Remaining
-                            </span>
-                            <span className="text-3xl font-black text-amber-400 font-mono">
-                              {auctionState?.remainingTimerSeconds ?? 30}s
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Current Bid & Leading Team Board */}
-                        <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-surface border border-foreground/10">
                           <div>
-                            <span className="text-[10px] font-black uppercase text-foreground/40 block">Current High Bid</span>
-                            <span className="text-2xl sm:text-3xl font-black text-primary font-mono">
-                              {auctionState?.currentBid || activePlayerBasePrice} pts
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-black uppercase text-foreground/40 block">Leader Franchise</span>
-                            <span className="text-base sm:text-lg font-black text-foreground truncate block">
-                              {auctionState?.winningTeamName || "Waiting for Opening Offer"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* 4. MANUAL BIDDING & TEAM LOCK DESK (ORGANIZER CONTROL PAD) */}
-                        <div
-                          className="p-5 rounded-2xl border space-y-4"
-                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
-                        >
-                          <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                            <h4 className="text-xs font-black uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
-                              <Zap className="w-3.5 h-3.5 text-primary" /> Manual Bidding & Team Mapping Desk
-                            </h4>
-                            <span className="text-[10px] text-foreground/50 font-bold">Lock Points & Map Team</span>
-                          </div>
-
-                          {/* Quick Increment Pad */}
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold uppercase text-foreground/50 block">Quick Point Bumps</span>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {[100, 250, 500, 1000, 2000].map((inc) => (
-                                <button
-                                  key={inc}
-                                  onClick={() => {
-                                    const next = (manualWinningBid || activePlayerBasePrice) + inc;
-                                    setManualWinningBid(next);
-                                  }}
-                                  className="px-3 py-1.5 rounded-xl bg-surface hover:bg-primary/20 border border-foreground/15 hover:border-primary/40 text-foreground font-mono font-black text-xs transition-all"
-                                >
-                                  +{inc} pts
-                                </button>
-                              ))}
-                              <button
-                                onClick={() => setManualWinningBid(activePlayerBasePrice)}
-                                className="px-3 py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground/60 font-bold text-xs transition-all"
-                              >
-                                Reset to Base
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Inputs: Locked Points & Map To Team */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
-                                Final Locked Points
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  value={manualWinningBid || ""}
-                                  onChange={(e) => setManualWinningBid(Number(e.target.value))}
-                                  placeholder="Enter final points..."
-                                  className="w-full px-4 py-2.5 rounded-xl border bg-background text-foreground font-mono font-black text-base outline-none focus:border-primary"
-                                  style={{ borderColor: "var(--athlon-border)" }}
-                                />
-                                <span className="absolute right-3 top-3 text-xs font-bold text-foreground/40 pointer-events-none">
-                                  pts
-                                </span>
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[10px] font-black uppercase text-foreground/60 block">
                                 Map to Franchise Team
                               </label>
-                              <select
-                                value={manualWinningTeamId || ""}
-                                onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
-                                className="w-full px-3 py-2.5 rounded-xl border bg-background text-foreground font-black text-xs outline-none focus:border-primary"
-                                style={{ borderColor: "var(--athlon-border)" }}
+                              <button
+                                onClick={() => setIsPurseModalOpen(true)}
+                                className="text-[10px] text-primary hover:underline font-bold"
                               >
-                                <option value="">-- Select Team --</option>
-                                {auctionTeams.map((at) => (
-                                  <option key={at.team.teamId} value={at.team.teamId}>
-                                    {at.team.teamName} (Purse: {at.team.remainingBudget} pts)
-                                  </option>
-                                ))}
-                              </select>
+                                View Purses
+                              </button>
                             </div>
-                          </div>
-
-                          {/* Action CTA Buttons */}
-                          <div className="flex items-center gap-3 pt-2">
-                            <button
-                              onClick={handleAssignPlayerManual}
-                              disabled={assigningLoading || !manualWinningTeamId}
-                              className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-40"
+                            <select
+                              value={manualWinningTeamId || ""}
+                              onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
+                              className="w-full px-3 py-2.5 rounded-xl border bg-background text-foreground font-black text-xs outline-none focus:border-primary"
+                              style={{ borderColor: "var(--athlon-border)" }}
                             >
-                              <Gavel className="w-4 h-4" />
-                              <span>{assigningLoading ? "Processing Assignment..." : "🔨 SOLD & MAP TO TEAM"}</span>
-                            </button>
-
-                            <button
-                              onClick={handleMarkUnsold}
-                              className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
-                            >
-                              MARK UNSOLD
-                            </button>
+                              <option value="">-- Select Team --</option>
+                              {auctionTeams.map((at) => (
+                                <option key={at.team.teamId} value={at.team.teamId}>
+                                  {at.team.teamName} (Purse: {at.team.remainingBudget} pts)
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      /* Standby Floor Display */
-                      <div className="p-10 rounded-2xl border border-dashed text-center space-y-4" style={{ borderColor: "var(--athlon-border)" }}>
-                        <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mx-auto shadow-inner">
-                          <Gavel className="w-8 h-8 text-primary" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-base font-black text-foreground uppercase tracking-tight">
-                            No Athlete on the Floor
-                          </h4>
-                          <p className="text-xs text-foreground/60 max-w-md mx-auto">
-                            Phase: <strong>{activeCategory?.name || "All Categories"}</strong> ({waitingCategoryPlayers.length} athletes waiting).
-                          </p>
-                        </div>
 
-                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        {/* Action CTA Buttons */}
+                        <div className="flex items-center gap-3 pt-2">
                           <button
-                            onClick={runPlayerSnipper}
-                            disabled={isSpinningPlayer || waitingCategoryPlayers.length === 0}
-                            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-xs shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            onClick={handleAssignPlayerManual}
+                            disabled={assigningLoading || !manualWinningTeamId}
+                            className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-40"
                           >
-                            <Shuffle className="w-4 h-4" />
-                            <span>🎰 Spin Player from {activeCategory?.name || "Category"}</span>
+                            <Gavel className="w-4 h-4" />
+                            <span>{assigningLoading ? "Processing Assignment..." : "🔨 SOLD & MAP TO TEAM"}</span>
+                          </button>
+
+                          <button
+                            onClick={handleMarkUnsold}
+                            className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
+                          >
+                            MARK UNSOLD
                           </button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* RIGHT 5 COLS: FRANCHISE PURSE STANDINGS LADDER */}
-                <div className="lg:col-span-5 space-y-4">
-                  <div
-                    className="p-5 sm:p-6 rounded-3xl border space-y-4 shadow-md"
-                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
-                  >
-                    <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border)" }}>
-                      <h4 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5 text-primary" /> Franchise Purses ({auctionTeams.length})
-                      </h4>
-                      <span className="text-[10px] text-foreground/40 font-bold">Click team to map</span>
                     </div>
+                  ) : (
+                    /* Standby Floor Display */
+                    <div className="p-12 rounded-3xl border border-dashed text-center space-y-4" style={{ borderColor: "var(--athlon-border)" }}>
+                      <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mx-auto shadow-inner">
+                        <Gavel className="w-8 h-8 text-primary" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-lg font-black text-foreground uppercase tracking-tight">
+                          No Athlete on the Floor
+                        </h4>
+                        <p className="text-xs text-foreground/60 max-w-md mx-auto">
+                          Phase: <strong>{activeCategory?.name || "All Categories"}</strong> ({waitingCategoryPlayers.length} athletes waiting).
+                        </p>
+                      </div>
 
-                    <div className="space-y-2.5 max-h-[460px] overflow-y-auto hide-scrollbar pr-1">
-                      {auctionTeams.map((at) => {
-                        const isSelectedTeam = manualWinningTeamId === at.team.teamId;
-                        const initialBudget = at.team.initialBudget || 5000;
-                        const remainingBudget = at.team.remainingBudget ?? initialBudget;
-                        const spentBudget = at.team.spentBudget || (initialBudget - remainingBudget);
-                        const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button
+                          onClick={runPlayerSnipper}
+                          disabled={isSpinningPlayer || waitingCategoryPlayers.length === 0}
+                          className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-xs shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Shuffle className="w-4 h-4" />
+                          <span>🎰 Spin Player from {activeCategory?.name || "Category"}</span>
+                        </button>
 
-                        return (
-                          <div
-                            key={at.team.teamId}
-                            onClick={() => setManualWinningTeamId(at.team.teamId)}
-                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 ${
-                              isSelectedTeam
-                                ? "bg-primary/15 border-primary shadow-md ring-2 ring-primary/30"
-                                : "bg-surface hover:bg-white/5 border-foreground/10"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="min-w-0 flex-1">
-                                <h5 className="text-xs font-black text-foreground truncate">{at.team.teamName}</h5>
-                                <span className="text-[10px] text-foreground/50">
-                                  Squad: <strong>{at.acquiredPlayers?.length || at.team.playersAcquiredCount || 0} players</strong>
-                                </span>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <span className="text-xs font-mono font-black text-primary block">
-                                  {remainingBudget} pts
-                                </span>
-                                <span className="text-[9px] text-foreground/40">
-                                  Spent: {spentBudget} pts
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Budget Progress Bar */}
-                            <div className="w-full bg-foreground/10 h-1.5 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full transition-all ${
-                                  percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
-                                }`}
-                                style={{ width: `${percentLeft}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                        <button
+                          onClick={() => setIsPurseModalOpen(true)}
+                          className="w-full sm:w-auto px-6 py-3.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/5 text-foreground font-black text-xs transition-all flex items-center justify-center gap-2"
+                        >
+                          <Shield className="w-4 h-4 text-primary" />
+                          <span>View Franchise Purses ({auctionTeams.length})</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -2500,6 +2477,99 @@ export default function TeamChampionshipDashboardPage() {
 
                     <div className="w-full bg-foreground/10 h-2 rounded-full overflow-hidden">
                       <div className="h-full bg-amber-400 animate-pulse w-full" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* 7. FRANCHISE PURSES MODAL (ON-DEMAND) */}
+              {isPurseModalOpen && (
+                <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                  <div
+                    className="max-w-2xl w-full p-6 sm:p-8 rounded-3xl border shadow-2xl space-y-6 animate-scaleIn max-h-[90vh] overflow-y-auto hide-scrollbar"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+                          <Shield className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base sm:text-lg font-black text-foreground uppercase tracking-tight">
+                            Franchise Purse & Squad Standings
+                          </h3>
+                          <p className="text-xs text-foreground/50">
+                            Live remaining budget and acquired squad counts for all participating franchises.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setIsPurseModalOpen(false)}
+                        className="p-2 rounded-xl border border-foreground/10 hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-all"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Grid of Team Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {auctionTeams.map((at) => {
+                        const initialBudget = at.team.initialBudget || 5000;
+                        const remainingBudget = at.team.remainingBudget ?? initialBudget;
+                        const spentBudget = at.team.spentBudget || (initialBudget - remainingBudget);
+                        const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
+
+                        return (
+                          <div
+                            key={at.team.teamId}
+                            onClick={() => {
+                              setManualWinningTeamId(at.team.teamId);
+                              setIsPurseModalOpen(false);
+                            }}
+                            className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 shadow-sm ${
+                              manualWinningTeamId === at.team.teamId
+                                ? "bg-primary/15 border-primary ring-2 ring-primary/30"
+                                : "bg-surface hover:bg-white/5 border-foreground/10"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h5 className="text-sm font-black text-foreground truncate">{at.team.teamName}</h5>
+                                <span className="text-[11px] text-foreground/50">
+                                  Squad: <strong className="text-foreground">{at.acquiredPlayers?.length || at.team.playersAcquiredCount || 0} players</strong>
+                                </span>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-sm font-mono font-black text-primary block">
+                                  {remainingBudget} pts
+                                </span>
+                                <span className="text-[10px] text-foreground/40 font-bold">
+                                  Spent: {spentBudget} pts
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="w-full bg-foreground/10 h-2 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all ${
+                                  percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
+                                }`}
+                                style={{ width: `${percentLeft}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex justify-end pt-2 border-t" style={{ borderColor: "var(--athlon-border)" }}>
+                      <button
+                        onClick={() => setIsPurseModalOpen(false)}
+                        className="px-6 py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        Done / Close
+                      </button>
                     </div>
                   </div>
                 </div>
