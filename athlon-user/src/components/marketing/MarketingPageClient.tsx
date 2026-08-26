@@ -78,7 +78,7 @@ export function MarketingPageClient() {
     fetchScores();
     const interval = setInterval(fetchScores, 5000);
 
-    // 2. Fetch all public tournaments and team championships
+    // 2. Fetch all public tournaments and team championships with polling
     TournamentService.getAll()
       .then((res) => {
         const publicList = (res.data || []).filter((t: Tournament) => t.visibility === 'PUBLIC');
@@ -87,18 +87,26 @@ export function MarketingPageClient() {
       .catch((err) => console.error('Failed to load tournaments in marketing client', err))
       .finally(() => setLoadingTournaments(false));
 
-    TeamChampionshipService.getAllPublic()
-      .then((res: any) => {
-        const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
-        setChampionships(list);
-      })
-      .catch((err) => console.error('Failed to load team championships in marketing client', err));
+    const loadPublicChampionships = () => {
+      TeamChampionshipService.getAllPublic()
+        .then((res: any) => {
+          const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+          setChampionships(list);
+        })
+        .catch((err) => console.error('Failed to load team championships in marketing client', err));
+    };
 
-    return () => clearInterval(interval);
+    loadPublicChampionships();
+    const champInterval = setInterval(loadPublicChampionships, 6000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(champInterval);
+    };
   }, []);
 
   const currentLive = liveScores[0];
-  const liveAuctionChampionship = championships.find((c) => c.stage === 'AUCTION_STAGE');
+  const liveAuctionChampionship = championships.find((c) => c.stage === 'AUCTION_STAGE' || c.stage === 'AUCTION_PAUSED');
   const meta = currentLive?.scoreMeta || {};
   const teamAName = meta.config?.teamAName || (meta.config?.teamA ? meta.config.teamA.join(' & ') : 'Team A');
   const teamBName = meta.config?.teamBName || (meta.config?.teamB ? meta.config.teamB.join(' & ') : 'Team B');

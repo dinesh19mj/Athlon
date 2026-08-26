@@ -120,12 +120,18 @@ export default function PersonalHomePage() {
       .then((res) => setPublicTournaments(res.data.filter((t: Tournament) => t.visibility === 'PUBLIC')))
       .catch(() => {});
 
-    TeamChampionshipService.getAllPublic()
-      .then((res: any) => {
-        const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
-        setPublicChampionships(list);
-      })
-      .catch(() => {});
+    // Public Championships with auto-polling
+    const loadPublicChampionships = () => {
+      TeamChampionshipService.getAllPublic()
+        .then((res: any) => {
+          const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+          setPublicChampionships(list);
+        })
+        .catch(() => {});
+    };
+
+    loadPublicChampionships();
+    const champInterval = setInterval(loadPublicChampionships, 6000);
 
     // Fetch real organizations from API and sync to store
     if (userUuid) {
@@ -145,6 +151,10 @@ export default function PersonalHomePage() {
         .catch(() => {});
     }
 
+    return () => clearInterval(champInterval);
+  }, [userUuid, setActiveWorkspace]);
+
+  useEffect(() => {
     if (userId) {
       MatchService.getByUser(Number(userId))
         .then((res) => {
@@ -283,7 +293,7 @@ export default function PersonalHomePage() {
   }
 
   const pendingLineups = rawUserMatches.filter((m) => m.status === 'WAITING_FOR_LINEUPS');
-  const liveAuctionChampionship = publicChampionships.find((c) => c.stage === 'AUCTION_STAGE');
+  const liveAuctionChampionship = publicChampionships.find((c) => c.stage === 'AUCTION_STAGE' || c.stage === 'AUCTION_PAUSED');
 
   return (
     <div className="bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-black">

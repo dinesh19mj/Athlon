@@ -67,7 +67,7 @@ export default function LiveScorePage() {
         setAllScores(allRes.data);
       }
       const champList = (Array.isArray(champRes) ? champRes : ((champRes as any)?.data || [])) as TeamChampionship[];
-      setLiveAuctions(champList.filter((c: TeamChampionship) => c.stage === 'AUCTION_STAGE'));
+      setLiveAuctions(champList.filter((c: TeamChampionship) => c.stage === 'AUCTION_STAGE' || c.stage === 'AUCTION_PAUSED'));
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to load live/finished scores', err);

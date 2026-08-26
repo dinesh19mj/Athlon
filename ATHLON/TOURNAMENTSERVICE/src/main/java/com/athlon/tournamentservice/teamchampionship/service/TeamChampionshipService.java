@@ -335,7 +335,7 @@ public class TeamChampionshipService {
     }
 
     public List<TeamChampionship> getAllPublic() {
-        return championshipRepository.findByVisibility("PUBLIC");
+        return championshipRepository.findAllPublicChampionships();
     }
 
     @Transactional
@@ -343,6 +343,9 @@ public class TeamChampionshipService {
         TeamChampionship championship = championshipRepository.findByChampionshipUuid(championshipUuid)
                 .orElseThrow(() -> new IllegalArgumentException("Championship not found"));
         championship.setStage(newStage);
+        if (championship.getVisibility() == null) {
+            championship.setVisibility("PUBLIC");
+        }
         return championshipRepository.save(championship);
     }
 }
