@@ -461,15 +461,18 @@ export default function TeamChampionshipDashboardPage() {
 
   // Spinner 2: Round Wheel Player Snipper within Selected Category
   const runPlayerSnipper = () => {
-    const activeCategory = championship?.categories?.find((c) => c.categoryId === selectedAuctionPhaseCatId);
+    const categories = championship?.categories || [];
+    const activeCategory = categories.find((c) => c.categoryId === selectedAuctionPhaseCatId) || categories[0];
+    const activeCatId = activeCategory?.categoryId;
+
     let eligiblePlayers = auctionPlayers.filter((p) => {
       // Exclude SOLD, ASSIGNED, and UNSOLD players strictly
       if (p.state !== "WAITING") return false;
-      if (!selectedAuctionPhaseCatId) return true;
-      if (p.categoryId === selectedAuctionPhaseCatId) return true;
+      if (!activeCategory) return true;
+      if (p.categoryId && activeCatId && p.categoryId === activeCatId) return true;
       if (
-        activeCategory &&
         p.categoryName &&
+        activeCategory.name &&
         p.categoryName.toLowerCase().trim() === activeCategory.name.toLowerCase().trim()
       ) {
         return true;
@@ -478,11 +481,7 @@ export default function TeamChampionshipDashboardPage() {
     });
 
     if (eligiblePlayers.length === 0) {
-      eligiblePlayers = auctionPlayers.filter((p) => p.state === "WAITING");
-    }
-
-    if (eligiblePlayers.length === 0) {
-      alert("No waiting players left in this category to spin! (Sold & Unsold players are excluded from the wheel)");
+      alert(`No waiting players left in category "${activeCategory?.name || "Selected"}" to spin! (Sold & Unsold athletes are excluded from the wheel)`);
       return;
     }
 
