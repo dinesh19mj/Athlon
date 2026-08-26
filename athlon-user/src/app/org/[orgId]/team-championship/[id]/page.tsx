@@ -63,7 +63,7 @@ export default function TeamChampionshipDashboardPage() {
   const { userId } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<
-    "overview" | "teams" | "players" | "auction" | "squads" | "fixtures" | "lineups" | "standings"
+    "overview" | "teams" | "players" | "auction-players" | "auction" | "squads" | "fixtures" | "lineups" | "standings"
   >("overview");
 
   const [championship, setChampionship] = useState<TeamChampionship | null>(null);
@@ -80,6 +80,8 @@ export default function TeamChampionshipDashboardPage() {
   const [auctionTeams, setAuctionTeams] = useState<AuctionTeamSummary[]>([]);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("ALL");
   const [searchPlayerQuery, setSearchPlayerQuery] = useState("");
+  const [selectedAuctionCategoryFilter, setSelectedAuctionCategoryFilter] = useState<string>("ALL");
+  const [searchAuctionPlayerQuery, setSearchAuctionPlayerQuery] = useState("");
   const [customBidAmount, setCustomBidAmount] = useState<number>(0);
 
   // Fixture & Lineup State
@@ -440,15 +442,22 @@ export default function TeamChampionshipDashboardPage() {
         style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
       >
         <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto hide-scrollbar py-2.5">
-          {[
-            { id: "overview", label: "Overview", icon: Trophy },
-            { id: "teams", label: `Teams (${teams.length})`, icon: Users },
-            { id: "players", label: `Player Pool (${players.length})`, icon: UserCheck },
-            { id: "auction", label: "Live Auction Arena", icon: Gavel },
-            { id: "squads", label: "Squads & Participation", icon: Shield },
-            { id: "fixtures", label: `Fixtures (${fixtures.length})`, icon: Calendar },
-            { id: "standings", label: "Standings & Knockout", icon: Layers },
-          ].map((tab) => {
+          {(() => {
+            const auctionEligiblePlayers = players.filter(
+              (p) => p.status === "APPROVED" && p.paymentStatus === "PAID"
+            );
+
+            return [
+              { id: "overview", label: "Overview", icon: Trophy },
+              { id: "teams", label: `Teams (${teams.length})`, icon: Users },
+              { id: "players", label: `Player Pool (${players.length})`, icon: UserCheck },
+              { id: "auction-players", label: `Auction Players (${auctionEligiblePlayers.length})`, icon: Coins },
+              { id: "auction", label: "Live Auction Arena", icon: Gavel },
+              { id: "squads", label: "Squads & Participation", icon: Shield },
+              { id: "fixtures", label: `Fixtures (${fixtures.length})`, icon: Calendar },
+              { id: "standings", label: "Standings & Knockout", icon: Layers },
+            ];
+          })().map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -1190,6 +1199,339 @@ export default function TeamChampionshipDashboardPage() {
                                         <span>
                                           {isPaid ? "Paid (Click to Mark Unpaid)" : "Mark Payment as Paid"}
                                         </span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Card Footer: Base Price */}
+                                  <div
+                                    className="px-4 py-2.5 border-t flex items-center justify-between mt-1 text-[11px]"
+                                    style={{
+                                      backgroundColor: "var(--athlon-surface)",
+                                      borderColor: "var(--athlon-border-subtle)",
+                                    }}
+                                  >
+                                    <span className="font-bold text-foreground/40 uppercase text-[10px]">
+                                      Base Price
+                                    </span>
+                                    <span className="font-mono font-black text-primary">
+                                      {p.basePrice} pts
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* TAB 3.5: AUCTION PLAYERS (APPROVED & PAID PLAYERS CATEGORY-WISE) */}
+        {activeTab === "auction-players" && (() => {
+          const eligiblePlayers = players.filter(
+            (p) => p.status === "APPROVED" && p.paymentStatus === "PAID"
+          );
+
+          // Extract unique categories for approved & paid players
+          const categoriesList = Array.from(
+            new Set([
+              ...(championship?.categories?.map((c) => c.name) || []),
+              ...eligiblePlayers.map((p) => p.categoryName || "Open"),
+            ])
+          ).filter(Boolean);
+
+          const filteredPlayers = eligiblePlayers.filter(
+            (p) =>
+              p.fullName.toLowerCase().includes(searchAuctionPlayerQuery.toLowerCase()) ||
+              (p.phone && p.phone.includes(searchAuctionPlayerQuery)) ||
+              (p.categoryName && p.categoryName.toLowerCase().includes(searchAuctionPlayerQuery.toLowerCase()))
+          );
+
+          // Group by category
+          const groupedPlayers: Record<string, typeof players> = {};
+          categoriesList.forEach((catName) => {
+            const catPlayers = filteredPlayers.filter(
+              (p) => (p.categoryName || "Open").toLowerCase() === catName.toLowerCase()
+            );
+            if (catPlayers.length > 0 || selectedAuctionCategoryFilter === catName) {
+              groupedPlayers[catName] = catPlayers;
+            }
+          });
+
+          // Unassigned / Others
+          const otherPlayers = filteredPlayers.filter(
+            (p) => !categoriesList.some((c) => c.toLowerCase() === (p.categoryName || "Open").toLowerCase())
+          );
+          if (otherPlayers.length > 0) {
+            groupedPlayers["Other"] = otherPlayers;
+          }
+
+          const displayedCategories = Object.entries(groupedPlayers).filter(
+            ([catName]) => selectedAuctionCategoryFilter === "ALL" || selectedAuctionCategoryFilter === catName
+          );
+
+          return (
+            <div className="space-y-6">
+              {/* Header / Search / Filter Pills */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-black text-foreground">
+                        Auction Players Pool ({eligiblePlayers.length})
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-[10px] font-black uppercase">
+                        Verified &amp; Paid
+                      </span>
+                    </div>
+                    <p className="text-xs text-foreground/50 mt-0.5">
+                      Approved athletes eligible for the live auction draft, organized category-wise
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+                      <input
+                        type="text"
+                        placeholder="Search auction athlete..."
+                        value={searchAuctionPlayerQuery}
+                        onChange={(e) => setSearchAuctionPlayerQuery(e.target.value)}
+                        className="pl-8 pr-3 py-2 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary w-52 sm:w-64 transition-all"
+                        style={{ borderColor: "var(--athlon-border)" }}
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => setActiveTab("auction")}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 shrink-0"
+                    >
+                      <Gavel className="w-3.5 h-3.5" />
+                      <span>Live Auction Arena</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Category Filter Pills */}
+                {categoriesList.length > 0 && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    <button
+                      onClick={() => setSelectedAuctionCategoryFilter("ALL")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${
+                        selectedAuctionCategoryFilter === "ALL"
+                          ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                          : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                      }`}
+                    >
+                      <span>All Categories</span>
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/20 text-inherit">
+                        {eligiblePlayers.length}
+                      </span>
+                    </button>
+
+                    {categoriesList.map((catName) => {
+                      const count = eligiblePlayers.filter(
+                        (p) => (p.categoryName || "Open").toLowerCase() === catName.toLowerCase()
+                      ).length;
+                      const isSelected = selectedAuctionCategoryFilter === catName;
+
+                      return (
+                        <button
+                          key={catName}
+                          onClick={() => setSelectedAuctionCategoryFilter(isSelected ? "ALL" : catName)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${
+                            isSelected
+                              ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                              : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                          }`}
+                        >
+                          <span>{catName}</span>
+                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/20 text-inherit">
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Category-Wise Grouped Player Lists */}
+              {displayedCategories.length === 0 ? (
+                <div
+                  className="py-16 px-4 text-center rounded-3xl border flex flex-col items-center justify-center space-y-3"
+                  style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                >
+                  <Coins className="w-12 h-12 text-foreground/30" />
+                  <div>
+                    <h4 className="text-sm font-black text-foreground">No Approved &amp; Paid Players in Auction Pool</h4>
+                    <p className="text-xs text-foreground/50 mt-1 max-w-sm mx-auto">
+                      Go to the <strong>Player Pool</strong> tab and mark players as <strong>Approved</strong> and <strong>Paid</strong> to add them to this Auction Players list.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {displayedCategories.map(([catName, catPlayers]) => {
+                    const categoryConfig = championship?.categories?.find(
+                      (c) => c.name?.toLowerCase() === catName.toLowerCase()
+                    );
+
+                    return (
+                      <div key={catName} className="space-y-4">
+                        {/* Category Group Header Banner */}
+                        <div
+                          className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border backdrop-blur-md shadow-sm"
+                          style={{
+                            backgroundColor: "var(--athlon-card)",
+                            borderColor: "var(--athlon-border)",
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shadow-sm">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm sm:text-base font-black text-foreground tracking-tight">
+                                  {catName}
+                                </h4>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-[10px] font-black">
+                                  {catPlayers.length} Auction {catPlayers.length === 1 ? "Athlete" : "Athletes"}
+                                </span>
+                              </div>
+                              {categoryConfig?.maxPlayers && (
+                                <span className="text-[11px] text-foreground/40 font-bold">
+                                  Category Quota: {catPlayers.length} / {categoryConfig.maxPlayers}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20">
+                              Base: {categoryConfig?.basePrice || catPlayers[0]?.basePrice || 1000} pts
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Players Grid */}
+                        {catPlayers.length === 0 ? (
+                          <div
+                            className="p-6 text-center rounded-2xl border text-xs text-foreground/40"
+                            style={{
+                              backgroundColor: "var(--athlon-surface)",
+                              borderColor: "var(--athlon-border-subtle)",
+                            }}
+                          >
+                            No verified auction athletes in {catName}.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {catPlayers.map((p) => {
+                              const initials = p.fullName
+                                ? p.fullName
+                                    .split(" ")
+                                    .map((w) => w[0])
+                                    .slice(0, 2)
+                                    .join("")
+                                    .toUpperCase()
+                                : "PL";
+
+                              const matchingAuctionPlayer = auctionPlayers.find(
+                                (ap) => ap.playerId === p.playerId
+                              );
+
+                              return (
+                                <div
+                                  key={p.playerId}
+                                  className="group relative rounded-[22px] border transition-all duration-300 hover:shadow-xl hover:border-primary/40 flex flex-col justify-between overflow-hidden"
+                                  style={{
+                                    backgroundColor: "var(--athlon-card)",
+                                    borderColor: "var(--athlon-border)",
+                                  }}
+                                >
+                                  {/* Top Emerald Gradient Bar */}
+                                  <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-primary" />
+
+                                  <div className="p-4 space-y-3">
+                                    {/* Player Identity */}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner border shrink-0 bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30">
+                                          {initials}
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                          <h4 className="text-xs font-black text-foreground truncate">
+                                            {p.fullName}
+                                          </h4>
+                                          <span className="text-[10px] text-foreground/40 font-mono block">
+                                            Auction #{p.playerId}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {/* Verified & Paid Badges */}
+                                      <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                                          APPROVED
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-emerald-500/15 text-emerald-300 border-emerald-500/25">
+                                          PAID
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Player Details Card */}
+                                    <div
+                                      className="p-2.5 rounded-xl border space-y-1 text-xs"
+                                      style={{
+                                        backgroundColor: "var(--athlon-surface)",
+                                        borderColor: "var(--athlon-border-subtle)",
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-foreground/40 font-bold">Phone:</span>
+                                        {p.phone ? (
+                                          <a
+                                            href={`tel:${p.phone}`}
+                                            className="font-mono font-bold text-foreground hover:text-primary transition-colors"
+                                          >
+                                            {p.phone}
+                                          </a>
+                                        ) : (
+                                          <span className="font-mono text-foreground/40">N/A</span>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-[11px] truncate">
+                                        <span className="text-foreground/40 font-bold">Eligible:</span>
+                                        <span className="font-semibold text-foreground/80 truncate">
+                                          {p.eligibleFormats || "All Formats"}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Action to Call to Floor or Auction Status */}
+                                    <div className="pt-1">
+                                      <button
+                                        onClick={() => {
+                                          if (matchingAuctionPlayer?.auctionPlayerId) {
+                                            handleCallPlayer(matchingAuctionPlayer.auctionPlayerId);
+                                          }
+                                          setActiveTab("auction");
+                                        }}
+                                        className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-primary via-amber-400 to-primary text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                      >
+                                        <Gavel className="w-3.5 h-3.5" />
+                                        <span>Call to Floor</span>
                                       </button>
                                     </div>
                                   </div>
