@@ -2559,30 +2559,30 @@ export default function TeamChampionshipDashboardPage() {
                 )}
               </div>
 
-              {/* 5. ROUND WHEEL CATEGORY SNIPPER MODAL */}
+              {/* 5. ROUND WHEEL CATEGORY SNIPPER MODAL (BIG SCREEN THEATER SIZE) */}
               {isSpinningCategory && (
-                <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-                  <div className="max-w-md w-full p-8 rounded-3xl border border-primary/40 bg-card text-center space-y-6 shadow-2xl shadow-primary/25 animate-scaleIn relative overflow-hidden flex flex-col items-center">
-                    <div className="space-y-1 relative z-10">
-                      <span className="text-xs font-black uppercase tracking-widest text-primary flex items-center justify-center gap-1.5">
-                        <Dices className="w-4 h-4" /> Category Snipper
+                <div className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+                  <div className="max-w-2xl w-full p-6 sm:p-10 rounded-3xl border border-primary/40 bg-card text-center space-y-6 shadow-2xl shadow-primary/30 animate-scaleIn relative overflow-hidden flex flex-col items-center">
+                    <div className="space-y-1.5 relative z-10">
+                      <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-primary flex items-center justify-center gap-2">
+                        <Dices className="w-5 h-5" /> Category Snipper
                       </span>
-                      <h3 className="text-2xl font-black text-foreground tracking-tight">
-                        {categoryWheelWinner ? "Category Selected!" : "Spinning Wheel..."}
+                      <h3 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                        {categoryWheelWinner ? "Category Selected!" : "Spinning Category Wheel..."}
                       </h3>
                     </div>
 
-                    {/* Circular Spinning Wheel */}
-                    <div className="relative w-72 h-72 my-2 flex items-center justify-center">
+                    {/* Circular Spinning Wheel (Big 440px Theater Size) */}
+                    <div className="relative w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] my-2 flex items-center justify-center">
                       {/* Top Pointer Arrow */}
-                      <div className="absolute -top-3 z-30 flex flex-col items-center pointer-events-none">
-                        <div className="w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[24px] border-t-amber-400 drop-shadow-[0_4px_10px_rgba(245,158,11,0.8)]" />
-                        <div className="w-2 h-2 rounded-full bg-amber-200 -mt-1 shadow-sm" />
+                      <div className="absolute -top-4 z-30 flex flex-col items-center pointer-events-none">
+                        <div className="w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-[30px] sm:border-t-[36px] border-t-amber-400 drop-shadow-[0_6px_14px_rgba(245,158,11,0.9)]" />
+                        <div className="w-3 h-3 rounded-full bg-amber-200 -mt-1.5 shadow-md" />
                       </div>
 
                       {/* Rotating Wheel Disk */}
                       <div
-                        className="w-full h-full rounded-full border-4 border-white/20 shadow-2xl relative overflow-hidden transition-transform ease-out"
+                        className="w-full h-full rounded-full border-8 border-white/25 shadow-[0_0_60px_rgba(99,102,241,0.35)] relative overflow-hidden transition-transform ease-out"
                         style={{
                           transform: `rotate(${categoryWheelRotation}deg)`,
                           transitionDuration: "5000ms",
@@ -2610,13 +2610,12 @@ export default function TeamChampionshipDashboardPage() {
                           return (
                             <div
                               key={cat.categoryId || i}
-                              className="absolute top-1/2 left-1/2 origin-left -translate-y-1/2 flex items-center justify-end pointer-events-none"
+                              className="absolute top-1/2 left-1/2 origin-left -translate-y-1/2 flex items-center justify-end pointer-events-none w-[150px] sm:w-[210px]"
                               style={{
-                                width: "135px",
                                 transform: `rotate(${labelAngle - 90}deg)`,
                               }}
                             >
-                              <span className="text-white font-black text-xs tracking-wider uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] pr-3 truncate max-w-[100px]">
+                              <span className="text-white font-black text-xs sm:text-base tracking-wider uppercase drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] pr-3 sm:pr-4 truncate max-w-[110px] sm:max-w-[160px]">
                                 {cat.name}
                               </span>
                             </div>
@@ -2625,19 +2624,19 @@ export default function TeamChampionshipDashboardPage() {
                       </div>
 
                       {/* Center Jewel / Hub */}
-                      <div className="absolute z-20 w-16 h-16 rounded-full bg-surface border-4 border-primary shadow-2xl flex items-center justify-center text-primary font-black text-lg">
-                        <Award className="w-7 h-7 text-primary" />
+                      <div className="absolute z-20 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-surface border-4 sm:border-6 border-primary shadow-2xl flex items-center justify-center text-primary font-black text-xl">
+                        <Award className="w-9 h-9 sm:w-11 sm:h-11 text-primary" />
                       </div>
                     </div>
 
                     {/* Winner Banner or Ticker */}
-                    <div className="h-14 flex items-center justify-center relative z-10 w-full">
+                    <div className="h-16 flex items-center justify-center relative z-10 w-full">
                       {categoryWheelWinner ? (
-                        <div className="px-6 py-2 rounded-2xl bg-emerald-500 text-black font-black text-lg uppercase shadow-xl shadow-emerald-500/30 animate-bounce">
+                        <div className="px-8 py-3 rounded-2xl bg-emerald-500 text-black font-black text-xl sm:text-2xl uppercase shadow-2xl shadow-emerald-500/40 animate-bounce">
                           🎉 {categoryWheelWinner.name}
                         </div>
                       ) : (
-                        <div className="text-sm font-black text-foreground/50 uppercase tracking-widest animate-pulse">
+                        <div className="text-sm sm:text-base font-black text-foreground/50 uppercase tracking-widest animate-pulse">
                           Drawing next phase...
                         </div>
                       )}
