@@ -112,7 +112,7 @@ export default function TeamChampionshipDashboardPage() {
   const [isTimerConfigOpen, setIsTimerConfigOpen] = useState<boolean>(false);
   const [availablePointBumps, setAvailablePointBumps] = useState<number[]>([50, 100, 200, 250, 500, 1000, 2000, 5000]);
   const [selectedPointBumps, setSelectedPointBumps] = useState<number[]>([100, 250, 500, 1000, 2000]);
-  const [isCustomBumpInputOpen, setIsCustomBumpInputOpen] = useState<boolean>(false);
+  const [isCustomBumpModalOpen, setIsCustomBumpModalOpen] = useState<boolean>(false);
   const [customTimerInput, setCustomTimerInput] = useState<string>("");
   const [customBumpInput, setCustomBumpInput] = useState<string>("");
 
@@ -2535,68 +2535,19 @@ export default function TeamChampionshipDashboardPage() {
                                     </span>
                                   </div>
 
-                                  {/* Corner Add Custom Bump Button */}
+                                  {/* Corner Add Custom Bump Button (Opens Modal) */}
                                   <button
-                                    onClick={() => setIsCustomBumpInputOpen(!isCustomBumpInputOpen)}
-                                    className={`px-2 py-0.5 rounded-lg font-black text-[10px] border transition-all flex items-center gap-1 shrink-0 shadow-sm ${
-                                      isCustomBumpInputOpen
-                                        ? "bg-primary text-black border-primary"
-                                        : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
-                                    }`}
-                                    title="Add custom point increment"
+                                    onClick={() => {
+                                      setCustomBumpInput("");
+                                      setIsCustomBumpModalOpen(true);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg font-black text-[10px] border bg-surface hover:bg-white/10 text-foreground border-foreground/15 transition-all flex items-center gap-1 shrink-0 shadow-sm hover:border-primary/50"
+                                    title="Open modal to add custom point increment"
                                   >
-                                    <Plus className="w-3 h-3" />
+                                    <Plus className="w-3 h-3 text-primary" />
                                     <span>Add Custom</span>
                                   </button>
                                 </div>
-
-                                {/* On-Demand Inline Custom Point Bump Input */}
-                                {isCustomBumpInputOpen && (
-                                  <div className="flex items-center gap-1.5 p-2 rounded-xl bg-surface/80 border animate-fadeIn" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                                    <input
-                                      type="number"
-                                      placeholder="Enter point bump (e.g. 300)..."
-                                      value={customBumpInput}
-                                      onChange={(e) => setCustomBumpInput(e.target.value)}
-                                      className="px-2.5 py-1 text-xs rounded-lg border bg-background text-foreground font-mono flex-1 outline-none focus:border-primary"
-                                      style={{ borderColor: "var(--athlon-border)" }}
-                                      autoFocus
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          const val = parseInt(customBumpInput);
-                                          if (!isNaN(val) && val > 0) {
-                                            const newAvailable = Array.from(new Set([...availablePointBumps, val])).sort((a, b) => a - b);
-                                            const nextBumps = Array.from(new Set([...selectedPointBumps, val])).sort((a, b) => a - b);
-                                            handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps, newAvailable);
-                                            setCustomBumpInput("");
-                                            setIsCustomBumpInputOpen(false);
-                                          }
-                                        }
-                                      }}
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        const val = parseInt(customBumpInput);
-                                        if (!isNaN(val) && val > 0) {
-                                          const newAvailable = Array.from(new Set([...availablePointBumps, val])).sort((a, b) => a - b);
-                                          const nextBumps = Array.from(new Set([...selectedPointBumps, val])).sort((a, b) => a - b);
-                                          handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps, newAvailable);
-                                          setCustomBumpInput("");
-                                          setIsCustomBumpInputOpen(false);
-                                        }
-                                      }}
-                                      className="px-3 py-1 bg-primary hover:opacity-90 text-black font-black text-xs rounded-lg transition-all"
-                                    >
-                                      Add
-                                    </button>
-                                    <button
-                                      onClick={() => setIsCustomBumpInputOpen(false)}
-                                      className="p-1 rounded-md text-foreground/40 hover:text-foreground transition-all"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                )}
 
                                 {/* Unified Clickable Point Bump Pills */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -3955,6 +3906,107 @@ export default function TeamChampionshipDashboardPage() {
                     className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30 shadow-lg shadow-primary/20"
                   >
                     {playerSubmitting ? "Registering..." : "Add to Pool"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* ADD CUSTOM POINT BUMP MODAL */}
+        {isCustomBumpModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+            <div
+              className="w-full max-w-md rounded-3xl border p-6 space-y-5 shadow-2xl animate-scaleUp"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                    <Coins className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-foreground">Add Custom Point Increment</h3>
+                    <p className="text-xs text-foreground/60">Create a new live bidding point bump for team owners</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsCustomBumpModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const val = parseInt(customBumpInput);
+                  if (!isNaN(val) && val > 0) {
+                    const newAvailable = Array.from(new Set([...availablePointBumps, val])).sort((a, b) => a - b);
+                    const nextBumps = Array.from(new Set([...selectedPointBumps, val])).sort((a, b) => a - b);
+                    handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps, newAvailable);
+                    setCustomBumpInput("");
+                    setIsCustomBumpModalOpen(false);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-wider text-foreground/70 block">
+                    Point Bump Amount (pts)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={1}
+                      autoFocus
+                      required
+                      placeholder="e.g. 300, 750, 1500..."
+                      value={customBumpInput}
+                      onChange={(e) => setCustomBumpInput(e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl border bg-background text-foreground font-mono font-black text-lg outline-none focus:border-primary pr-14 shadow-inner"
+                      style={{ borderColor: "var(--athlon-border)" }}
+                    />
+                    <span className="absolute right-4 top-3.5 text-xs font-mono font-bold text-foreground/40 pointer-events-none">
+                      pts
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Selection Shortcuts */}
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50 block">
+                    Popular Increments
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[150, 300, 400, 750, 1500, 2500, 3000, 5000].map((preset) => (
+                      <button
+                        type="button"
+                        key={preset}
+                        onClick={() => setCustomBumpInput(preset.toString())}
+                        className="px-2.5 py-1 rounded-lg bg-surface hover:bg-primary/20 hover:text-primary border border-foreground/10 text-xs font-mono font-bold transition-all"
+                      >
+                        +{preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomBumpModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-foreground/60 hover:text-foreground transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!customBumpInput || parseInt(customBumpInput) <= 0}
+                    className="px-5 py-2.5 rounded-xl bg-primary text-black text-xs font-black hover:scale-102 active:scale-98 transition-all disabled:opacity-30 shadow-lg shadow-primary/20 flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add & Broadcast Bump</span>
                   </button>
                 </div>
               </form>
