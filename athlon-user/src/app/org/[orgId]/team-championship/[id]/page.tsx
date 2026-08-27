@@ -2341,10 +2341,10 @@ export default function TeamChampionshipDashboardPage() {
                                   {isTimerPaused ? "PAUSED" : "Timer"}
                                 </span>
 
-                                {/* Pause / Resume Button */}
+                                {/* Pause / Resume Icon Only Button */}
                                 <button
                                   onClick={handleTogglePauseTimer}
-                                  className={`px-1.5 py-0.5 rounded-md text-[9px] font-black transition-all flex items-center gap-1 shadow-sm ${
+                                  className={`p-1 rounded-lg transition-all flex items-center justify-center shadow-sm ${
                                     isTimerPaused
                                       ? "bg-emerald-500 hover:bg-emerald-400 text-black animate-pulse"
                                       : "bg-surface hover:bg-amber-400 hover:text-black text-foreground/70 border border-foreground/10"
@@ -2352,15 +2352,9 @@ export default function TeamChampionshipDashboardPage() {
                                   title={isTimerPaused ? "Resume Live Timer" : "Pause Live Timer"}
                                 >
                                   {isTimerPaused ? (
-                                    <>
-                                      <Play className="w-2.5 h-2.5 fill-current" />
-                                      <span>Resume</span>
-                                    </>
+                                    <Play className="w-3 h-3 fill-current" />
                                   ) : (
-                                    <>
-                                      <Pause className="w-2.5 h-2.5" />
-                                      <span>Pause</span>
-                                    </>
+                                    <Pause className="w-3 h-3" />
                                   )}
                                 </button>
                               </div>
