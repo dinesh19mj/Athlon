@@ -2054,6 +2054,7 @@ export default function TeamChampionshipDashboardPage() {
                   >
                     {isAuctionLive ? <Radio className="w-5 h-5" /> : isAuctionPaused ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                   </div>
+
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-base font-black text-foreground tracking-tight">
@@ -2078,13 +2079,6 @@ export default function TeamChampionshipDashboardPage() {
                             : "OFFLINE"}
                       </span>
                     </div>
-                    <p className="text-xs text-foreground/60 mt-0.5">
-                      {isAuctionLive
-                        ? "Broadcasting live floor bids in real-time."
-                        : isAuctionPaused
-                          ? "Auction paused • Spectators on standby."
-                          : "Open the floor to start broadcasting live."}
-                    </p>
                   </div>
                 </div>
 
