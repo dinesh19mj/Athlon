@@ -2215,30 +2215,27 @@ export default function TeamChampionshipDashboardPage() {
                             </div>
                           </div>
 
-                          {/* Live Timer Clock */}
-                          <div className="text-center sm:text-right shrink-0 bg-surface/80 p-3 rounded-2xl border border-foreground/10 min-w-[110px]">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-foreground/40 block">
-                              Timer
-                            </span>
-                            <span className="text-3xl font-black text-amber-400 font-mono">
-                              {auctionState?.remainingTimerSeconds ?? 30}s
-                            </span>
-                          </div>
-                        </div>
+                          {/* High Bid & Live Timer Group */}
+                          <div className="flex items-center gap-2.5 shrink-0 self-center sm:self-start">
+                            {/* Current High Bid */}
+                            <div className="text-center sm:text-right bg-surface/80 px-3.5 py-2.5 rounded-2xl border border-foreground/10 min-w-[110px]">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-foreground/40 block">
+                                Current High Bid
+                              </span>
+                              <span className="text-xl sm:text-2xl font-black text-primary font-mono block">
+                                {auctionState?.currentBid || activePlayerBasePrice} pts
+                              </span>
+                            </div>
 
-                        {/* Current Bid & Leading Team Board */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-surface border border-foreground/10">
-                          <div>
-                            <span className="text-[9px] font-black uppercase text-foreground/40 block">Current High Bid</span>
-                            <span className="text-2xl sm:text-3xl font-black text-primary font-mono">
-                              {auctionState?.currentBid || activePlayerBasePrice} pts
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] font-black uppercase text-foreground/40 block">Leader Franchise</span>
-                            <span className="text-base sm:text-lg font-black text-foreground truncate block mt-0.5">
-                              {auctionState?.winningTeamName || "Waiting for Opening Offer"}
-                            </span>
+                            {/* Live Timer Clock */}
+                            <div className="text-center sm:text-right bg-surface/80 px-3.5 py-2.5 rounded-2xl border border-foreground/10 min-w-[85px]">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-foreground/40 block">
+                                Timer
+                              </span>
+                              <span className="text-xl sm:text-2xl font-black text-amber-400 font-mono block">
+                                {auctionState?.remainingTimerSeconds ?? 30}s
+                              </span>
+                            </div>
                           </div>
                         </div>
 
