@@ -108,6 +108,7 @@ export default function TeamChampionshipDashboardPage() {
   const [highlightedTeamId, setHighlightedTeamId] = useState<number | null>(null);
   const [auctionBiddingMode, setAuctionBiddingMode] = useState<"MANUAL" | "AUTOMATIC">("MANUAL");
   const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(60);
+  const [isTimerConfigOpen, setIsTimerConfigOpen] = useState<boolean>(false);
   const [selectedPointBumps, setSelectedPointBumps] = useState<number[]>([100, 250, 500, 1000, 2000]);
   const [customTimerInput, setCustomTimerInput] = useState<string>("");
   const [customBumpInput, setCustomBumpInput] = useState<string>("");
@@ -2363,57 +2364,92 @@ export default function TeamChampionshipDashboardPage() {
                                 ⚡ Team owners place bids in real time through their interface. Every bid automatically restarts the countdown timer!
                               </p>
 
-                              {/* 1. Countdown Timer Duration Setting (Dynamic & Custom) */}
-                              <div className="space-y-2 p-3.5 rounded-2xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-black uppercase text-foreground/80 flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5 text-amber-400" /> Timer Countdown Duration
-                                  </span>
-                                  <span className="text-[10px] font-mono text-amber-400 font-black">
-                                    Restarts from {timerDurationSeconds}s on each bid
-                                  </span>
-                                </div>
+                              {/* 1. Countdown Timer Duration Setting (Collapsible on Demand) */}
+                              {!isTimerConfigOpen ? (
+                                /* Compact Collapsed Badge */
+                                <div
+                                  className="flex items-center justify-between p-2.5 px-3.5 rounded-2xl bg-background border transition-all hover:border-amber-400/40"
+                                  style={{ borderColor: "var(--athlon-border)" }}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                    <span className="text-xs font-black text-foreground">
+                                      Timer: <strong className="text-amber-400 font-mono">{timerDurationSeconds}s</strong>
+                                    </span>
+                                    <span className="text-[10px] text-foreground/40 hidden sm:inline font-semibold truncate">
+                                      • Restarts from {timerDurationSeconds}s on each bid
+                                    </span>
+                                  </div>
 
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {[15, 30, 45, 60, 90, 120].map((sec) => (
-                                    <button
-                                      key={sec}
-                                      onClick={() => handleUpdateAuctionSettings("AUTOMATIC", sec)}
-                                      className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black transition-all ${
-                                        timerDurationSeconds === sec
-                                          ? "bg-amber-400 text-black shadow-md shadow-amber-400/20"
-                                          : "bg-surface text-foreground/60 border border-foreground/10 hover:bg-surface/80"
-                                      }`}
-                                    >
-                                      {sec}s {sec === 60 ? "(Default)" : ""}
-                                    </button>
-                                  ))}
-                                </div>
-
-                                {/* Custom Timer Seconds Input */}
-                                <div className="flex items-center gap-1.5 pt-1 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                                  <input
-                                    type="number"
-                                    placeholder="Custom seconds (e.g. 40)..."
-                                    value={customTimerInput}
-                                    onChange={(e) => setCustomTimerInput(e.target.value)}
-                                    className="px-2.5 py-1 text-xs rounded-lg border bg-surface text-foreground font-mono w-40 outline-none focus:border-amber-400"
-                                    style={{ borderColor: "var(--athlon-border)" }}
-                                  />
                                   <button
-                                    onClick={() => {
-                                      const val = parseInt(customTimerInput);
-                                      if (!isNaN(val) && val > 0) {
-                                        handleUpdateAuctionSettings("AUTOMATIC", val);
-                                        setCustomTimerInput("");
-                                      }
-                                    }}
-                                    className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs rounded-lg transition-all"
+                                    onClick={() => setIsTimerConfigOpen(true)}
+                                    className="px-2.5 py-1 rounded-lg bg-surface hover:bg-white/10 text-foreground font-black text-[10px] border border-foreground/15 transition-all flex items-center gap-1 shadow-sm shrink-0"
                                   >
-                                    Set Timer
+                                    <Clock className="w-3 h-3 text-amber-400" />
+                                    <span>Adjust Timer</span>
                                   </button>
                                 </div>
-                              </div>
+                              ) : (
+                                /* Expanded Config Panel */
+                                <div className="space-y-2 p-3.5 rounded-2xl bg-background border animate-fadeIn" style={{ borderColor: "var(--athlon-border)" }}>
+                                  <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                    <span className="text-[10px] font-black uppercase text-foreground/80 flex items-center gap-1">
+                                      <Clock className="w-3.5 h-3.5 text-amber-400" /> Adjust Timer Countdown Duration
+                                    </span>
+                                    <button
+                                      onClick={() => setIsTimerConfigOpen(false)}
+                                      className="p-1 rounded-md text-foreground/50 hover:text-foreground hover:bg-surface transition-all"
+                                      title="Close timer settings"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {[15, 30, 45, 60, 90, 120].map((sec) => (
+                                      <button
+                                        key={sec}
+                                        onClick={() => {
+                                          handleUpdateAuctionSettings("AUTOMATIC", sec);
+                                          setIsTimerConfigOpen(false);
+                                        }}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black transition-all ${
+                                          timerDurationSeconds === sec
+                                            ? "bg-amber-400 text-black shadow-md shadow-amber-400/20"
+                                            : "bg-surface text-foreground/60 border border-foreground/10 hover:bg-surface/80"
+                                        }`}
+                                      >
+                                        {sec}s {sec === 60 ? "(Default)" : ""}
+                                      </button>
+                                    ))}
+                                  </div>
+
+                                  {/* Custom Timer Seconds Input */}
+                                  <div className="flex items-center gap-1.5 pt-1 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                    <input
+                                      type="number"
+                                      placeholder="Custom seconds (e.g. 40)..."
+                                      value={customTimerInput}
+                                      onChange={(e) => setCustomTimerInput(e.target.value)}
+                                      className="px-2.5 py-1 text-xs rounded-lg border bg-surface text-foreground font-mono w-40 outline-none focus:border-amber-400"
+                                      style={{ borderColor: "var(--athlon-border)" }}
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const val = parseInt(customTimerInput);
+                                        if (!isNaN(val) && val > 0) {
+                                          handleUpdateAuctionSettings("AUTOMATIC", val);
+                                          setCustomTimerInput("");
+                                          setIsTimerConfigOpen(false);
+                                        }
+                                      }}
+                                      className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs rounded-lg transition-all"
+                                    >
+                                      Set Timer
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
 
                               {/* 2. Quick Point Bumps (Dynamic & Custom - Syncs to Team Owners) */}
                               <div className="space-y-2 p-3.5 rounded-2xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
