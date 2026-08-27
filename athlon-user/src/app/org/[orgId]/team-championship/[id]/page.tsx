@@ -2275,9 +2275,6 @@ export default function TeamChampionshipDashboardPage() {
                                 <span className="px-2.5 py-0.5 rounded-lg bg-primary/20 text-primary border border-primary/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                                   <Sparkles className="w-3 h-3 text-primary" /> {activePlayer.categoryName || activeCategory?.name || "Category Phase"}
                                 </span>
-                                <span className="px-2 py-0.5 rounded-lg bg-surface text-foreground/70 border border-foreground/10 text-[10px] font-bold">
-                                  Call #{activePlayer.callOrder || 1}
-                                </span>
                               </div>
 
                               {/* Prominent High-Impact Player Name */}
@@ -2285,15 +2282,8 @@ export default function TeamChampionshipDashboardPage() {
                                 {activePlayer.playerName}
                               </h2>
 
-                              {/* Formats & Base Price Pills */}
+                              {/* Base Price Pill */}
                               <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap pt-0.5">
-                                {activePlayer.eligibleFormats && (
-                                  <span className="text-xs px-2.5 py-1 rounded-lg bg-background border text-foreground/80 font-bold flex items-center gap-1.5" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                                    <span className="text-foreground/40 text-[10px] uppercase font-black">Formats:</span>
-                                    <strong className="text-foreground font-black">{activePlayer.eligibleFormats}</strong>
-                                  </span>
-                                )}
-
                                 <span className="text-xs px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1.5">
                                   <span className="text-primary/60 text-[10px] uppercase font-black">Base Price:</span>
                                   <strong className="font-mono font-black">{activePlayerBasePrice} pts</strong>
