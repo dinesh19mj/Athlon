@@ -2247,73 +2247,77 @@ export default function TeamChampionshipDashboardPage() {
                     </div>
 
                     {activePlayer ? (
-                      <div className="flex-1 flex flex-col justify-between py-2.5 space-y-3 relative z-10">
-                        {/* 2. GRAND ATHLETE SPOTLIGHT HERO CARD */}
-                        <div className="p-4 sm:p-5 rounded-2xl bg-surface/60 backdrop-blur-md border shadow-lg flex flex-col md:flex-row items-center md:items-start justify-between gap-4" style={{ borderColor: "var(--athlon-border)" }}>
+                      <div className="flex-1 flex flex-col justify-between py-2 space-y-3 relative z-10">
+                        {/* 2. GRAND ATHLETE SPOTLIGHT HERO CARD (MAXIMUM HIGHLIGHT & SCALE) */}
+                        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-surface/90 via-surface/70 to-surface/50 backdrop-blur-xl border shadow-2xl flex flex-col md:flex-row items-center md:items-center justify-between gap-6 relative overflow-hidden" style={{ borderColor: "var(--athlon-border)" }}>
                           
-                          {/* Left: Athlete Avatar & Identity */}
-                          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 flex-1 min-w-0">
-                            {/* Avatar Spotlight Ring */}
+                          {/* Ambient Spotlight Flare behind Athlete */}
+                          <div className="absolute top-1/2 left-16 -translate-y-1/2 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none -z-0" />
+
+                          {/* Left: Extra Large Athlete Avatar & Identity */}
+                          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-5 sm:gap-6 flex-1 min-w-0 relative z-10">
+                            {/* Grand Avatar Spotlight Frame */}
                             <div className="relative shrink-0 group">
-                              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-primary/30 via-indigo-500/20 to-amber-400/20 border-2 border-primary/80 p-0.5 flex items-center justify-center shadow-xl shadow-primary/20 overflow-hidden">
+                              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-3 border-primary p-1 flex items-center justify-center shadow-2xl shadow-primary/35 overflow-hidden transition-all duration-300 group-hover:scale-105">
                                 {activePlayer.avatarUrl ? (
-                                  <img src={activePlayer.avatarUrl} alt={activePlayer.playerName} className="w-full h-full object-cover rounded-[22px]" />
+                                  <img src={activePlayer.avatarUrl} alt={activePlayer.playerName} className="w-full h-full object-cover rounded-[20px]" />
                                 ) : (
-                                  <span className="text-3xl font-black text-primary tracking-wider">
+                                  <span className="text-4xl sm:text-5xl font-black text-primary tracking-wider drop-shadow-md">
                                     {activePlayer.playerName.substring(0, 2).toUpperCase()}
                                   </span>
                                 )}
                               </div>
-                              <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-lg bg-black/95 border border-primary text-[10px] font-mono font-black text-primary shadow-md">
+                              <span className="absolute -bottom-2.5 -right-2.5 px-3 py-1 rounded-xl bg-black/95 border-2 border-primary text-xs font-mono font-black text-primary shadow-xl">
                                 #{activePlayer.auctionPlayerId}
                               </span>
                             </div>
 
-                            {/* Athlete Metadata & Name Highlight */}
-                            <div className="text-center sm:text-left space-y-1.5 min-w-0">
+                            {/* Massive Athlete Metadata & Name Highlight */}
+                            <div className="text-center sm:text-left space-y-2 min-w-0">
                               <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                                <span className="px-2.5 py-0.5 rounded-lg bg-primary/20 text-primary border border-primary/40 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                                  <Sparkles className="w-3 h-3 text-primary" /> {activePlayer.categoryName || activeCategory?.name || "Category Phase"}
+                                <span className="px-3.5 py-1 rounded-xl bg-primary/20 text-primary border border-primary/40 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                                  <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+                                  <span>{activePlayer.categoryName || activeCategory?.name || "Category Phase"}</span>
                                 </span>
                               </div>
 
-                              {/* Prominent High-Impact Player Name */}
-                              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight truncate drop-shadow-sm">
+                              {/* Colossal High-Impact Player Name */}
+                              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground tracking-tight truncate drop-shadow-md leading-tight">
                                 {activePlayer.playerName}
                               </h2>
 
-                              {/* Base Price Pill */}
+                              {/* Large Glowing Base Price Pill */}
                               <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap pt-0.5">
-                                <span className="text-xs px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1.5">
-                                  <span className="text-primary/60 text-[10px] uppercase font-black">Base Price:</span>
-                                  <strong className="font-mono font-black">{activePlayerBasePrice} pts</strong>
-                                </span>
+                                <div className="px-4 py-1.5 rounded-xl bg-primary/15 border border-primary/40 text-primary font-bold flex items-center gap-2 shadow-sm">
+                                  <span className="text-primary/70 text-xs uppercase font-black tracking-wider">Base Price:</span>
+                                  <strong className="font-mono font-black text-base sm:text-lg">{activePlayerBasePrice} pts</strong>
+                                </div>
                               </div>
                             </div>
                           </div>
 
                           {/* Right: Live Bidding HUD (High Bid + Countdown Timer) */}
-                          <div className="flex items-center gap-2.5 shrink-0 self-center md:self-start">
+                          <div className="flex items-center gap-3 shrink-0 self-center md:self-center relative z-10">
                             {/* Current High Bid Box */}
-                            <div className="text-center bg-background/90 px-4 py-2.5 rounded-2xl border min-w-[120px] shadow-md" style={{ borderColor: "var(--athlon-border)" }}>
-                              <span className="text-[9px] font-black uppercase tracking-wider text-foreground/50 block mb-0.5">
+                            <div className="text-center bg-background/90 px-5 py-3 rounded-2xl border min-w-[130px] shadow-xl" style={{ borderColor: "var(--athlon-border)" }}>
+                              <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50 block mb-1">
                                 Current High Bid
                               </span>
-                              <span className="text-2xl sm:text-3xl font-black text-primary font-mono block leading-none">
+                              <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-primary font-mono block leading-none">
                                 {auctionState?.currentBid || activePlayerBasePrice}
                               </span>
-                              <span className="text-[10px] font-mono font-bold text-foreground/40">pts</span>
+                              <span className="text-xs font-mono font-bold text-foreground/40 mt-0.5 block">pts</span>
                             </div>
 
                             {/* Live Timer Clock Box */}
-                            <div className="text-center bg-background/90 px-4 py-2.5 rounded-2xl border min-w-[95px] shadow-md" style={{ borderColor: "var(--athlon-border)" }}>
-                              <span className="text-[9px] font-black uppercase tracking-wider text-amber-400/80 block mb-0.5">
+                            <div className="text-center bg-background/90 px-5 py-3 rounded-2xl border min-w-[105px] shadow-xl" style={{ borderColor: "var(--athlon-border)" }}>
+                              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/80 block mb-1">
                                 Timer
                               </span>
-                              <span className="text-2xl sm:text-3xl font-black text-amber-400 font-mono block leading-none animate-pulse">
+                              <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-amber-400 font-mono block leading-none animate-pulse">
                                 {auctionState?.remainingTimerSeconds ?? 30}s
                               </span>
-                              <span className="text-[10px] font-bold text-amber-400/60 uppercase">Clock</span>
+                              <span className="text-[10px] font-black text-amber-400/60 uppercase mt-0.5 block">Clock</span>
                             </div>
                           </div>
                         </div>
