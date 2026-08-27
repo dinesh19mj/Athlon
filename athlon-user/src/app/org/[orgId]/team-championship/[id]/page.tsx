@@ -2080,10 +2080,10 @@ export default function TeamChampionshipDashboardPage() {
                     </div>
                     <p className="text-xs text-foreground/60 mt-0.5">
                       {isAuctionLive
-                        ? "Auction is currently live! All users and spectators can watch floor bids in real-time."
+                        ? "Broadcasting live floor bids in real-time."
                         : isAuctionPaused
-                          ? "The auction is paused. Spectators and users see a 'Session Paused' standby screen and cannot view bids until resumed."
-                          : "Click 'Start Live Auction' to open the bidding floor and broadcast live to spectators."}
+                          ? "Auction paused • Spectators on standby."
+                          : "Open the floor to start broadcasting live."}
                     </p>
                   </div>
                 </div>
