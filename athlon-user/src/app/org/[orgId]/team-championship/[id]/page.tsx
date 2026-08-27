@@ -396,6 +396,24 @@ export default function TeamChampionshipDashboardPage() {
     loadAuction();
   };
 
+  const isTimerPaused = auctionState?.config?.status === "PAUSED" || Boolean(auctionState?.config?.timerPausedRemainingSeconds);
+
+  const handleTogglePauseTimer = async () => {
+    if (!championship?.championshipId) return;
+    try {
+      if (isTimerPaused) {
+        const updated = await AuctionService.resumeTimer(championship.championshipId);
+        setAuctionState(updated);
+      } else {
+        const updated = await AuctionService.pauseTimer(championship.championshipId);
+        setAuctionState(updated);
+      }
+    } catch (err: any) {
+      console.error("Failed to toggle timer pause:", err);
+      alert(err.message || "Failed to toggle timer pause");
+    }
+  };
+
   // Sync active player details into manual lock desk
   useEffect(() => {
     if (auctionState?.activePlayer) {
@@ -2309,15 +2327,54 @@ export default function TeamChampionshipDashboardPage() {
                               <span className="text-xs font-mono font-bold text-foreground/40 mt-0.5 block">pts</span>
                             </div>
 
-                            {/* Live Timer Clock Box */}
-                            <div className="text-center bg-background/90 px-5 py-3 rounded-2xl border min-w-[105px] shadow-xl" style={{ borderColor: "var(--athlon-border)" }}>
-                              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/80 block mb-1">
-                                Timer
-                              </span>
-                              <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-amber-400 font-mono block leading-none animate-pulse">
+                            {/* Live Timer Clock Box with Pause / Resume Provision */}
+                            <div
+                              className="text-center bg-background/90 px-4 py-2.5 rounded-2xl border min-w-[120px] shadow-xl transition-all"
+                              style={{ borderColor: isTimerPaused ? "#f59e0b" : "var(--athlon-border)" }}
+                            >
+                              <div className="flex items-center justify-between gap-1.5 mb-1">
+                                <span
+                                  className={`text-[9px] font-black uppercase tracking-wider ${
+                                    isTimerPaused ? "text-amber-400 font-black animate-pulse" : "text-amber-400/80"
+                                  }`}
+                                >
+                                  {isTimerPaused ? "PAUSED" : "Timer"}
+                                </span>
+
+                                {/* Pause / Resume Button */}
+                                <button
+                                  onClick={handleTogglePauseTimer}
+                                  className={`px-1.5 py-0.5 rounded-md text-[9px] font-black transition-all flex items-center gap-1 shadow-sm ${
+                                    isTimerPaused
+                                      ? "bg-emerald-500 hover:bg-emerald-400 text-black animate-pulse"
+                                      : "bg-surface hover:bg-amber-400 hover:text-black text-foreground/70 border border-foreground/10"
+                                  }`}
+                                  title={isTimerPaused ? "Resume Live Timer" : "Pause Live Timer"}
+                                >
+                                  {isTimerPaused ? (
+                                    <>
+                                      <Play className="w-2.5 h-2.5 fill-current" />
+                                      <span>Resume</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Pause className="w-2.5 h-2.5" />
+                                      <span>Pause</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+
+                              <span
+                                className={`text-2xl sm:text-3xl lg:text-4xl font-black font-mono block leading-none ${
+                                  isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
+                                }`}
+                              >
                                 {auctionState?.remainingTimerSeconds ?? 30}s
                               </span>
-                              <span className="text-[10px] font-black text-amber-400/60 uppercase mt-0.5 block">Clock</span>
+                              <span className="text-[10px] font-black text-amber-400/60 uppercase mt-0.5 block">
+                                {isTimerPaused ? "Timer Frozen" : "Clock"}
+                              </span>
                             </div>
                           </div>
                         </div>

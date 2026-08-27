@@ -76,6 +76,9 @@ public class AuctionConfig {
     @Column(name = "quick_point_bumps")
     private String quickPointBumps = "100,250,500,1000,2000";
 
+    @Column(name = "timer_paused_remaining_seconds")
+    private Integer timerPausedRemainingSeconds;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -280,6 +283,14 @@ public class AuctionConfig {
 
     public void setQuickPointBumps(String quickPointBumps) {
         this.quickPointBumps = quickPointBumps;
+    }
+
+    public Integer getTimerPausedRemainingSeconds() {
+        return timerPausedRemainingSeconds;
+    }
+
+    public void setTimerPausedRemainingSeconds(Integer timerPausedRemainingSeconds) {
+        this.timerPausedRemainingSeconds = timerPausedRemainingSeconds;
     }
 
     public LocalDateTime getUpdatedAt() {

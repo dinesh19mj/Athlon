@@ -17,6 +17,7 @@ export interface AuctionConfig {
   antiSnipingSeconds: number;
   biddingMode?: 'MANUAL' | 'AUTOMATIC';
   quickPointBumps?: string;
+  timerPausedRemainingSeconds?: number;
   status: 'DRAFT' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
   activePlayerId?: number;
   currentBid?: number;
@@ -166,6 +167,20 @@ export const AuctionService = {
 
   markUnsold: async (auctionId: number, auctionPlayerId: number): Promise<AuctionState> => {
     const res = await fetchClient<any>(`/api/tournament/auction/unsold?auctionId=${auctionId}&auctionPlayerId=${auctionPlayerId}`, {
+      method: 'POST',
+    });
+    return unwrap<AuctionState>(res);
+  },
+
+  pauseTimer: async (auctionId: number): Promise<AuctionState> => {
+    const res = await fetchClient<any>(`/api/tournament/auction/${auctionId}/pause-timer`, {
+      method: 'POST',
+    });
+    return unwrap<AuctionState>(res);
+  },
+
+  resumeTimer: async (auctionId: number): Promise<AuctionState> => {
+    const res = await fetchClient<any>(`/api/tournament/auction/${auctionId}/resume-timer`, {
       method: 'POST',
     });
     return unwrap<AuctionState>(res);

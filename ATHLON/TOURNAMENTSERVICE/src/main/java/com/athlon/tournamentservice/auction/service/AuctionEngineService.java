@@ -131,6 +131,7 @@ public class AuctionEngineService {
         config.setCurrentBid(basePrice != null ? basePrice : player.getBasePrice());
         config.setWinningTeamId(null);
         config.setTimerEndTime(LocalDateTime.now().plusSeconds(timerSec));
+        config.setTimerPausedRemainingSeconds(null);
         configRepository.save(config);
 
         player.setState("CALLED");
@@ -140,6 +141,39 @@ public class AuctionEngineService {
         playerRepository.save(player);
 
         return getAuctionState(config.getAuctionId());
+    }
+
+    @Transactional
+    public AuctionStateDTO pauseTimer(Long auctionId) {
+        AuctionConfig config = configRepository.findById(auctionId)
+                .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
+
+        if (config.getTimerEndTime() != null) {
+            long remaining = java.time.Duration.between(LocalDateTime.now(), config.getTimerEndTime()).getSeconds();
+            config.setTimerPausedRemainingSeconds((int) Math.max(1, remaining));
+            config.setTimerEndTime(null);
+            config.setStatus("PAUSED");
+            configRepository.save(config);
+        }
+
+        return getAuctionState(auctionId);
+    }
+
+    @Transactional
+    public AuctionStateDTO resumeTimer(Long auctionId) {
+        AuctionConfig config = configRepository.findById(auctionId)
+                .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
+
+        int remaining = (config.getTimerPausedRemainingSeconds() != null && config.getTimerPausedRemainingSeconds() > 0)
+                ? config.getTimerPausedRemainingSeconds()
+                : ((config.getTimerSeconds() != null && config.getTimerSeconds() > 0) ? config.getTimerSeconds() : 60);
+
+        config.setTimerEndTime(LocalDateTime.now().plusSeconds(remaining));
+        config.setTimerPausedRemainingSeconds(null);
+        config.setStatus("ACTIVE");
+        configRepository.save(config);
+
+        return getAuctionState(auctionId);
     }
 
     @Transactional
@@ -160,6 +194,7 @@ public class AuctionEngineService {
         config.setCurrentBid(0.0);
         config.setWinningTeamId(null);
         config.setTimerEndTime(null);
+        config.setTimerPausedRemainingSeconds(null);
         configRepository.save(config);
 
         return getAuctionState(auctionId);
@@ -215,6 +250,7 @@ public class AuctionEngineService {
         config.setCurrentBid(0.0);
         config.setWinningTeamId(null);
         config.setTimerEndTime(null);
+        config.setTimerPausedRemainingSeconds(null);
         configRepository.save(config);
 
         return getAuctionState(config.getAuctionId());
@@ -223,24 +259,24 @@ public class AuctionEngineService {
     @Transactional
     public AuctionReservedPlayer selectReservedPlayer(SelectReservedPlayerRequest request) {
         AuctionConfig config = configRepository.findByChampionshipId(request.getChampionshipId())
-                .orElseThrow(() -> new IllegalArgumentException("Auction config not found"));
-
-        if (!"PARTIAL_AUCTION".equalsIgnoreCase(config.getAuctionMode())) {
-            throw new IllegalStateException("Reserved players only supported in PARTIAL_AUCTION mode");
-        }
+                .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
 
         AuctionTeam team = teamRepository.findByAuctionIdAndTeamId(config.getAuctionId(), request.getTeamId())
                 .orElseThrow(() -> new IllegalArgumentException("Team not found"));
-
-        int currentReserved = reservedPlayerRepository.countByTeamId(team.getTeamId());
-        if (currentReserved >= config.getReservedPlayersPerTeam()) {
-            throw new IllegalStateException("Maximum reserved players limit (" + config.getReservedPlayersPerTeam() + ") reached for this team");
-        }
 
         // Check if player is already reserved
         Optional<AuctionReservedPlayer> existing = reservedPlayerRepository.findByChampionshipIdAndPlayerId(request.getChampionshipId(), request.getPlayerId());
         if (existing.isPresent()) {
             throw new IllegalStateException("Player is already reserved by another team");
+        }
+
+        if (!"PARTIAL_AUCTION".equalsIgnoreCase(config.getAuctionMode())) {
+            throw new IllegalStateException("Reserved players only supported in PARTIAL_AUCTION mode");
+        }
+
+        int currentReserved = reservedPlayerRepository.countByTeamId(team.getTeamId());
+        if (currentReserved >= config.getReservedPlayersPerTeam()) {
+            throw new IllegalStateException("Maximum reserved players limit (" + config.getReservedPlayersPerTeam() + ") reached for this team");
         }
 
         AuctionReservedPlayer reserved = new AuctionReservedPlayer();
@@ -300,7 +336,9 @@ public class AuctionEngineService {
                     .ifPresent(t -> state.setWinningTeamName(t.getTeamName()));
         }
 
-        if (config.getTimerEndTime() != null) {
+        if ("PAUSED".equalsIgnoreCase(config.getStatus()) && config.getTimerPausedRemainingSeconds() != null) {
+            state.setRemainingTimerSeconds(config.getTimerPausedRemainingSeconds());
+        } else if (config.getTimerEndTime() != null) {
             long remaining = java.time.Duration.between(LocalDateTime.now(), config.getTimerEndTime()).getSeconds();
             state.setRemainingTimerSeconds((int) Math.max(0, remaining));
         } else {

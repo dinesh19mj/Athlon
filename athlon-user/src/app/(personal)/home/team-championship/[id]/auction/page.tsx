@@ -415,13 +415,26 @@ export default function TeamOwnerAuctionArenaPage() {
 
                     {/* Countdown Timer */}
                     <div
-                      className="p-4 rounded-2xl border text-center self-start sm:self-center shrink-0 shadow-inner"
-                      style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                      className="p-4 rounded-2xl border text-center self-start sm:self-center shrink-0 shadow-inner min-w-[110px] transition-all"
+                      style={{
+                        backgroundColor: "var(--athlon-surface)",
+                        borderColor: (auctionState?.config?.status === "PAUSED" || Boolean(auctionState?.config?.timerPausedRemainingSeconds)) ? "#f59e0b" : "var(--athlon-border-subtle)",
+                      }}
                     >
-                      <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
-                        Timer Remaining
+                      <span className={`text-[10px] font-black uppercase tracking-wider block ${
+                        (auctionState?.config?.status === "PAUSED" || Boolean(auctionState?.config?.timerPausedRemainingSeconds))
+                          ? "text-amber-400 animate-pulse font-black"
+                          : "text-foreground/40"
+                      }`}>
+                        {(auctionState?.config?.status === "PAUSED" || Boolean(auctionState?.config?.timerPausedRemainingSeconds))
+                          ? "⏸️ TIMER PAUSED"
+                          : "Timer Remaining"}
                       </span>
-                      <span className="text-3xl font-black text-amber-400 font-mono">
+                      <span className={`text-3xl font-black font-mono ${
+                        (auctionState?.config?.status === "PAUSED" || Boolean(auctionState?.config?.timerPausedRemainingSeconds))
+                          ? "text-amber-300"
+                          : "text-amber-400"
+                      }`}>
                         {auctionState.remainingTimerSeconds}s
                       </span>
                     </div>
