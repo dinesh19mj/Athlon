@@ -2289,24 +2289,29 @@ export default function TeamChampionshipDashboardPage() {
                             </div>
                           </div>
 
-                          {/* Right: Live Bidding HUD (High Bid + Countdown Timer) */}
+                          {/* Right: Live Bidding HUD (High Bid + Countdown Timer - Identical Dimensions) */}
                           <div className="flex items-center gap-3 shrink-0 self-center md:self-center relative z-10">
                             {/* Current High Bid Box */}
-                            <div className="text-center bg-background/90 px-5 py-3 rounded-2xl border min-w-[130px] shadow-xl" style={{ borderColor: "var(--athlon-border)" }}>
-                              <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50 block mb-1">
+                            <div
+                              className="text-center bg-background/90 px-4 py-3 rounded-2xl border w-36 sm:w-40 shadow-xl flex flex-col justify-between min-h-[92px]"
+                              style={{ borderColor: "var(--athlon-border)" }}
+                            >
+                              <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50 block mb-0.5">
                                 Current High Bid
                               </span>
-                              <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-primary font-mono block leading-none">
+                              <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-primary font-mono block leading-none my-auto">
                                 {auctionState?.currentBid || activePlayerBasePrice}
                               </span>
-                              <span className="text-xs font-mono font-bold text-foreground/40 mt-0.5 block">pts</span>
+                              <span className="text-[10px] font-mono font-bold text-foreground/40 mt-0.5 block uppercase">
+                                Points
+                              </span>
                             </div>
 
-                            {/* Interactive Click-to-Pause/Resume Timer Container Button */}
+                            {/* Interactive Click-to-Pause/Resume Timer Container Button (Identical Dimensions) */}
                             <button
                               type="button"
                               onClick={handleTogglePauseTimer}
-                              className={`text-center px-4 py-2.5 rounded-2xl border min-w-[125px] shadow-xl transition-colors duration-150 cursor-pointer select-none group ${
+                              className={`text-center px-4 py-3 rounded-2xl border w-36 sm:w-40 shadow-xl transition-colors duration-150 cursor-pointer select-none group flex flex-col justify-between min-h-[92px] ${
                                 isTimerPaused
                                   ? "bg-amber-500/15 border-amber-400/80 hover:border-emerald-400 hover:bg-emerald-500/15 shadow-amber-500/10"
                                   : "bg-background/90 hover:bg-surface border-foreground/10 hover:border-amber-400/80"
@@ -2318,18 +2323,18 @@ export default function TeamChampionshipDashboardPage() {
                                   : "Timer is running. Click anywhere on this box to Pause!"
                               }
                             >
-                              <div className="flex items-center justify-center gap-1.5 mb-1">
+                              <div className="flex items-center justify-center gap-1.5 mb-0.5">
                                 {isTimerPaused ? (
                                   <>
                                     <Play className="w-3 h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
-                                    <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
-                                      PAUSED (Resume)
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
+                                      PAUSED
                                     </span>
                                   </>
                                 ) : (
                                   <>
                                     <Pause className="w-3 h-3 text-amber-400/70 group-hover:text-amber-400 transition-colors shrink-0" />
-                                    <span className="text-[9px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
                                       Timer
                                     </span>
                                   </>
@@ -2337,7 +2342,7 @@ export default function TeamChampionshipDashboardPage() {
                               </div>
 
                               <span
-                                className={`text-2xl sm:text-3xl lg:text-4xl font-black font-mono block leading-none ${
+                                className={`text-2xl sm:text-3xl lg:text-4xl font-black font-mono block leading-none my-auto ${
                                   isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
                                 }`}
                               >
@@ -2345,7 +2350,7 @@ export default function TeamChampionshipDashboardPage() {
                               </span>
 
                               <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-amber-400">
-                                {isTimerPaused ? "Click to Resume" : "Click to Pause"}
+                                {isTimerPaused ? "Resume ▶" : "Pause ⏸"}
                               </span>
                             </button>
                           </div>
