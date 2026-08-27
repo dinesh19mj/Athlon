@@ -23,6 +23,7 @@ import {
   Minimize2,
   Pause,
   RotateCcw,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -447,36 +448,80 @@ export default function TeamOwnerAuctionArenaPage() {
                     </div>
                   </div>
 
-                  {/* Quick Bidding Controls */}
-                  <div className="space-y-3 pt-2 relative z-10">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase tracking-wider text-foreground/80">
-                        Place Bid for {myTeamSummary?.team.teamName || "Your Franchise"}
-                      </span>
-                      {myTeamSummary && (
-                        <span className="text-xs font-bold text-foreground/50">
-                          Purse: <strong className="text-primary font-mono">{myTeamSummary.team.remainingBudget} {currencyLabel}</strong>
-                        </span>
-                      )}
-                    </div>
+                  {/* Bidding Controls (Manual vs Automatic) */}
+                  {(() => {
+                    const isAutomatic = (auctionState?.config?.biddingMode || "MANUAL") === "AUTOMATIC";
+                    const configuredBumps: number[] = auctionState?.config?.quickPointBumps
+                      ? auctionState.config.quickPointBumps
+                          .split(",")
+                          .map((s) => Number(s.trim()))
+                          .filter((n) => !isNaN(n) && n > 0)
+                      : [100, 250, 500, 1000, 2000];
+                    const bumpsToDisplay = configuredBumps.length > 0 ? configuredBumps : [100, 250, 500, 1000, 2000];
 
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        auctionState.config?.bidIncrement || 500,
-                        (auctionState.config?.bidIncrement || 500) * 2,
-                        (auctionState.config?.bidIncrement || 500) * 5,
-                      ].map((inc, idx) => (
-                        <button
-                          key={idx}
-                          disabled={placingBid}
-                          onClick={() => handlePlaceBid(inc)}
-                          className="py-4 rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary text-black font-black text-sm sm:text-base hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/25 disabled:opacity-40"
+                    if (!isAutomatic) {
+                      return (
+                        <div
+                          className="p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs relative z-10"
+                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
                         >
-                          +{inc} {currencyLabel}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shrink-0">
+                              ✋
+                            </div>
+                            <div>
+                              <span className="font-black text-foreground block">
+                                Manual Gavel Floor Mode Active
+                              </span>
+                              <span className="text-[11px] text-foreground/60">
+                                The organizer is locking bids directly. Watch this live big-screen arena as player assignments are finalized.
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3 pt-2 relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                            <span className="text-xs font-black uppercase tracking-wider text-foreground/90">
+                              Place Bid for {myTeamSummary?.team.teamName || "Your Franchise"}
+                            </span>
+                          </div>
+                          {myTeamSummary && (
+                            <span className="text-xs font-bold text-foreground/50">
+                              Purse: <strong className="text-primary font-mono">{myTeamSummary.team.remainingBudget} {currencyLabel}</strong>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                          {bumpsToDisplay.map((inc) => {
+                            const currentBid = auctionState.currentBid || auctionState.activePlayer?.basePrice || 0;
+                            const nextTargetBid = currentBid + inc;
+                            const isAffordable = !myTeamSummary || myTeamSummary.team.remainingBudget >= nextTargetBid;
+
+                            return (
+                              <button
+                                key={inc}
+                                disabled={placingBid || !selectedMyTeamId || !isAffordable}
+                                onClick={() => handlePlaceBid(inc)}
+                                className="py-3 px-2 rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary text-black font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-30 disabled:hover:scale-100 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                              >
+                                <span className="font-mono text-base font-black">+{inc}</span>
+                                <span className="text-[9px] uppercase font-bold text-black/70">
+                                  Bid {nextTargetBid} {currencyLabel}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div

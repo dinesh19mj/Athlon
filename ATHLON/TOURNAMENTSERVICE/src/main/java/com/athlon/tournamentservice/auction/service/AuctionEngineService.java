@@ -74,8 +74,14 @@ public class AuctionEngineService {
         config.setBidIncrement(request.getBidIncrement() != null ? request.getBidIncrement() : 500.0);
         config.setTeamBudget(request.getTeamBudget() != null ? request.getTeamBudget() : 50000.0);
         config.setReservedPlayersPerTeam(request.getReservedPlayersPerTeam() != null ? request.getReservedPlayersPerTeam() : 0);
-        config.setTimerSeconds(request.getTimerSeconds() != null ? request.getTimerSeconds() : 30);
+        config.setTimerSeconds(request.getTimerSeconds() != null ? request.getTimerSeconds() : 60);
         config.setAntiSnipingSeconds(request.getAntiSnipingSeconds() != null ? request.getAntiSnipingSeconds() : 10);
+        if (request.getBiddingMode() != null) {
+            config.setBiddingMode(request.getBiddingMode());
+        }
+        if (request.getQuickPointBumps() != null) {
+            config.setQuickPointBumps(request.getQuickPointBumps());
+        }
         config.setStatus("READY");
 
         AuctionConfig saved = configRepository.save(config);
@@ -119,11 +125,12 @@ public class AuctionEngineService {
             }
         }
 
+        int timerSec = (config.getTimerSeconds() != null && config.getTimerSeconds() > 0) ? config.getTimerSeconds() : 60;
         config.setStatus("ACTIVE");
         config.setActivePlayerId(player.getAuctionPlayerId());
         config.setCurrentBid(basePrice != null ? basePrice : player.getBasePrice());
         config.setWinningTeamId(null);
-        config.setTimerEndTime(LocalDateTime.now().plusSeconds(config.getTimerSeconds()));
+        config.setTimerEndTime(LocalDateTime.now().plusSeconds(timerSec));
         configRepository.save(config);
 
         player.setState("CALLED");

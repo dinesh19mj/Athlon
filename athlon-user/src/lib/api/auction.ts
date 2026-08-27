@@ -15,6 +15,8 @@ export interface AuctionConfig {
   reservedPlayersPerTeam: number;
   timerSeconds: number;
   antiSnipingSeconds: number;
+  biddingMode?: 'MANUAL' | 'AUTOMATIC';
+  quickPointBumps?: string;
   status: 'DRAFT' | 'READY' | 'ACTIVE' | 'PAUSED' | 'COMPLETED';
   activePlayerId?: number;
   currentBid?: number;

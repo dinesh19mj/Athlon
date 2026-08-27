@@ -15,9 +15,17 @@ public class CreateAuctionConfigRequest {
     private Integer reservedPlayersPerTeam;
     private Integer timerSeconds;
     private Integer antiSnipingSeconds;
+    private String biddingMode; // "MANUAL", "AUTOMATIC"
+    private String quickPointBumps; // "100,250,500,1000,2000"
     private List<CategoryPriceItem> categoryPrices;
 
     public CreateAuctionConfigRequest() {}
+
+    public String getBiddingMode() { return biddingMode; }
+    public void setBiddingMode(String biddingMode) { this.biddingMode = biddingMode; }
+
+    public String getQuickPointBumps() { return quickPointBumps; }
+    public void setQuickPointBumps(String quickPointBumps) { this.quickPointBumps = quickPointBumps; }
 
     public Long getChampionshipId() { return championshipId; }
     public void setChampionshipId(Long championshipId) { this.championshipId = championshipId; }

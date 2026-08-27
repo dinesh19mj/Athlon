@@ -97,16 +97,10 @@ public class AuctionBiddingService {
             throw new IllegalStateException("Insufficient budget: Team remaining is " + team.getRemainingBudget() + ", bid is " + bidAmount);
         }
 
-        // 5. Anti-Sniping Timer Extension
+        // 5. Systematically Reset Countdown Timer on every new bid
         LocalDateTime now = LocalDateTime.now();
-        if (config.getTimerEndTime() != null && config.getAntiSnipingSeconds() != null) {
-            long secondsRemaining = java.time.Duration.between(now, config.getTimerEndTime()).getSeconds();
-            if (secondsRemaining <= config.getAntiSnipingSeconds()) {
-                config.setTimerEndTime(now.plusSeconds(config.getAntiSnipingSeconds() + 5));
-            }
-        } else {
-            config.setTimerEndTime(now.plusSeconds(config.getTimerSeconds() != null ? config.getTimerSeconds() : 30));
-        }
+        int timerSec = (config.getTimerSeconds() != null && config.getTimerSeconds() > 0) ? config.getTimerSeconds() : 60;
+        config.setTimerEndTime(now.plusSeconds(timerSec));
 
         // 6. Update Auction Config & Player Current Leader
         config.setCurrentBid(bidAmount);

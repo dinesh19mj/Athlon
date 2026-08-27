@@ -106,6 +106,9 @@ export default function TeamChampionshipDashboardPage() {
   const [isPurseModalOpen, setIsPurseModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [highlightedTeamId, setHighlightedTeamId] = useState<number | null>(null);
+  const [auctionBiddingMode, setAuctionBiddingMode] = useState<"MANUAL" | "AUTOMATIC">("MANUAL");
+  const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(60);
+  const [selectedPointBumps, setSelectedPointBumps] = useState<number[]>([100, 250, 500, 1000, 2000]);
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -386,6 +389,53 @@ export default function TeamChampionshipDashboardPage() {
       }
     }
   }, [auctionState?.activePlayer?.auctionPlayerId, auctionState?.currentBid, auctionState?.winningTeamId]);
+
+  // Sync Auction Config (Bidding Mode, Timer, Point Bumps)
+  useEffect(() => {
+    if (auctionState?.config) {
+      if (auctionState.config.biddingMode) {
+        setAuctionBiddingMode(auctionState.config.biddingMode);
+      }
+      if (auctionState.config.timerSeconds) {
+        setTimerDurationSeconds(auctionState.config.timerSeconds);
+      }
+      if (auctionState.config.quickPointBumps) {
+        const bumps = auctionState.config.quickPointBumps
+          .split(",")
+          .map((s) => Number(s.trim()))
+          .filter((n) => !isNaN(n) && n > 0);
+        if (bumps.length > 0) setSelectedPointBumps(bumps);
+      }
+    }
+  }, [auctionState?.config?.biddingMode, auctionState?.config?.timerSeconds, auctionState?.config?.quickPointBumps]);
+
+  const handleUpdateAuctionSettings = async (
+    newMode?: "MANUAL" | "AUTOMATIC",
+    newTimer?: number,
+    newBumps?: number[]
+  ) => {
+    if (!championship?.championshipId) return;
+    const mode = newMode || auctionBiddingMode;
+    const timer = newTimer || timerDurationSeconds;
+    const bumps = newBumps || selectedPointBumps;
+
+    if (newMode) setAuctionBiddingMode(newMode);
+    if (newTimer) setTimerDurationSeconds(newTimer);
+    if (newBumps) setSelectedPointBumps(newBumps);
+
+    try {
+      await AuctionService.createOrUpdateConfig({
+        championshipId: championship.championshipId,
+        championshipUuid: championship.championshipUuid,
+        biddingMode: mode,
+        timerSeconds: timer,
+        quickPointBumps: bumps.join(","),
+      });
+      loadAuction();
+    } catch (e) {
+      console.error("Failed to update auction settings", e);
+    }
+  };
 
   // Spinner 1: Round Wheel Category Snipper
   const runCategorySnipper = () => {
@@ -2192,108 +2242,220 @@ export default function TeamChampionshipDashboardPage() {
                           </div>
                         </div>
 
-                        {/* MANUAL BIDDING & TEAM LOCK DESK */}
+                        {/* BIDDING MODE CONTROLS & DESK */}
                         <div
-                          className="p-4 sm:p-5 rounded-2xl border space-y-3 shadow-sm"
+                          className="p-4 sm:p-5 rounded-2xl border space-y-4 shadow-sm"
                           style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
                         >
-                          <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                            <h4 className="text-[11px] font-black uppercase tracking-wider text-foreground/90 flex items-center gap-1.5">
-                              <Zap className="w-3.5 h-3.5 text-primary" /> Manual Bidding & Team Mapping Desk
-                            </h4>
+                          {/* Segmented Mode Selector Tab */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b pb-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                            <div>
+                              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
+                                <button
+                                  onClick={() => handleUpdateAuctionSettings("MANUAL")}
+                                  className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 ${
+                                    auctionBiddingMode === "MANUAL"
+                                      ? "bg-primary text-black shadow-sm"
+                                      : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                                  }`}
+                                >
+                                  <span>✋ Manual Bidding</span>
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateAuctionSettings("AUTOMATIC")}
+                                  className={`px-3 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 ${
+                                    auctionBiddingMode === "AUTOMATIC"
+                                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-sm"
+                                      : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                                  }`}
+                                >
+                                  <Zap className="w-3.5 h-3.5 fill-current" />
+                                  <span>⚡ Automatic Live Bidding</span>
+                                </button>
+                              </div>
+                            </div>
+
                             <button
                               onClick={() => setIsPurseModalOpen(true)}
-                              className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1"
+                              className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1 shrink-0"
                             >
                               <Shield className="w-3 h-3" />
                               <span>Check Purses</span>
                             </button>
                           </div>
 
-                          {/* Quick Increment Pad */}
-                          <div className="space-y-1">
-                            <span className="text-[9px] font-bold uppercase text-foreground/50 block">Quick Point Bumps</span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {[100, 250, 500, 1000, 2000].map((inc) => (
-                                <button
-                                  key={inc}
-                                  onClick={() => {
-                                    const next = (manualWinningBid || activePlayerBasePrice) + inc;
-                                    setManualWinningBid(next);
-                                  }}
-                                  className="px-3 py-1 rounded-lg bg-surface hover:bg-primary/20 border border-foreground/15 hover:border-primary/40 text-foreground font-mono font-black text-xs transition-all"
-                                >
-                                  +{inc}
-                                </button>
-                              ))}
-                              <button
-                                onClick={() => setManualWinningBid(activePlayerBasePrice)}
-                                className="px-3 py-1 rounded-lg bg-surface hover:bg-white/10 border border-foreground/15 text-foreground/60 font-bold text-xs transition-all"
-                              >
-                                Reset
-                              </button>
-                            </div>
-                          </div>
+                          {/* ======================================================== */}
+                          {/* MODE 1: MANUAL BIDDING DESK (Direct Points & Map to Team) */}
+                          {/* ======================================================== */}
+                          {auctionBiddingMode === "MANUAL" && (
+                            <div className="space-y-3 animate-fadeIn">
+                              <p className="text-[11px] text-foreground/60 leading-relaxed">
+                                Offline/Hall voice auction mode. Enter the final agreed winning points and select the franchise team to map the athlete.
+                              </p>
 
-                          {/* Inputs: Locked Points & Map To Team */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-[9px] font-black uppercase text-foreground/60 block mb-1">
-                                Final Locked Points
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  value={manualWinningBid || ""}
-                                  onChange={(e) => setManualWinningBid(Number(e.target.value))}
-                                  placeholder="Enter final points..."
-                                  className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-mono font-black text-sm outline-none focus:border-primary"
-                                  style={{ borderColor: "var(--athlon-border)" }}
-                                />
-                                <span className="absolute right-3 top-2 text-xs font-bold text-foreground/40 pointer-events-none">
-                                  pts
-                                </span>
+                              {/* Inputs: Locked Points & Map To Team */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="text-[9px] font-black uppercase text-foreground/60 block mb-1">
+                                    Final Locked Points
+                                  </label>
+                                  <div className="relative">
+                                    <input
+                                      type="number"
+                                      value={manualWinningBid || ""}
+                                      onChange={(e) => setManualWinningBid(Number(e.target.value))}
+                                      placeholder="Enter final points..."
+                                      className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-mono font-black text-sm outline-none focus:border-primary"
+                                      style={{ borderColor: "var(--athlon-border)" }}
+                                    />
+                                    <span className="absolute right-3 top-2 text-xs font-bold text-foreground/40 pointer-events-none">
+                                      pts
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[9px] font-black uppercase text-foreground/60 block mb-1">
+                                    Map to Franchise Team
+                                  </label>
+                                  <select
+                                    value={manualWinningTeamId || ""}
+                                    onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
+                                    className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-black text-xs outline-none focus:border-primary"
+                                    style={{ borderColor: "var(--athlon-border)" }}
+                                  >
+                                    <option value="">-- Select Team --</option>
+                                    {auctionTeams.map((at) => (
+                                      <option key={at.team.teamId} value={at.team.teamId}>
+                                        {at.team.teamName} (Purse: {at.team.remainingBudget} pts)
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Action CTA Buttons */}
+                              <div className="flex items-center gap-2.5 pt-1">
+                                <button
+                                  onClick={handleAssignPlayerManual}
+                                  disabled={assigningLoading || !manualWinningTeamId}
+                                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
+                                >
+                                  <Gavel className="w-4 h-4" />
+                                  <span>{assigningLoading ? "Processing..." : "🔨 SOLD & MAP TO TEAM"}</span>
+                                </button>
+
+                                <button
+                                  onClick={handleMarkUnsold}
+                                  className="px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
+                                >
+                                  UNSOLD
+                                </button>
                               </div>
                             </div>
+                          )}
 
-                            <div>
-                              <label className="text-[9px] font-black uppercase text-foreground/60 block mb-1">
-                                Map to Franchise Team
-                              </label>
-                              <select
-                                value={manualWinningTeamId || ""}
-                                onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
-                                className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-black text-xs outline-none focus:border-primary"
-                                style={{ borderColor: "var(--athlon-border)" }}
-                              >
-                                <option value="">-- Select Team --</option>
-                                {auctionTeams.map((at) => (
-                                  <option key={at.team.teamId} value={at.team.teamId}>
-                                    {at.team.teamName} (Purse: {at.team.remainingBudget} pts)
-                                  </option>
-                                ))}
-                              </select>
+                          {/* ======================================================== */}
+                          {/* MODE 2: AUTOMATIC LIVE ONLINE BIDDING DESK                */}
+                          {/* ======================================================== */}
+                          {auctionBiddingMode === "AUTOMATIC" && (
+                            <div className="space-y-4 animate-fadeIn">
+                              <p className="text-[11px] text-amber-400 font-medium leading-relaxed">
+                                ⚡ Team owners place bids in real time through their interface. Every bid automatically restarts the countdown timer!
+                              </p>
+
+                              {/* 1. Countdown Timer Duration Setting */}
+                              <div className="space-y-1.5 p-3 rounded-xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-black uppercase text-foreground/80 flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-amber-400" /> Timer Countdown Duration
+                                  </span>
+                                  <span className="text-[10px] font-mono text-amber-400 font-black">
+                                    Restarts from {timerDurationSeconds}s on each bid
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {[15, 30, 45, 60, 90, 120].map((sec) => (
+                                    <button
+                                      key={sec}
+                                      onClick={() => handleUpdateAuctionSettings("AUTOMATIC", sec)}
+                                      className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black transition-all ${
+                                        timerDurationSeconds === sec
+                                          ? "bg-amber-400 text-black shadow-md shadow-amber-400/20"
+                                          : "bg-surface text-foreground/60 border border-foreground/10 hover:bg-surface/80"
+                                      }`}
+                                    >
+                                      {sec}s {sec === 60 ? "(Default)" : ""}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* 2. Quick Point Bumps (Syncs to Team Owners) */}
+                              <div className="space-y-1.5 p-3 rounded-xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-black uppercase text-foreground/80 flex items-center gap-1">
+                                    <Coins className="w-3 h-3 text-primary" /> Franchise Point Bumps (Broadcasted to Owners)
+                                  </span>
+                                  <span className="text-[10px] text-foreground/50 font-bold">
+                                    {selectedPointBumps.length} Active Bumps
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {[50, 100, 200, 250, 500, 1000, 2000, 5000].map((inc) => {
+                                    const isSelected = selectedPointBumps.includes(inc);
+                                    return (
+                                      <button
+                                        key={inc}
+                                        onClick={() => {
+                                          const nextBumps = isSelected
+                                            ? selectedPointBumps.filter((b) => b !== inc)
+                                            : [...selectedPointBumps, inc].sort((a, b) => a - b);
+                                          if (nextBumps.length === 0) return;
+                                          handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
+                                        }}
+                                        className={`px-3 py-1 rounded-lg font-mono font-black text-xs transition-all ${
+                                          isSelected
+                                            ? "bg-primary text-black shadow-sm"
+                                            : "bg-surface text-foreground/50 border border-foreground/10 hover:border-primary/40"
+                                        }`}
+                                      >
+                                        +{inc}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <p className="text-[9px] text-foreground/40 mt-0.5">
+                                  Owners will see: <strong>{selectedPointBumps.map((b) => `+${b}`).join(", ")} pts</strong>
+                                </p>
+                              </div>
+
+                              {/* Action CTA Buttons in Automatic Mode */}
+                              <div className="flex items-center gap-2.5 pt-1">
+                                <button
+                                  onClick={handleAssignPlayerManual}
+                                  disabled={assigningLoading || !auctionState?.winningTeamId}
+                                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
+                                >
+                                  <Gavel className="w-4 h-4" />
+                                  <span>
+                                    {assigningLoading
+                                      ? "Processing..."
+                                      : auctionState?.winningTeamName
+                                      ? `🔨 SEAL & MAP TO ${auctionState.winningTeamName.toUpperCase()}`
+                                      : "WAITING FOR FIRST FRANCHISE BID"}
+                                  </span>
+                                </button>
+
+                                <button
+                                  onClick={handleMarkUnsold}
+                                  className="px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
+                                >
+                                  UNSOLD
+                                </button>
+                              </div>
                             </div>
-                          </div>
-
-                          {/* Action CTA Buttons */}
-                          <div className="flex items-center gap-2.5 pt-1">
-                            <button
-                              onClick={handleAssignPlayerManual}
-                              disabled={assigningLoading || !manualWinningTeamId}
-                              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
-                            >
-                              <Gavel className="w-4 h-4" />
-                              <span>{assigningLoading ? "Processing..." : "🔨 SOLD & MAP TO TEAM"}</span>
-                            </button>
-
-                            <button
-                              onClick={handleMarkUnsold}
-                              className="px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
-                            >
-                              UNSOLD
-                            </button>
-                          </div>
+                          )}
                         </div>
                       </div>
                     ) : (

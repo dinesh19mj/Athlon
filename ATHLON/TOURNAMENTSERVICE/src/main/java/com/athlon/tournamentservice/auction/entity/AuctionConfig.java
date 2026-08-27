@@ -70,6 +70,12 @@ public class AuctionConfig {
     @Column(name = "timer_end_time")
     private LocalDateTime timerEndTime;
 
+    @Column(name = "bidding_mode")
+    private String biddingMode = "MANUAL"; // "MANUAL", "AUTOMATIC"
+
+    @Column(name = "quick_point_bumps")
+    private String quickPointBumps = "100,250,500,1000,2000";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -91,8 +97,10 @@ public class AuctionConfig {
         if (this.bidIncrement == null) this.bidIncrement = 500.0;
         if (this.teamBudget == null) this.teamBudget = 50000.0;
         if (this.reservedPlayersPerTeam == null) this.reservedPlayersPerTeam = 0;
-        if (this.timerSeconds == null) this.timerSeconds = 30;
+        if (this.timerSeconds == null) this.timerSeconds = 60;
         if (this.antiSnipingSeconds == null) this.antiSnipingSeconds = 10;
+        if (this.biddingMode == null) this.biddingMode = "MANUAL";
+        if (this.quickPointBumps == null) this.quickPointBumps = "100,250,500,1000,2000";
         if (this.status == null) this.status = "DRAFT";
     }
 
@@ -256,6 +264,22 @@ public class AuctionConfig {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getBiddingMode() {
+        return biddingMode;
+    }
+
+    public void setBiddingMode(String biddingMode) {
+        this.biddingMode = biddingMode;
+    }
+
+    public String getQuickPointBumps() {
+        return quickPointBumps;
+    }
+
+    public void setQuickPointBumps(String quickPointBumps) {
+        this.quickPointBumps = quickPointBumps;
     }
 
     public LocalDateTime getUpdatedAt() {
