@@ -107,6 +107,7 @@ export default function TeamChampionshipDashboardPage() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [highlightedTeamId, setHighlightedTeamId] = useState<number | null>(null);
   const [auctionBiddingMode, setAuctionBiddingMode] = useState<"MANUAL" | "AUTOMATIC">("MANUAL");
+  const [availableTimerPresets, setAvailableTimerPresets] = useState<number[]>([15, 30, 45, 60, 90, 120]);
   const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(60);
   const [isTimerConfigOpen, setIsTimerConfigOpen] = useState<boolean>(false);
   const [availablePointBumps, setAvailablePointBumps] = useState<number[]>([50, 100, 200, 250, 500, 1000, 2000, 5000]);
@@ -277,6 +278,9 @@ export default function TeamChampionshipDashboardPage() {
         const parsed = JSON.parse(saved);
         if (parsed.biddingMode) setAuctionBiddingMode(parsed.biddingMode);
         if (parsed.timerSeconds) setTimerDurationSeconds(parsed.timerSeconds);
+        if (Array.isArray(parsed.availableTimers) && parsed.availableTimers.length > 0) {
+          setAvailableTimerPresets(parsed.availableTimers);
+        }
         if (Array.isArray(parsed.selectedBumps) && parsed.selectedBumps.length > 0) {
           setSelectedPointBumps(parsed.selectedBumps);
         }
@@ -421,6 +425,7 @@ export default function TeamChampionshipDashboardPage() {
       }
       if (auctionState.config.timerSeconds) {
         setTimerDurationSeconds(auctionState.config.timerSeconds);
+        setAvailableTimerPresets((prev) => Array.from(new Set([...prev, auctionState.config.timerSeconds!])).sort((a, b) => a - b));
       }
       if (auctionState.config.quickPointBumps) {
         const bumps = auctionState.config.quickPointBumps
@@ -439,18 +444,21 @@ export default function TeamChampionshipDashboardPage() {
     newMode?: "MANUAL" | "AUTOMATIC",
     newTimer?: number,
     newBumps?: number[],
-    newAvailable?: number[]
+    newAvailableBumps?: number[],
+    newAvailableTimers?: number[]
   ) => {
     if (!championship?.championshipId) return;
     const mode = newMode || auctionBiddingMode;
     const timer = newTimer || timerDurationSeconds;
     const bumps = newBumps || selectedPointBumps;
-    const available = newAvailable || availablePointBumps;
+    const availableBumps = newAvailableBumps || availablePointBumps;
+    const availableTimers = newAvailableTimers || availableTimerPresets;
 
     if (newMode) setAuctionBiddingMode(newMode);
     if (newTimer) setTimerDurationSeconds(newTimer);
     if (newBumps) setSelectedPointBumps(bumps);
-    if (newAvailable) setAvailablePointBumps(available);
+    if (newAvailableBumps) setAvailablePointBumps(availableBumps);
+    if (newAvailableTimers) setAvailableTimerPresets(availableTimers);
 
     // Save to localStorage immediately so refresh preserves custom values
     try {
@@ -461,7 +469,8 @@ export default function TeamChampionshipDashboardPage() {
             biddingMode: mode,
             timerSeconds: timer,
             selectedBumps: bumps,
-            availableBumps: available,
+            availableBumps: availableBumps,
+            availableTimers: availableTimers,
           })
         );
       }
@@ -2447,7 +2456,7 @@ export default function TeamChampionshipDashboardPage() {
                                   </div>
 
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    {[15, 30, 45, 60, 90, 120].map((sec) => (
+                                    {availableTimerPresets.map((sec) => (
                                       <button
                                         key={sec}
                                         onClick={() => {
@@ -2456,7 +2465,7 @@ export default function TeamChampionshipDashboardPage() {
                                         }}
                                         className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black transition-all ${
                                           timerDurationSeconds === sec
-                                            ? "bg-amber-400 text-black shadow-md shadow-amber-400/20"
+                                            ? "bg-amber-400 text-black shadow-md shadow-amber-400/20 scale-105"
                                             : "bg-surface text-foreground/60 border border-foreground/10 hover:bg-surface/80"
                                         }`}
                                       >
@@ -2479,7 +2488,8 @@ export default function TeamChampionshipDashboardPage() {
                                       onClick={() => {
                                         const val = parseInt(customTimerInput);
                                         if (!isNaN(val) && val > 0) {
-                                          handleUpdateAuctionSettings("AUTOMATIC", val);
+                                          const updatedTimers = Array.from(new Set([...availableTimerPresets, val])).sort((a, b) => a - b);
+                                          handleUpdateAuctionSettings("AUTOMATIC", val, undefined, undefined, updatedTimers);
                                           setCustomTimerInput("");
                                           setIsTimerConfigOpen(false);
                                         }
