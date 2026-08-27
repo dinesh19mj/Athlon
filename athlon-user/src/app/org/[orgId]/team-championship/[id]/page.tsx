@@ -2189,7 +2189,7 @@ export default function TeamChampionshipDashboardPage() {
                 {/* LEFT 9 COLS: MAXIMUM SIZE PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
                 <div className="lg:col-span-9 flex flex-col">
                   <div
-                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-2xl relative overflow-y-auto overflow-x-hidden flex flex-col justify-between p-4 sm:p-5 transition-all duration-300 custom-scrollbar"
+                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-2xl relative overflow-y-auto overflow-x-hidden flex flex-col justify-between p-4 sm:p-5 transition-all duration-300 hide-scrollbar"
                     style={{
                       backgroundColor: "var(--athlon-card)",
                       borderColor: activePlayer ? "var(--athlon-primary, #6366f1)" : "var(--athlon-border)",
@@ -2679,7 +2679,7 @@ export default function TeamChampionshipDashboardPage() {
                 {/* RIGHT 3 COLS: COMPACT CATEGORY PLAYERS TRAY & QUEUE */}
                 <div className="lg:col-span-3 flex flex-col">
                   <div
-                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-md flex flex-col p-4 justify-between overflow-y-auto overflow-x-hidden custom-scrollbar"
+                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-md flex flex-col p-4 justify-between overflow-y-auto overflow-x-hidden hide-scrollbar"
                     style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
                     <div className="flex items-center justify-between border-b pb-3 shrink-0" style={{ borderColor: "var(--athlon-border)" }}>
