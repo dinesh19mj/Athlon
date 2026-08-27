@@ -2286,12 +2286,12 @@ export default function TeamChampionshipDashboardPage() {
                                 {activePlayer.playerName}
                               </h2>
 
-                              {/* Large Glowing Base Price Pill */}
+                              {/* Refined Compact Base Price Pill */}
                               <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap pt-0.5">
-                                <div className="px-4 py-1.5 rounded-xl bg-primary/15 border border-primary/40 text-primary font-bold flex items-center gap-2 shadow-sm">
-                                  <span className="text-primary/70 text-xs uppercase font-black tracking-wider">Base Price:</span>
-                                  <strong className="font-mono font-black text-base sm:text-lg">{activePlayerBasePrice} pts</strong>
-                                </div>
+                                <span className="text-xs px-2.5 py-0.5 rounded-lg bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1.5 shadow-sm">
+                                  <span className="text-primary/60 text-[10px] uppercase font-black">Base Price:</span>
+                                  <strong className="font-mono font-black text-xs">{activePlayerBasePrice} pts</strong>
+                                </span>
                               </div>
                             </div>
                           </div>
