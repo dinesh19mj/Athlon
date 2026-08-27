@@ -268,6 +268,25 @@ export default function TeamChampionshipDashboardPage() {
     loadData();
   }, [championshipUuid]);
 
+  // Restore cached auction settings on load
+  useEffect(() => {
+    if (!championshipUuid || typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(`athlon_auction_settings_${championshipUuid}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.biddingMode) setAuctionBiddingMode(parsed.biddingMode);
+        if (parsed.timerSeconds) setTimerDurationSeconds(parsed.timerSeconds);
+        if (Array.isArray(parsed.selectedBumps) && parsed.selectedBumps.length > 0) {
+          setSelectedPointBumps(parsed.selectedBumps);
+        }
+        if (Array.isArray(parsed.availableBumps) && parsed.availableBumps.length > 0) {
+          setAvailablePointBumps(parsed.availableBumps);
+        }
+      }
+    } catch (e) {}
+  }, [championshipUuid]);
+
   // Load Auction State
   const loadAuction = async () => {
     if (!championship?.championshipId) return;
@@ -419,16 +438,34 @@ export default function TeamChampionshipDashboardPage() {
   const handleUpdateAuctionSettings = async (
     newMode?: "MANUAL" | "AUTOMATIC",
     newTimer?: number,
-    newBumps?: number[]
+    newBumps?: number[],
+    newAvailable?: number[]
   ) => {
     if (!championship?.championshipId) return;
     const mode = newMode || auctionBiddingMode;
     const timer = newTimer || timerDurationSeconds;
     const bumps = newBumps || selectedPointBumps;
+    const available = newAvailable || availablePointBumps;
 
     if (newMode) setAuctionBiddingMode(newMode);
     if (newTimer) setTimerDurationSeconds(newTimer);
-    if (newBumps) setSelectedPointBumps(newBumps);
+    if (newBumps) setSelectedPointBumps(bumps);
+    if (newAvailable) setAvailablePointBumps(available);
+
+    // Save to localStorage immediately so refresh preserves custom values
+    try {
+      if (typeof window !== "undefined" && championshipUuid) {
+        localStorage.setItem(
+          `athlon_auction_settings_${championshipUuid}`,
+          JSON.stringify({
+            biddingMode: mode,
+            timerSeconds: timer,
+            selectedBumps: bumps,
+            availableBumps: available,
+          })
+        );
+      }
+    } catch (e) {}
 
     try {
       await AuctionService.createOrUpdateConfig({
@@ -2515,9 +2552,8 @@ export default function TeamChampionshipDashboardPage() {
                                       const val = parseInt(customBumpInput);
                                       if (!isNaN(val) && val > 0) {
                                         const newAvailable = Array.from(new Set([...availablePointBumps, val])).sort((a, b) => a - b);
-                                        setAvailablePointBumps(newAvailable);
                                         const nextBumps = Array.from(new Set([...selectedPointBumps, val])).sort((a, b) => a - b);
-                                        handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
+                                        handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps, newAvailable);
                                         setCustomBumpInput("");
                                       }
                                     }}
