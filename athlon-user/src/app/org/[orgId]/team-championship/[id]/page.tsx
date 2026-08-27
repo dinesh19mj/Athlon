@@ -913,8 +913,8 @@ export default function TeamChampionshipDashboardPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 border ${isActive
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                    : "border-transparent text-foreground/60 hover:text-foreground hover:bg-foreground/5"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "border-transparent text-foreground/60 hover:text-foreground hover:bg-foreground/5"
                   }`}
               >
                 <Icon className="w-4 h-4" />
@@ -1019,8 +1019,8 @@ export default function TeamChampionshipDashboardPage() {
                   <div key={idx} className="flex items-center gap-3 text-xs font-bold">
                     <div
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${s.done
-                          ? "bg-emerald-500 text-black font-black"
-                          : "bg-foreground/10 text-foreground/40 font-bold"
+                        ? "bg-emerald-500 text-black font-black"
+                        : "bg-foreground/10 text-foreground/40 font-bold"
                         }`}
                     >
                       {s.done ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
@@ -1081,10 +1081,10 @@ export default function TeamChampionshipDashboardPage() {
                       {/* Top Status Gradient Bar */}
                       <div
                         className={`h-1.5 w-full bg-gradient-to-r ${isApproved
-                            ? "from-emerald-500 via-teal-400 to-primary"
-                            : isRejected
-                              ? "from-red-500 via-rose-400 to-amber-500"
-                              : "from-amber-400 via-orange-400 to-primary"
+                          ? "from-emerald-500 via-teal-400 to-primary"
+                          : isRejected
+                            ? "from-red-500 via-rose-400 to-amber-500"
+                            : "from-amber-400 via-orange-400 to-primary"
                           }`}
                       />
 
@@ -1095,10 +1095,10 @@ export default function TeamChampionshipDashboardPage() {
                             {/* Team Avatar Shield */}
                             <div
                               className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm uppercase shadow-inner border shrink-0 transition-transform duration-300 group-hover:scale-105 ${isApproved
-                                  ? "bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30"
-                                  : isRejected
-                                    ? "bg-gradient-to-br from-red-500/20 to-rose-500/10 text-red-400 border-red-500/30"
-                                    : "bg-gradient-to-br from-amber-500/20 to-primary/10 text-amber-400 border-amber-500/30"
+                                ? "bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30"
+                                : isRejected
+                                  ? "bg-gradient-to-br from-red-500/20 to-rose-500/10 text-red-400 border-red-500/30"
+                                  : "bg-gradient-to-br from-amber-500/20 to-primary/10 text-amber-400 border-amber-500/30"
                                 }`}
                             >
                               {teamInitials}
@@ -1124,18 +1124,18 @@ export default function TeamChampionshipDashboardPage() {
                             {/* Approval Badge */}
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border backdrop-blur-md flex items-center gap-1.5 ${isApproved
-                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                  : isRejected
-                                    ? "bg-red-500/15 text-red-400 border-red-500/30"
-                                    : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                : isRejected
+                                  ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                  : "bg-amber-500/15 text-amber-400 border-amber-500/30"
                                 }`}
                             >
                               <span
                                 className={`w-1.5 h-1.5 rounded-full ${isApproved
-                                    ? "bg-emerald-400 animate-pulse"
-                                    : isRejected
-                                      ? "bg-red-400"
-                                      : "bg-amber-400 animate-pulse"
+                                  ? "bg-emerald-400 animate-pulse"
+                                  : isRejected
+                                    ? "bg-red-400"
+                                    : "bg-amber-400 animate-pulse"
                                   }`}
                               />
                               {t.status || "PENDING"}
@@ -1144,8 +1144,8 @@ export default function TeamChampionshipDashboardPage() {
                             {/* Payment Badge */}
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${isPaid
-                                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
-                                  : "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                                ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                                : "bg-amber-500/15 text-amber-300 border-amber-500/25"
                                 }`}
                             >
                               {isPaid ? "PAID" : "UNPAID"}
@@ -1205,8 +1205,8 @@ export default function TeamChampionshipDashboardPage() {
                                 handleUpdateTeamStatus(t.teamId, isApproved ? "PENDING" : "APPROVED")
                               }
                               className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 border shadow-sm active:scale-95 ${isApproved
-                                  ? "bg-emerald-500 text-black border-emerald-400 shadow-emerald-500/25 font-black"
-                                  : "bg-surface hover:bg-emerald-500/10 text-foreground/80 hover:text-emerald-400 border-foreground/10"
+                                ? "bg-emerald-500 text-black border-emerald-400 shadow-emerald-500/25 font-black"
+                                : "bg-surface hover:bg-emerald-500/10 text-foreground/80 hover:text-emerald-400 border-foreground/10"
                                 }`}
                               title={isApproved ? "Click to set back to Pending" : "Approve Team Franchise"}
                             >
@@ -1219,8 +1219,8 @@ export default function TeamChampionshipDashboardPage() {
                                 handleUpdateTeamStatus(t.teamId, isRejected ? "PENDING" : "REJECTED")
                               }
                               className={`py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 border shadow-sm active:scale-95 ${isRejected
-                                  ? "bg-red-500 text-white border-red-400 shadow-red-500/25 font-black"
-                                  : "bg-surface hover:bg-red-500/10 text-foreground/80 hover:text-red-400 border-foreground/10"
+                                ? "bg-red-500 text-white border-red-400 shadow-red-500/25 font-black"
+                                : "bg-surface hover:bg-red-500/10 text-foreground/80 hover:text-red-400 border-foreground/10"
                                 }`}
                               title={isRejected ? "Click to set back to Pending" : "Reject Team Registration"}
                             >
@@ -1235,8 +1235,8 @@ export default function TeamChampionshipDashboardPage() {
                               handleUpdateTeamPayment(t.teamId, isPaid ? "PENDING" : "PAID")
                             }
                             className={`w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-sm active:scale-95 ${isPaid
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-amber-500/15 hover:text-amber-400 hover:border-amber-500/30"
-                                : "bg-gradient-to-r from-primary via-amber-400 to-primary text-black border-primary shadow-primary/20 hover:brightness-110"
+                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-amber-500/15 hover:text-amber-400 hover:border-amber-500/30"
+                              : "bg-gradient-to-r from-primary via-amber-400 to-primary text-black border-primary shadow-primary/20 hover:brightness-110"
                               }`}
                           >
                             <DollarSign className="w-4 h-4 stroke-[2.5]" />
@@ -1354,8 +1354,8 @@ export default function TeamChampionshipDashboardPage() {
                     <button
                       onClick={() => setSelectedCategoryFilter("ALL")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${selectedCategoryFilter === "ALL"
-                          ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
-                          : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                        ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                        : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
                         }`}
                     >
                       <span>All Categories</span>
@@ -1375,8 +1375,8 @@ export default function TeamChampionshipDashboardPage() {
                           key={catName}
                           onClick={() => setSelectedCategoryFilter(isSelected ? "ALL" : catName)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${isSelected
-                              ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
-                              : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                            ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                            : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
                             }`}
                         >
                           <span>{catName}</span>
@@ -1493,10 +1493,10 @@ export default function TeamChampionshipDashboardPage() {
                                   {/* Top Status Gradient Bar */}
                                   <div
                                     className={`h-1 w-full bg-gradient-to-r ${isApproved
-                                        ? "from-emerald-500 via-teal-400 to-primary"
-                                        : isRejected
-                                          ? "from-red-500 via-rose-400 to-amber-500"
-                                          : "from-amber-400 via-orange-400 to-primary"
+                                      ? "from-emerald-500 via-teal-400 to-primary"
+                                      : isRejected
+                                        ? "from-red-500 via-rose-400 to-amber-500"
+                                        : "from-amber-400 via-orange-400 to-primary"
                                       }`}
                                   />
 
@@ -1506,10 +1506,10 @@ export default function TeamChampionshipDashboardPage() {
                                       <div className="flex items-center gap-2.5 min-w-0">
                                         <div
                                           className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner border shrink-0 ${isApproved
-                                              ? "bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30"
-                                              : isRejected
-                                                ? "bg-gradient-to-br from-red-500/20 to-rose-500/10 text-red-400 border-red-500/30"
-                                                : "bg-gradient-to-br from-amber-500/20 to-primary/10 text-amber-400 border-amber-500/30"
+                                            ? "bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30"
+                                            : isRejected
+                                              ? "bg-gradient-to-br from-red-500/20 to-rose-500/10 text-red-400 border-red-500/30"
+                                              : "bg-gradient-to-br from-amber-500/20 to-primary/10 text-amber-400 border-amber-500/30"
                                             }`}
                                         >
                                           {initials}
@@ -1529,18 +1529,18 @@ export default function TeamChampionshipDashboardPage() {
                                       <div className="flex flex-col items-end gap-1 shrink-0">
                                         <span
                                           className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${isApproved
-                                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                                              : isRejected
-                                                ? "bg-red-500/15 text-red-400 border-red-500/30"
-                                                : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                            : isRejected
+                                              ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                              : "bg-amber-500/15 text-amber-400 border-amber-500/30"
                                             }`}
                                         >
                                           {p.status || "PENDING"}
                                         </span>
                                         <span
                                           className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${isPaid
-                                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
-                                              : "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                                            : "bg-amber-500/15 text-amber-300 border-amber-500/25"
                                             }`}
                                         >
                                           {isPaid ? "PAID" : "UNPAID"}
@@ -1589,8 +1589,8 @@ export default function TeamChampionshipDashboardPage() {
                                             )
                                           }
                                           className={`py-1.5 px-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 border shadow-sm active:scale-95 ${isApproved
-                                              ? "bg-emerald-500 text-black border-emerald-400 font-black"
-                                              : "bg-surface hover:bg-emerald-500/10 text-foreground/80 hover:text-emerald-400 border-foreground/10"
+                                            ? "bg-emerald-500 text-black border-emerald-400 font-black"
+                                            : "bg-surface hover:bg-emerald-500/10 text-foreground/80 hover:text-emerald-400 border-foreground/10"
                                             }`}
                                           title="Approve Player"
                                         >
@@ -1606,8 +1606,8 @@ export default function TeamChampionshipDashboardPage() {
                                             )
                                           }
                                           className={`py-1.5 px-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 border shadow-sm active:scale-95 ${isRejected
-                                              ? "bg-red-500 text-white border-red-400 font-black"
-                                              : "bg-surface hover:bg-red-500/10 text-foreground/80 hover:text-red-400 border-foreground/10"
+                                            ? "bg-red-500 text-white border-red-400 font-black"
+                                            : "bg-surface hover:bg-red-500/10 text-foreground/80 hover:text-red-400 border-foreground/10"
                                             }`}
                                           title="Reject Player"
                                         >
@@ -1624,8 +1624,8 @@ export default function TeamChampionshipDashboardPage() {
                                           )
                                         }
                                         className={`w-full py-1.5 px-2 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1.5 border shadow-sm active:scale-95 ${isPaid
-                                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-amber-500/15 hover:text-amber-400"
-                                            : "bg-gradient-to-r from-primary via-amber-400 to-primary text-black border-primary shadow-primary/20 hover:brightness-110"
+                                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-amber-500/15 hover:text-amber-400"
+                                          : "bg-gradient-to-r from-primary via-amber-400 to-primary text-black border-primary shadow-primary/20 hover:brightness-110"
                                           }`}
                                       >
                                         <DollarSign className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -1757,8 +1757,8 @@ export default function TeamChampionshipDashboardPage() {
                     <button
                       onClick={() => setSelectedAuctionCategoryFilter("ALL")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${selectedAuctionCategoryFilter === "ALL"
-                          ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
-                          : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                        ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                        : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
                         }`}
                     >
                       <span>All Categories</span>
@@ -1778,8 +1778,8 @@ export default function TeamChampionshipDashboardPage() {
                           key={catName}
                           onClick={() => setSelectedAuctionCategoryFilter(isSelected ? "ALL" : catName)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${isSelected
-                              ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
-                              : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                            ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                            : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
                             }`}
                         >
                           <span>{catName}</span>
@@ -2037,19 +2037,19 @@ export default function TeamChampionshipDashboardPage() {
               {/* 1. Live Broadcast Stage Switcher & Projector Header */}
               <div
                 className={`p-4 sm:p-5 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl ${isAuctionLive
-                    ? "bg-gradient-to-r from-red-500/15 via-primary/10 to-transparent border-red-500/30"
-                    : isAuctionPaused
-                      ? "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-500/30"
-                      : "bg-surface/60 border-foreground/10"
+                  ? "bg-gradient-to-r from-red-500/15 via-primary/10 to-transparent border-red-500/30"
+                  : isAuctionPaused
+                    ? "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-500/30"
+                    : "bg-surface/60 border-foreground/10"
                   }`}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shadow-inner border shrink-0 ${isAuctionLive
-                        ? "bg-red-500 text-white border-red-400 animate-pulse"
-                        : isAuctionPaused
-                          ? "bg-amber-500 text-black border-amber-400"
-                          : "bg-primary/15 text-primary border-primary/30"
+                      ? "bg-red-500 text-white border-red-400 animate-pulse"
+                      : isAuctionPaused
+                        ? "bg-amber-500 text-black border-amber-400"
+                        : "bg-primary/15 text-primary border-primary/30"
                       }`}
                   >
                     {isAuctionLive ? <Radio className="w-5 h-5" /> : isAuctionPaused ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
@@ -2065,10 +2065,10 @@ export default function TeamChampionshipDashboardPage() {
                       </h3>
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${isAuctionLive
-                            ? "bg-red-500/20 text-red-400 border-red-500/40 animate-pulse"
-                            : isAuctionPaused
-                              ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                              : "bg-surface text-foreground/50 border-foreground/20"
+                          ? "bg-red-500/20 text-red-400 border-red-500/40 animate-pulse"
+                          : isAuctionPaused
+                            ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                            : "bg-surface text-foreground/50 border-foreground/20"
                           }`}
                       >
                         {isAuctionLive
@@ -2164,8 +2164,8 @@ export default function TeamChampionshipDashboardPage() {
                   <button
                     onClick={toggleAuctionFullscreen}
                     className={`px-4 py-2.5 rounded-xl border font-black text-xs transition-all flex items-center gap-2 shadow-sm ${isAuctionFullscreen
-                        ? "bg-amber-500 text-black border-amber-400 hover:bg-amber-400"
-                        : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
+                      ? "bg-amber-500 text-black border-amber-400 hover:bg-amber-400"
+                      : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
                       }`}
                     title={isAuctionFullscreen ? "Exit Fullscreen" : "Maximize to Fullscreen for Projector Screen"}
                   >
@@ -2189,7 +2189,7 @@ export default function TeamChampionshipDashboardPage() {
                 {/* LEFT 9 COLS: MAXIMUM SIZE PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
                 <div className="lg:col-span-9 flex flex-col">
                   <div
-                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-2xl relative overflow-hidden flex flex-col justify-between p-4 sm:p-5 transition-all duration-300"
+                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-2xl relative overflow-y-auto overflow-x-hidden flex flex-col justify-between p-4 sm:p-5 transition-all duration-300 custom-scrollbar"
                     style={{
                       backgroundColor: "var(--athlon-card)",
                       borderColor: activePlayer ? "var(--athlon-primary, #6366f1)" : "var(--athlon-border)",
@@ -2311,11 +2311,10 @@ export default function TeamChampionshipDashboardPage() {
                             <button
                               type="button"
                               onClick={handleTogglePauseTimer}
-                              className={`text-center px-4 py-3 rounded-2xl border w-36 sm:w-40 shadow-xl transition-colors duration-150 cursor-pointer select-none group flex flex-col justify-between min-h-[92px] ${
-                                isTimerPaused
-                                  ? "bg-amber-500/15 border-amber-400/80 hover:border-emerald-400 hover:bg-emerald-500/15 shadow-amber-500/10"
-                                  : "bg-background/90 hover:bg-surface border-foreground/10 hover:border-amber-400/80"
-                              }`}
+                              className={`text-center px-4 py-3 rounded-2xl border w-36 sm:w-40 shadow-xl transition-colors duration-150 cursor-pointer select-none group flex flex-col justify-between min-h-[92px] ${isTimerPaused
+                                ? "bg-amber-500/15 border-amber-400/80 hover:border-emerald-400 hover:bg-emerald-500/15 shadow-amber-500/10"
+                                : "bg-background/90 hover:bg-surface border-foreground/10 hover:border-amber-400/80"
+                                }`}
                               style={{ borderColor: isTimerPaused ? "#f59e0b" : "var(--athlon-border)" }}
                               title={
                                 isTimerPaused
@@ -2342,15 +2341,14 @@ export default function TeamChampionshipDashboardPage() {
                               </div>
 
                               <span
-                                className={`text-2xl sm:text-3xl lg:text-4xl font-black font-mono block leading-none my-auto ${
-                                  isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
-                                }`}
+                                className={`text-2xl sm:text-3xl lg:text-4xl font-black font-mono block leading-none my-auto ${isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
+                                  }`}
                               >
                                 {auctionState?.remainingTimerSeconds ?? 30}s
                               </span>
 
                               <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-amber-400">
-                                {isTimerPaused ? "Resume ▶" : "Pause ⏸"}
+                                {isTimerPaused ? "Resume" : "Pause"}
                               </span>
                             </button>
                           </div>
@@ -2367,8 +2365,8 @@ export default function TeamChampionshipDashboardPage() {
                               <button
                                 onClick={() => handleUpdateAuctionSettings("MANUAL")}
                                 className={`px-3 py-1 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 ${auctionBiddingMode === "MANUAL"
-                                    ? "bg-primary text-black shadow-sm"
-                                    : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                                  ? "bg-primary text-black shadow-sm"
+                                  : "text-foreground/60 hover:text-foreground hover:bg-surface"
                                   }`}
                               >
                                 <span>✋ Manual Bidding</span>
@@ -2376,12 +2374,12 @@ export default function TeamChampionshipDashboardPage() {
                               <button
                                 onClick={() => handleUpdateAuctionSettings("AUTOMATIC")}
                                 className={`px-3 py-1 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 ${auctionBiddingMode === "AUTOMATIC"
-                                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-sm"
-                                    : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-sm"
+                                  : "text-foreground/60 hover:text-foreground hover:bg-surface"
                                   }`}
                               >
                                 <Zap className="w-3.5 h-3.5 fill-current" />
-                                <span>⚡ Automatic Live Bidding</span>
+                                <span>Automatic Live Bidding</span>
                               </button>
                             </div>
 
@@ -2516,8 +2514,8 @@ export default function TeamChampionshipDashboardPage() {
                                           setIsTimerConfigOpen(false);
                                         }}
                                         className={`px-2.5 py-1 rounded-lg text-xs font-mono font-black transition-all ${timerDurationSeconds === sec
-                                            ? "bg-amber-400 text-black shadow-md shadow-amber-400/20 scale-105"
-                                            : "bg-surface text-foreground/60 border border-foreground/10 hover:bg-surface/80"
+                                          ? "bg-amber-400 text-black shadow-md shadow-amber-400/20 scale-105"
+                                          : "bg-surface text-foreground/60 border border-foreground/10 hover:bg-surface/80"
                                           }`}
                                       >
                                         {sec}s {sec === 60 ? "(Default)" : ""}
@@ -2601,8 +2599,8 @@ export default function TeamChampionshipDashboardPage() {
                                           handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
                                         }}
                                         className={`px-3 py-1 rounded-xl font-mono font-black text-xs transition-all flex items-center gap-1 shadow-sm ${isSelected
-                                            ? "bg-primary text-black shadow-primary/20 scale-105"
-                                            : "bg-surface text-foreground/50 border border-foreground/10 hover:border-primary/40 hover:text-foreground"
+                                          ? "bg-primary text-black shadow-primary/20 scale-105"
+                                          : "bg-surface text-foreground/50 border border-foreground/10 hover:border-primary/40 hover:text-foreground"
                                           }`}
                                         title={isSelected ? "Active - Click to remove" : "Inactive - Click to activate"}
                                       >
@@ -2681,7 +2679,7 @@ export default function TeamChampionshipDashboardPage() {
                 {/* RIGHT 3 COLS: COMPACT CATEGORY PLAYERS TRAY & QUEUE */}
                 <div className="lg:col-span-3 flex flex-col">
                   <div
-                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-md flex flex-col p-4 justify-between"
+                    className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-md flex flex-col p-4 justify-between overflow-y-auto overflow-x-hidden custom-scrollbar"
                     style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
                     <div className="flex items-center justify-between border-b pb-3 shrink-0" style={{ borderColor: "var(--athlon-border)" }}>
@@ -2708,8 +2706,8 @@ export default function TeamChampionshipDashboardPage() {
                         }}
                         disabled={!isAuctionLive || isSpinningPlayer || waitingCategoryPlayers.length === 0}
                         className={`px-2.5 py-1.5 rounded-xl font-black text-[10px] shadow-sm transition-all flex items-center gap-1 shrink-0 ${isAuctionLive && waitingCategoryPlayers.length > 0
-                            ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-amber-500/20 hover:scale-105 active:scale-95 cursor-pointer"
-                            : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
+                          ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-amber-500/20 hover:scale-105 active:scale-95 cursor-pointer"
+                          : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
                           }`}
                         title={isAuctionLive ? "Spin next waiting player" : "Start Live Auction first to enable"}
                       >
@@ -2747,14 +2745,14 @@ export default function TeamChampionshipDashboardPage() {
                                 }
                               }}
                               className={`group p-2 sm:p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${!isAuctionLive
-                                  ? "bg-surface/50 border-foreground/10 opacity-70 cursor-not-allowed"
-                                  : isOnFloor
-                                    ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
-                                    : isSold
-                                      ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
-                                      : isUnsold
-                                        ? "bg-red-500/5 border-red-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer"
-                                        : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
+                                ? "bg-surface/50 border-foreground/10 opacity-70 cursor-not-allowed"
+                                : isOnFloor
+                                  ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
+                                  : isSold
+                                    ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
+                                    : isUnsold
+                                      ? "bg-red-500/5 border-red-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer"
+                                      : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
                                 }`}
                               title={
                                 !isAuctionLive
@@ -3041,8 +3039,8 @@ export default function TeamChampionshipDashboardPage() {
                               setIsPurseModalOpen(false);
                             }}
                             className={`p-5 rounded-3xl border transition-all cursor-pointer space-y-4 shadow-md ${isSelected
-                                ? "bg-primary/20 border-primary ring-2 ring-primary/40 shadow-primary/10"
-                                : "bg-surface/70 hover:bg-surface border-foreground/15 hover:border-primary/40"
+                              ? "bg-primary/20 border-primary ring-2 ring-primary/40 shadow-primary/10"
+                              : "bg-surface/70 hover:bg-surface border-foreground/15 hover:border-primary/40"
                               }`}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -3339,8 +3337,8 @@ export default function TeamChampionshipDashboardPage() {
                         }}
                         disabled={!isAuctionLive}
                         className={`px-6 py-2.5 rounded-xl font-black text-xs shadow-lg transition-all flex items-center gap-2 shrink-0 ${isAuctionLive
-                            ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-primary text-white shadow-indigo-600/30 hover:scale-105 active:scale-95 cursor-pointer"
-                            : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
+                          ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-primary text-white shadow-indigo-600/30 hover:scale-105 active:scale-95 cursor-pointer"
+                          : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
                           }`}
                         title={isAuctionLive ? "Spin category wheel" : "Start Live Auction first to enable"}
                       >
@@ -3370,8 +3368,8 @@ export default function TeamChampionshipDashboardPage() {
                               setIsCategoryModalOpen(false);
                             }}
                             className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 shadow-sm hover:scale-102 ${isSelected
-                                ? "bg-primary/20 border-primary ring-2 ring-primary/40 shadow-primary/10"
-                                : "bg-surface/80 hover:bg-surface border-foreground/15 hover:border-primary/40"
+                              ? "bg-primary/20 border-primary ring-2 ring-primary/40 shadow-primary/10"
+                              : "bg-surface/80 hover:bg-surface border-foreground/15 hover:border-primary/40"
                               }`}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -3431,8 +3429,8 @@ export default function TeamChampionshipDashboardPage() {
                   key={t.teamId}
                   onClick={() => setSelectedTeamForAudit(t.teamId)}
                   className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between ${selectedTeamForAudit === t.teamId
-                      ? "bg-primary/10 border-primary text-primary shadow-sm"
-                      : "bg-card border-foreground/10 text-foreground/70 hover:border-foreground/20"
+                    ? "bg-primary/10 border-primary text-primary shadow-sm"
+                    : "bg-card border-foreground/10 text-foreground/70 hover:border-foreground/20"
                     }`}
                   style={{ backgroundColor: selectedTeamForAudit === t.teamId ? undefined : "var(--athlon-card)" }}
                 >
@@ -3495,8 +3493,8 @@ export default function TeamChampionshipDashboardPage() {
 
                         <span
                           className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${sp.matchesPlayedCount > 0
-                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                              : "bg-foreground/5 text-foreground/40 border border-foreground/10"
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            : "bg-foreground/5 text-foreground/40 border border-foreground/10"
                             }`}
                         >
                           {sp.matchesPlayedCount > 0 ? "Played" : "Not Played"}
