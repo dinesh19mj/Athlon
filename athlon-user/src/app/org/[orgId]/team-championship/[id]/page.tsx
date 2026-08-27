@@ -109,6 +109,7 @@ export default function TeamChampionshipDashboardPage() {
   const [auctionBiddingMode, setAuctionBiddingMode] = useState<"MANUAL" | "AUTOMATIC">("MANUAL");
   const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(60);
   const [isTimerConfigOpen, setIsTimerConfigOpen] = useState<boolean>(false);
+  const [availablePointBumps, setAvailablePointBumps] = useState<number[]>([50, 100, 200, 250, 500, 1000, 2000, 5000]);
   const [selectedPointBumps, setSelectedPointBumps] = useState<number[]>([100, 250, 500, 1000, 2000]);
   const [customTimerInput, setCustomTimerInput] = useState<string>("");
   const [customBumpInput, setCustomBumpInput] = useState<string>("");
@@ -407,7 +408,10 @@ export default function TeamChampionshipDashboardPage() {
           .split(",")
           .map((s) => Number(s.trim()))
           .filter((n) => !isNaN(n) && n > 0);
-        if (bumps.length > 0) setSelectedPointBumps(bumps);
+        if (bumps.length > 0) {
+          setSelectedPointBumps(bumps);
+          setAvailablePointBumps((prev) => Array.from(new Set([...prev, ...bumps])).sort((a, b) => a - b));
+        }
       }
     }
   }, [auctionState?.config?.biddingMode, auctionState?.config?.timerSeconds, auctionState?.config?.quickPointBumps]);
@@ -2451,48 +2455,56 @@ export default function TeamChampionshipDashboardPage() {
                                 </div>
                               )}
 
-                              {/* 2. Quick Point Bumps (Dynamic & Custom - Syncs to Team Owners) */}
-                              <div className="space-y-2 p-3.5 rounded-2xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
+                              {/* 2. Unified Franchise Point Bumps (Broadcasted to Owners) */}
+                              <div className="space-y-2.5 p-3.5 rounded-2xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-black uppercase text-foreground/80 flex items-center gap-1">
                                     <Coins className="w-3.5 h-3.5 text-primary" /> Franchise Point Bumps (Broadcasted to Owners)
                                   </span>
                                   <span className="text-[10px] text-foreground/50 font-bold">
-                                    {selectedPointBumps.length} Active Bumps
+                                    <strong className="text-primary font-mono">{selectedPointBumps.length}</strong> Active
                                   </span>
                                 </div>
 
-                                {/* Active Point Bumps with Removal */}
+                                {/* Unified Clickable Point Bump Pills */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  {selectedPointBumps.map((inc) => (
-                                    <span
-                                      key={inc}
-                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/20 border border-primary/40 text-primary font-mono font-black text-xs shadow-sm"
-                                    >
-                                      +{inc} pts
+                                  {availablePointBumps.map((inc) => {
+                                    const isSelected = selectedPointBumps.includes(inc);
+                                    return (
                                       <button
+                                        key={inc}
                                         onClick={() => {
-                                          const nextBumps = selectedPointBumps.filter((b) => b !== inc);
-                                          if (nextBumps.length === 0) {
-                                            alert("You must keep at least 1 point bump active.");
-                                            return;
+                                          let nextBumps: number[];
+                                          if (isSelected) {
+                                            if (selectedPointBumps.length <= 1) {
+                                              alert("You must keep at least 1 point bump active.");
+                                              return;
+                                            }
+                                            nextBumps = selectedPointBumps.filter((b) => b !== inc);
+                                          } else {
+                                            nextBumps = [...selectedPointBumps, inc].sort((a, b) => a - b);
                                           }
                                           handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
                                         }}
-                                        className="hover:text-red-400 transition-colors"
-                                        title="Remove point bump"
+                                        className={`px-3 py-1.5 rounded-xl font-mono font-black text-xs transition-all flex items-center gap-1 shadow-sm ${
+                                          isSelected
+                                            ? "bg-primary text-black shadow-primary/20 scale-105"
+                                            : "bg-surface text-foreground/50 border border-foreground/10 hover:border-primary/40 hover:text-foreground"
+                                        }`}
+                                        title={isSelected ? "Active - Click to remove" : "Inactive - Click to activate"}
                                       >
-                                        <X className="w-3 h-3" />
+                                        {isSelected && <Check className="w-3 h-3" />}
+                                        <span>+{inc}</span>
                                       </button>
-                                    </span>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
 
                                 {/* Add Custom Point Bump Field */}
-                                <div className="flex items-center gap-1.5 pt-1 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                <div className="flex items-center gap-1.5 pt-1.5 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
                                   <input
                                     type="number"
-                                    placeholder="Add custom points (e.g. 300)..."
+                                    placeholder="Add custom bump (e.g. 300)..."
                                     value={customBumpInput}
                                     onChange={(e) => setCustomBumpInput(e.target.value)}
                                     className="px-2.5 py-1 text-xs rounded-lg border bg-surface text-foreground font-mono w-48 outline-none focus:border-primary"
@@ -2502,11 +2514,9 @@ export default function TeamChampionshipDashboardPage() {
                                     onClick={() => {
                                       const val = parseInt(customBumpInput);
                                       if (!isNaN(val) && val > 0) {
-                                        if (selectedPointBumps.includes(val)) {
-                                          alert("This point bump is already added.");
-                                          return;
-                                        }
-                                        const nextBumps = [...selectedPointBumps, val].sort((a, b) => a - b);
+                                        const newAvailable = Array.from(new Set([...availablePointBumps, val])).sort((a, b) => a - b);
+                                        setAvailablePointBumps(newAvailable);
+                                        const nextBumps = Array.from(new Set([...selectedPointBumps, val])).sort((a, b) => a - b);
                                         handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
                                         setCustomBumpInput("");
                                       }
@@ -2516,33 +2526,6 @@ export default function TeamChampionshipDashboardPage() {
                                     <Plus className="w-3 h-3" />
                                     <span>Add Bump</span>
                                   </button>
-                                </div>
-
-                                {/* Quick Presets Toolbar */}
-                                <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                                  <span className="text-[9px] text-foreground/40 font-bold uppercase mr-1">Quick Presets:</span>
-                                  {[50, 100, 200, 250, 500, 1000, 2000, 5000].map((preset) => {
-                                    const isAdded = selectedPointBumps.includes(preset);
-                                    return (
-                                      <button
-                                        key={preset}
-                                        onClick={() => {
-                                          const nextBumps = isAdded
-                                            ? selectedPointBumps.filter((b) => b !== preset)
-                                            : [...selectedPointBumps, preset].sort((a, b) => a - b);
-                                          if (nextBumps.length === 0) return;
-                                          handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
-                                        }}
-                                        className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all border ${
-                                          isAdded
-                                            ? "bg-primary/25 border-primary text-primary"
-                                            : "bg-surface/50 border-foreground/10 text-foreground/50 hover:text-foreground"
-                                        }`}
-                                      >
-                                        +{preset}
-                                      </button>
-                                    );
-                                  })}
                                 </div>
                               </div>
 
