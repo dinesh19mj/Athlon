@@ -3928,9 +3928,9 @@ export default function TeamChampionshipDashboardPage() {
             </div>
           </div>
         )}
-        {/* ADD CUSTOM POINT BUMP MODAL */}
+        {/* ADD CUSTOM POINT BUMP MODAL (ON-DEMAND - WORKS IN BOTH REGULAR AND MAXIMIZE FULLSCREEN) */}
         {isCustomBumpModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
             <div
               className="w-full max-w-md rounded-3xl border p-6 space-y-5 shadow-2xl animate-scaleUp"
               style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
