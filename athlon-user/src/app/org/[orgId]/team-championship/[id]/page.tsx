@@ -109,6 +109,8 @@ export default function TeamChampionshipDashboardPage() {
   const [auctionBiddingMode, setAuctionBiddingMode] = useState<"MANUAL" | "AUTOMATIC">("MANUAL");
   const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(60);
   const [selectedPointBumps, setSelectedPointBumps] = useState<number[]>([100, 250, 500, 1000, 2000]);
+  const [customTimerInput, setCustomTimerInput] = useState<string>("");
+  const [customBumpInput, setCustomBumpInput] = useState<string>("");
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -2361,16 +2363,17 @@ export default function TeamChampionshipDashboardPage() {
                                 ⚡ Team owners place bids in real time through their interface. Every bid automatically restarts the countdown timer!
                               </p>
 
-                              {/* 1. Countdown Timer Duration Setting */}
-                              <div className="space-y-1.5 p-3 rounded-xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
+                              {/* 1. Countdown Timer Duration Setting (Dynamic & Custom) */}
+                              <div className="space-y-2 p-3.5 rounded-2xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-black uppercase text-foreground/80 flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-amber-400" /> Timer Countdown Duration
+                                    <Clock className="w-3.5 h-3.5 text-amber-400" /> Timer Countdown Duration
                                   </span>
                                   <span className="text-[10px] font-mono text-amber-400 font-black">
                                     Restarts from {timerDurationSeconds}s on each bid
                                   </span>
                                 </div>
+
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   {[15, 30, 45, 60, 90, 120].map((sec) => (
                                     <button
@@ -2386,45 +2389,125 @@ export default function TeamChampionshipDashboardPage() {
                                     </button>
                                   ))}
                                 </div>
+
+                                {/* Custom Timer Seconds Input */}
+                                <div className="flex items-center gap-1.5 pt-1 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                  <input
+                                    type="number"
+                                    placeholder="Custom seconds (e.g. 40)..."
+                                    value={customTimerInput}
+                                    onChange={(e) => setCustomTimerInput(e.target.value)}
+                                    className="px-2.5 py-1 text-xs rounded-lg border bg-surface text-foreground font-mono w-40 outline-none focus:border-amber-400"
+                                    style={{ borderColor: "var(--athlon-border)" }}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const val = parseInt(customTimerInput);
+                                      if (!isNaN(val) && val > 0) {
+                                        handleUpdateAuctionSettings("AUTOMATIC", val);
+                                        setCustomTimerInput("");
+                                      }
+                                    }}
+                                    className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs rounded-lg transition-all"
+                                  >
+                                    Set Timer
+                                  </button>
+                                </div>
                               </div>
 
-                              {/* 2. Quick Point Bumps (Syncs to Team Owners) */}
-                              <div className="space-y-1.5 p-3 rounded-xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
+                              {/* 2. Quick Point Bumps (Dynamic & Custom - Syncs to Team Owners) */}
+                              <div className="space-y-2 p-3.5 rounded-2xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-black uppercase text-foreground/80 flex items-center gap-1">
-                                    <Coins className="w-3 h-3 text-primary" /> Franchise Point Bumps (Broadcasted to Owners)
+                                    <Coins className="w-3.5 h-3.5 text-primary" /> Franchise Point Bumps (Broadcasted to Owners)
                                   </span>
                                   <span className="text-[10px] text-foreground/50 font-bold">
                                     {selectedPointBumps.length} Active Bumps
                                   </span>
                                 </div>
+
+                                {/* Active Point Bumps with Removal */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  {[50, 100, 200, 250, 500, 1000, 2000, 5000].map((inc) => {
-                                    const isSelected = selectedPointBumps.includes(inc);
+                                  {selectedPointBumps.map((inc) => (
+                                    <span
+                                      key={inc}
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/20 border border-primary/40 text-primary font-mono font-black text-xs shadow-sm"
+                                    >
+                                      +{inc} pts
+                                      <button
+                                        onClick={() => {
+                                          const nextBumps = selectedPointBumps.filter((b) => b !== inc);
+                                          if (nextBumps.length === 0) {
+                                            alert("You must keep at least 1 point bump active.");
+                                            return;
+                                          }
+                                          handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
+                                        }}
+                                        className="hover:text-red-400 transition-colors"
+                                        title="Remove point bump"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+
+                                {/* Add Custom Point Bump Field */}
+                                <div className="flex items-center gap-1.5 pt-1 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                  <input
+                                    type="number"
+                                    placeholder="Add custom points (e.g. 300)..."
+                                    value={customBumpInput}
+                                    onChange={(e) => setCustomBumpInput(e.target.value)}
+                                    className="px-2.5 py-1 text-xs rounded-lg border bg-surface text-foreground font-mono w-48 outline-none focus:border-primary"
+                                    style={{ borderColor: "var(--athlon-border)" }}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const val = parseInt(customBumpInput);
+                                      if (!isNaN(val) && val > 0) {
+                                        if (selectedPointBumps.includes(val)) {
+                                          alert("This point bump is already added.");
+                                          return;
+                                        }
+                                        const nextBumps = [...selectedPointBumps, val].sort((a, b) => a - b);
+                                        handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
+                                        setCustomBumpInput("");
+                                      }
+                                    }}
+                                    className="px-3 py-1 bg-primary hover:opacity-90 text-black font-black text-xs rounded-lg transition-all flex items-center gap-1"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Add Bump</span>
+                                  </button>
+                                </div>
+
+                                {/* Quick Presets Toolbar */}
+                                <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                                  <span className="text-[9px] text-foreground/40 font-bold uppercase mr-1">Quick Presets:</span>
+                                  {[50, 100, 200, 250, 500, 1000, 2000, 5000].map((preset) => {
+                                    const isAdded = selectedPointBumps.includes(preset);
                                     return (
                                       <button
-                                        key={inc}
+                                        key={preset}
                                         onClick={() => {
-                                          const nextBumps = isSelected
-                                            ? selectedPointBumps.filter((b) => b !== inc)
-                                            : [...selectedPointBumps, inc].sort((a, b) => a - b);
+                                          const nextBumps = isAdded
+                                            ? selectedPointBumps.filter((b) => b !== preset)
+                                            : [...selectedPointBumps, preset].sort((a, b) => a - b);
                                           if (nextBumps.length === 0) return;
                                           handleUpdateAuctionSettings("AUTOMATIC", undefined, nextBumps);
                                         }}
-                                        className={`px-3 py-1 rounded-lg font-mono font-black text-xs transition-all ${
-                                          isSelected
-                                            ? "bg-primary text-black shadow-sm"
-                                            : "bg-surface text-foreground/50 border border-foreground/10 hover:border-primary/40"
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all border ${
+                                          isAdded
+                                            ? "bg-primary/25 border-primary text-primary"
+                                            : "bg-surface/50 border-foreground/10 text-foreground/50 hover:text-foreground"
                                         }`}
                                       >
-                                        +{inc}
+                                        +{preset}
                                       </button>
                                     );
                                   })}
                                 </div>
-                                <p className="text-[9px] text-foreground/40 mt-0.5">
-                                  Owners will see: <strong>{selectedPointBumps.map((b) => `+${b}`).join(", ")} pts</strong>
-                                </p>
                               </div>
 
                               {/* Action CTA Buttons in Automatic Mode */}
