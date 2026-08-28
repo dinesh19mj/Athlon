@@ -48,6 +48,15 @@ import {
   Crown,
   Settings,
   Palette,
+  LayoutGrid,
+  List,
+  User,
+  Activity,
+  TrendingUp,
+  BarChart3,
+  Target,
+  BadgePercent,
+  Hash,
 } from "lucide-react";
 import Link from "next/link";
 import { useAthlonTheme } from "@/hooks/use-athlon-theme";
@@ -220,6 +229,11 @@ export default function TeamChampionshipDashboardPage() {
   const [fixtureDetail, setFixtureDetail] = useState<any>(null);
   const [selectedTeamForAudit, setSelectedTeamForAudit] = useState<number | null>(null);
   const [teamAudit, setTeamAudit] = useState<TeamSquadAudit | null>(null);
+  const [squadSearchQuery, setSquadSearchQuery] = useState("");
+  const [squadFilterStatus, setSquadFilterStatus] = useState<"ALL" | "PLAYED" | "UNPLAYED" | "AUCTION" | "RESERVED" | "DIRECT">("ALL");
+  const [squadTeamSearch, setSquadTeamSearch] = useState("");
+  const [squadViewLayout, setSquadViewLayout] = useState<"grid" | "list">("grid");
+  const [loadingSquadAudit, setLoadingSquadAudit] = useState(false);
 
   // Team & Player Registration Modal States
   const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
@@ -328,12 +342,21 @@ export default function TeamChampionshipDashboardPage() {
     }
   }, [activeTab, championship]);
 
+  // Auto-select first team when entering squads tab if none is selected
+  useEffect(() => {
+    if (activeTab === "squads" && !selectedTeamForAudit && teams.length > 0) {
+      setSelectedTeamForAudit(teams[0].teamId);
+    }
+  }, [activeTab, teams, selectedTeamForAudit]);
+
   // Load Team Audit
   useEffect(() => {
     if (selectedTeamForAudit && championship?.championshipId) {
+      setLoadingSquadAudit(true);
       TeamChampionshipService.getSquadAudit(selectedTeamForAudit, championship.championshipId)
         .then(setTeamAudit)
-        .catch(console.error);
+        .catch(console.error)
+        .finally(() => setLoadingSquadAudit(false));
     }
   }, [selectedTeamForAudit, championship]);
 
@@ -3971,96 +3994,727 @@ export default function TeamChampionshipDashboardPage() {
         })()}
 
         {/* TAB 5: SQUADS & PARTICIPATION AUDIT */}
-        {activeTab === "squads" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Team Picker Sidebar */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70 mb-3">Select Team</h4>
-              {teams.map((t) => (
-                <button
-                  key={t.teamId}
-                  onClick={() => setSelectedTeamForAudit(t.teamId)}
-                  className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between ${selectedTeamForAudit === t.teamId
-                    ? "bg-primary/10 border-primary text-primary shadow-sm"
-                    : "bg-card border-foreground/10 text-foreground/70 hover:border-foreground/20"
-                    }`}
-                  style={{ backgroundColor: selectedTeamForAudit === t.teamId ? undefined : "var(--athlon-card)" }}
-                >
-                  <span className="text-xs font-black">{t.teamName}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              ))}
-            </div>
+        {activeTab === "squads" && (() => {
+          const filteredTeams = teams.filter((t) =>
+            t.teamName.toLowerCase().includes(squadTeamSearch.toLowerCase()) ||
+            (t.captainName && t.captainName.toLowerCase().includes(squadTeamSearch.toLowerCase()))
+          );
 
-            {/* Squad Members & Audit Result */}
-            <div
-              className="md:col-span-2 rounded-3xl border p-6 space-y-6"
-              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
-            >
-              {teamAudit ? (
-                <>
-                  <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                    <div>
-                      <h3 className="text-lg font-black text-foreground">{teamAudit.teamName} Squad</h3>
-                      <p className="text-xs text-foreground/60">
-                        {teamAudit.playersCount} / {teamAudit.squadCapacity} Players Acquired
-                      </p>
-                    </div>
+          const activeTeamObj = teams.find((t) => t.teamId === selectedTeamForAudit);
+          const players = teamAudit?.players || [];
+          const totalRosteredAthletes = championship?.registeredPlayersCount || players.length || 0;
+          const currencySymbol = championship?.auctionMode === "NO_AUCTION" ? "pts" : "pts";
+          const totalPurseSpent = players.reduce((sum, p) => sum + (p.purchasePrice || 0), 0);
+          const totalMatchesCap = players.reduce((sum, p) => sum + (p.matchesPlayedCount || 0), 0);
+          const playedCount = players.filter((p) => (p.matchesPlayedCount || 0) > 0).length;
+          const unplayedCount = players.filter((p) => (p.matchesPlayedCount || 0) === 0).length;
+          const auctionCount = players.filter((p) => p.acquisitionType === "AUCTION").length;
+          const reservedCount = players.filter((p) => p.acquisitionType === "RESERVED").length;
+          const directCount = players.filter((p) => p.acquisitionType === "DIRECT").length;
+          const compliancePct = players.length > 0 ? Math.round((playedCount / players.length) * 100) : 100;
+          const isFullSquad = teamAudit ? teamAudit.playersCount >= teamAudit.squadCapacity : false;
 
-                    {/* Every Player Must Play Status Badge */}
-                    <div>
-                      {teamAudit.everyPlayerHasPlayedLeague ? (
-                        <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-xs font-black uppercase flex items-center gap-1.5">
-                          <CheckCircle className="w-3.5 h-3.5" /> All Players Participated
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 text-xs font-black uppercase flex items-center gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5" /> {teamAudit.unplayedPlayers.length} Unplayed Players
-                        </span>
-                      )}
+          // Filter squad players by search query and category/status filter
+          const displayedPlayers = players.filter((p) => {
+            const matchesSearch =
+              !squadSearchQuery.trim() ||
+              p.playerName.toLowerCase().includes(squadSearchQuery.toLowerCase()) ||
+              (p.categoryName && p.categoryName.toLowerCase().includes(squadSearchQuery.toLowerCase())) ||
+              p.acquisitionType.toLowerCase().includes(squadSearchQuery.toLowerCase());
+
+            if (!matchesSearch) return false;
+
+            if (squadFilterStatus === "PLAYED") return (p.matchesPlayedCount || 0) > 0;
+            if (squadFilterStatus === "UNPLAYED") return (p.matchesPlayedCount || 0) === 0;
+            if (squadFilterStatus === "AUCTION") return p.acquisitionType === "AUCTION";
+            if (squadFilterStatus === "RESERVED") return p.acquisitionType === "RESERVED";
+            if (squadFilterStatus === "DIRECT") return p.acquisitionType === "DIRECT";
+            return true;
+          });
+
+          return (
+            <div className="space-y-6">
+              {/* TOP CHAMPIONSHIP TELEMETRY HUD BAR */}
+              <div
+                className="p-5 md:p-6 rounded-3xl border relative overflow-hidden shadow-sm"
+                style={{
+                  backgroundColor: "var(--athlon-card)",
+                  borderColor: "var(--athlon-border)",
+                }}
+              >
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                        <Shield className="w-4 h-4" />
+                      </div>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">
+                        Squads & Participation Command Center
+                      </h2>
                     </div>
+                    <p className="text-xs text-foreground/60 max-w-2xl">
+                      Monitor franchise roster allocations, acquisition breakdown, and audit compliance with the{" "}
+                      <span className="font-bold text-foreground/90">"Every Player Must Play"</span> league participation mandate.
+                    </p>
                   </div>
 
-                  {/* Player Cards */}
-                  <div className="space-y-2.5">
-                    {teamAudit.players.map((sp) => (
+                  {/* Top Stats Pill Cluster */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div
+                      className="px-4 py-2.5 rounded-2xl border flex items-center gap-3 bg-surface/50"
+                      style={{ borderColor: "var(--athlon-border-subtle)" }}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-xs">
+                        <Users className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Franchises</div>
+                        <div className="text-sm font-black text-foreground leading-none">{teams.length} Teams</div>
+                      </div>
+                    </div>
+
+                    <div
+                      className="px-4 py-2.5 rounded-2xl border flex items-center gap-3 bg-surface/50"
+                      style={{ borderColor: "var(--athlon-border-subtle)" }}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-black text-xs">
+                        <UserCheck className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Rostered Athletes</div>
+                        <div className="text-sm font-black text-foreground leading-none">{totalRosteredAthletes} Players</div>
+                      </div>
+                    </div>
+
+                    <div
+                      className="px-4 py-2.5 rounded-2xl border flex items-center gap-3 bg-surface/50"
+                      style={{ borderColor: "var(--athlon-border-subtle)" }}
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-black text-xs">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Participation Rule</div>
+                        <div className="text-sm font-black text-foreground leading-none">Mandatory League</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* MAIN CONTENT TWO-COLUMN LAYOUT */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* LEFT RAIL: FRANCHISE SELECTOR (4 Cols on LG) */}
+                <div
+                  className="lg:col-span-4 rounded-3xl border p-4 sm:p-5 space-y-4"
+                  style={{
+                    backgroundColor: "var(--athlon-card)",
+                    borderColor: "var(--athlon-border)",
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-foreground/70">
+                        Competing Franchises
+                      </h3>
+                      <span className="text-[10px] text-foreground/50">{teams.length} teams registered</span>
+                    </div>
+                    <button
+                      onClick={() => setIsAddTeamModalOpen(true)}
+                      className="px-2.5 py-1 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-tight flex items-center gap-1 transition-all"
+                    >
+                      <Plus className="w-3 h-3" /> Team
+                    </button>
+                  </div>
+
+                  {/* Team Search Input */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+                    <input
+                      type="text"
+                      placeholder="Search franchise or captain..."
+                      value={squadTeamSearch}
+                      onChange={(e) => setSquadTeamSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 rounded-xl border bg-background/50 text-xs font-medium outline-none focus:border-primary transition-all text-foreground placeholder:text-foreground/40"
+                      style={{ borderColor: "var(--athlon-border)" }}
+                    />
+                  </div>
+
+                  {/* Team Cards List */}
+                  <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
+                    {filteredTeams.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-foreground/40">No matching teams found</div>
+                    ) : (
+                      filteredTeams.map((t) => {
+                        const isSelected = selectedTeamForAudit === t.teamId;
+                        const capacity = championship?.rules?.maxSquadSize || 7;
+                        const count = teamAudit && teamAudit.teamId === t.teamId ? teamAudit.playersCount : (auctionPlayers ? auctionPlayers.filter(ap => ap.winningTeamId === t.teamId).length : 0);
+                        const pct = Math.min(100, Math.round((count / (capacity || 1)) * 100));
+
+                        return (
+                          <button
+                            key={t.teamId}
+                            onClick={() => setSelectedTeamForAudit(t.teamId)}
+                            className={`w-full p-3 rounded-2xl border text-left transition-all relative overflow-hidden group cursor-pointer ${
+                              isSelected
+                                ? "bg-gradient-to-r from-primary/15 via-primary/10 to-transparent border-primary shadow-md shadow-primary/5"
+                                : "bg-surface/50 border-foreground/10 hover:border-foreground/20 hover:bg-surface"
+                            }`}
+                            style={{
+                              borderColor: isSelected ? undefined : "var(--athlon-border-subtle)",
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* Team Avatar */}
+                              <div
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border transition-all ${
+                                  isSelected
+                                    ? "bg-primary text-black border-primary font-black"
+                                    : "bg-background text-foreground/80 border-foreground/10 group-hover:border-foreground/30"
+                                }`}
+                              >
+                                {t.logoUrl ? (
+                                  <img
+                                    src={t.logoUrl}
+                                    alt={t.teamName}
+                                    className="w-full h-full object-cover rounded-xl"
+                                  />
+                                ) : (
+                                  t.teamName.substring(0, 2).toUpperCase()
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1 mb-0.5">
+                                  <h4 className="text-xs font-black text-foreground truncate">{t.teamName}</h4>
+                                  <ChevronRight
+                                    className={`w-3.5 h-3.5 shrink-0 transition-transform ${
+                                      isSelected ? "text-primary translate-x-0.5" : "text-foreground/30 group-hover:text-foreground/60"
+                                    }`}
+                                  />
+                                </div>
+
+                                <div className="flex items-center justify-between text-[10px] text-foreground/50 mb-1.5">
+                                  <span className="truncate">{t.captainName ? `Capt: ${t.captainName}` : "No Captain Assigned"}</span>
+                                  <span className="font-mono font-bold text-foreground/70 shrink-0">
+                                    {count}/{capacity}
+                                  </span>
+                                </div>
+
+                                {/* Mini Progress Bar */}
+                                <div className="w-full h-1 rounded-full bg-foreground/10 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${
+                                      pct >= 100 ? "bg-emerald-400" : isSelected ? "bg-primary" : "bg-foreground/40"
+                                    }`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* RIGHT PANEL: SQUAD COMMAND CENTER & AUDIT INTELLIGENCE (8 Cols on LG) */}
+                <div className="lg:col-span-8 space-y-6">
+                  {loadingSquadAudit ? (
+                    <div
+                      className="rounded-3xl border p-12 text-center space-y-4 animate-pulse"
+                      style={{
+                        backgroundColor: "var(--athlon-card)",
+                        borderColor: "var(--athlon-border)",
+                      }}
+                    >
+                      <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto opacity-70" />
+                      <p className="text-xs font-bold text-foreground/60">Fetching franchise squad & participation audit...</p>
+                    </div>
+                  ) : teamAudit ? (
+                    <>
+                      {/* FRANCHISE HERO HUD */}
                       <div
-                        key={sp.squadId}
-                        className="p-3.5 rounded-2xl border flex items-center justify-between text-xs"
-                        style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                        className="rounded-3xl border p-5 sm:p-6 space-y-5 relative overflow-hidden"
+                        style={{
+                          backgroundColor: "var(--athlon-card)",
+                          borderColor: "var(--athlon-border)",
+                        }}
                       >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-3 h-3 rounded-full ${sp.matchesPlayedCount > 0 ? "bg-emerald-500" : "bg-amber-500"
-                              }`}
-                          />
-                          <div>
-                            <h4 className="font-black text-foreground">{sp.playerName}</h4>
-                            <span className="text-[10px] text-foreground/50">
-                              {sp.categoryName || "Open"} • Acquired via <strong>{sp.acquisitionType}</strong> (
-                              {sp.purchasePrice} pts)
-                            </span>
+                        {/* Header Row */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/5 to-transparent border-2 border-primary/30 flex items-center justify-center font-black text-xl text-primary shrink-0 shadow-lg shadow-primary/5">
+                              {teamAudit.logoUrl ? (
+                                <img
+                                  src={teamAudit.logoUrl}
+                                  alt={teamAudit.teamName}
+                                  className="w-full h-full object-cover rounded-2xl"
+                                />
+                              ) : (
+                                teamAudit.teamName.substring(0, 2).toUpperCase()
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-xl font-black text-foreground tracking-tight">
+                                  {teamAudit.teamName}
+                                </h3>
+                                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                                  Franchise Roster
+                                </span>
+                              </div>
+                              <p className="text-xs text-foreground/60 mt-0.5">
+                                {teamAudit.captainName ? `Captain: ${teamAudit.captainName}` : "Official Squad Audit"} • {teamAudit.playersCount} Athletes Rostered
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Top Right Action & Compliance Badge */}
+                          <div className="flex items-center gap-2">
+                            {teamAudit.everyPlayerHasPlayedLeague ? (
+                              <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-black uppercase flex items-center gap-1.5 shadow-sm">
+                                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                <span>100% League Compliant</span>
+                              </span>
+                            ) : (
+                              <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-black uppercase flex items-center gap-1.5 shadow-sm animate-pulse">
+                                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                                <span>{teamAudit.unplayedPlayers.length} Participation Pending</span>
+                              </span>
+                            )}
                           </div>
                         </div>
 
-                        <span
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${sp.matchesPlayedCount > 0
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : "bg-foreground/5 text-foreground/40 border border-foreground/10"
-                            }`}
+                        {/* 4 Hero Stat Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {/* 1. Squad Capacity */}
+                          <div
+                            className="p-3.5 rounded-2xl border bg-surface/40 space-y-1.5"
+                            style={{ borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <div className="flex items-center justify-between text-foreground/50 text-[10px] font-black uppercase tracking-wider">
+                              <span>Squad Capacity</span>
+                              <Users className="w-3 h-3 text-primary" />
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-black text-foreground font-mono">
+                                {teamAudit.playersCount}
+                              </span>
+                              <span className="text-xs font-bold text-foreground/40 font-mono">
+                                / {teamAudit.squadCapacity}
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-foreground/10 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  isFullSquad ? "bg-emerald-400" : "bg-primary"
+                                }`}
+                                style={{
+                                  width: `${Math.min(100, (teamAudit.playersCount / (teamAudit.squadCapacity || 1)) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* 2. League Compliance */}
+                          <div
+                            className="p-3.5 rounded-2xl border bg-surface/40 space-y-1.5"
+                            style={{ borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <div className="flex items-center justify-between text-foreground/50 text-[10px] font-black uppercase tracking-wider">
+                              <span>Participation</span>
+                              <Activity className="w-3 h-3 text-emerald-400" />
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-black text-emerald-400 font-mono">
+                                {playedCount}
+                              </span>
+                              <span className="text-xs font-bold text-foreground/40 font-mono">
+                                / {players.length} played
+                              </span>
+                            </div>
+                            <div className="text-[10px] font-bold text-foreground/50">
+                              {compliancePct}% of roster played
+                            </div>
+                          </div>
+
+                          {/* 3. Total Purse Invested */}
+                          <div
+                            className="p-3.5 rounded-2xl border bg-surface/40 space-y-1.5"
+                            style={{ borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <div className="flex items-center justify-between text-foreground/50 text-[10px] font-black uppercase tracking-wider">
+                              <span>Purse Spent</span>
+                              <Coins className="w-3 h-3 text-amber-400" />
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-black text-foreground font-mono">
+                                {totalPurseSpent.toLocaleString()}
+                              </span>
+                              <span className="text-[10px] font-black uppercase text-foreground/60">
+                                {currencySymbol}
+                              </span>
+                            </div>
+                            <div className="text-[10px] font-bold text-foreground/50">
+                              {auctionCount} via auction
+                            </div>
+                          </div>
+
+                          {/* 4. Match Caps */}
+                          <div
+                            className="p-3.5 rounded-2xl border bg-surface/40 space-y-1.5"
+                            style={{ borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <div className="flex items-center justify-between text-foreground/50 text-[10px] font-black uppercase tracking-wider">
+                              <span>Match Appearances</span>
+                              <Swords className="w-3 h-3 text-blue-400" />
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-black text-foreground font-mono">
+                                {totalMatchesCap}
+                              </span>
+                              <span className="text-[10px] font-bold text-foreground/40">caps</span>
+                            </div>
+                            <div className="text-[10px] font-bold text-foreground/50">
+                              Across all fixtures
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Every Player Must Play Status Notice Banner */}
+                        <div
+                          className={`p-4 rounded-2xl border flex items-start gap-3.5 text-xs ${
+                            teamAudit.everyPlayerHasPlayedLeague
+                              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
+                              : "bg-amber-500/10 border-amber-500/25 text-amber-300"
+                          }`}
                         >
-                          {sp.matchesPlayedCount > 0 ? "Played" : "Not Played"}
-                        </span>
+                          {teamAudit.everyPlayerHasPlayedLeague ? (
+                            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 animate-bounce" />
+                          )}
+                          <div className="space-y-1">
+                            <div className="font-black uppercase tracking-wide text-xs">
+                              {teamAudit.everyPlayerHasPlayedLeague
+                                ? "League Participation Rule Satisfied"
+                                : `Action Required: ${teamAudit.unplayedPlayers.length} Player(s) Awaiting Match Time`}
+                            </div>
+                            <p className="text-[11px] opacity-90 leading-relaxed text-foreground/80">
+                              {teamAudit.everyPlayerHasPlayedLeague
+                                ? "All acquired squad members have played at least one league match fixture. This roster is in full compliance for tournament knockout progression."
+                                : `The tournament requires every squad athlete to participate during the league stage. Pending athlete(s): ${teamAudit.unplayedPlayers.join(
+                                    ", "
+                                  )}. Make sure they are selected in upcoming fixture lineups.`}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="py-12 text-center text-foreground/40">Select a team to view squad details.</div>
-              )}
+
+                      {/* SQUAD ATHLETES SECTION & TOOLBAR */}
+                      <div
+                        className="rounded-3xl border p-5 sm:p-6 space-y-5"
+                        style={{
+                          backgroundColor: "var(--athlon-card)",
+                          borderColor: "var(--athlon-border)",
+                        }}
+                      >
+                        {/* Toolbar: Search, Filters & View Toggle */}
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b pb-4" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSquadFilterStatus("ALL")}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all cursor-pointer ${
+                                squadFilterStatus === "ALL"
+                                  ? "bg-primary text-black shadow-sm"
+                                  : "bg-surface text-foreground/60 hover:text-foreground border border-foreground/10"
+                              }`}
+                            >
+                              All ({players.length})
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setSquadFilterStatus("PLAYED")}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
+                                squadFilterStatus === "PLAYED"
+                                  ? "bg-emerald-500 text-black shadow-sm"
+                                  : "bg-surface text-foreground/60 hover:text-emerald-400 border border-foreground/10"
+                              }`}
+                            >
+                              <Check className="w-3 h-3" /> Played ({playedCount})
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setSquadFilterStatus("UNPLAYED")}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
+                                squadFilterStatus === "UNPLAYED"
+                                  ? "bg-amber-500 text-black shadow-sm"
+                                  : "bg-surface text-foreground/60 hover:text-amber-400 border border-foreground/10"
+                              }`}
+                            >
+                              <Clock className="w-3 h-3" /> Unplayed ({unplayedCount})
+                            </button>
+
+                            {auctionCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSquadFilterStatus("AUCTION")}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
+                                  squadFilterStatus === "AUCTION"
+                                    ? "bg-purple-500 text-white shadow-sm"
+                                    : "bg-surface text-foreground/60 hover:text-purple-400 border border-foreground/10"
+                                }`}
+                              >
+                                <Gavel className="w-3 h-3" /> Auction ({auctionCount})
+                              </button>
+                            )}
+
+                            {reservedCount > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSquadFilterStatus("RESERVED")}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
+                                  squadFilterStatus === "RESERVED"
+                                    ? "bg-amber-500 text-black shadow-sm"
+                                    : "bg-surface text-foreground/60 hover:text-amber-400 border border-foreground/10"
+                                }`}
+                              >
+                                <Sparkles className="w-3 h-3" /> Reserved ({reservedCount})
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Search Input & Grid/List Layout Toggle */}
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex-1 md:w-56">
+                              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+                              <input
+                                type="text"
+                                placeholder="Filter squad athlete..."
+                                value={squadSearchQuery}
+                                onChange={(e) => setSquadSearchQuery(e.target.value)}
+                                className="w-full pl-8 pr-3 py-1.5 rounded-xl border bg-background/50 text-xs font-medium outline-none focus:border-primary transition-all text-foreground placeholder:text-foreground/40"
+                                style={{ borderColor: "var(--athlon-border)" }}
+                              />
+                            </div>
+
+                            <div className="flex items-center border rounded-xl p-0.5 bg-surface" style={{ borderColor: "var(--athlon-border)" }}>
+                              <button
+                                type="button"
+                                onClick={() => setSquadViewLayout("grid")}
+                                title="Grid View"
+                                className={`p-1.5 rounded-lg transition-all ${
+                                  squadViewLayout === "grid" ? "bg-primary/20 text-primary" : "text-foreground/40 hover:text-foreground"
+                                }`}
+                              >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSquadViewLayout("list")}
+                                title="List View"
+                                className={`p-1.5 rounded-lg transition-all ${
+                                  squadViewLayout === "list" ? "bg-primary/20 text-primary" : "text-foreground/40 hover:text-foreground"
+                                }`}
+                              >
+                                <List className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ATHLETE DISPLAY AREA */}
+                        {displayedPlayers.length === 0 ? (
+                          <div className="py-16 text-center space-y-2">
+                            <Users className="w-10 h-10 text-foreground/20 mx-auto" />
+                            <h4 className="text-sm font-bold text-foreground/60">No Athletes Found</h4>
+                            <p className="text-xs text-foreground/40">
+                              {players.length === 0
+                                ? "No players have been acquired or assigned to this franchise squad yet."
+                                : "No squad members match the current search or filter criteria."}
+                            </p>
+                          </div>
+                        ) : squadViewLayout === "grid" ? (
+                          /* GRID VIEW */
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {displayedPlayers.map((sp) => {
+                              const hasPlayed = (sp.matchesPlayedCount || 0) > 0;
+
+                              return (
+                                <div
+                                  key={sp.squadId}
+                                  className="p-4 rounded-2xl border bg-surface/50 hover:bg-surface transition-all flex flex-col justify-between space-y-3 group hover:border-foreground/20 relative overflow-hidden"
+                                  style={{ borderColor: "var(--athlon-border-subtle)" }}
+                                >
+                                  {/* Top Row: Avatar, Name, Category & Acquisition */}
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                      {/* Player Avatar */}
+                                      <div className="w-12 h-12 rounded-xl bg-background border border-foreground/10 flex items-center justify-center font-black text-sm text-foreground shrink-0 overflow-hidden relative shadow-sm">
+                                        {sp.avatarUrl ? (
+                                          <img
+                                            src={sp.avatarUrl}
+                                            alt={sp.playerName}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          sp.playerName.substring(0, 2).toUpperCase()
+                                        )}
+                                      </div>
+
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                          <h4 className="text-sm font-black text-foreground truncate">
+                                            {sp.playerName}
+                                          </h4>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                          <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                                            {sp.categoryName || "Open Tier"}
+                                          </span>
+
+                                          {sp.acquisitionType === "AUCTION" ? (
+                                            <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[9px] font-black uppercase flex items-center gap-1">
+                                              <Gavel className="w-2.5 h-2.5" />
+                                              <span>{sp.purchasePrice?.toLocaleString() || 0} {currencySymbol}</span>
+                                            </span>
+                                          ) : sp.acquisitionType === "RESERVED" ? (
+                                            <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-black uppercase flex items-center gap-1">
+                                              <Sparkles className="w-2.5 h-2.5" /> Reserved
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-black uppercase">
+                                              Direct
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Participation Status Badge */}
+                                    <div className="shrink-0">
+                                      {hasPlayed ? (
+                                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-[10px] font-black uppercase flex items-center gap-1">
+                                          <CheckCircle className="w-3 h-3 text-emerald-400" />
+                                          <span>Played ({sp.matchesPlayedCount})</span>
+                                        </span>
+                                      ) : (
+                                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/25 text-[10px] font-black uppercase flex items-center gap-1">
+                                          <Clock className="w-3 h-3 text-amber-400" />
+                                          <span>Needs Match</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Bottom Details Footer */}
+                                  <div
+                                    className="pt-2.5 border-t flex items-center justify-between text-[10px] text-foreground/50"
+                                    style={{ borderColor: "var(--athlon-border-subtle)" }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span>Eligible Formats:</span>
+                                      <span className="font-bold text-foreground/70">
+                                        {sp.eligibleFormats || "All Formats"}
+                                      </span>
+                                    </div>
+                                    <div className="font-mono font-bold text-foreground/60">
+                                      {sp.matchesPlayedCount || 0} matches
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* LIST / TABLE VIEW */
+                          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs">
+                                <thead>
+                                  <tr className="border-b bg-surface/70 text-foreground/60 text-[10px] font-black uppercase tracking-wider" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                    <th className="py-3 px-4">Athlete Name</th>
+                                    <th className="py-3 px-4">Category Tier</th>
+                                    <th className="py-3 px-4">Acquisition Mode</th>
+                                    <th className="py-3 px-4">Acquisition Cost</th>
+                                    <th className="py-3 px-4 text-center">Matches Played</th>
+                                    <th className="py-3 px-4 text-right">League Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                  {displayedPlayers.map((sp) => {
+                                    const hasPlayed = (sp.matchesPlayedCount || 0) > 0;
+                                    return (
+                                      <tr key={sp.squadId} className="hover:bg-surface/50 transition-colors">
+                                        <td className="py-3 px-4">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-background border border-foreground/10 flex items-center justify-center font-black text-xs text-foreground">
+                                              {sp.playerName.substring(0, 2).toUpperCase()}
+                                            </div>
+                                            <span className="font-black text-foreground">{sp.playerName}</span>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                                            {sp.categoryName || "Open"}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <span className="font-bold text-foreground/80">{sp.acquisitionType}</span>
+                                        </td>
+                                        <td className="py-3 px-4 font-mono font-bold text-foreground">
+                                          {sp.purchasePrice ? `${sp.purchasePrice.toLocaleString()} ${currencySymbol}` : "—"}
+                                        </td>
+                                        <td className="py-3 px-4 text-center font-mono font-bold text-foreground">
+                                          {sp.matchesPlayedCount || 0}
+                                        </td>
+                                        <td className="py-3 px-4 text-right">
+                                          {hasPlayed ? (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-black uppercase border border-emerald-500/20">
+                                              <Check className="w-3 h-3" /> Played
+                                            </span>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 text-[10px] font-black uppercase border border-amber-500/20">
+                                              <Clock className="w-3 h-3" /> Unplayed
+                                            </span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      className="rounded-3xl border p-16 text-center space-y-3"
+                      style={{
+                        backgroundColor: "var(--athlon-card)",
+                        borderColor: "var(--athlon-border)",
+                      }}
+                    >
+                      <Shield className="w-12 h-12 text-foreground/20 mx-auto" />
+                      <h4 className="text-base font-black text-foreground/70">Select a Franchise</h4>
+                      <p className="text-xs text-foreground/40 max-w-sm mx-auto">
+                        Choose a team from the left sidebar to view its rostered athletes, purse allocation, and league participation audit.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB 6: FIXTURES */}
         {activeTab === "fixtures" && (

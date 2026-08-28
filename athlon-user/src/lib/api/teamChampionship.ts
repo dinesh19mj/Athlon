@@ -151,6 +151,7 @@ export interface ChampionshipSquadPlayer {
   teamId: number;
   playerId: number;
   playerName: string;
+  avatarUrl?: string;
   categoryId?: number;
   categoryName?: string;
   eligibleFormats?: string;
