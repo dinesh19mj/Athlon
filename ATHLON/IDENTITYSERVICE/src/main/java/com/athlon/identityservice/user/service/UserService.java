@@ -12,14 +12,17 @@ import com.athlon.identityservice.exception.ResourceNotFoundException;
 import com.athlon.identityservice.user.repository.SportsProfileRepository;
 import com.athlon.identityservice.user.repository.UserProfileRepository;
 import com.athlon.identityservice.user.repository.UserRepository;
+import com.athlon.identityservice.util.FileStorageUtil;
 import com.athlon.identityservice.user.entity.SportsProfile;
 import com.athlon.identityservice.user.dto.response.SportsProfileResponse;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -31,16 +34,29 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final SportsProfileRepository sportsProfileRepository;
+    private final FileStorageUtil fileStorageUtil;
     private final WebClient webClient;
     
-    @Value("${athlo.gateway.url}")
+    @Value("${athlo.gateway.url:http://localhost:5050}")
     private String gatewayPath;
 
-    public UserService(UserRepository userRepository, UserProfileRepository userProfileRepository, SportsProfileRepository sportsProfileRepository) {
+    @Value("${athlon.user.photo.upload.directory:C:\\Users\\neoni\\Desktop\\Athlon\\User}")
+    private String userPhotoUploadDir;
+
+    public UserService(
+            UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
+            SportsProfileRepository sportsProfileRepository,
+            FileStorageUtil fileStorageUtil) {
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
         this.sportsProfileRepository = sportsProfileRepository;
+        this.fileStorageUtil = fileStorageUtil;
         this.webClient = WebClient.create();
+    }
+
+    public String getUserPhotoUploadDir() {
+        return userPhotoUploadDir;
     }
 
     @Transactional
@@ -92,14 +108,87 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("UserProfile not found for User UUID: " + request.getUuid()));
 
         profile.setFirstName(request.getFirstName());
-        profile.setLastName(request.getLastName());
-        profile.setPhone(request.getPhone());
+        if (request.getLastName() != null) {
+            profile.setLastName(request.getLastName());
+        }
+        if (request.getPhone() != null) {
+            profile.setPhone(request.getPhone());
+        }
+        if (request.getCity() != null) {
+            profile.setCity(request.getCity());
+        }
+        if (request.getDistrict() != null) {
+            profile.setDistrict(request.getDistrict());
+        }
+        if (request.getState() != null) {
+            profile.setState(request.getState());
+        }
+        if (request.getPhoto() != null) {
+            profile.setPhoto(request.getPhoto());
+        }
         profile.setUpdatedBy(currentUserId);
         
         userProfileRepository.save(profile);
 
         var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
         return mapToResponse(user, profile, sportsProfiles);
+    }
+
+    @Transactional
+    public UserResponse updateUserWithPhoto(
+            UUID userUuid,
+            String firstName,
+            String lastName,
+            String phone,
+            String city,
+            String district,
+            String state,
+            MultipartFile photoFile,
+            Long currentUserId) {
+        User user = userRepository.findByUserUuid(userUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with UUID: " + userUuid));
+
+        UserProfile profile = userProfileRepository.findByUserId(user.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("UserProfile not found for User UUID: " + userUuid));
+
+        if (firstName != null && !firstName.trim().isEmpty()) {
+            profile.setFirstName(firstName.trim());
+        }
+        if (lastName != null) {
+            profile.setLastName(lastName.trim());
+        }
+        if (phone != null) {
+            profile.setPhone(phone.trim());
+        }
+        if (city != null) {
+            profile.setCity(city.trim());
+        }
+        if (district != null) {
+            profile.setDistrict(district.trim());
+        }
+        if (state != null) {
+            profile.setState(state.trim());
+        }
+
+        if (photoFile != null && !photoFile.isEmpty()) {
+            try {
+                String savedPhoto = fileStorageUtil.saveFile(photoFile, userPhotoUploadDir, "photos");
+                profile.setPhoto(savedPhoto);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to save user profile photo", e);
+            }
+        }
+
+        profile.setUpdatedBy(currentUserId);
+        userProfileRepository.save(profile);
+
+        var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
+        return mapToResponse(user, profile, sportsProfiles);
+    }
+
+    @Transactional
+    public UserResponse updateUserPhoto(UUID userUuid, MultipartFile photoFile, Long currentUserId) {
+        return updateUserWithPhoto(userUuid, null, null, null, null, null, null, photoFile, currentUserId);
     }
 
     @Transactional
@@ -185,6 +274,10 @@ public class UserService {
             response.setFirstName(profile.getFirstName());
             response.setLastName(profile.getLastName());
             response.setPhone(profile.getPhone());
+            response.setPhoto(profile.getPhoto());
+            response.setCity(profile.getCity());
+            response.setDistrict(profile.getDistrict());
+            response.setState(profile.getState());
         }
 
         if (sportsProfiles != null) {

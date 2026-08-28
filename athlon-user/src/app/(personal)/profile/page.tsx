@@ -98,6 +98,9 @@ export default function ProfilePage() {
   const [editFirstName, setEditFirstName] = useState('');
   const [editLastName, setEditLastName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editDistrict, setEditDistrict] = useState('');
+  const [editState, setEditState] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const handleEditProfileSubmit = async () => {
@@ -109,9 +112,19 @@ export default function ProfilePage() {
         firstName: editFirstName,
         lastName: editLastName,
         phone: editPhone,
+        city: editCity,
+        district: editDistrict,
+        state: editState,
       });
       if (res.success && res.data) {
         setProfile(res.data);
+        if (personalProfile) {
+          setPersonalProfile({
+            ...personalProfile,
+            name: `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim(),
+            avatar: res.data.photo ? UserService.getPhotoUrl(res.data.photo) : personalProfile.avatar,
+          });
+        }
         setIsEditingProfile(false);
       }
     } catch (error) {
@@ -170,7 +183,7 @@ export default function ProfilePage() {
   }, [isSettingsOpen]);
 
   useEffect(() => {
-    if (!playerId || !token) {
+    if (!userUuid && !playerId && !token) {
       setLoading(false);
       return;
     }
@@ -187,13 +200,17 @@ export default function ProfilePage() {
         ]);
         if (res.success && res.data) {
           setProfile(res.data);
+          setEditFirstName(res.data.firstName || '');
+          setEditLastName(res.data.lastName || '');
+          setEditPhone(res.data.phone || '');
+          setEditCity(res.data.city || '');
+          setEditDistrict(res.data.district || '');
+          setEditState(res.data.state || '');
           setPersonalProfile({
             id: res.data.uuid,
-            name: `${res.data.firstName} ${res.data.lastName}`,
+            name: `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim(),
             athlonId: '',
-            avatar: (res.data as any).photo
-              ? `http://localhost:5050/player/photo/${(res.data as any).photo}`
-              : '',
+            avatar: res.data.photo ? UserService.getPhotoUrl(res.data.photo) : '',
           });
         }
         if (orgsRes?.data) {
@@ -222,24 +239,19 @@ export default function ProfilePage() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !playerId || !token) return;
+    if (!file || !userUuid) return;
 
     setIsUploadingPhoto(true);
     try {
-      const formData = new FormData();
-      formData.append('photo', file);
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050'}/player/updatePhoto/${playerId}`,
-        {
-          method: 'PUT',
-          body: formData,
+      const res = await UserService.updatePhoto(userUuid, file);
+      if (res.success && res.data) {
+        setProfile(res.data);
+        if (personalProfile) {
+          setPersonalProfile({
+            ...personalProfile,
+            avatar: res.data.photo ? UserService.getPhotoUrl(res.data.photo) : '',
+          });
         }
-      );
-
-      if (res.ok) {
-        const updatedProfile = await res.json();
-        setProfile(updatedProfile);
       }
     } catch (error) {
       console.error('Error uploading photo', error);
@@ -321,6 +333,9 @@ export default function ProfilePage() {
                       setEditFirstName(profile?.firstName || '');
                       setEditLastName(profile?.lastName || '');
                       setEditPhone(profile?.phone || '');
+                      setEditCity(profile?.city || '');
+                      setEditDistrict(profile?.district || '');
+                      setEditState(profile?.state || '');
                       setIsEditingProfile(true);
                     }}
                     className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
@@ -383,9 +398,9 @@ export default function ProfilePage() {
                   <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Edit3 className="w-6 h-6 text-white" />
                   </div>
-                  {(profile as any)?.photo ? (
+                  {profile?.photo ? (
                     <img
-                      src={`http://localhost:5050/player/photo/${(profile as any).photo}`}
+                      src={UserService.getPhotoUrl(profile.photo)}
                       alt="User Avatar"
                       className="w-full h-full object-cover relative z-0"
                     />
@@ -435,23 +450,34 @@ export default function ProfilePage() {
                     <span className="text-xs font-medium">{profile.phone}</span>
                   </div>
                 )}
+
+                {(profile?.city || profile?.district || profile?.state) && (
+                  <div className="flex items-center gap-1.5 text-primary/90 mt-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">
+                      {[profile.city, profile.district, profile.state].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                )}
               </>
             ) : (
               <div className="w-full mt-4 flex flex-col gap-3">
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  value={editFirstName}
-                  onChange={(e) => setEditFirstName(e.target.value)}
-                  className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  value={editLastName}
-                  onChange={(e) => setEditLastName(e.target.value)}
-                  className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="First Name"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Last Name"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="Phone Number"
@@ -459,6 +485,29 @@ export default function ProfilePage() {
                   onChange={(e) => setEditPhone(e.target.value)}
                   className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
                 />
+                <input
+                  type="text"
+                  placeholder="City"
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="District"
+                    value={editDistrict}
+                    onChange={(e) => setEditDistrict(e.target.value)}
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="State"
+                    value={editState}
+                    onChange={(e) => setEditState(e.target.value)}
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                  />
+                </div>
                 <div className="flex justify-end gap-2 mt-2">
                   <button
                     onClick={() => setIsEditingProfile(false)}
@@ -512,9 +561,35 @@ export default function ProfilePage() {
               </div>
               <ChevronRight className="w-4 h-4 text-foreground/30" />
             </div>
-            <div className="px-4 py-4 flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground/60">Email</span>
-              <span className="text-sm font-medium text-white">{profile?.email || userEmail || '-'}</span>
+            <div className="divide-y divide-foreground/5">
+              <div className="px-4 py-3.5 flex items-center justify-between">
+                <span className="text-xs font-medium text-foreground/60">Email</span>
+                <span className="text-xs font-medium text-white">{profile?.email || userEmail || '-'}</span>
+              </div>
+              {profile?.phone && (
+                <div className="px-4 py-3.5 flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground/60">Phone</span>
+                  <span className="text-xs font-medium text-white">{profile.phone}</span>
+                </div>
+              )}
+              {profile?.city && (
+                <div className="px-4 py-3.5 flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground/60">City</span>
+                  <span className="text-xs font-medium text-white">{profile.city}</span>
+                </div>
+              )}
+              {profile?.district && (
+                <div className="px-4 py-3.5 flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground/60">District</span>
+                  <span className="text-xs font-medium text-white">{profile.district}</span>
+                </div>
+              )}
+              {profile?.state && (
+                <div className="px-4 py-3.5 flex items-center justify-between">
+                  <span className="text-xs font-medium text-foreground/60">State</span>
+                  <span className="text-xs font-medium text-white">{profile.state}</span>
+                </div>
+              )}
             </div>
           </section>
 
@@ -785,9 +860,9 @@ export default function ProfilePage() {
                   <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Edit3 className="w-6 h-6 text-white" />
                   </div>
-                  {(profile as any)?.photo ? (
+                  {profile?.photo ? (
                     <img
-                      src={`http://localhost:5050/player/photo/${(profile as any).photo}`}
+                      src={UserService.getPhotoUrl(profile.photo)}
                       alt="User Avatar"
                       className="w-full h-full object-cover"
                     />
@@ -828,6 +903,12 @@ export default function ProfilePage() {
                       {profile.phone}
                     </span>
                   )}
+                  {(profile?.city || profile?.district || profile?.state) && (
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
+                      {[profile.city, profile.district, profile.state].filter(Boolean).join(', ')}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -839,6 +920,9 @@ export default function ProfilePage() {
                   setEditFirstName(profile?.firstName || '');
                   setEditLastName(profile?.lastName || '');
                   setEditPhone(profile?.phone || '');
+                  setEditCity(profile?.city || '');
+                  setEditDistrict(profile?.district || '');
+                  setEditState(profile?.state || '');
                   setIsEditingProfile(true);
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-xs font-black uppercase tracking-wider text-foreground/80 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
@@ -1181,26 +1265,28 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-3">
-              <div>
-                <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">First Name</label>
-                <input
-                  type="text"
-                  value={editFirstName}
-                  onChange={(e) => setEditFirstName(e.target.value)}
-                  className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">First Name</label>
+                  <input
+                    type="text"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                    className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                  />
+                </div>
 
-              <div>
-                <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">Last Name</label>
-                <input
-                  type="text"
-                  value={editLastName}
-                  onChange={(e) => setEditLastName(e.target.value)}
-                  className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                />
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                  />
+                </div>
               </div>
 
               <div>
@@ -1212,6 +1298,44 @@ export default function ProfilePage() {
                   className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">City</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Kozhikode"
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">District</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Kozhikode"
+                    value={editDistrict}
+                    onChange={(e) => setEditDistrict(e.target.value)}
+                    className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">State</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Kerala"
+                    value={editState}
+                    onChange={(e) => setEditState(e.target.value)}
+                    className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                  />
+                </div>
               </div>
             </div>
 

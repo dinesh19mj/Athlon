@@ -14,6 +14,14 @@ public class UpdateUserRequest {
 
     private String phone;
 
+    private String photo;
+
+    private String city;
+
+    private String district;
+
+    private String state;
+
     public UpdateUserRequest() {
     }
 
@@ -47,5 +55,37 @@ public class UpdateUserRequest {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 }

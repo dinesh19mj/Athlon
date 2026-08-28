@@ -1,8 +1,10 @@
 package com.athlon.identityservice.user.controller;
 
+import java.io.File;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,7 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.athlon.identityservice.dto.response.ApiResponse;
 import com.athlon.identityservice.user.dto.request.CreateSportsProfileRequest;
@@ -20,6 +24,7 @@ import com.athlon.identityservice.user.dto.request.UserSearchRequest;
 import com.athlon.identityservice.user.dto.response.SportsProfileResponse;
 import com.athlon.identityservice.user.dto.response.UserResponse;
 import com.athlon.identityservice.user.service.UserService;
+import com.athlon.identityservice.util.DocumentUtil;
 
 import jakarta.validation.Valid;
 
@@ -28,9 +33,11 @@ import jakarta.validation.Valid;
 public class UserController {
 
     private final UserService userService;
+    private final DocumentUtil documentUtil;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, DocumentUtil documentUtil) {
         this.userService = userService;
+        this.documentUtil = documentUtil;
     }
 
     @PostMapping("/createUser")
@@ -47,6 +54,41 @@ public class UserController {
             @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
         UserResponse response = userService.updateUser(request, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("User updated successfully", response));
+    }
+
+    @PostMapping(value = "/updateProfileWithPhoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfileWithPhoto(
+            @RequestParam("uuid") UUID userUuid,
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "lastName", required = false) String lastName,
+            @RequestParam(value = "phone", required = false) String phone,
+            @RequestParam(value = "city", required = false) String city,
+            @RequestParam(value = "district", required = false) String district,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "photo", required = false) MultipartFile photo,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+        UserResponse response = userService.updateUserWithPhoto(
+                userUuid, firstName, lastName, phone, city, district, state, photo, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("User profile updated successfully", response));
+    }
+
+    @PostMapping(value = "/updatePhoto/{uuid}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserPhoto(
+            @PathVariable("uuid") UUID uuid,
+            @RequestParam("photo") MultipartFile photo,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+        UserResponse response = userService.updateUserPhoto(uuid, photo, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("User photo updated successfully", response));
+    }
+
+    @GetMapping("/photo/{fileName}")
+    public ResponseEntity<byte[]> getUserPhoto(@PathVariable("fileName") String fileName) {
+        String filePath = userService.getUserPhotoUploadDir() + File.separator + "photos" + File.separator + fileName;
+        File f = new File(filePath);
+        if (!f.exists()) {
+            filePath = userService.getUserPhotoUploadDir() + File.separator + fileName;
+        }
+        return documentUtil.getFile(filePath);
     }
 
     @PostMapping("/deleteUser/{uuid}")
