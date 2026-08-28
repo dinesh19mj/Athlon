@@ -832,59 +832,106 @@ export default function TeamOwnerAuctionArenaPage() {
 
                   return (
                     <div className="space-y-4 pt-2 relative z-10">
-                      {/* Franchise Header & Purse Health Bar */}
-                      <div className="p-4 rounded-3xl bg-background/90 border space-y-3 shadow-md" style={{ borderColor: "var(--athlon-border)" }}>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <Zap className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
-                            <span className="text-xs font-black uppercase text-foreground/80 shrink-0">
-                              Active Franchise:
-                            </span>
+                      {/* Franchise Cockpit Command Card */}
+                      {myTeamSummary && (() => {
+                        const initialBudget = myTeamSummary.team.initialBudget || 5000;
+                        const remainingBudget = myTeamSummary.team.remainingBudget ?? initialBudget;
+                        const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
 
-                            {auctionTeams.length > 1 ? (
-                              <select
-                                value={selectedMyTeamId || ""}
-                                onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
-                                className="px-3 py-1.5 bg-surface border border-foreground/15 rounded-xl text-xs font-bold text-foreground outline-none focus:border-primary cursor-pointer flex-1 max-w-xs"
-                              >
-                                {auctionTeams.map(({ team }) => (
-                                  <option key={team.teamId} value={team.teamId}>
-                                    {team.teamName} (Purse: {team.remainingBudget.toLocaleString()} {currencyLabel})
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="text-xs font-black text-primary truncate">
-                                {myTeamSummary?.team.teamName || "Your Franchise"}
-                              </span>
+                        return (
+                          <div
+                            className="p-4 sm:p-5 rounded-3xl border bg-gradient-to-br from-surface/90 via-surface/60 to-background/90 backdrop-blur-xl shadow-xl space-y-3.5 relative overflow-hidden"
+                            style={{ borderColor: "var(--athlon-border)" }}
+                          >
+                            {/* Subtle Ambient Glow */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none -z-0" />
+
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                              {/* Left: Team Crest & Identity */}
+                              <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary/30 via-indigo-500/20 to-primary/10 border-2 border-primary/60 flex items-center justify-center text-primary font-black text-xl shadow-lg shadow-primary/20 shrink-0">
+                                  {myTeamSummary.team.teamName.charAt(0).toUpperCase()}
+                                </div>
+
+                                <div className="space-y-1 min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-primary/80">
+                                    <Shield className="w-3 h-3 text-primary" />
+                                    <span>Active Franchise Team</span>
+                                  </div>
+
+                                  {auctionTeams.length > 1 ? (
+                                    <div className="relative inline-block max-w-full sm:max-w-xs">
+                                      <select
+                                        value={selectedMyTeamId || ""}
+                                        onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
+                                        className="w-full appearance-none pr-8 pl-3 py-1.5 rounded-xl bg-background/90 border border-foreground/15 text-sm sm:text-base font-black text-foreground outline-none focus:border-primary cursor-pointer shadow-inner transition-all hover:bg-background"
+                                      >
+                                        {auctionTeams.map(({ team }) => (
+                                          <option key={team.teamId} value={team.teamId}>
+                                            {team.teamName} ({team.remainingBudget.toLocaleString()} {currencyLabel})
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <ChevronDown className="w-4 h-4 text-foreground/50 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                  ) : (
+                                    <h4 className="text-base sm:text-lg font-black text-foreground truncate">
+                                      {myTeamSummary.team.teamName}
+                                    </h4>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Right: Purse Telemetry Pill & Meter */}
+                              <div className="flex flex-col sm:items-end gap-1.5 shrink-0 self-stretch sm:self-auto justify-center bg-black/25 sm:bg-transparent p-3 sm:p-0 rounded-2xl border sm:border-0 border-white/5">
+                                <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-black uppercase text-foreground/50 tracking-wider">
+                                  <span className="flex items-center gap-1">
+                                    <Coins className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>Purse Balance</span>
+                                  </span>
+                                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-foreground/70">
+                                    {Math.round(percentLeft)}% left
+                                  </span>
+                                </div>
+
+                                <div className="flex items-baseline justify-between sm:justify-end gap-2">
+                                  <span
+                                    className={`text-2xl sm:text-3xl font-black font-mono tracking-tight leading-none ${
+                                      isPurseExhausted ? "text-red-400" : "text-primary"
+                                    }`}
+                                  >
+                                    {remainingBudget.toLocaleString()}
+                                  </span>
+                                  <span className="text-xs font-black text-primary/70 uppercase font-sans">
+                                    {currencyLabel}
+                                  </span>
+                                </div>
+
+                                {/* Micro Battery / Progress Bar */}
+                                <div className="w-full sm:w-36 h-1.5 rounded-full bg-foreground/10 overflow-hidden mt-0.5">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${
+                                      percentLeft > 50 ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
+                                    }`}
+                                    style={{ width: `${percentLeft}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Purse Exhaustion Alert Warning */}
+                            {isPurseExhausted && (
+                              <div className="p-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-xs flex items-center gap-2.5 animate-pulse relative z-10 shadow-inner">
+                                <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+                                <span>
+                                  <strong>Purse Balance Limit:</strong> {myTeamSummary.team.teamName} has only{" "}
+                                  <strong>{myTeamSummary.team.remainingBudget.toLocaleString()} {currencyLabel}</strong> remaining. You cannot place bids exceeding your purse balance.
+                                </span>
+                              </div>
                             )}
                           </div>
-
-                          {myTeamSummary && (
-                            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                              <span className="text-[11px] font-bold text-foreground/50">Purse Balance:</span>
-                              <span className={`text-sm font-black font-mono px-3 py-1 rounded-xl ${
-                                isPurseExhausted
-                                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                                  : "bg-primary/20 text-primary border border-primary/30"
-                              }`}>
-                                {myTeamSummary.team.remainingBudget.toLocaleString()} {currencyLabel}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Purse Exhaustion Warning */}
-                        {isPurseExhausted && myTeamSummary && (
-                          <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2 animate-pulse">
-                            <AlertTriangle className="w-4 h-4 shrink-0" />
-                            <span>
-                              <strong>Purse Exhausted:</strong> {myTeamSummary.team.teamName} has only{" "}
-                              <strong>{myTeamSummary.team.remainingBudget.toLocaleString()} {currencyLabel}</strong> left. You cannot place bids exceeding your remaining purse balance.
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                        );
+                      })()}
 
                       {/* Quick Point Bump Action Buttons */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
