@@ -424,21 +424,16 @@ export default function MembersPage() {
         )}
       </div>
 
-      {/* ADD MEMBER MODAL (STYLISH & MOBILE OPTIMIZED) */}
+      {/* ADD MEMBER MODAL (POSITIONED FROM TOP & FULLY VISIBLE) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 pt-6 sm:pt-12 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
           <div
-            className="w-full max-w-lg rounded-t-[32px] sm:rounded-[28px] border shadow-[0_-10px_40px_rgba(0,0,0,0.8)] sm:shadow-2xl flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200 overflow-hidden"
+            className="w-full max-w-lg rounded-[28px] border shadow-2xl flex flex-col my-auto sm:my-0 animate-in zoom-in-95 duration-200 overflow-hidden"
             style={{
               backgroundColor: 'var(--athlon-surface)',
               borderColor: 'var(--athlon-border)'
             }}
           >
-            {/* Mobile Sheet Drag Indicator */}
-            <div className="pt-3 pb-1 flex justify-center sm:hidden">
-              <div className="w-12 h-1 rounded-full bg-foreground/20" />
-            </div>
-
             {/* Modal Header */}
             <div className="p-5 sm:p-6 pb-3 border-b flex items-center justify-between shrink-0" style={{ borderColor: 'var(--athlon-border)' }}>
               <div className="flex items-center gap-3">
