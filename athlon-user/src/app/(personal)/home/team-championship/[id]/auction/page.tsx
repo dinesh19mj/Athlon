@@ -49,7 +49,7 @@ import {
   AuctionTeamSummary,
   AuctionBid,
 } from "@/lib/api/auction";
-import { TeamChampionshipService, TeamChampionship } from "@/lib/api/teamChampionship";
+import { TeamChampionshipService, TeamChampionship, ChampionshipTeamRegistration } from "@/lib/api/teamChampionship";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useAthlonTheme } from "@/hooks/use-athlon-theme";
 
@@ -57,12 +57,13 @@ export default function TeamOwnerAuctionArenaPage() {
   const params = useParams();
   const championshipUuid = params.id as string;
   const router = useRouter();
-  const { userId, isAuthenticated } = useAuthStore();
+  const { userId, userUuid, userEmail, isAuthenticated } = useAuthStore();
   const { theme: currentTheme } = useAthlonTheme();
 
   const [championship, setChampionship] = useState<TeamChampionship | null>(null);
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
   const [auctionTeams, setAuctionTeams] = useState<AuctionTeamSummary[]>([]);
+  const [registeredTeams, setRegisteredTeams] = useState<ChampionshipTeamRegistration[]>([]);
   const [auctionPlayers, setAuctionPlayers] = useState<AuctionPlayer[]>([]);
   const [selectedMyTeamId, setSelectedMyTeamId] = useState<number | null>(null);
   const [rightSidebarTab, setRightSidebarTab] = useState<"feed" | "queue" | "purses" | "sold">("feed");
@@ -183,10 +184,11 @@ export default function TeamOwnerAuctionArenaPage() {
         setChampionship(champ);
 
         if (champ.championshipId) {
-          const [state, teams, players] = await Promise.all([
+          const [state, teams, players, regTeams] = await Promise.all([
             AuctionService.getState(champ.championshipId).catch(() => null),
             AuctionService.getTeams(champ.championshipId).catch(() => null),
             AuctionService.getPlayers(champ.championshipId).catch(() => null),
+            TeamChampionshipService.getTeams(championshipUuid).catch(() => [] as ChampionshipTeamRegistration[]),
           ]);
 
           if (state) {
@@ -202,10 +204,44 @@ export default function TeamOwnerAuctionArenaPage() {
             setAuctionState(state);
           }
 
+          if (regTeams && Array.isArray(regTeams)) {
+            setRegisteredTeams(regTeams);
+          }
+
           if (teams && Array.isArray(teams)) {
             setAuctionTeams(teams);
-            if (teams.length > 0 && !selectedMyTeamId) {
-              setSelectedMyTeamId(teams[0].team.teamId);
+
+            // Match user's owned / captained team by userId, userUuid, or email
+            const validRegTeams = Array.isArray(regTeams) ? regTeams : [];
+            const matchingUserTeams = validRegTeams.filter((t) => {
+              if (userId && t.ownerUserId && String(t.ownerUserId) === String(userId)) return true;
+              if (userUuid && t.ownerUserUuid && t.ownerUserUuid.toLowerCase() === userUuid.toLowerCase()) return true;
+              if (userEmail && t.contactEmail && t.contactEmail.toLowerCase() === userEmail.toLowerCase()) return true;
+              return false;
+            });
+
+            if (matchingUserTeams.length > 0) {
+              // User is captain/owner of at least one registered team
+              setSelectedMyTeamId((prev) => {
+                if (prev && matchingUserTeams.some((t) => t.teamId === prev)) {
+                  return prev;
+                }
+                return matchingUserTeams[0].teamId;
+              });
+            } else {
+              // User has no team registration - check if organizer
+              const isOrg =
+                (userId && champ.organizerId && String(champ.organizerId) === String(userId)) ||
+                (userId && champ.userId && String(champ.userId) === String(userId)) ||
+                (userUuid && champ.organizerUuid && champ.organizerUuid.toLowerCase() === userUuid.toLowerCase());
+
+              if (isOrg) {
+                // Organizer testing mode: default to first team if not selected
+                setSelectedMyTeamId((prev) => prev || (teams.length > 0 ? teams[0].team.teamId : null));
+              } else {
+                // Regular spectator: no franchise locked
+                setSelectedMyTeamId(null);
+              }
             }
           }
 
@@ -253,6 +289,28 @@ export default function TeamOwnerAuctionArenaPage() {
 
   const myTeamSummary = auctionTeams.find((at) => at.team.teamId === selectedMyTeamId);
   const currencyLabel = auctionState?.config?.currencySymbolOrLabel || "pts";
+
+  const userOwnedTeams = useMemo(() => {
+    if (!registeredTeams || registeredTeams.length === 0) return [];
+    return registeredTeams.filter((t) => {
+      if (userId && t.ownerUserId && String(t.ownerUserId) === String(userId)) return true;
+      if (userUuid && t.ownerUserUuid && t.ownerUserUuid.toLowerCase() === userUuid.toLowerCase()) return true;
+      if (userEmail && t.contactEmail && t.contactEmail.toLowerCase() === userEmail.toLowerCase()) return true;
+      return false;
+    });
+  }, [registeredTeams, userId, userUuid, userEmail]);
+
+  const isOrganizer = Boolean(
+    (champOrganizerMatches(championship, userId, userUuid))
+  );
+
+  function champOrganizerMatches(champ: TeamChampionship | null, uId: string | null, uUuid: string | null) {
+    if (!champ) return false;
+    if (uId && champ.organizerId && String(champ.organizerId) === String(uId)) return true;
+    if (uId && champ.userId && String(champ.userId) === String(uId)) return true;
+    if (uUuid && champ.organizerUuid && champ.organizerUuid.toLowerCase() === uUuid.toLowerCase()) return true;
+    return false;
+  }
 
   const soldPlayers = useMemo(() => auctionPlayers.filter((p) => p.state === "SOLD" || p.state === "ASSIGNED"), [auctionPlayers]);
   const waitingPlayers = useMemo(() => auctionPlayers.filter((p) => p.state === "WAITING" || p.state === "CALLED"), [auctionPlayers]);
@@ -521,18 +579,44 @@ export default function TeamOwnerAuctionArenaPage() {
             {soundEnabled ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
 
-          {/* Locked Franchise & Purse Pill (for Logged-in Users) */}
+          {/* Locked Franchise & Purse Pill (for Logged-in Franchise Owners) */}
           {isAuthenticated && myTeamSummary && (
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="px-3.5 py-2 rounded-2xl bg-surface/90 border border-foreground/15 text-xs font-black text-foreground shadow-sm hidden md:flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5 text-primary" />
-                <span className="truncate max-w-[150px]">{myTeamSummary.team.teamName}</span>
-              </div>
+              {userOwnedTeams.length > 1 || isOrganizer ? (
+                <div className="relative">
+                  <select
+                    value={selectedMyTeamId || ""}
+                    onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
+                    aria-label="Select active bidding franchise"
+                    className="px-3 py-1.5 rounded-2xl bg-surface/90 border border-foreground/15 text-xs font-black text-foreground shadow-sm cursor-pointer outline-none focus:border-primary appearance-none pr-7"
+                  >
+                    {(userOwnedTeams.length > 0 ? userOwnedTeams : registeredTeams).map((t) => (
+                      <option key={t.teamId} value={t.teamId} className="bg-background text-foreground">
+                        {t.teamName} {userOwnedTeams.some((ut) => ut.teamId === t.teamId) ? "(Captain)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none" />
+                </div>
+              ) : (
+                <div className="px-3.5 py-2 rounded-2xl bg-surface/90 border border-foreground/15 text-xs font-black text-foreground shadow-sm hidden md:flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-primary" />
+                  <span className="truncate max-w-[150px]">{myTeamSummary.team.teamName}</span>
+                </div>
+              )}
 
               <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/40 text-primary font-black text-[11px] sm:text-xs shadow-sm flex items-center gap-1.5 sm:gap-2">
                 <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary animate-pulse" />
                 <span>{myTeamSummary.team.remainingBudget.toLocaleString()} <span className="text-[9px] sm:text-[10px] font-sans font-bold">{currencyLabel}</span></span>
               </div>
+            </div>
+          )}
+
+          {/* Spectator Mode Pill for Logged-In Spectators */}
+          {isAuthenticated && !myTeamSummary && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-surface border border-foreground/15 text-foreground/70 text-xs font-bold shadow-sm">
+              <Eye className="w-3.5 h-3.5 text-primary" />
+              <span>Spectator Mode</span>
             </div>
           )}
 
@@ -868,39 +952,36 @@ export default function TeamOwnerAuctionArenaPage() {
                         }`}
                       >
                         {isTimerPaused ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-black">
                             <Pause className="w-4 h-4 text-amber-400 animate-pulse" />
-                            <span className="text-xs uppercase font-extrabold tracking-wide text-amber-300">
-                              Auction Paused by Organizer
-                            </span>
+                            <span>⏸️ Auction Paused by Organizer</span>
                           </div>
                         ) : isMyTeamLeading ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-black">
                             <Crown className="w-4 h-4 text-amber-400" />
-                            <span className="text-xs uppercase font-extrabold tracking-wide">
-                              You Hold Winning Bid ({currentBid.toLocaleString()} {currencyLabel})
-                            </span>
+                            <span>👑 You Are Holding Highest Bid</span>
                           </div>
                         ) : !isAffordable ? (
-                          <div className="flex items-center gap-1.5">
-                            <AlertTriangle className="w-4 h-4 text-red-400" />
-                            <span className="text-xs uppercase font-extrabold">
-                              Purse Insufficient for {activeNextBid.toLocaleString()} {currencyLabel}
-                            </span>
-                          </div>
+                          <span className="text-xs uppercase tracking-wider">⚠️ Insufficient Franchise Purse</span>
                         ) : (
                           <>
-                            <div className="text-left flex items-center gap-1.5">
-                              <Zap className="w-3.5 h-3.5 text-black fill-black" />
-                              <span className="text-xs font-black uppercase text-black">
-                                Place Bid
-                              </span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-lg bg-black/20 flex items-center justify-center font-black text-xs">
+                                <Gavel className="w-3.5 h-3.5 text-black" />
+                              </div>
+                              <div className="text-left">
+                                <div className="text-[10px] font-black uppercase tracking-wider text-black/70 leading-none">
+                                  Place Bid
+                                </div>
+                                <div className="text-xs font-black leading-none text-black mt-0.5">
+                                  +{selectedIncrement} {currencyLabel}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-baseline gap-1 bg-black/15 px-3 py-1 rounded-xl border border-black/10">
-                              <span className="font-mono font-black text-lg text-black leading-none">
-                                {activeNextBid.toLocaleString()}
-                              </span>
-                              <span className="font-black text-[10px] uppercase text-black/80">{currencyLabel}</span>
+
+                            <div className="flex items-center gap-1.5 font-mono text-base font-black text-black">
+                              <span>{activeNextBid.toLocaleString()}</span>
+                              <span className="text-[10px] font-sans font-bold uppercase">{currencyLabel}</span>
                             </div>
                           </>
                         )}
@@ -1356,6 +1437,26 @@ export default function TeamOwnerAuctionArenaPage() {
                               <LogIn className="w-3.5 h-3.5" />
                               <span>Log In to Place Bids</span>
                             </Link>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Logged in user without franchise registration (Spectator Mode)
+                    if (!myTeamSummary) {
+                      return (
+                        <div
+                          className="p-4 sm:p-5 rounded-2xl border space-y-2 relative z-10 text-center shadow-md bg-surface/80 shrink-0"
+                          style={{ borderColor: "var(--athlon-border-subtle)" }}
+                        >
+                          <div className="flex flex-col items-center justify-center gap-1.5 max-w-md mx-auto">
+                            <Eye className="w-6 h-6 text-primary" />
+                            <h4 className="text-sm font-black text-foreground">
+                              Live Auction Broadcast • Spectator Mode
+                            </h4>
+                            <p className="text-xs text-foreground/60">
+                              You are viewing the live bidding room. Interactive bidding buttons are active for registered team captains with an allocated purse.
+                            </p>
                           </div>
                         </div>
                       );
