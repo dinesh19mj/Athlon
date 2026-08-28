@@ -239,11 +239,15 @@ export default function ProfilePage() {
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !userUuid) return;
+    const targetUuid = userUuid || profile?.uuid;
+    if (!file || !targetUuid) {
+      console.warn('Upload aborted: missing file or user uuid', { file, targetUuid });
+      return;
+    }
 
     setIsUploadingPhoto(true);
     try {
-      const res = await UserService.updatePhoto(userUuid, file);
+      const res = await UserService.uploadProfilePhoto(targetUuid, file);
       if (res.success && res.data) {
         setProfile(res.data);
         if (personalProfile) {

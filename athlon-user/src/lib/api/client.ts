@@ -28,9 +28,15 @@ export const fetchClient = async <T>(
 
   const method = (options.method || 'GET').toUpperCase();
 
+  const isFormData = typeof FormData !== 'undefined' && (options.body instanceof FormData || (options.body && options.body.constructor && options.body.constructor.name === 'FormData'));
+
   // Only set default Content-Type for request with a body and not FormData
-  if (method !== 'GET' && method !== 'HEAD' && !(options.body instanceof FormData) && !headers['Content-Type']) {
+  if (method !== 'GET' && method !== 'HEAD' && !isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
+  }
+
+  if (isFormData) {
+    delete headers['Content-Type'];
   }
 
   if (token) {

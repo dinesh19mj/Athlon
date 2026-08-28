@@ -62,10 +62,24 @@ export const UserService = {
   updateUser: (data: UpdateUserRequest) =>
     api.post<ApiResponse<UserResponse>>(`/api/identity/users/updateUser`, data),
 
+  updateProfile: (data: UpdateUserRequest) =>
+    api.post<ApiResponse<UserResponse>>(`/api/identity/users/updateUser`, data),
+
+  uploadProfilePhoto: async (userUuid: string, file: File): Promise<ApiResponse<UserResponse>> => {
+    const formData = new FormData();
+    formData.append('userUuid', userUuid);
+    formData.append('file', file);
+    return fetchClient<ApiResponse<UserResponse>>(`/api/identity/users/uploadProfilePhoto`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
   updatePhoto: async (userUuid: string, file: File): Promise<ApiResponse<UserResponse>> => {
     const formData = new FormData();
-    formData.append('photo', file);
-    return fetchClient<ApiResponse<UserResponse>>(`/api/identity/users/updatePhoto/${userUuid}`, {
+    formData.append('userUuid', userUuid);
+    formData.append('file', file);
+    return fetchClient<ApiResponse<UserResponse>>(`/api/identity/users/uploadProfilePhoto`, {
       method: 'POST',
       body: formData,
     });

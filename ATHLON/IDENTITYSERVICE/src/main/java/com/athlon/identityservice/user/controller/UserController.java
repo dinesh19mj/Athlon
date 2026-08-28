@@ -56,6 +56,24 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("User updated successfully", response));
     }
 
+    @PostMapping(value = "/uploadProfilePhoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<UserResponse>> uploadProfilePhoto(
+            @RequestParam("userUuid") UUID userUuid,
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+        UserResponse response = userService.updateUserPhoto(userUuid, file, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("Profile photo uploaded successfully", response));
+    }
+
+    @PostMapping(value = "/uploadPhoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<UserResponse>> uploadPhoto(
+            @RequestParam("userUuid") UUID userUuid,
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+        UserResponse response = userService.updateUserPhoto(userUuid, file, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("Profile photo uploaded successfully", response));
+    }
+
     @PostMapping(value = "/updateProfileWithPhoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UserResponse>> updateProfileWithPhoto(
             @RequestParam("uuid") UUID userUuid,
