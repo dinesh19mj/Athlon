@@ -3,7 +3,18 @@ import { api, fetchClient } from './client';
 export interface SportsProfileResponse {
   uuid: string;
   sportName: string;
-  currentRanking: number;
+  category?: string;
+  currentRanking?: number;
+  eloRating?: number;
+  highestElo?: number;
+  totalMatches?: number;
+  matchesWon?: number;
+  matchesLost?: number;
+  winRate?: number;
+  currentStreak?: number;
+  globalRank?: number;
+  stateRank?: number;
+  districtRank?: number;
   verificationStatus: string;
   careerHighlights: string;
   isActive: boolean;
@@ -56,6 +67,9 @@ export const UserService = {
   getUserByPhone: (phone: string) =>
     api.get<ApiResponse<UserResponse>>(`/api/identity/users/getUserByPhone/${encodeURIComponent(phone)}`),
     
+  getUserStats: (userUuid: string, sportName: string = 'Badminton') =>
+    api.get<ApiResponse<SportsProfileResponse>>(`/api/identity/users/stats/${userUuid}?sportName=${encodeURIComponent(sportName)}`),
+
   addSportsProfile: (data: CreateSportsProfileRequest) =>
     api.post<ApiResponse<SportsProfileResponse>>(`/api/identity/users/addSportsProfile`, data),
     

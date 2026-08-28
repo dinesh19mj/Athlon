@@ -42,6 +42,27 @@ public class SportsProfile {
     @Column(name = "current_ranking")
     private Integer currentRanking;
 
+    @Column(name = "elo_rating")
+    private Integer eloRating = 1200;
+
+    @Column(name = "highest_elo")
+    private Integer highestElo = 1200;
+
+    @Column(name = "total_matches")
+    private Integer totalMatches = 0;
+
+    @Column(name = "matches_won")
+    private Integer matchesWon = 0;
+
+    @Column(name = "matches_lost")
+    private Integer matchesLost = 0;
+
+    @Column(name = "win_rate")
+    private Double winRate = 0.0;
+
+    @Column(name = "current_streak")
+    private Integer currentStreak = 0;
+
     @Column(name = "verification_status", length = 50)
     private String verificationStatus;
 
@@ -70,21 +91,46 @@ public class SportsProfile {
         this.userUuid = userUuid;
         this.sportName = sportName;
         this.category = category;
+        this.eloRating = 1200;
+        this.highestElo = 1200;
+        this.totalMatches = 0;
+        this.matchesWon = 0;
+        this.matchesLost = 0;
+        this.winRate = 0.0;
+        this.currentStreak = 0;
         this.verificationStatus = "PENDING";
         this.isActive = 1;
     }
 
     @PrePersist
     public void prePersist() {
-
         if (sportsProfileUuid == null) {
             sportsProfileUuid = UUID.randomUUID();
         }
-
         if (isActive == null) {
             isActive = 1;
         }
-
+        if (eloRating == null) {
+            eloRating = 1200;
+        }
+        if (highestElo == null) {
+            highestElo = eloRating;
+        }
+        if (totalMatches == null) {
+            totalMatches = 0;
+        }
+        if (matchesWon == null) {
+            matchesWon = 0;
+        }
+        if (matchesLost == null) {
+            matchesLost = 0;
+        }
+        if (winRate == null) {
+            winRate = 0.0;
+        }
+        if (currentStreak == null) {
+            currentStreak = 0;
+        }
         if (verificationStatus == null) {
             verificationStatus = "PENDING";
         }
@@ -144,6 +190,65 @@ public class SportsProfile {
 
     public void setCurrentRanking(Integer currentRanking) {
         this.currentRanking = currentRanking;
+    }
+
+    public Integer getEloRating() {
+        return eloRating != null ? eloRating : 1200;
+    }
+
+    public void setEloRating(Integer eloRating) {
+        this.eloRating = eloRating;
+        if (eloRating != null && (this.highestElo == null || eloRating > this.highestElo)) {
+            this.highestElo = eloRating;
+        }
+    }
+
+    public Integer getHighestElo() {
+        return highestElo != null ? highestElo : (eloRating != null ? eloRating : 1200);
+    }
+
+    public void setHighestElo(Integer highestElo) {
+        this.highestElo = highestElo;
+    }
+
+    public Integer getTotalMatches() {
+        return totalMatches != null ? totalMatches : 0;
+    }
+
+    public void setTotalMatches(Integer totalMatches) {
+        this.totalMatches = totalMatches;
+    }
+
+    public Integer getMatchesWon() {
+        return matchesWon != null ? matchesWon : 0;
+    }
+
+    public void setMatchesWon(Integer matchesWon) {
+        this.matchesWon = matchesWon;
+    }
+
+    public Integer getMatchesLost() {
+        return matchesLost != null ? matchesLost : 0;
+    }
+
+    public void setMatchesLost(Integer matchesLost) {
+        this.matchesLost = matchesLost;
+    }
+
+    public Double getWinRate() {
+        return winRate != null ? winRate : 0.0;
+    }
+
+    public void setWinRate(Double winRate) {
+        this.winRate = winRate;
+    }
+
+    public Integer getCurrentStreak() {
+        return currentStreak != null ? currentStreak : 0;
+    }
+
+    public void setCurrentStreak(Integer currentStreak) {
+        this.currentStreak = currentStreak;
     }
 
     public String getVerificationStatus() {
@@ -210,6 +315,11 @@ public class SportsProfile {
                 ", sportName='" + sportName + '\'' +
                 ", category='" + category + '\'' +
                 ", currentRanking=" + currentRanking +
+                ", eloRating=" + eloRating +
+                ", totalMatches=" + totalMatches +
+                ", matchesWon=" + matchesWon +
+                ", matchesLost=" + matchesLost +
+                ", winRate=" + winRate +
                 ", verificationStatus='" + verificationStatus + '\'' +
                 ", careerHighlights='" + careerHighlights + '\'' +
                 ", isActive=" + isActive +

@@ -46,6 +46,7 @@ import { ScoreService, LiveScore } from '@/lib/api/scores';
 import { MatchService, Match } from '@/lib/api/matches';
 import { OrganizationService } from '@/lib/api/organization';
 import { AuthService } from '@/lib/api/auth';
+import { UserService, SportsProfileResponse } from '@/lib/api/user';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 
@@ -99,6 +100,7 @@ export default function PersonalHomePage() {
   const [userMatches, setUserMatches] = useState<any[]>([]);
   const [rawUserMatches, setRawUserMatches] = useState<Match[]>([]);
   const [umpireMatches, setUmpireMatches] = useState<Match[]>([]);
+  const [playerStats, setPlayerStats] = useState<SportsProfileResponse | null>(null);
 
   // Refs for horizontal scroll controls
   const auctionsScrollRef = useRef<HTMLDivElement>(null);
@@ -247,6 +249,17 @@ export default function PersonalHomePage() {
         });
     }
 
+    // Fetch Player Telemetry Stats
+    if (userUuid) {
+      UserService.getUserStats(userUuid)
+        .then((res) => {
+          if (res?.success && res.data) {
+            setPlayerStats(res.data);
+          }
+        })
+        .catch(() => {});
+    }
+
     const fetchScores = () => {
       ScoreService.getLive()
         .then((res: any) => res?.data && setLiveScores(res.data))
@@ -377,7 +390,9 @@ export default function PersonalHomePage() {
                       <span className="text-[7.5px] font-extrabold tracking-widest uppercase text-primary/80 leading-none mb-0.5">
                         RATING
                       </span>
-                      <span className="text-primary font-black text-sm sm:text-base leading-none">1200</span>
+                      <span className="text-primary font-black text-sm sm:text-base leading-none">
+                        {playerStats?.eloRating ?? 1200}
+                      </span>
                     </div>
                     <Trophy className="w-3.5 h-3.5 text-primary shrink-0 opacity-90" />
                   </div>
@@ -386,9 +401,9 @@ export default function PersonalHomePage() {
                 {/* 3 Stats Grid (Compact) */}
                 <div className="grid grid-cols-3 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
                   {[
-                    { label: 'MATCHES', icon: Activity, value: '0' },
-                    { label: 'WIN RATE', icon: TrendingUp, value: '0%' },
-                    { label: 'RANK', icon: Flame, value: '-' },
+                    { label: 'MATCHES', icon: Activity, value: String(playerStats?.totalMatches ?? 0) },
+                    { label: 'WIN RATE', icon: TrendingUp, value: `${playerStats?.winRate ? Math.round(playerStats.winRate) : 0}%` },
+                    { label: 'RANK', icon: Flame, value: playerStats?.globalRank ? `#${playerStats.globalRank}` : '-' },
                   ].map((s) => (
                     <div key={s.label} className="flex flex-col items-center justify-center py-2.5 px-2 gap-1">
                       <div className="flex items-center gap-1 text-foreground/40 text-[8px] font-extrabold tracking-wider uppercase">
@@ -1331,7 +1346,7 @@ export default function PersonalHomePage() {
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase text-foreground/50">ELO Rating</div>
-                    <div className="text-base font-black text-primary font-mono">1200</div>
+                    <div className="text-base font-black text-primary font-mono">{playerStats?.eloRating ?? 1200}</div>
                   </div>
                 </div>
 
@@ -1341,7 +1356,9 @@ export default function PersonalHomePage() {
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase text-foreground/50">Win Rate</div>
-                    <div className="text-base font-black text-emerald-400 font-mono">0%</div>
+                    <div className="text-base font-black text-emerald-400 font-mono">
+                      {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
+                    </div>
                   </div>
                 </div>
 
@@ -1351,7 +1368,9 @@ export default function PersonalHomePage() {
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase text-foreground/50">Global Rank</div>
-                    <div className="text-base font-black text-amber-400 font-mono">-</div>
+                    <div className="text-base font-black text-amber-400 font-mono">
+                      {playerStats?.globalRank ? `#${playerStats.globalRank}` : '-'}
+                    </div>
                   </div>
                 </div>
               </div>

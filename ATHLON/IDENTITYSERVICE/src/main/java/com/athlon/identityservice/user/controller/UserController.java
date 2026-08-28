@@ -140,4 +140,12 @@ public class UserController {
         SportsProfileResponse response = userService.createSportsProfile(request);
         return ResponseEntity.ok(ApiResponse.success("Sports Profile added successfully", response));
     }
+
+    @GetMapping("/stats/{uuid}")
+    public ResponseEntity<ApiResponse<SportsProfileResponse>> getUserStats(
+            @PathVariable("uuid") UUID uuid,
+            @RequestParam(value = "sportName", required = false, defaultValue = "Badminton") String sportName) {
+        SportsProfileResponse response = userService.getUserStats(uuid, sportName);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }

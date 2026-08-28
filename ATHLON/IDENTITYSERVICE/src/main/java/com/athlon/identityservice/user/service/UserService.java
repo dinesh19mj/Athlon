@@ -285,7 +285,27 @@ public class UserService {
                 SportsProfileResponse spr = new SportsProfileResponse();
                 spr.setUuid(sp.getSportsProfileUuid());
                 spr.setSportName(sp.getSportName());
+                spr.setCategory(sp.getCategory());
                 spr.setCurrentRanking(sp.getCurrentRanking());
+                spr.setEloRating(sp.getEloRating() != null ? sp.getEloRating() : 1200);
+                spr.setHighestElo(sp.getHighestElo() != null ? sp.getHighestElo() : 1200);
+                spr.setTotalMatches(sp.getTotalMatches() != null ? sp.getTotalMatches() : 0);
+                spr.setMatchesWon(sp.getMatchesWon() != null ? sp.getMatchesWon() : 0);
+                spr.setMatchesLost(sp.getMatchesLost() != null ? sp.getMatchesLost() : 0);
+                spr.setWinRate(sp.getWinRate() != null ? sp.getWinRate() : 0.0);
+                spr.setCurrentStreak(sp.getCurrentStreak() != null ? sp.getCurrentStreak() : 0);
+
+                try {
+                    long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
+                            sp.getSportName(),
+                            sp.getEloRating() != null ? sp.getEloRating() : 1200,
+                            sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
+                    );
+                    spr.setGlobalRank((int) (higherPlayers + 1));
+                } catch (Exception e) {
+                    spr.setGlobalRank(null);
+                }
+
                 spr.setVerificationStatus(sp.getVerificationStatus());
                 spr.setCareerHighlights(sp.getCareerHighlights());
                 spr.setActive(sp.isActive());
@@ -294,6 +314,59 @@ public class UserService {
             response.setSportsProfiles(sportsProfileResponses);
         }
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public SportsProfileResponse getUserStats(UUID userUuid, String sportName) {
+        String sport = (sportName != null && !sportName.trim().isEmpty()) ? sportName.trim() : "Badminton";
+        SportsProfile sp = sportsProfileRepository.findByUserUuidAndSportName(userUuid, sport)
+                .orElseGet(() -> {
+                    List<SportsProfile> profiles = sportsProfileRepository.findByUserUuid(userUuid);
+                    return profiles.isEmpty() ? null : profiles.get(0);
+                });
+
+        if (sp == null) {
+            SportsProfileResponse defaultSpr = new SportsProfileResponse();
+            defaultSpr.setSportName(sport);
+            defaultSpr.setEloRating(1200);
+            defaultSpr.setHighestElo(1200);
+            defaultSpr.setTotalMatches(0);
+            defaultSpr.setMatchesWon(0);
+            defaultSpr.setMatchesLost(0);
+            defaultSpr.setWinRate(0.0);
+            defaultSpr.setCurrentStreak(0);
+            defaultSpr.setGlobalRank(1);
+            return defaultSpr;
+        }
+
+        SportsProfileResponse spr = new SportsProfileResponse();
+        spr.setUuid(sp.getSportsProfileUuid());
+        spr.setSportName(sp.getSportName());
+        spr.setCategory(sp.getCategory());
+        spr.setCurrentRanking(sp.getCurrentRanking());
+        spr.setEloRating(sp.getEloRating() != null ? sp.getEloRating() : 1200);
+        spr.setHighestElo(sp.getHighestElo() != null ? sp.getHighestElo() : 1200);
+        spr.setTotalMatches(sp.getTotalMatches() != null ? sp.getTotalMatches() : 0);
+        spr.setMatchesWon(sp.getMatchesWon() != null ? sp.getMatchesWon() : 0);
+        spr.setMatchesLost(sp.getMatchesLost() != null ? sp.getMatchesLost() : 0);
+        spr.setWinRate(sp.getWinRate() != null ? sp.getWinRate() : 0.0);
+        spr.setCurrentStreak(sp.getCurrentStreak() != null ? sp.getCurrentStreak() : 0);
+
+        try {
+            long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
+                    sp.getSportName(),
+                    sp.getEloRating() != null ? sp.getEloRating() : 1200,
+                    sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
+            );
+            spr.setGlobalRank((int) (higherPlayers + 1));
+        } catch (Exception e) {
+            spr.setGlobalRank(null);
+        }
+
+        spr.setVerificationStatus(sp.getVerificationStatus());
+        spr.setCareerHighlights(sp.getCareerHighlights());
+        spr.setActive(sp.isActive());
+        return spr;
     }
 
     @Transactional
@@ -309,13 +382,29 @@ public class UserService {
         profile.setCurrentRanking(request.getCurrentRanking());
         profile.setCareerHighlights(request.getCareerHighlights());
         profile.setCategory(request.getCategory());
+        profile.setEloRating(1200);
+        profile.setHighestElo(1200);
+        profile.setTotalMatches(0);
+        profile.setMatchesWon(0);
+        profile.setMatchesLost(0);
+        profile.setWinRate(0.0);
+        profile.setCurrentStreak(0);
         
         profile = sportsProfileRepository.save(profile);
         
         SportsProfileResponse response = new SportsProfileResponse();
         response.setUuid(profile.getSportsProfileUuid());
         response.setSportName(profile.getSportName());
+        response.setCategory(profile.getCategory());
         response.setCurrentRanking(profile.getCurrentRanking());
+        response.setEloRating(profile.getEloRating());
+        response.setHighestElo(profile.getHighestElo());
+        response.setTotalMatches(profile.getTotalMatches());
+        response.setMatchesWon(profile.getMatchesWon());
+        response.setMatchesLost(profile.getMatchesLost());
+        response.setWinRate(profile.getWinRate());
+        response.setCurrentStreak(profile.getCurrentStreak());
+        response.setGlobalRank(1);
         response.setVerificationStatus(profile.getVerificationStatus());
         response.setCareerHighlights(profile.getCareerHighlights());
         response.setActive(profile.isActive());
