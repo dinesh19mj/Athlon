@@ -233,68 +233,98 @@ export function MarketingPageClient() {
 
 
 
-          {/* 3. Live Match Card */}
-          {liveScores.length > 0 && currentLive && (
-            <section className="bg-surface border border-foreground/5 rounded-[24px] p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
+
+
+          {/* 3. Mobile Live Match Arena Showcase */}
+          {liveScores.length > 0 && (
+            <section className="pt-1">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-red-500 font-bold text-xs tracking-wider">LIVE</span>
-                  <span className="text-foreground font-bold text-xs tracking-wider">MATCH</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                  <h2 className="text-sm font-black uppercase tracking-wider text-foreground">
+                    Live Match Arena ({liveScores.length})
+                  </h2>
                 </div>
-                <span className="text-foreground/50 text-xs">{courtName}</span>
+                <Link href="/live-score" className="text-xs font-bold text-red-400 hover:underline flex items-center gap-0.5">
+                  Live Scores <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
 
-              <div className="flex items-center justify-center mb-6">
-                <span className="px-3 py-1 bg-background rounded-full text-[10px] font-bold text-foreground/60 uppercase tracking-widest border border-foreground/5 text-center">
-                  {tournamentName} • {category}
-                </span>
-              </div>
+              <div className="flex items-stretch gap-3 overflow-x-auto pb-3 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
+                {liveScores.map((score) => {
+                  const mMeta = score.scoreMeta || {};
+                  const cfg = mMeta.config || {};
+                  const mTeamAName = cfg.teamAName || (cfg.teamA ? cfg.teamA.join(' & ') : 'Team A');
+                  const mTeamBName = cfg.teamBName || (cfg.teamB ? cfg.teamB.join(' & ') : 'Team B');
+                  const mGi = mMeta.currentGameIndex || 0;
+                  const mGames = mMeta.games || [];
+                  const mCur = mGames[mGi] || {};
+                  const mScoreA = mCur.scoreA ?? (score.teamAScore || 0);
+                  const mScoreB = mCur.scoreB ?? (score.teamBScore || 0);
+                  const mTourn = cfg.tournamentName || 'Tournament Match';
+                  const mCat = cfg.category || 'Match';
 
-              <div className="flex items-center justify-between px-2 mb-6">
-                {/* Player 1 */}
-                <div className="flex flex-col items-center gap-2 max-w-[110px]">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-b from-primary to-transparent p-[2px]">
-                    <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden flex items-center justify-center">
-                      <span className="text-xl font-black text-primary">{teamAName.charAt(0)}</span>
+                  return (
+                    <div
+                      key={score.scoreId || score.matchUuid}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[340px] max-w-[380px] rounded-2xl border p-5 shadow-lg space-y-3.5 overflow-hidden relative flex flex-col justify-between"
+                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse" />
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                          Live Game {mGi + 1}
+                        </span>
+                        <span className="text-[10px] text-foreground/50 font-bold uppercase truncate max-w-[140px]">
+                          {cfg.courtName || 'Court Arena'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3 className="text-xs font-bold text-primary uppercase tracking-wider truncate">
+                          {mTourn} • {mCat}
+                        </h3>
+                      </div>
+
+                      <div
+                        className="p-3.5 rounded-xl border space-y-2.5"
+                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-[11px] text-primary shrink-0">
+                              {mTeamAName.charAt(0)}
+                            </div>
+                            <span className="text-xs font-black text-foreground truncate">{mTeamAName}</span>
+                          </div>
+                          <span className="text-base font-black font-mono tabular-nums ml-2 text-primary">{mScoreA}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between border-t pt-2" style={{ borderColor: 'var(--athlon-border-subtle)' }}>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-[11px] text-foreground/70 shrink-0">
+                              {mTeamBName.charAt(0)}
+                            </div>
+                            <span className="text-xs font-black text-foreground truncate">{mTeamBName}</span>
+                          </div>
+                          <span className="text-base font-black font-mono tabular-nums ml-2 text-foreground">{mScoreB}</span>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/live-score/${score.matchUuid}`}
+                        className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                      >
+                        <Tv className="w-4 h-4" />
+                        <span>WATCH LIVE SCORESHEET</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
                     </div>
-                  </div>
-                  <span className="font-bold text-xs tracking-wider uppercase text-center line-clamp-2 leading-tight">
-                    {teamAName}
-                  </span>
-                  <span className="text-4xl font-black text-primary leading-none tabular-nums">{scoreA}</span>
-                </div>
-
-                {/* VS */}
-                <div className="flex flex-col items-center justify-center gap-2 mt-4 shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-background border border-foreground/10 flex items-center justify-center">
-                    <span className="text-foreground/50 font-bold text-sm">VS</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-background border border-foreground/5 rounded text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
-                    Game {currentGameIndex + 1}
-                  </span>
-                </div>
-
-                {/* Player 2 */}
-                <div className="flex flex-col items-center gap-2 max-w-[110px]">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-b from-white/20 to-transparent p-[2px]">
-                    <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden flex items-center justify-center">
-                      <span className="text-xl font-black text-foreground">{teamBName.charAt(0)}</span>
-                    </div>
-                  </div>
-                  <span className="font-bold text-xs tracking-wider uppercase text-center line-clamp-2 leading-tight">
-                    {teamBName}
-                  </span>
-                  <span className="text-4xl font-black text-foreground leading-none tabular-nums">{scoreB}</span>
-                </div>
+                  );
+                })}
               </div>
-
-              <Link
-                href={`/live-score/${currentLive.matchUuid}`}
-                className="w-full py-3.5 bg-primary rounded-xl text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-              >
-                WATCH LIVE <Tv className="w-4 h-4" />
-              </Link>
             </section>
           )}
 
@@ -794,109 +824,139 @@ export function MarketingPageClient() {
               </div>
             </div>
 
-            {/* Right 5 Columns: Interactive Match / Championship Spotlight Widget */}
+            {/* Right 5 Columns: Platform Feature Showcase Card */}
             <div className="col-span-5 space-y-4">
-
-              {liveScores.length > 0 && currentLive ? (
-                <div
-                  className="rounded-[32px] border p-7 shadow-2xl backdrop-blur-2xl space-y-5"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    borderColor: 'var(--athlon-border)',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                      <span className="text-red-500 font-black text-xs uppercase tracking-wider">LIVE MATCH ARENA</span>
-                    </div>
-                    <span className="text-xs font-mono font-bold text-foreground/60">{courtName}</span>
-                  </div>
-
-                  <div className="text-center py-1.5 border-y border-foreground/10">
-                    <span className="text-xs font-bold text-primary uppercase tracking-widest">
-                      {tournamentName} • {category}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-3">
-                    {/* Team A */}
-                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center font-black text-primary text-xl">
-                        {teamAName.charAt(0)}
-                      </div>
-                      <span className="font-extrabold text-xs text-foreground text-center truncate max-w-[120px]">
-                        {teamAName}
-                      </span>
-                      <span className="text-4xl font-black font-mono text-primary tabular-nums">
-                        {scoreA}
-                      </span>
-                    </div>
-
-                    {/* VS */}
-                    <div className="flex flex-col items-center gap-1.5 px-4">
-                      <span className="px-2.5 py-1 rounded-md bg-foreground/10 text-[10px] font-mono font-bold text-foreground/70">
-                        Game {currentGameIndex + 1}
-                      </span>
-                      <span className="text-xs font-black text-foreground/30">VS</span>
-                    </div>
-
-                    {/* Team B */}
-                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                      <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-foreground text-xl">
-                        {teamBName.charAt(0)}
-                      </div>
-                      <span className="font-extrabold text-xs text-foreground text-center truncate max-w-[120px]">
-                        {teamBName}
-                      </span>
-                      <span className="text-4xl font-black font-mono text-foreground tabular-nums">
-                        {scoreB}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/live-score/${currentLive.matchUuid}`}
-                    className="w-full py-3.5 rounded-xl bg-primary text-black font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-                  >
-                    <span>Watch Live Scoresheet</span>
-                    <Tv className="w-4 h-4" />
-                  </Link>
+              <div
+                className="rounded-[32px] border p-8 shadow-2xl backdrop-blur-2xl space-y-5"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+                }}
+              >
+                <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
+                  <Shield className="w-4 h-4" />
+                  <span>Franchise &amp; League Management</span>
                 </div>
-              ) : (
-                <div
-                  className="rounded-[32px] border p-8 shadow-2xl backdrop-blur-2xl space-y-5"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    borderColor: 'var(--athlon-border)',
-                  }}
+                <h3 className="text-2xl font-black text-foreground leading-snug">
+                  Host Your Own Team Championship
+                </h3>
+                <p className="text-sm text-foreground/70 leading-relaxed">
+                  Custom categories, live player draft auction arenas, automated pool ties, and real-time standings in a single integrated hub.
+                </p>
+                <Link
+                  href="/tournaments"
+                  className="inline-flex items-center gap-2 text-xs font-black text-primary hover:underline pt-2"
                 >
-                  <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-wider">
-                    <Shield className="w-4 h-4" />
-                    <span>Franchise & League Management</span>
-                  </div>
-                  <h3 className="text-2xl font-black text-foreground leading-snug">
-                    Host Your Own Team Championship
-                  </h3>
-                  <p className="text-sm text-foreground/70 leading-relaxed">
-                    Custom categories, live player draft auction arenas, automated pool ties, and real-time standings in a single integrated hub.
-                  </p>
-                  <Link
-                    href="/tournaments"
-                    className="inline-flex items-center gap-2 text-xs font-black text-primary hover:underline pt-2"
-                  >
-                    <span>Explore Active Championships</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              )}
+                  <span>Explore Active Championships</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Desktop Main Content Container */}
         <main className="max-w-7xl mx-auto px-6 lg:px-8 py-14 space-y-14">
+          {/* ── SECTION 1: 🔴 LIVE MATCH ARENA (HORIZONTAL SCROLL) ── */}
+          {liveScores.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
+                  <h2 className="text-lg font-black text-foreground">
+                    Live Match Arena ({liveScores.length})
+                  </h2>
+                </div>
+                <Link
+                  href="/live-score"
+                  className="text-xs font-bold text-red-500 hover:underline uppercase tracking-wider flex items-center gap-1"
+                >
+                  Live Arena Dashboard <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar">
+                {liveScores.map((score) => {
+                  const mMeta = score.scoreMeta || {};
+                  const cfg = mMeta.config || {};
+                  const mTeamAName = cfg.teamAName || (cfg.teamA ? cfg.teamA.join(' & ') : 'Team A');
+                  const mTeamBName = cfg.teamBName || (cfg.teamB ? cfg.teamB.join(' & ') : 'Team B');
+                  const mGi = mMeta.currentGameIndex || 0;
+                  const mGames = mMeta.games || [];
+                  const mCur = mGames[mGi] || {};
+                  const mScoreA = mCur.scoreA ?? (score.teamAScore || 0);
+                  const mScoreB = mCur.scoreB ?? (score.teamBScore || 0);
+                  const mTourn = cfg.tournamentName || 'Tournament Match';
+                  const mCat = cfg.category || 'Match';
+
+                  return (
+                    <div
+                      key={score.scoreId || score.matchUuid}
+                      className="snap-start shrink-0 w-[380px] rounded-2xl border p-5 shadow-lg space-y-4 overflow-hidden relative flex flex-col justify-between"
+                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse" />
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                          Live Game {mGi + 1}
+                        </span>
+                        <span className="text-xs text-foreground/50 font-medium truncate max-w-[180px]">
+                          {cfg.courtName || 'Court Arena'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3 className="text-base font-black text-foreground tracking-tight line-clamp-1">
+                          {mTourn}
+                        </h3>
+                        <p className="text-xs text-foreground/60 line-clamp-1">
+                          {mCat} • Real-time umpire scoresheet
+                        </p>
+                      </div>
+
+                      <div
+                        className="p-3.5 rounded-xl border space-y-2.5"
+                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-xs text-primary shrink-0">
+                              {mTeamAName.charAt(0)}
+                            </div>
+                            <span className="text-xs font-black text-foreground truncate">{mTeamAName}</span>
+                          </div>
+                          <span className="text-lg font-black font-mono tabular-nums ml-2 text-primary">{mScoreA}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between border-t pt-2" style={{ borderColor: 'var(--athlon-border-subtle)' }}>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-foreground/70 shrink-0">
+                              {mTeamBName.charAt(0)}
+                            </div>
+                            <span className="text-xs font-black text-foreground truncate">{mTeamBName}</span>
+                          </div>
+                          <span className="text-lg font-black font-mono tabular-nums ml-2 text-foreground">{mScoreB}</span>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/live-score/${score.matchUuid}`}
+                        className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                      >
+                        <Tv className="w-4 h-4" />
+                        <span>WATCH LIVE SCORESHEET</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* 2. Desktop 4-Bento Arena Services Grid */}
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
