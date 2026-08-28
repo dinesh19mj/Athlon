@@ -2213,24 +2213,22 @@ export default function TeamChampionshipDashboardPage() {
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
 
-                  {/* Theme Selector Trigger - ONLY in Maximize Screen */}
+                  {/* Theme Selector Trigger - ONLY Icon in Maximize Screen */}
                   {isAuctionFullscreen && (
                     <button
                       type="button"
-                      onClick={() => setIsThemeModalOpen((prev) => !prev)}
-                      className="px-4 py-2.5 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-foreground font-black text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer"
-                      title="Select Arena Theme Color Palette"
+                      onClick={() => setIsThemeModalOpen(true)}
+                      className="w-10 h-10 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/25 hover:border-primary text-primary transition-all flex items-center justify-center shadow-sm cursor-pointer active:scale-95 group relative"
+                      title={`Select Arena Theme (Current: ${currentTheme?.name || "Default"})`}
                     >
-                      <div
-                        className="w-3.5 h-3.5 rounded-full shadow-sm"
+                      <Palette className="w-4 h-4 transition-transform group-hover:rotate-12" />
+                      <span
+                        className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ring-2 ring-background"
                         style={{
                           backgroundColor: currentTheme?.colors?.primary || "var(--athlon-primary)",
-                          boxShadow: `0 0 8px ${currentTheme?.colors?.primaryGlow || "var(--athlon-primary)"}`,
+                          boxShadow: `0 0 6px ${currentTheme?.colors?.primaryGlow || "var(--athlon-primary)"}`,
                         }}
                       />
-                      <Palette className="w-3.5 h-3.5 text-primary" />
-                      <span>Theme: <strong>{currentTheme?.name || "Default"}</strong></span>
-                      <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${isThemeModalOpen ? "rotate-180" : ""}`} />
                     </button>
                   )}
 
