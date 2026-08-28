@@ -100,6 +100,14 @@ public class User {
         this.isActive = isActive;
     }
 
+    public boolean isActive() {
+        return isActive != null && isActive == 1;
+    }
+
+    public void setActive(boolean active) {
+        this.isActive = active ? 1 : 0;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }

@@ -33,6 +33,8 @@ export interface OrganizationProfile {
 
 export interface Organization {
   orgId?: number;
+  uuid?: string;
+  organizationUuid?: string;
   name: string;
   type: string;
   description?: string;
@@ -51,12 +53,26 @@ export interface Organization {
   profile?: OrganizationProfile;
 }
 
-export interface OrganizationMember {
-  memberId?: number;
-  orgId: number;
-  playerId: number;
+export interface OrganizationMemberResponse {
+  organizationMemberUuid: string;
+  organizationMemberId?: number;
+  organizationUuid: string;
+  organizationId?: number;
+  userUuid: string;
+  userId?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  photo?: string;
   role: string;
+  status: string;
   isActive?: number;
+  joinedAt?: string;
+}
+
+export interface AddMemberRequest {
+  phone: string;
+  role?: string;
 }
 
 export const OrganizationService = {
@@ -104,9 +120,12 @@ export const OrganizationService = {
   getByUserUuid: (userUuid: string) => 
     api.get<any>(`/api/identity/organizations/getByUserUuid/${userUuid}`),
     
-  addMember: (orgId: number, playerId: number, role: string) => 
-    api.post<OrganizationMember>(`/organization/addMember/${orgId}?playerId=${playerId}&role=${role}`, {}),
-    
-  getMembers: (orgId: number) => 
-    api.get<OrganizationMember[]>(`/organization/getMembers/${orgId}`)
+  getMembers: (orgUuid: string) => 
+    api.get<OrganizationMemberResponse[]>(`/api/identity/organizations/${orgUuid}/members`),
+
+  addMemberByPhone: (orgUuid: string, data: AddMemberRequest) =>
+    api.post<OrganizationMemberResponse>(`/api/identity/organizations/${orgUuid}/members`, data),
+
+  removeMember: (orgUuid: string, memberUuid: string) =>
+    api.post<void>(`/api/identity/organizations/${orgUuid}/members/${memberUuid}/remove`, {})
 };

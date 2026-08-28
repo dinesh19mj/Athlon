@@ -1,17 +1,25 @@
 package com.athlon.identityservice.organization.service;
 
+import com.athlon.identityservice.organization.dto.request.AddMemberRequest;
 import com.athlon.identityservice.organization.dto.request.CreateOrganizationRequest;
 import com.athlon.identityservice.organization.dto.request.SaveOrganizationProfileRequest;
 import com.athlon.identityservice.organization.dto.request.UpdateOrganizationRequest;
+import com.athlon.identityservice.organization.dto.response.OrganizationMemberResponse;
 import com.athlon.identityservice.organization.dto.response.OrganizationProfileResponse;
 import com.athlon.identityservice.organization.dto.response.OrganizationResponse;
 import com.athlon.identityservice.organization.entity.Organization;
+import com.athlon.identityservice.organization.entity.OrganizationMember;
 import com.athlon.identityservice.organization.entity.OrganizationProfile;
 import com.athlon.identityservice.exception.DuplicateResourceException;
 import com.athlon.identityservice.exception.ResourceNotFoundException;
+import com.athlon.identityservice.organization.repository.OrganizationMemberRepository;
 import com.athlon.identityservice.organization.repository.OrganizationProfileRepository;
 import com.athlon.identityservice.organization.repository.OrganizationRepository;
 import com.athlon.identityservice.subscription.service.SubscriptionService;
+import com.athlon.identityservice.user.entity.User;
+import com.athlon.identityservice.user.entity.UserProfile;
+import com.athlon.identityservice.user.repository.UserProfileRepository;
+import com.athlon.identityservice.user.repository.UserRepository;
 import com.athlon.identityservice.util.FileStorageUtil;
 import com.athlon.identityservice.dto.request.SubscribeOrganizationRequest;
 
@@ -31,6 +39,9 @@ public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final OrganizationProfileRepository organizationProfileRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
+    private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
     private final SubscriptionService subscriptionService;
     private final FileStorageUtil fileStorageUtil;
 
@@ -40,10 +51,16 @@ public class OrganizationService {
     public OrganizationService(
             OrganizationRepository organizationRepository,
             OrganizationProfileRepository organizationProfileRepository,
+            OrganizationMemberRepository organizationMemberRepository,
+            UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
             SubscriptionService subscriptionService,
             FileStorageUtil fileStorageUtil) {
         this.organizationRepository = organizationRepository;
         this.organizationProfileRepository = organizationProfileRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
+        this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
         this.subscriptionService = subscriptionService;
         this.fileStorageUtil = fileStorageUtil;
     }
@@ -107,24 +124,7 @@ public class OrganizationService {
         Organization organization = organizationRepository.findByOrganizationUuid(request.getOrganizationUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + request.getOrganizationUuid()));
 
-        // Update core organization entity if basic fields are provided
-        if (request.getName() != null && !request.getName().trim().isEmpty()) {
-            if (!organization.getName().equals(request.getName().trim()) && organizationRepository.existsByName(request.getName().trim())) {
-                throw new DuplicateResourceException("Organization name already in use: " + request.getName());
-            }
-            organization.setName(request.getName().trim());
-        }
-        if (request.getDescription() != null) {
-            organization.setDescription(request.getDescription().trim());
-        }
-        if (request.getType() != null && !request.getType().trim().isEmpty()) {
-            organization.setType(request.getType().trim());
-        }
-        organization.setUpdatedBy(currentUserId);
-        organizationRepository.save(organization);
-
-        // Find or create profile
-        OrganizationProfile profile = organizationProfileRepository.findByOrganizationUuid(organization.getOrganizationUuid())
+        OrganizationProfile profile = organizationProfileRepository.findByOrganizationUuid(request.getOrganizationUuid())
                 .orElseGet(() -> new OrganizationProfile(organization.getOrganizationId(), organization.getOrganizationUuid(), currentUserId));
 
         profile.setContactEmail(request.getContactEmail());
@@ -136,17 +136,9 @@ public class OrganizationService {
         profile.setCountry(request.getCountry());
         profile.setPostalCode(request.getPostalCode());
         profile.setWebsite(request.getWebsite());
-        if (request.getLogo() != null) {
-            profile.setLogo(request.getLogo());
-        }
-        if (request.getBanner() != null) {
-            profile.setBanner(request.getBanner());
-        }
-
-        // Determine public visibility based on type if not explicitly set
-        boolean isPublicType = "ACADEMY".equalsIgnoreCase(organization.getType()) || "COURT".equalsIgnoreCase(organization.getType());
-        profile.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : (isPublicType ? 1 : 0));
-
+        profile.setLogo(request.getLogo());
+        profile.setBanner(request.getBanner());
+        profile.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : profile.getIsPublic());
         profile.setSportsOffered(request.getSportsOffered());
         profile.setAdmissionStatus(request.getAdmissionStatus());
         profile.setAcademyLevels(request.getAcademyLevels());
@@ -160,6 +152,12 @@ public class OrganizationService {
 
         profile = organizationProfileRepository.save(profile);
 
+        if (request.getName() != null && !request.getName().trim().isEmpty() && !request.getName().equals(organization.getName())) {
+            organization.setName(request.getName().trim());
+            organization.setUpdatedBy(currentUserId);
+            organizationRepository.save(organization);
+        }
+
         return mapToProfileResponse(organization, profile);
     }
 
@@ -170,17 +168,54 @@ public class OrganizationService {
             MultipartFile bannerFile,
             Long currentUserId) throws IOException {
 
+        Organization organization = organizationRepository.findByOrganizationUuid(request.getOrganizationUuid())
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + request.getOrganizationUuid()));
+
+        OrganizationProfile profile = organizationProfileRepository.findByOrganizationUuid(request.getOrganizationUuid())
+                .orElseGet(() -> new OrganizationProfile(organization.getOrganizationId(), organization.getOrganizationUuid(), currentUserId));
+
         if (logoFile != null && !logoFile.isEmpty()) {
-            String savedLogo = fileStorageUtil.saveFile(logoFile, uploadBaseDir, "organizations/logos");
-            request.setLogo(savedLogo);
+            String subDir = "organizations" + java.io.File.separator + "logos";
+            String savedLogo = fileStorageUtil.saveFile(logoFile, uploadBaseDir, subDir);
+            profile.setLogo(savedLogo);
         }
 
         if (bannerFile != null && !bannerFile.isEmpty()) {
-            String savedBanner = fileStorageUtil.saveFile(bannerFile, uploadBaseDir, "organizations/banners");
-            request.setBanner(savedBanner);
+            String subDir = "organizations" + java.io.File.separator + "banners";
+            String savedBanner = fileStorageUtil.saveFile(bannerFile, uploadBaseDir, subDir);
+            profile.setBanner(savedBanner);
         }
 
-        return saveOrganizationProfile(request, currentUserId);
+        profile.setContactEmail(request.getContactEmail());
+        profile.setContactPhone(request.getContactPhone());
+        profile.setAddress(request.getAddress());
+        profile.setCity(request.getCity());
+        profile.setDistrict(request.getDistrict());
+        profile.setState(request.getState());
+        profile.setCountry(request.getCountry());
+        profile.setPostalCode(request.getPostalCode());
+        profile.setWebsite(request.getWebsite());
+        profile.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : profile.getIsPublic());
+        profile.setSportsOffered(request.getSportsOffered());
+        profile.setAdmissionStatus(request.getAdmissionStatus());
+        profile.setAcademyLevels(request.getAcademyLevels());
+        profile.setTotalCourts(request.getTotalCourts());
+        profile.setSurfaceType(request.getSurfaceType());
+        profile.setOpeningTime(request.getOpeningTime());
+        profile.setClosingTime(request.getClosingTime());
+        profile.setPricePerHour(request.getPricePerHour());
+        profile.setAmenities(request.getAmenities());
+        profile.setUpdatedBy(currentUserId);
+
+        profile = organizationProfileRepository.save(profile);
+
+        if (request.getName() != null && !request.getName().trim().isEmpty() && !request.getName().equals(organization.getName())) {
+            organization.setName(request.getName().trim());
+            organization.setUpdatedBy(currentUserId);
+            organizationRepository.save(organization);
+        }
+
+        return mapToProfileResponse(organization, profile);
     }
 
     @Transactional(readOnly = true)
@@ -193,7 +228,6 @@ public class OrganizationService {
             return mapToProfileResponse(organization, profileOpt.get());
         }
 
-        // Return baseline profile response from organization entity
         OrganizationProfileResponse resp = new OrganizationProfileResponse();
         resp.setOrganizationId(organization.getOrganizationId());
         resp.setOrganizationUuid(organization.getOrganizationUuid());
@@ -235,6 +269,130 @@ public class OrganizationService {
         return organizationRepository.findByUserUuid(userUuid).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    // -------------------------------------------------------------
+    // CLUB / ORGANIZATION MEMBERS MANAGEMENT
+    // -------------------------------------------------------------
+
+    @Transactional(readOnly = true)
+    public List<OrganizationMemberResponse> getOrganizationMembers(UUID organizationUuid) {
+        Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + organizationUuid));
+
+        List<OrganizationMember> members = organizationMemberRepository.findByOrganizationId(organization.getOrganizationId());
+
+        return members.stream()
+                .filter(m -> m.getIsActive() != null && m.getIsActive() == 1)
+                .map(m -> {
+                    OrganizationMemberResponse resp = new OrganizationMemberResponse();
+                    resp.setOrganizationMemberUuid(m.getOrganizationMemberUuid());
+                    resp.setOrganizationMemberId(m.getOrganizationMemberId());
+                    resp.setOrganizationUuid(organization.getOrganizationUuid());
+                    resp.setOrganizationId(organization.getOrganizationId());
+                    resp.setUserUuid(m.getUserUuid());
+                    resp.setUserId(m.getUserId());
+                    resp.setRole(m.getRole());
+                    resp.setIsActive(m.getIsActive());
+                    resp.setStatus(m.getIsActive() == 1 ? "Active" : "Inactive");
+                    resp.setJoinedAt(m.getCreatedAt());
+
+                    userRepository.findById(m.getUserId()).ifPresent(user -> {
+                        resp.setEmail(user.getEmail());
+                    });
+
+                    userProfileRepository.findByUserId(m.getUserId()).ifPresent(p -> {
+                        String fullName = ((p.getFirstName() != null ? p.getFirstName() : "") + " " + (p.getLastName() != null ? p.getLastName() : "")).trim();
+                        resp.setFullName(fullName.isEmpty() ? "Athlon Athlete" : fullName);
+                        resp.setPhone(p.getPhone());
+                        resp.setPhoto(p.getPhoto());
+                    });
+
+                    return resp;
+                }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public OrganizationMemberResponse addMemberByPhone(UUID organizationUuid, AddMemberRequest request, Long currentUserId) {
+        Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + organizationUuid));
+
+        if (request.getPhone() == null || request.getPhone().trim().isEmpty()) {
+            throw new IllegalArgumentException("Phone number is required");
+        }
+
+        String cleanPhone = request.getPhone().replaceAll("[^0-9]", "");
+        UserProfile userProfile = userProfileRepository.findFirstByPhone(cleanPhone)
+                .or(() -> userProfileRepository.findFirstByPhone(request.getPhone().trim()))
+                .orElseThrow(() -> new ResourceNotFoundException("No active Athlon user found with phone: " + request.getPhone() + ". Please create a user account first."));
+
+        User user = userRepository.findById(userProfile.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User account not found for phone: " + request.getPhone()));
+
+        if (!user.isActive()) {
+            throw new ResourceNotFoundException("User account is currently inactive with phone: " + request.getPhone());
+        }
+
+        Optional<OrganizationMember> existingMemberOpt = organizationMemberRepository
+                .findByOrganizationIdAndUserId(organization.getOrganizationId(), user.getUserId());
+
+        OrganizationMember member;
+        if (existingMemberOpt.isPresent()) {
+            member = existingMemberOpt.get();
+            if (member.getIsActive() != null && member.getIsActive() == 1) {
+                throw new DuplicateResourceException("This user is already an active member of this club/organization.");
+            }
+            member.setIsActive(1);
+            member.setRole(request.getRole() != null ? request.getRole() : "MEMBER");
+            member.setUpdatedBy(currentUserId);
+        } else {
+            member = new OrganizationMember(
+                    organization.getOrganizationId(),
+                    organization.getOrganizationUuid(),
+                    user.getUserId(),
+                    user.getUserUuid(),
+                    request.getRole() != null ? request.getRole() : "MEMBER",
+                    currentUserId
+            );
+        }
+
+        member = organizationMemberRepository.save(member);
+
+        OrganizationMemberResponse resp = new OrganizationMemberResponse();
+        resp.setOrganizationMemberUuid(member.getOrganizationMemberUuid());
+        resp.setOrganizationMemberId(member.getOrganizationMemberId());
+        resp.setOrganizationUuid(organization.getOrganizationUuid());
+        resp.setOrganizationId(organization.getOrganizationId());
+        resp.setUserUuid(user.getUserUuid());
+        resp.setUserId(user.getUserId());
+        resp.setEmail(user.getEmail());
+        resp.setPhone(userProfile.getPhone());
+        resp.setPhoto(userProfile.getPhoto());
+        String fullName = ((userProfile.getFirstName() != null ? userProfile.getFirstName() : "") + " " + (userProfile.getLastName() != null ? userProfile.getLastName() : "")).trim();
+        resp.setFullName(fullName.isEmpty() ? "Athlon Athlete" : fullName);
+        resp.setRole(member.getRole());
+        resp.setStatus("Active");
+        resp.setIsActive(1);
+        resp.setJoinedAt(member.getCreatedAt() != null ? member.getCreatedAt() : java.time.LocalDateTime.now());
+
+        return resp;
+    }
+
+    @Transactional
+    public void removeMember(UUID organizationUuid, UUID memberUuid, Long currentUserId) {
+        Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + organizationUuid));
+
+        OrganizationMember member = organizationMemberRepository.findByOrganizationMemberUuid(memberUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found with UUID: " + memberUuid));
+
+        if (!member.getOrganizationId().equals(organization.getOrganizationId())) {
+            throw new IllegalArgumentException("Member does not belong to this organization");
+        }
+
+        member.setIsActive(0);
+        member.setUpdatedBy(currentUserId);
+        organizationMemberRepository.save(member);
     }
 
     public String getUploadBaseDir() {

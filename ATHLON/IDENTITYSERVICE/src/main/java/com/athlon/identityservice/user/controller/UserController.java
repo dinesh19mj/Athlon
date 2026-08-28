@@ -155,4 +155,10 @@ public class UserController {
         userService.recordMatchResult(request);
         return ResponseEntity.ok(ApiResponse.success("Match telemetry recorded and ratings updated successfully", null));
     }
+
+    @GetMapping("/findByPhone")
+    public ResponseEntity<ApiResponse<UserResponse>> findUserByPhoneParam(@RequestParam("phone") String phone) {
+        UserResponse response = userService.getUserByPhone(phone);
+        return ResponseEntity.ok(ApiResponse.success("User found successfully", response));
+    }
 }

@@ -130,4 +130,29 @@ public class OrganizationController {
         List<OrganizationResponse> responses = organizationService.getOrganizationsByUserUuid(userUuid);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
+
+    @GetMapping("/{orgUuid}/members")
+    public ResponseEntity<ApiResponse<List<com.athlon.identityservice.organization.dto.response.OrganizationMemberResponse>>> getOrganizationMembers(
+            @PathVariable("orgUuid") UUID orgUuid) {
+        var response = organizationService.getOrganizationMembers(orgUuid);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/{orgUuid}/members")
+    public ResponseEntity<ApiResponse<com.athlon.identityservice.organization.dto.response.OrganizationMemberResponse>> addMemberByPhone(
+            @PathVariable("orgUuid") UUID orgUuid,
+            @Valid @RequestBody com.athlon.identityservice.organization.dto.request.AddMemberRequest request,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+        var response = organizationService.addMemberByPhone(orgUuid, request, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("Member added to organization successfully", response));
+    }
+
+    @PostMapping("/{orgUuid}/members/{memberUuid}/remove")
+    public ResponseEntity<ApiResponse<Void>> removeMember(
+            @PathVariable("orgUuid") UUID orgUuid,
+            @PathVariable("memberUuid") UUID memberUuid,
+            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+        organizationService.removeMember(orgUuid, memberUuid, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("Member removed from organization successfully", null));
+    }
 }
