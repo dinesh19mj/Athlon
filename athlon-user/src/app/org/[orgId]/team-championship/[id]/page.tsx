@@ -435,10 +435,12 @@ export default function TeamChampionshipDashboardPage() {
       } else if (auctionTeams.length > 0 && !manualWinningTeamId) {
         setManualWinningTeamId(auctionTeams[0].team.teamId);
       }
-      // Automatically switch right tray to live podcast stream when an active player is called
-      setRightTrayTab("BIDS");
+      // Automatically switch right tray to live podcast stream only when automatic bidding is active
+      if (auctionBiddingMode === "AUTOMATIC") {
+        setRightTrayTab("BIDS");
+      }
     }
-  }, [auctionState?.activePlayer?.auctionPlayerId, auctionState?.currentBid, auctionState?.winningTeamId]);
+  }, [auctionState?.activePlayer?.auctionPlayerId, auctionState?.currentBid, auctionState?.winningTeamId, auctionBiddingMode]);
 
   // Sync Auction Config (Bidding Mode, Timer, Point Bumps)
   useEffect(() => {
@@ -2682,38 +2684,82 @@ export default function TeamChampionshipDashboardPage() {
                     className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-md flex flex-col p-4 justify-between overflow-y-auto overflow-x-hidden hide-scrollbar"
                     style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
-                    {/* Mode Navigation Tabs: Live Bidding Podcast vs Category Queue */}
-                    <div className="border-b pb-2.5 shrink-0 space-y-2" style={{ borderColor: "var(--athlon-border)" }}>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1 p-1 rounded-xl bg-background border flex-1" style={{ borderColor: "var(--athlon-border)" }}>
-                          <button
-                            type="button"
-                            onClick={() => setRightTrayTab("BIDS")}
-                            className={`flex-1 py-1 px-2 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                              rightTrayTab === "BIDS"
-                                ? "bg-primary text-black shadow-sm"
-                                : "text-foreground/60 hover:text-foreground hover:bg-surface"
-                            }`}
-                          >
-                            <Radio className={`w-3 h-3 ${rightTrayTab === "BIDS" && activePlayer ? "animate-pulse text-red-600" : ""}`} />
-                            <span>Podcast ({auctionState?.recentBids?.length || 0})</span>
-                            {activePlayer && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
-                            )}
-                          </button>
+                    {/* Header: Mode Switcher (for Automatic Bidding) OR Direct Category Header (for Manual Bidding) */}
+                    {auctionBiddingMode === "AUTOMATIC" ? (
+                      <div className="border-b pb-2.5 shrink-0 space-y-2" style={{ borderColor: "var(--athlon-border)" }}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1 p-1 rounded-xl bg-background border flex-1" style={{ borderColor: "var(--athlon-border)" }}>
+                            <button
+                              type="button"
+                              onClick={() => setRightTrayTab("BIDS")}
+                              className={`flex-1 py-1 px-2 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                                rightTrayTab === "BIDS"
+                                  ? "bg-primary text-black shadow-sm"
+                                  : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                              }`}
+                            >
+                              <Radio className={`w-3 h-3 ${rightTrayTab === "BIDS" && activePlayer ? "animate-pulse text-red-600" : ""}`} />
+                              <span>Podcast ({auctionState?.recentBids?.length || 0})</span>
+                              {activePlayer && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
+                              )}
+                            </button>
 
+                            <button
+                              type="button"
+                              onClick={() => setRightTrayTab("QUEUE")}
+                              className={`flex-1 py-1 px-2 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                                rightTrayTab === "QUEUE"
+                                  ? "bg-primary text-black shadow-sm"
+                                  : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                              }`}
+                            >
+                              <Users className="w-3 h-3" />
+                              <span>Queue ({categoryPlayers.length})</span>
+                            </button>
+                          </div>
+
+                          {/* Spin Player Shortcut Button */}
                           <button
-                            type="button"
-                            onClick={() => setRightTrayTab("QUEUE")}
-                            className={`flex-1 py-1 px-2 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                              rightTrayTab === "QUEUE"
-                                ? "bg-primary text-black shadow-sm"
-                                : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                            onClick={() => {
+                              if (!isAuctionLive) {
+                                alert("Please click 'Start Live Auction' above before spinning players!");
+                                return;
+                              }
+                              runPlayerSnipper();
+                            }}
+                            disabled={!isAuctionLive || isSpinningPlayer || waitingCategoryPlayers.length === 0}
+                            className={`px-2.5 py-1.5 rounded-xl font-black text-[10px] shadow-sm transition-all flex items-center gap-1 shrink-0 ${
+                              isAuctionLive && waitingCategoryPlayers.length > 0
+                                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-amber-500/20 hover:scale-105 active:scale-95 cursor-pointer"
+                                : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
                             }`}
+                            title={isAuctionLive ? "Spin next waiting player" : "Start Live Auction first to enable"}
                           >
-                            <Users className="w-3 h-3" />
-                            <span>Queue ({categoryPlayers.length})</span>
+                            <Shuffle className="w-3 h-3" />
+                            <span>Spin</span>
                           </button>
+                        </div>
+
+                        {rightTrayTab === "QUEUE" && (
+                          <div className="flex items-center justify-between text-[10px] text-foreground/50 px-0.5">
+                            <span>{activeCategory?.name || "Category"}: <strong>{categoryPlayers.length} athletes</strong></span>
+                            <span>Base: <strong className="text-primary font-mono">{activeCategory?.basePrice || 1000} pts</strong></span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between border-b pb-2.5 shrink-0" style={{ borderColor: "var(--athlon-border)" }}>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <h4 className="text-xs font-black text-foreground uppercase tracking-tight truncate">
+                              {activeCategory?.name || "Category"} ({categoryPlayers.length})
+                            </h4>
+                          </div>
+                          <span className="text-[10px] text-foreground/50 block">
+                            Base: <strong className="text-primary font-mono">{activeCategory?.basePrice || 1000} pts</strong>
+                          </span>
                         </div>
 
                         {/* Spin Player Shortcut Button */}
@@ -2737,17 +2783,10 @@ export default function TeamChampionshipDashboardPage() {
                           <span>Spin</span>
                         </button>
                       </div>
+                    )}
 
-                      {rightTrayTab === "QUEUE" && (
-                        <div className="flex items-center justify-between text-[10px] text-foreground/50 px-0.5">
-                          <span>{activeCategory?.name || "Category"}: <strong>{categoryPlayers.length} athletes</strong></span>
-                          <span>Base: <strong className="text-primary font-mono">{activeCategory?.basePrice || 1000} pts</strong></span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* CONTENT 1: LIVE BIDDING PODCAST STREAM */}
-                    {rightTrayTab === "BIDS" ? (
+                    {/* CONTENT 1: LIVE BIDDING PODCAST STREAM (Only in Automatic Bidding Mode) */}
+                    {auctionBiddingMode === "AUTOMATIC" && rightTrayTab === "BIDS" ? (
                       <div className="flex-1 flex flex-col min-h-0 mt-2">
                         <div className="flex items-center justify-between pb-2 px-0.5 text-[10px] font-black uppercase tracking-wider text-foreground/50">
                           <span className="flex items-center gap-1.5">
