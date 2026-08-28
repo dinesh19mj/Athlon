@@ -638,17 +638,6 @@ export default function TeamOwnerAuctionArenaPage() {
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight truncate drop-shadow-md leading-tight">
                       {auctionState.activePlayer.playerName}
                     </h2>
-
-                    <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap pt-1">
-                      <span className="px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-foreground/70">
-                        Championship Draft Pool
-                      </span>
-                      {auctionState.activePlayer.eligibleFormats && (
-                        <span className="px-3 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-bold">
-                          {auctionState.activePlayer.eligibleFormats}
-                        </span>
-                      )}
-                    </div>
                   </div>
 
                   {/* Segmented Digital Stadium Countdown Dial */}
