@@ -481,22 +481,20 @@ export default function MatchesPage() {
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             onClick={handleSetToday}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-              selectedDate === new Date().toISOString().split('T')[0]
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === new Date().toISOString().split('T')[0]
+              ? 'bg-primary text-black shadow-md shadow-primary/20'
+              : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+              }`}
           >
             Today
           </button>
 
           <button
             onClick={handleSetAllDates}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-              selectedDate === ''
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === ''
+              ? 'bg-primary text-black shadow-md shadow-primary/20'
+              : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+              }`}
           >
             All Dates
           </button>
@@ -534,12 +532,12 @@ export default function MatchesPage() {
             <button
               onClick={() => {
                 resetModal();
-                if (selectedDate) setMatchDate(selectedDate);
+                setMatchDate(new Date().toISOString().split('T')[0]);
                 setIsAddModalOpen(true);
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
             >
-              <Plus className="w-4 h-4" /> Record Match for {selectedDate ? new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Today'}
+              <Plus className="w-4 h-4" /> Record Match
             </button>
           </div>
         ) : (
@@ -681,11 +679,10 @@ export default function MatchesPage() {
                           </div>
                         </div>
 
-                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${
-                          isTeamAWinner
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                            : 'bg-surface text-foreground/80 border-foreground/10'
-                        }`}>
+                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${isTeamAWinner
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                          : 'bg-surface text-foreground/80 border-foreground/10'
+                          }`}>
                           {scoreA}
                         </div>
                       </div>
@@ -711,11 +708,10 @@ export default function MatchesPage() {
                           </div>
                         </div>
 
-                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${
-                          isTeamBWinner
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                            : 'bg-surface text-foreground/80 border-foreground/10'
-                        }`}>
+                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${isTeamBWinner
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                          : 'bg-surface text-foreground/80 border-foreground/10'
+                          }`}>
                           {scoreB}
                         </div>
                       </div>
