@@ -26,6 +26,7 @@ import {
   Gavel,
   Check,
   Zap,
+  Radio,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { ScoreService, LiveScore } from '@/lib/api/scores';
@@ -106,7 +107,9 @@ export function MarketingPageClient() {
   }, []);
 
   const currentLive = liveScores[0];
-  const liveAuctionChampionship = championships.find((c) => c.stage === 'AUCTION_STAGE' || c.stage === 'AUCTION_PAUSED');
+  const liveAuctionChampionships = championships.filter(
+    (c) => c.stage === 'AUCTION_STAGE' || c.stage === 'AUCTION_PAUSED' || c.stage === 'AUCTION'
+  );
   const meta = currentLive?.scoreMeta || {};
   const teamAName = meta.config?.teamAName || (meta.config?.teamA ? meta.config.teamA.join(' & ') : 'Team A');
   const teamBName = meta.config?.teamBName || (meta.config?.teamB ? meta.config.teamB.join(' & ') : 'Team B');
@@ -228,55 +231,74 @@ export function MarketingPageClient() {
             })}
           </section>
 
-          {/* 2.5 Live Player Auction Banner Card */}
-          {liveAuctionChampionship && (
-            <section
-              className="rounded-[24px] p-5 border shadow-2xl relative overflow-hidden space-y-4"
-              style={{
-                backgroundColor: 'var(--athlon-card)',
-                borderColor: 'rgba(239, 68, 68, 0.4)',
-                boxShadow: '0 10px 30px rgba(239, 68, 68, 0.15)',
-              }}
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
-
+          {/* 2.5 Live Player Auction Banner Cards */}
+          {liveAuctionChampionships.length > 0 && (
+            <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                  <span className="text-red-500 font-black text-xs tracking-wider uppercase">LIVE PLAYER AUCTION</span>
+                  <span className="text-red-500 font-black text-xs tracking-wider uppercase">
+                    LIVE PLAYER AUCTIONS ({liveAuctionChampionships.length})
+                  </span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase">
-                  Bidding In Progress
+                  BROADCASTING NOW
                 </span>
               </div>
 
-              <div>
-                <h3 className="text-base font-black text-foreground tracking-tight">
-                  {liveAuctionChampionship.name}
-                </h3>
-                <p className="text-xs text-foreground/60 mt-0.5">
-                  {liveAuctionChampionship.location || liveAuctionChampionship.venue || 'Badminton Championship'} • Squad Draft Floor & Live Bids
-                </p>
-              </div>
+              <div className="space-y-3.5">
+                {liveAuctionChampionships.map((champ) => (
+                  <div
+                    key={champ.championshipUuid}
+                    className="rounded-[24px] p-5 border shadow-2xl relative overflow-hidden space-y-4"
+                    style={{
+                      backgroundColor: 'var(--athlon-card)',
+                      borderColor: 'rgba(239, 68, 68, 0.4)',
+                      boxShadow: '0 10px 30px rgba(239, 68, 68, 0.15)',
+                    }}
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
 
-              <div
-                className="p-3 rounded-xl border flex items-center justify-between text-xs"
-                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-              >
-                <div className="flex items-center gap-2">
-                  <Gavel className="w-4 h-4 text-primary" />
-                  <span className="text-foreground/70 font-semibold">Live Floor Stream:</span>
-                </div>
-                <span className="font-black text-primary uppercase text-[11px]">Real-Time Draft</span>
-              </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Radio className="w-3.5 h-3.5 animate-pulse text-red-500" />
+                        <span>Live Draft Floor</span>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-surface border border-foreground/10 text-[10px] font-mono font-bold text-foreground/70">
+                        {champ.sport || 'Championship'}
+                      </span>
+                    </div>
 
-              <Link
-                href={`/home/team-championship/${liveAuctionChampionship.championshipUuid}/auction`}
-                className="w-full py-3.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary rounded-xl text-white font-black text-xs flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-red-500/25"
-              >
-                <span>ENTER LIVE AUCTION ARENA</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+                    <div>
+                      <h3 className="text-base font-black text-foreground tracking-tight">
+                        {champ.name}
+                      </h3>
+                      <p className="text-xs text-foreground/60 mt-0.5">
+                        {champ.location || champ.venue || 'Badminton Championship'} • Squad Draft Floor & Live Bids
+                      </p>
+                    </div>
+
+                    <div
+                      className="p-3 rounded-xl border flex items-center justify-between text-xs"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Gavel className="w-4 h-4 text-primary" />
+                        <span className="text-foreground/70 font-semibold">Live Floor Stream:</span>
+                      </div>
+                      <span className="font-black text-primary uppercase text-[11px]">Real-Time Draft</span>
+                    </div>
+
+                    <Link
+                      href={`/home/team-championship/${champ.championshipUuid}/auction`}
+                      className="w-full py-3.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary rounded-xl text-white font-black text-xs flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-red-500/25"
+                    >
+                      <span>ENTER LIVE AUCTION ARENA</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </section>
           )}
 
@@ -778,8 +800,9 @@ export function MarketingPageClient() {
 
             {/* Right 5 Columns: Interactive Match / Championship Spotlight Widget */}
             <div className="col-span-5 space-y-4">
-              {liveAuctionChampionship && (
+              {liveAuctionChampionships.map((champ) => (
                 <div
+                  key={champ.championshipUuid}
                   className="rounded-[32px] border p-6 shadow-2xl backdrop-blur-2xl space-y-4"
                   style={{
                     backgroundColor: 'var(--athlon-surface)',
@@ -799,22 +822,22 @@ export function MarketingPageClient() {
 
                   <div>
                     <h3 className="text-lg font-black text-foreground tracking-tight">
-                      {liveAuctionChampionship.name}
+                      {champ.name}
                     </h3>
                     <p className="text-xs text-foreground/60 mt-0.5">
-                      {liveAuctionChampionship.location || liveAuctionChampionship.venue || 'Badminton League'} • Live franchise bidding & player floor draft
+                      {champ.location || champ.venue || 'Badminton League'} • Live franchise bidding & player floor draft
                     </p>
                   </div>
 
                   <Link
-                    href={`/home/team-championship/${liveAuctionChampionship.championshipUuid}/auction`}
+                    href={`/home/team-championship/${champ.championshipUuid}/auction`}
                     className="w-full py-3.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary rounded-xl text-white font-black text-xs flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-red-500/25"
                   >
                     <span>WATCH LIVE AUCTION ARENA</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
-              )}
+              ))}
 
               {liveScores.length > 0 && currentLive ? (
                 <div
@@ -989,7 +1012,72 @@ export function MarketingPageClient() {
             </div>
           </section>
 
-          {/* 3. Desktop Recent Completed Matches (Horizontal Scrolling) */}
+          {/* 3. Desktop Live Player Auctions Showcase (Horizontal Scrolling) */}
+          {liveAuctionChampionships.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
+                  <h2 className="text-lg font-black text-foreground">
+                    Live Player Auction Arenas ({liveAuctionChampionships.length})
+                  </h2>
+                </div>
+                <span className="text-xs font-bold text-red-500 uppercase tracking-wider">
+                  🔴 Broadcasting Live
+                </span>
+              </div>
+
+              <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar">
+                {liveAuctionChampionships.map((champ) => (
+                  <div
+                    key={champ.championshipUuid}
+                    className="snap-start shrink-0 w-[380px] rounded-2xl border p-5 shadow-lg space-y-4 overflow-hidden relative flex flex-col justify-between"
+                    style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                  >
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-primary animate-pulse" />
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                        LIVE AUCTION
+                      </span>
+                      <span className="text-xs text-foreground/50 font-medium truncate max-w-[180px]">
+                        {champ.sport || 'Badminton'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground tracking-tight line-clamp-1">
+                        {champ.name}
+                      </h3>
+                      <p className="text-xs text-foreground/60 line-clamp-1">
+                        {champ.location || champ.venue || 'Arena'} • Live Franchise Bidding &amp; Player Draft
+                      </p>
+                    </div>
+
+                    <div
+                      className="p-3 rounded-xl border flex items-center justify-between text-xs"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    >
+                      <span className="text-foreground/60 font-semibold">Franchises Competing:</span>
+                      <span className="font-mono font-black text-primary">{champ.registeredTeamsCount || champ.maxTeams || 0} Teams</span>
+                    </div>
+
+                    <Link
+                      href={`/home/team-championship/${champ.championshipUuid}/auction`}
+                      className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                    >
+                      <Gavel className="w-4 h-4" />
+                      <span>ENTER AUCTION ARENA</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 4. Desktop Recent Completed Matches (Horizontal Scrolling) */}
           {finishedScores.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
