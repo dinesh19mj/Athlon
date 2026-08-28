@@ -174,40 +174,48 @@ export default function TeamOwnerAuctionArenaPage() {
 
   const loadData = async () => {
     try {
-      const champ = await TeamChampionshipService.getById(championshipUuid);
-      setChampionship(champ);
+      const champ = await TeamChampionshipService.getById(championshipUuid).catch((err) => {
+        console.warn("Championship detail sync notice:", err?.message || err);
+        return championship;
+      });
 
-      if (champ?.championshipId) {
-        const [state, teams, players] = await Promise.all([
-          AuctionService.getState(champ.championshipId).catch(() => null),
-          AuctionService.getTeams(champ.championshipId).catch(() => []),
-          AuctionService.getPlayers(champ.championshipId).catch(() => []),
-        ]);
+      if (champ) {
+        setChampionship(champ);
 
-        if (state) {
-          if (state.activePlayer && prevActivePlayerId.current !== state.activePlayer.auctionPlayerId) {
-            playAudioCue("bell");
-            prevActivePlayerId.current = state.activePlayer.auctionPlayerId;
+        if (champ.championshipId) {
+          const [state, teams, players] = await Promise.all([
+            AuctionService.getState(champ.championshipId).catch(() => null),
+            AuctionService.getTeams(champ.championshipId).catch(() => null),
+            AuctionService.getPlayers(champ.championshipId).catch(() => null),
+          ]);
+
+          if (state) {
+            if (state.activePlayer && prevActivePlayerId.current !== state.activePlayer.auctionPlayerId) {
+              playAudioCue("bell");
+              prevActivePlayerId.current = state.activePlayer.auctionPlayerId;
+            }
+            if (state.currentBid && prevCurrentBid.current !== null && state.currentBid > prevCurrentBid.current) {
+              playAudioCue("bid");
+            }
+            prevCurrentBid.current = state.currentBid || null;
+
+            setAuctionState(state);
           }
-          if (state.currentBid && prevCurrentBid.current !== null && state.currentBid > prevCurrentBid.current) {
-            playAudioCue("bid");
-          }
-          prevCurrentBid.current = state.currentBid || null;
 
-          setAuctionState(state);
+          if (teams && Array.isArray(teams)) {
+            setAuctionTeams(teams);
+            if (teams.length > 0 && !selectedMyTeamId) {
+              setSelectedMyTeamId(teams[0].team.teamId);
+            }
+          }
+
+          if (players && Array.isArray(players)) {
+            setAuctionPlayers(players);
+          }
         }
-
-        if (teams) {
-          setAuctionTeams(teams);
-          if (teams.length > 0 && !selectedMyTeamId) {
-            setSelectedMyTeamId(teams[0].team.teamId);
-          }
-        }
-
-        if (players) setAuctionPlayers(players);
       }
     } catch (err) {
-      console.error("Failed to load auction arena", err);
+      console.warn("Auction floor sync notice:", err);
     } finally {
       setLoading(false);
     }

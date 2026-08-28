@@ -4,6 +4,7 @@ import com.athlon.tournamentservice.auction.entity.AuctionCategoryConfig;
 import com.athlon.tournamentservice.auction.entity.AuctionConfig;
 import com.athlon.tournamentservice.auction.repository.AuctionCategoryConfigRepository;
 import com.athlon.tournamentservice.auction.repository.AuctionConfigRepository;
+import com.athlon.tournamentservice.exception.ResourceNotFoundException;
 import com.athlon.tournamentservice.teamchampionship.dto.request.*;
 import com.athlon.tournamentservice.teamchampionship.dto.response.TeamChampionshipDetailDTO;
 import com.athlon.tournamentservice.teamchampionship.entity.*;
@@ -267,7 +268,7 @@ public class TeamChampionshipService {
 
     public TeamChampionshipDetailDTO getChampionshipDetail(UUID championshipUuid) {
         TeamChampionship championship = championshipRepository.findByChampionshipUuid(championshipUuid)
-                .orElseThrow(() -> new IllegalArgumentException("Team Championship not found for UUID: " + championshipUuid));
+                .orElseThrow(() -> new ResourceNotFoundException("Team Championship not found for UUID: " + championshipUuid));
 
         TeamChampionshipDetailDTO dto = new TeamChampionshipDetailDTO();
         dto.setChampionshipId(championship.getChampionshipId());
@@ -294,38 +295,73 @@ public class TeamChampionshipService {
         dto.setStatus(championship.getStatus());
         dto.setVisibility(championship.getVisibility());
 
-        List<ChampionshipCategory> categories = categoryRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId());
-        Optional<AuctionConfig> auctionOpt = auctionConfigRepository.findByChampionshipId(championship.getChampionshipId());
-        if (auctionOpt.isPresent() && categories != null) {
-            List<AuctionCategoryConfig> accList = auctionCategoryConfigRepository.findByAuctionId(auctionOpt.get().getAuctionId());
-            if (accList != null) {
-                Map<String, Double> basePriceMap = new HashMap<>();
-                for (AuctionCategoryConfig acc : accList) {
-                    if (acc != null && acc.getCategoryName() != null && acc.getCategoryBasePrice() != null) {
-                        basePriceMap.put(acc.getCategoryName().toLowerCase().trim(), acc.getCategoryBasePrice());
+        try {
+            List<ChampionshipCategory> categories = categoryRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId());
+            Optional<AuctionConfig> auctionOpt = auctionConfigRepository.findByChampionshipId(championship.getChampionshipId());
+            if (auctionOpt.isPresent() && categories != null) {
+                List<AuctionCategoryConfig> accList = auctionCategoryConfigRepository.findByAuctionId(auctionOpt.get().getAuctionId());
+                if (accList != null) {
+                    Map<String, Double> basePriceMap = new HashMap<>();
+                    for (AuctionCategoryConfig acc : accList) {
+                        if (acc != null && acc.getCategoryName() != null && acc.getCategoryBasePrice() != null) {
+                            basePriceMap.put(acc.getCategoryName().toLowerCase().trim(), acc.getCategoryBasePrice());
+                        }
                     }
-                }
-                for (ChampionshipCategory cat : categories) {
-                    if (cat != null && (cat.getBasePrice() == null || cat.getBasePrice() <= 0 || cat.getBasePrice() == 1000.0) && cat.getName() != null) {
-                        Double bp = basePriceMap.get(cat.getName().toLowerCase().trim());
-                        if (bp != null && bp > 0) {
-                            cat.setBasePrice(bp);
+                    for (ChampionshipCategory cat : categories) {
+                        if (cat != null && (cat.getBasePrice() == null || cat.getBasePrice() <= 0 || cat.getBasePrice() == 1000.0) && cat.getName() != null) {
+                            Double bp = basePriceMap.get(cat.getName().toLowerCase().trim());
+                            if (bp != null && bp > 0) {
+                                cat.setBasePrice(bp);
+                            }
                         }
                     }
                 }
             }
+            dto.setCategories(categories != null ? categories : new ArrayList<>());
+        } catch (Exception e) {
+            dto.setCategories(new ArrayList<>());
         }
-        dto.setCategories(categories);
-        dto.setMatchFormats(matchFormatRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId()));
-        dto.setEvents(eventRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId()));
-        dto.setPools(poolRepository.findByChampionshipId(championship.getChampionshipId()));
-        dto.setRules(rulesConfigRepository.findByChampionshipId(championship.getChampionshipId()).orElse(null));
 
-        List<ChampionshipTeamRegistration> teams = teamRegistrationRepository.findByChampionshipId(championship.getChampionshipId());
-        dto.setRegisteredTeamsCount(teams.size());
+        try {
+            List<ChampionshipMatchFormat> formats = matchFormatRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId());
+            dto.setMatchFormats(formats != null ? formats : new ArrayList<>());
+        } catch (Exception e) {
+            dto.setMatchFormats(new ArrayList<>());
+        }
 
-        List<ChampionshipPlayerRegistration> players = playerRegistrationRepository.findByChampionshipId(championship.getChampionshipId());
-        dto.setRegisteredPlayersCount(players.size());
+        try {
+            List<ChampionshipEvent> events = eventRepository.findByChampionshipIdOrderByDisplayOrderAsc(championship.getChampionshipId());
+            dto.setEvents(events != null ? events : new ArrayList<>());
+        } catch (Exception e) {
+            dto.setEvents(new ArrayList<>());
+        }
+
+        try {
+            List<TeamChampionshipPool> pools = poolRepository.findByChampionshipId(championship.getChampionshipId());
+            dto.setPools(pools != null ? pools : new ArrayList<>());
+        } catch (Exception e) {
+            dto.setPools(new ArrayList<>());
+        }
+
+        try {
+            dto.setRules(rulesConfigRepository.findByChampionshipId(championship.getChampionshipId()).orElse(null));
+        } catch (Exception e) {
+            dto.setRules(null);
+        }
+
+        try {
+            List<ChampionshipTeamRegistration> teams = teamRegistrationRepository.findByChampionshipId(championship.getChampionshipId());
+            dto.setRegisteredTeamsCount(teams != null ? teams.size() : 0);
+        } catch (Exception e) {
+            dto.setRegisteredTeamsCount(0);
+        }
+
+        try {
+            List<ChampionshipPlayerRegistration> players = playerRegistrationRepository.findByChampionshipId(championship.getChampionshipId());
+            dto.setRegisteredPlayersCount(players != null ? players.size() : 0);
+        } catch (Exception e) {
+            dto.setRegisteredPlayersCount(0);
+        }
 
         return dto;
     }
