@@ -63,11 +63,10 @@ function MemberSelector({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
-          selectedMember
-            ? 'bg-background border-foreground/20 text-foreground shadow-sm'
-            : 'bg-background/80 border-foreground/10 text-foreground/40 hover:border-primary/40'
-        }`}
+        className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${selectedMember
+          ? 'bg-background border-foreground/20 text-foreground shadow-sm'
+          : 'bg-background/80 border-foreground/10 text-foreground/40 hover:border-primary/40'
+          }`}
         style={{ borderColor: 'var(--athlon-border)' }}
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -147,13 +146,12 @@ function MemberSelector({
                       onChange(m.fullName);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition-all ${
-                      isSelected
-                        ? 'bg-primary text-black font-black shadow-sm'
-                        : isDisabled
+                    className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition-all ${isSelected
+                      ? 'bg-primary text-black font-black shadow-sm'
+                      : isDisabled
                         ? 'opacity-40 cursor-not-allowed bg-transparent'
                         : 'hover:bg-foreground/5 text-foreground'
-                    }`}
+                      }`}
                   >
                     <div className="w-7 h-7 rounded-lg bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
                       {m.photo ? (
@@ -203,7 +201,7 @@ export default function MatchesPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [matchType, setMatchType] = useState<'SINGLES' | 'DOUBLES'>('SINGLES');
   const [matchDate, setMatchDate] = useState(new Date().toISOString().split('T')[0]);
-  
+
   // Team A
   const [teamAPlayer1, setTeamAPlayer1] = useState('');
   const [teamAPlayer2, setTeamAPlayer2] = useState('');
@@ -451,11 +449,10 @@ export default function MatchesPage() {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 ${
-                statusFilter === st
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'bg-background/60 text-foreground/60 hover:text-foreground border border-foreground/5'
-              }`}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 ${statusFilter === st
+                ? 'bg-primary text-black shadow-md shadow-primary/20'
+                : 'bg-background/60 text-foreground/60 hover:text-foreground border border-foreground/5'
+                }`}
             >
               {st === 'ALL' ? 'All Matches' : st}
             </button>
@@ -583,60 +580,101 @@ export default function MatchesPage() {
 
             {/* Mobile Stylish Match Cards View */}
             <div className="block md:hidden divide-y divide-foreground/5">
-              {filteredMatches.map((match) => (
-                <div key={match.matchId} className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors">
-                  {/* Top Bar: Date, Sport, Delete */}
-                  <div className="flex items-center justify-between text-xs text-foreground/60">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{AVAILABLE_SPORTS_ICONS[match.sportType] || '🏅'}</span>
-                      <span className="font-bold text-foreground">
-                        {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent'}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-foreground/5 border border-foreground/10 text-foreground/70">
-                        {match.matchType || 'Match'}
-                      </span>
+              {filteredMatches.map((match) => {
+                const scoreParts = (match.score || '').split('-').map((s) => s.trim());
+                const scoreA = scoreParts[0] || (match.score ? match.score : '-');
+                const scoreB = scoreParts[1] || '-';
+                const isTeamAWinner = match.winner && match.winner === match.teamAPlayers;
+                const isTeamBWinner = match.winner && match.winner === match.teamBPlayers;
+
+                return (
+                  <div key={match.matchId} className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors">
+                    {/* Top Bar: Date, Sport, Match Format, Actions */}
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{AVAILABLE_SPORTS_ICONS[match.sportType] || '🏅'}</span>
+                        <span className="font-extrabold text-foreground">
+                          {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                          {match.matchType || 'SINGLES'}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteMatch(match.matchId)}
+                        className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Delete match"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteMatch(match.matchId)}
-                      className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      title="Delete match"
+                    {/* Full-Width Match Scoreboard */}
+                    <div
+                      className="rounded-2xl bg-background border p-3.5 space-y-2.5 shadow-inner"
+                      style={{ borderColor: 'var(--athlon-border)' }}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                      {/* Team A Row */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-grow">
+                          <span className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 font-black text-[10px] flex items-center justify-center shrink-0">
+                            A
+                          </span>
+                          <div className="min-w-0 flex-grow">
+                            <div className={`text-xs sm:text-sm font-extrabold leading-snug break-words ${isTeamAWinner ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
+                              {match.teamAPlayers}
+                            </div>
+                            {isTeamAWinner && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-400 mt-0.5">
+                                <Crown className="w-3 h-3" /> Winner
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                  {/* VS Card */}
-                  <div className="p-3.5 rounded-2xl bg-background border flex items-center justify-between gap-3" style={{ borderColor: 'var(--athlon-border)' }}>
-                    {/* Team A */}
-                    <div className="flex-1 text-center min-w-0">
-                      <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-0.5">Team A</div>
-                      <div className={`text-sm font-extrabold truncate ${match.winner === match.teamAPlayers ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
-                        {match.teamAPlayers}
+                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${
+                          isTeamAWinner
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                            : 'bg-surface text-foreground/80 border-foreground/10'
+                        }`}>
+                          {scoreA}
+                        </div>
                       </div>
-                      {match.winner === match.teamAPlayers && (
-                        <span className="inline-block mt-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-400">Winner 🏆</span>
-                      )}
-                    </div>
 
-                    {/* Score Center */}
-                    <div className="px-3.5 py-1.5 rounded-xl bg-surface border font-mono font-black text-xs text-foreground shrink-0 shadow-sm text-center" style={{ borderColor: 'var(--athlon-border)' }}>
-                      {match.score || 'VS'}
-                    </div>
+                      {/* Divider */}
+                      <div className="border-t border-foreground/5" />
 
-                    {/* Team B */}
-                    <div className="flex-1 text-center min-w-0">
-                      <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-0.5">Team B</div>
-                      <div className={`text-sm font-extrabold truncate ${match.winner === match.teamBPlayers ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
-                        {match.teamBPlayers}
+                      {/* Team B Row */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-grow">
+                          <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 font-black text-[10px] flex items-center justify-center shrink-0">
+                            B
+                          </span>
+                          <div className="min-w-0 flex-grow">
+                            <div className={`text-xs sm:text-sm font-extrabold leading-snug break-words ${isTeamBWinner ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
+                              {match.teamBPlayers}
+                            </div>
+                            {isTeamBWinner && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-400 mt-0.5">
+                                <Crown className="w-3 h-3" /> Winner
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${
+                          isTeamBWinner
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                            : 'bg-surface text-foreground/80 border-foreground/10'
+                        }`}>
+                          {scoreB}
+                        </div>
                       </div>
-                      {match.winner === match.teamBPlayers && (
-                        <span className="inline-block mt-0.5 text-[9px] font-black uppercase tracking-widest text-emerald-400">Winner 🏆</span>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
@@ -660,7 +698,7 @@ export default function MatchesPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Record Match Result</h3>
+                    <h4 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Record Match</h4>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-400 border border-blue-500/25">
                       {AVAILABLE_SPORTS_ICONS[clubSport] || '🏅'} {clubSport}
                     </span>
@@ -713,22 +751,20 @@ export default function MatchesPage() {
                           setTeamAPlayer2('');
                           setTeamBPlayer2('');
                         }}
-                        className={`py-2 rounded-xl text-xs font-bold transition-all text-center ${
-                          matchType === 'SINGLES'
-                            ? 'bg-primary text-black font-black shadow-sm'
-                            : 'text-foreground/60 hover:text-foreground'
-                        }`}
+                        className={`py-2 rounded-xl text-xs font-bold transition-all text-center ${matchType === 'SINGLES'
+                          ? 'bg-primary text-black font-black shadow-sm'
+                          : 'text-foreground/60 hover:text-foreground'
+                          }`}
                       >
                         Singles
                       </button>
                       <button
                         type="button"
                         onClick={() => setMatchType('DOUBLES')}
-                        className={`py-2 rounded-xl text-xs font-bold transition-all text-center ${
-                          matchType === 'DOUBLES'
-                            ? 'bg-primary text-black font-black shadow-sm'
-                            : 'text-foreground/60 hover:text-foreground'
-                        }`}
+                        className={`py-2 rounded-xl text-xs font-bold transition-all text-center ${matchType === 'DOUBLES'
+                          ? 'bg-primary text-black font-black shadow-sm'
+                          : 'text-foreground/60 hover:text-foreground'
+                          }`}
                       >
                         Doubles
                       </button>
@@ -751,16 +787,15 @@ export default function MatchesPage() {
 
                 {/* VISUAL MATCHUP ARENA (TEAM A vs TEAM B WITH MEMBER SELECTORS) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-                  
+
                   {/* TEAM A CARD */}
-                  <div className={`p-4 rounded-2xl border transition-all space-y-3 ${
-                    selectedWinner === 'TEAM_A'
-                      ? 'bg-blue-500/10 border-blue-500/40 ring-1 ring-blue-500/30'
-                      : 'bg-blue-500/5 border-blue-500/20'
-                  }`}>
+                  <div className={`p-4 rounded-2xl border transition-all space-y-3 ${selectedWinner === 'TEAM_A'
+                    ? 'bg-blue-500/10 border-blue-500/40 ring-1 ring-blue-500/30'
+                    : 'bg-blue-500/5 border-blue-500/20'
+                    }`}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5" /> Team A (Athlete)
+                        <User className="w-3.5 h-3.5" /> Team A
                       </span>
                       {selectedWinner === 'TEAM_A' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -805,14 +840,13 @@ export default function MatchesPage() {
                   </div>
 
                   {/* TEAM B CARD */}
-                  <div className={`p-4 rounded-2xl border transition-all space-y-3 ${
-                    selectedWinner === 'TEAM_B'
-                      ? 'bg-purple-500/10 border-purple-500/40 ring-1 ring-purple-500/30'
-                      : 'bg-purple-500/5 border-purple-500/20'
-                  }`}>
+                  <div className={`p-4 rounded-2xl border transition-all space-y-3 ${selectedWinner === 'TEAM_B'
+                    ? 'bg-purple-500/10 border-purple-500/40 ring-1 ring-purple-500/30'
+                    : 'bg-purple-500/5 border-purple-500/20'
+                    }`}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5" /> Team B (Opponent)
+                        <User className="w-3.5 h-3.5" /> Team B
                       </span>
                       {selectedWinner === 'TEAM_B' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
