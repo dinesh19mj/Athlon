@@ -14,6 +14,10 @@ public interface StateRepository extends JpaRepository<State, Long> {
     Optional<State> findByUuid(UUID uuid);
     
     List<State> findByCountryId(Long countryId);
+
+    List<State> findByCountryUuid(UUID countryUuid);
+
+    Optional<State> findByNameIgnoreCase(String name);
     
     boolean existsByNameAndCountryId(String name, Long countryId);
 }

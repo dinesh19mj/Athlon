@@ -14,6 +14,10 @@ public interface DistrictRepository extends JpaRepository<District, Long> {
     Optional<District> findByUuid(UUID uuid);
     
     List<District> findByStateId(Long stateId);
+
+    List<District> findByStateUuid(UUID stateUuid);
+
+    Optional<District> findByNameIgnoreCase(String name);
     
     boolean existsByNameAndStateId(String name, Long stateId);
 }

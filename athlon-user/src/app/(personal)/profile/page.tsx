@@ -41,9 +41,9 @@ import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
-import { PlayerService } from '@/lib/api/player';
 import { UserService, UserResponse, SportsProfileResponse } from '@/lib/api/user';
 import { OrganizationService, Organization } from '@/lib/api/organization';
+import { LocationService, FALLBACK_INDIAN_STATES, FALLBACK_STATE_DISTRICTS } from '@/lib/api/location';
 
 export default function ProfilePage() {
   const { userId: playerId, userUuid, token, logout, userEmail } = useAuthStore();
@@ -102,6 +102,59 @@ export default function ProfilePage() {
   const [editDistrict, setEditDistrict] = useState('');
   const [editState, setEditState] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const [statesList, setStatesList] = useState<string[]>(FALLBACK_INDIAN_STATES);
+  const [districtsList, setDistrictsList] = useState<string[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const res = await LocationService.getAllStates();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = Array.from(new Set(res.data.map((s) => s.name))).sort();
+          setStatesList(names);
+        } else {
+          setStatesList(FALLBACK_INDIAN_STATES);
+        }
+      } catch (err) {
+        setStatesList(FALLBACK_INDIAN_STATES);
+      }
+    };
+    fetchStates();
+  }, []);
+
+  useEffect(() => {
+    if (!editState) {
+      setDistrictsList([]);
+      return;
+    }
+
+    const fetchDistricts = async () => {
+      setIsLoadingLocations(true);
+      try {
+        const res = await LocationService.getDistrictsByStateName(editState);
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = Array.from(new Set(res.data.map((d) => d.name))).sort();
+          setDistrictsList(names);
+        } else if (FALLBACK_STATE_DISTRICTS[editState]) {
+          setDistrictsList(FALLBACK_STATE_DISTRICTS[editState]);
+        } else {
+          setDistrictsList([]);
+        }
+      } catch (err) {
+        if (FALLBACK_STATE_DISTRICTS[editState]) {
+          setDistrictsList(FALLBACK_STATE_DISTRICTS[editState]);
+        } else {
+          setDistrictsList([]);
+        }
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    };
+
+    fetchDistricts();
+  }, [editState]);
 
   const handleEditProfileSubmit = async () => {
     if (!userUuid) return;
@@ -489,28 +542,59 @@ export default function ProfilePage() {
                   onChange={(e) => setEditPhone(e.target.value)}
                   className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
                 />
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={editCity}
-                  onChange={(e) => setEditCity(e.target.value)}
-                  className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="District"
-                    value={editDistrict}
-                    onChange={(e) => setEditDistrict(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
-                  />
-                  <input
-                    type="text"
-                    placeholder="State"
+
+                {/* Dynamic State Selection */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">State</label>
+                  <select
                     value={editState}
-                    onChange={(e) => setEditState(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
-                  />
+                    onChange={(e) => {
+                      const chosenState = e.target.value;
+                      setEditState(chosenState);
+                      setEditDistrict('');
+                    }}
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-xs font-bold text-foreground focus:border-primary outline-none cursor-pointer"
+                  >
+                    <option value="">-- Choose State --</option>
+                    {statesList.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Dynamic District Selection & City */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">District</label>
+                    <select
+                      value={editDistrict}
+                      onChange={(e) => setEditDistrict(e.target.value)}
+                      disabled={!editState}
+                      className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-xs font-bold text-foreground focus:border-primary outline-none disabled:opacity-40 cursor-pointer"
+                    >
+                      <option value="">
+                        {!editState ? 'Select state' : districtsList.length === 0 ? 'No districts' : '-- Select District --'}
+                      </option>
+                      {districtsList.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">City / Town</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Kozhikode"
+                      value={editCity}
+                      onChange={(e) => setEditCity(e.target.value)}
+                      className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-xs text-foreground focus:border-primary outline-none"
+                    />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-2">
                   <button
@@ -1304,38 +1388,57 @@ export default function ProfilePage() {
                 />
               </div>
 
+              {/* Dynamic State Selection */}
               <div>
-                <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">City</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Kozhikode"
-                  value={editCity}
-                  onChange={(e) => setEditCity(e.target.value)}
-                  className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
+                <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">State</label>
+                <select
+                  value={editState}
+                  onChange={(e) => {
+                    const chosenState = e.target.value;
+                    setEditState(chosenState);
+                    setEditDistrict('');
+                  }}
+                  className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary cursor-pointer"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                />
+                >
+                  <option value="">-- Choose State --</option>
+                  {statesList.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
               </div>
 
+              {/* Dynamic District & City Selection */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">District</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Kozhikode"
+                  <select
                     value={editDistrict}
                     onChange={(e) => setEditDistrict(e.target.value)}
-                    className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
+                    disabled={!editState}
+                    className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary disabled:opacity-40 cursor-pointer"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                  />
+                  >
+                    <option value="">
+                      {!editState ? 'Select state first' : districtsList.length === 0 ? 'No districts' : '-- Choose District --'}
+                    </option>
+                    {districtsList.map((district) => (
+                      <option key={district} value={district}>
+                        {district}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">State</label>
+                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">City / Town</label>
                   <input
                     type="text"
-                    placeholder="e.g. Kerala"
-                    value={editState}
-                    onChange={(e) => setEditState(e.target.value)}
+                    placeholder="e.g. Kozhikode"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
                     className="w-full p-3 rounded-xl border text-xs font-bold text-foreground bg-surface outline-none focus:border-primary"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   />
