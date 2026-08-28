@@ -336,91 +336,164 @@ export default function MembersPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
-                  <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Member</th>
-                  <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Phone & Contact</th>
-                  <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Role</th>
-                  <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Joined</th>
-                  <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-foreground/5">
-                {filteredMembers.map((member) => (
-                  <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center text-foreground font-bold shrink-0 shadow-inner">
-                          {member.photo ? (
-                            <img
-                              src={UserService.getPhotoUrl(member.photo)}
-                              alt={member.fullName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-sm font-black text-primary">
-                              {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-black text-sm text-foreground flex items-center gap-2">
-                            <span>{member.fullName}</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          </div>
-                          <div className="text-xs text-foreground/50">{member.email || 'No email registered'}</div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-xs font-mono font-semibold text-foreground/80">
-                        <Phone className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                        <span>{member.phone ? `+91 ${member.phone}` : '-'}</span>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-foreground/5 border border-foreground/10 text-foreground/80">
-                        {member.role === 'ADMIN' ? (
-                          <Shield className="w-3.5 h-3.5 text-purple-400" />
-                        ) : member.role === 'COACH' ? (
-                          <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                        ) : (
-                          <User className="w-3.5 h-3.5 text-primary/70" />
-                        )}
-                        <span>{member.role || 'MEMBER'}</span>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        {member.status || 'Active'}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 text-xs font-medium text-foreground/50">
-                      {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}
-                    </td>
-
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
-                        className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
-                        title="Remove member"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
+                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Member</th>
+                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Phone & Contact</th>
+                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Role</th>
+                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Joined</th>
+                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-foreground/5">
+                  {filteredMembers.map((member) => (
+                    <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center text-foreground font-bold shrink-0 shadow-inner">
+                            {member.photo ? (
+                              <img
+                                src={UserService.getPhotoUrl(member.photo)}
+                                alt={member.fullName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-sm font-black text-primary">
+                                {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-black text-sm text-foreground flex items-center gap-2">
+                              <span>{member.fullName}</span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            </div>
+                            <div className="text-xs text-foreground/50">{member.email || 'No email registered'}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-xs font-mono font-semibold text-foreground/80">
+                          <Phone className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                          <span>{member.phone ? `+91 ${member.phone}` : '-'}</span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-foreground/5 border border-foreground/10 text-foreground/80">
+                          {member.role === 'ADMIN' ? (
+                            <Shield className="w-3.5 h-3.5 text-purple-400" />
+                          ) : member.role === 'COACH' ? (
+                            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                          ) : (
+                            <User className="w-3.5 h-3.5 text-primary/70" />
+                          )}
+                          <span>{member.role || 'MEMBER'}</span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          {member.status || 'Active'}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 text-xs font-medium text-foreground/50">
+                        {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}
+                      </td>
+
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
+                          className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
+                          title="Remove member"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Stylish Member Cards View */}
+            <div className="block md:hidden divide-y divide-foreground/5">
+              {filteredMembers.map((member) => (
+                <div
+                  key={member.organizationMemberUuid}
+                  className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors"
+                >
+                  {/* Top Row: Avatar + Name + Status + Delete */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center text-foreground font-bold shrink-0 shadow-inner">
+                        {member.photo ? (
+                          <img
+                            src={UserService.getPhotoUrl(member.photo)}
+                            alt={member.fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-base font-black text-primary">
+                            {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-black text-sm text-foreground flex items-center gap-1.5 truncate">
+                          <span className="truncate">{member.fullName}</span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-foreground/5 border border-foreground/10 text-foreground/70">
+                            {member.role === 'ADMIN' ? (
+                              <Shield className="w-3 h-3 text-purple-400" />
+                            ) : member.role === 'COACH' ? (
+                              <Trophy className="w-3 h-3 text-amber-400" />
+                            ) : (
+                              <User className="w-3 h-3 text-primary/70" />
+                            )}
+                            <span>{member.role || 'MEMBER'}</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                            {member.status || 'Active'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
+                      className="p-2.5 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                      title="Remove member"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Bottom Details Strip */}
+                  <div className="flex items-center justify-between pt-1 text-xs text-foreground/60 border-t border-foreground/[0.04]">
+                    <div className="flex items-center gap-1.5 font-mono text-foreground/80 font-semibold">
+                      <Phone className="w-3.5 h-3.5 text-primary/70" />
+                      <span>{member.phone ? `+91 ${member.phone}` : '-'}</span>
+                    </div>
+                    <div className="text-[11px] text-foreground/40 font-medium">
+                      Joined {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
