@@ -592,33 +592,36 @@ export default function TeamOwnerAuctionArenaPage() {
                   </div>
 
                   {/* Athlete Card & Timer */}
-                  <div className="flex items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Highlighted Athlete Photo Frame */}
                       <div className="relative shrink-0">
-                        <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-2 border-primary/80 flex items-center justify-center shadow-md overflow-hidden p-0.5">
-                          {auctionState.activePlayer.avatarUrl ? (
-                            <img
-                              src={auctionState.activePlayer.avatarUrl}
-                              alt={auctionState.activePlayer.playerName}
-                              className="w-full h-full object-cover rounded-[10px]"
-                            />
-                          ) : (
-                            <span className="font-black text-primary text-base">
-                              {auctionState.activePlayer.playerName.substring(0, 2).toUpperCase()}
-                            </span>
-                          )}
+                        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-primary via-amber-400 to-indigo-500 p-0.5 shadow-xl shadow-primary/35 ring-2 ring-primary/50 flex items-center justify-center overflow-hidden">
+                          <div className="w-full h-full rounded-[14px] bg-background overflow-hidden flex items-center justify-center">
+                            {auctionState.activePlayer.avatarUrl ? (
+                              <img
+                                src={auctionState.activePlayer.avatarUrl}
+                                alt={auctionState.activePlayer.playerName}
+                                className="w-full h-full object-cover rounded-[14px] hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <span className="font-black text-primary text-xl tracking-wider">
+                                {auctionState.activePlayer.playerName.substring(0, 2).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded bg-black/95 border border-primary font-mono font-black text-primary text-[8px]">
+                        <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-md bg-black/95 border border-primary font-mono font-black text-primary text-[8.5px] shadow-lg">
                           #{auctionState.activePlayer.auctionPlayerId}
                         </span>
                       </div>
 
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        <div className="inline-flex items-center gap-1 font-black uppercase text-primary text-[9px]">
-                          <Flame className="w-2.5 h-2.5 text-primary fill-primary/30 animate-pulse" />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="inline-flex items-center gap-1 font-black uppercase text-primary text-[9.5px]">
+                          <Flame className="w-3 h-3 text-primary fill-primary/30 animate-pulse" />
                           <span>Spotlight Athlete</span>
                         </div>
-                        <h2 className="font-black text-foreground text-base truncate leading-tight">
+                        <h2 className="font-black text-foreground text-base sm:text-lg truncate leading-tight tracking-tight">
                           {auctionState.activePlayer.playerName}
                         </h2>
                       </div>
@@ -1088,22 +1091,26 @@ export default function TeamOwnerAuctionArenaPage() {
                     <div className={`flex items-center min-w-0 flex-1 ${isFullscreen ? "gap-6 text-center md:text-left flex-col md:flex-row" : "gap-4"}`}>
                       {/* Athlete Avatar Frame */}
                       <div className="relative shrink-0">
-                        <div className={`rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-2 border-primary/80 flex items-center justify-center shadow-2xl shadow-primary/25 overflow-hidden ${
+                        <div className={`rounded-3xl bg-gradient-to-tr from-primary via-amber-400 to-indigo-500 p-1 shadow-2xl shadow-primary/35 ring-2 ring-primary/50 flex items-center justify-center overflow-hidden ${
                           isFullscreen
-                            ? "w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 p-1"
-                            : "w-20 h-20 sm:w-24 sm:h-24 p-0.5 rounded-2xl"
+                            ? "w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52"
+                            : "w-22 h-22 sm:w-26 sm:h-26"
                         }`}>
-                          {auctionState.activePlayer.avatarUrl ? (
-                            <img
-                              src={auctionState.activePlayer.avatarUrl}
-                              alt={auctionState.activePlayer.playerName}
-                              className={`w-full h-full object-cover ${isFullscreen ? "rounded-[22px]" : "rounded-[14px]"}`}
-                            />
-                          ) : (
-                            <span className={`font-black text-primary tracking-wider ${isFullscreen ? "text-4xl sm:text-6xl md:text-7xl" : "text-2xl sm:text-3xl"}`}>
-                              {auctionState.activePlayer.playerName.substring(0, 2).toUpperCase()}
-                            </span>
-                          )}
+                          <div className={`w-full h-full bg-background overflow-hidden flex items-center justify-center ${
+                            isFullscreen ? "rounded-[22px]" : "rounded-[18px]"
+                          }`}>
+                            {auctionState.activePlayer.avatarUrl ? (
+                              <img
+                                src={auctionState.activePlayer.avatarUrl}
+                                alt={auctionState.activePlayer.playerName}
+                                className={`w-full h-full object-cover hover:scale-105 transition-transform duration-300 ${isFullscreen ? "rounded-[22px]" : "rounded-[18px]"}`}
+                              />
+                            ) : (
+                              <span className={`font-black text-primary tracking-wider ${isFullscreen ? "text-4xl sm:text-6xl md:text-7xl" : "text-2xl sm:text-3xl"}`}>
+                                {auctionState.activePlayer.playerName.substring(0, 2).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className={`absolute -bottom-1.5 -right-1.5 px-2 py-0.5 rounded-lg bg-black/95 border border-primary font-mono font-black text-primary shadow-lg ${
                           isFullscreen ? "text-xs px-2.5 py-1" : "text-[9.5px]"
