@@ -183,6 +183,14 @@ function MemberSelector({
   );
 }
 
+// Helper to get local date formatted as YYYY-MM-DD (avoiding UTC timezone shift)
+const getLocalDateString = (d: Date = new Date()): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function MatchesPage() {
   const params = useParams();
   const orgIdParam = (params?.orgId as string) || '';
@@ -197,17 +205,17 @@ export default function MatchesPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   // Date filter: defaults to current local date
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString());
 
   // Date navigation helpers
   const handleShiftDate = (days: number) => {
-    const base = selectedDate ? new Date(selectedDate) : new Date();
+    const base = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
     base.setDate(base.getDate() + days);
-    setSelectedDate(base.toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString(base));
   };
 
   const handleSetToday = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString());
   };
 
   const handleSetAllDates = () => {
@@ -217,7 +225,7 @@ export default function MatchesPage() {
   // Add Match Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [matchType, setMatchType] = useState<'SINGLES' | 'DOUBLES'>('SINGLES');
-  const [matchDate, setMatchDate] = useState(new Date().toISOString().split('T')[0]);
+  const [matchDate, setMatchDate] = useState(getLocalDateString());
 
   // Team A
   const [teamAPlayer1, setTeamAPlayer1] = useState('');
@@ -375,7 +383,7 @@ export default function MatchesPage() {
 
   const resetModal = () => {
     setMatchType('SINGLES');
-    setMatchDate(new Date().toISOString().split('T')[0]);
+    setMatchDate(getLocalDateString());
     setTeamAPlayer1('');
     setTeamAPlayer2('');
     setTeamAScore('');
@@ -472,7 +480,7 @@ export default function MatchesPage() {
 
           {selectedDate && (
             <span className="hidden md:inline-block text-xs font-bold text-foreground/60 ml-2">
-              {new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           )}
         </div>
@@ -481,7 +489,7 @@ export default function MatchesPage() {
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             onClick={handleSetToday}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === new Date().toISOString().split('T')[0]
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === getLocalDateString()
               ? 'bg-primary text-black shadow-md shadow-primary/20'
               : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
               }`}
@@ -520,7 +528,7 @@ export default function MatchesPage() {
             <div>
               <h3 className="text-lg font-bold text-foreground">
                 {selectedDate
-                  ? `No matches recorded on ${new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                  ? `No matches recorded on ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
                   : 'No matches recorded yet'}
               </h3>
               <p className="text-sm text-foreground/50 max-w-md mx-auto mt-1">
@@ -532,7 +540,7 @@ export default function MatchesPage() {
             <button
               onClick={() => {
                 resetModal();
-                setMatchDate(new Date().toISOString().split('T')[0]);
+                setMatchDate(getLocalDateString());
                 setIsAddModalOpen(true);
               }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
