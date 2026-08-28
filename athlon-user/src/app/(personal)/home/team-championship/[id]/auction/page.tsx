@@ -1008,57 +1008,57 @@ export default function TeamOwnerAuctionArenaPage() {
             >
               {/* Header Navigation Tabs for Right Console */}
               <div className="shrink-0">
-                <div className="flex items-center gap-1 p-1.5 rounded-2xl bg-background/90 border shadow-inner" style={{ borderColor: "var(--athlon-border)" }}>
+                <div className="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-background/90 border shadow-inner" style={{ borderColor: "var(--athlon-border)" }}>
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("feed")}
-                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                    className={`py-2 px-1 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
                       rightSidebarTab === "feed"
                         ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
                     <Radio className="w-3 h-3 text-red-500 animate-pulse shrink-0" />
-                    <span>Feed</span>
+                    <span className="truncate">Feed</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("queue")}
-                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                    className={`py-2 px-1 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
                       rightSidebarTab === "queue"
                         ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
                     <Users className="w-3 h-3 shrink-0" />
-                    <span>Queue ({waitingPlayers.length})</span>
+                    <span className="truncate">Queue <span className="opacity-70 text-[9.5px]">({waitingPlayers.length})</span></span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("purses")}
-                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                    className={`py-2 px-1 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
                       rightSidebarTab === "purses"
                         ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
                     <Shield className="w-3 h-3 shrink-0" />
-                    <span>Teams</span>
+                    <span className="truncate">Teams</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("sold")}
-                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                    className={`py-2 px-1 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer truncate ${
                       rightSidebarTab === "sold"
                         ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
                     <CheckCircle2 className="w-3 h-3 shrink-0" />
-                    <span>Drafted ({soldPlayers.length})</span>
+                    <span className="truncate">Sold <span className="opacity-70 text-[9.5px]">({soldPlayers.length})</span></span>
                   </button>
                 </div>
               </div>
