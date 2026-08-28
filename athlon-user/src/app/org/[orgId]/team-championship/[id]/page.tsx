@@ -47,8 +47,10 @@ import {
   Zap,
   Crown,
   Settings,
+  Palette,
 } from "lucide-react";
 import Link from "next/link";
+import { useAthlonTheme } from "@/hooks/use-athlon-theme";
 import {
   TeamChampionshipService,
   TeamChampionship,
@@ -121,6 +123,8 @@ export default function TeamChampionshipDashboardPage() {
   const [rightTrayTab, setRightTrayTab] = useState<"BIDS" | "QUEUE">("QUEUE");
   const [isManualLocked, setIsManualLocked] = useState(false);
   const [displayRemainingSeconds, setDisplayRemainingSeconds] = useState<number>(60);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const { theme: currentTheme, themeKey, setTheme, availableThemes } = useAthlonTheme();
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -2209,6 +2213,27 @@ export default function TeamChampionshipDashboardPage() {
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
 
+                  {/* Theme Selector Trigger - ONLY in Maximize Screen */}
+                  {isAuctionFullscreen && (
+                    <button
+                      type="button"
+                      onClick={() => setIsThemeModalOpen((prev) => !prev)}
+                      className="px-4 py-2.5 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-foreground font-black text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer"
+                      title="Select Arena Theme Color Palette"
+                    >
+                      <div
+                        className="w-3.5 h-3.5 rounded-full shadow-sm"
+                        style={{
+                          backgroundColor: currentTheme?.colors?.primary || "var(--athlon-primary)",
+                          boxShadow: `0 0 8px ${currentTheme?.colors?.primaryGlow || "var(--athlon-primary)"}`,
+                        }}
+                      />
+                      <Palette className="w-3.5 h-3.5 text-primary" />
+                      <span>Theme: <strong>{currentTheme?.name || "Default"}</strong></span>
+                      <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${isThemeModalOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  )}
+
                   {/* Maximize to Fullscreen for Projectors / Big Screens */}
                   <button
                     onClick={toggleAuctionFullscreen}
@@ -3819,6 +3844,132 @@ export default function TeamChampionshipDashboardPage() {
                         className="px-6 py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
                       >
                         Done / Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 10. ARENA THEME SELECTOR MODAL (EXCLUSIVE TO MAXIMIZE / FULLSCREEN SCREEN) */}
+              {isAuctionFullscreen && isThemeModalOpen && (
+                <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-lg flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+                  <div
+                    className="max-w-2xl w-full p-6 sm:p-7 rounded-3xl border shadow-2xl space-y-6 animate-scaleIn max-h-[90vh] overflow-y-auto hide-scrollbar"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
+                      <div className="flex items-center gap-3.5">
+                        <div
+                          className="w-12 h-12 rounded-2xl flex items-center justify-center text-primary shadow-inner shrink-0"
+                          style={{ backgroundColor: "rgba(var(--athlon-primary-rgb, 99, 102, 241), 0.15)", border: "1px solid var(--athlon-primary)" }}
+                        >
+                          <Palette className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-black text-foreground uppercase tracking-tight flex items-center gap-2">
+                            <span>Arena Broadcast Theme</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
+                              {currentTheme.name}
+                            </span>
+                          </h3>
+                          <p className="text-xs text-foreground/60 mt-0.5">
+                            Select a color scheme for the live auction big-screen broadcast. Applied in real-time.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setIsThemeModalOpen(false)}
+                        className="p-2.5 rounded-2xl border border-foreground/15 hover:bg-foreground/10 text-foreground/70 hover:text-foreground transition-all cursor-pointer"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Theme Cards Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+                      {availableThemes.map((t) => {
+                        const isSelected = t.key === themeKey;
+                        const tc = t.colors;
+
+                        return (
+                          <button
+                            key={t.key}
+                            type="button"
+                            onClick={() => {
+                              setTheme(t.key);
+                            }}
+                            className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden group active:scale-[0.97] cursor-pointer flex flex-col justify-between gap-4 ${isSelected
+                              ? 'shadow-xl ring-2'
+                              : 'hover:bg-white/[0.04]'
+                              }`}
+                            style={{
+                              backgroundColor: isSelected ? tc.surface : 'var(--athlon-surface)',
+                              borderColor: isSelected ? tc.primary : 'var(--athlon-border)',
+                              outlineColor: tc.primary,
+                              boxShadow: isSelected ? `0 8px 24px -4px ${tc.glow}` : 'none',
+                            }}
+                          >
+                            {/* Top: Swatch Orb + Check Icon */}
+                            <div className="flex items-center justify-between">
+                              <div className="relative">
+                                <div
+                                  className="w-9 h-9 rounded-full shadow-md transition-transform duration-200 group-hover:scale-110 flex items-center justify-center"
+                                  style={{
+                                    backgroundColor: tc.primary,
+                                    boxShadow: `0 0 16px ${tc.primaryGlow}`,
+                                  }}
+                                >
+                                  <div className="w-3 h-3 rounded-full bg-white/40 blur-[1px]" />
+                                </div>
+                              </div>
+
+                              {isSelected ? (
+                                <div
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-sm"
+                                  style={{ backgroundColor: tc.primary, color: tc.primaryForeground }}
+                                >
+                                  <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                                </div>
+                              ) : (
+                                <span className="w-3 h-3 rounded-full bg-foreground/10 group-hover:bg-primary/40 transition-colors" />
+                              )}
+                            </div>
+
+                            {/* Bottom: Theme Name & Details */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="text-sm font-black tracking-tight truncate" style={{ color: isSelected ? tc.text : 'inherit' }}>
+                                  {t.name}
+                                </div>
+                                {t.key === 'algae' && (
+                                  <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white/10 text-white/60 shrink-0">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 pt-1">
+                                <div className="w-3 h-3 rounded-md" style={{ backgroundColor: tc.primary }} />
+                                <div className="w-3 h-3 rounded-md" style={{ backgroundColor: tc.surface }} />
+                                <div className="w-3 h-3 rounded-md" style={{ backgroundColor: tc.card }} />
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Modal Footer */}
+                    <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "var(--athlon-border)" }}>
+                      <span className="text-xs text-foreground/50 font-bold">
+                        Click any theme card to instantly preview and switch arena color palette.
+                      </span>
+                      <button
+                        onClick={() => setIsThemeModalOpen(false)}
+                        className="px-7 py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                      >
+                        Done
                       </button>
                     </div>
                   </div>
