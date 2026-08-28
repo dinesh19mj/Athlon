@@ -384,26 +384,25 @@ export default function PersonalHomePage() {
                     </div>
                   </div>
 
-                  {/* Rating Capsule */}
-                  <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-2.5 py-1.5 shrink-0">
+                  {/* Win Rate Capsule */}
+                  <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1.5 shrink-0">
                     <div className="flex flex-col items-end">
-                      <span className="text-[7.5px] font-extrabold tracking-widest uppercase text-primary/80 leading-none mb-0.5">
-                        RATING
+                      <span className="text-[7.5px] font-extrabold tracking-widest uppercase text-emerald-400/80 leading-none mb-0.5">
+                        WIN RATE
                       </span>
-                      <span className="text-primary font-black text-sm sm:text-base leading-none">
-                        {playerStats?.eloRating ?? 0}
+                      <span className="text-emerald-400 font-black text-sm sm:text-base leading-none">
+                        {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
                       </span>
                     </div>
-                    <Trophy className="w-3.5 h-3.5 text-primary shrink-0 opacity-90" />
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0 opacity-90" />
                   </div>
                 </div>
 
-                {/* 3 Stats Grid (Compact) */}
-                <div className="grid grid-cols-3 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
+                {/* 2 Stats Grid (Compact) */}
+                <div className="grid grid-cols-2 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
                   {[
-                    { label: 'MATCHES', icon: Activity, value: String(playerStats?.totalMatches ?? 0) },
+                    { label: 'MATCHES PLAYED', icon: Activity, value: String(playerStats?.totalMatches ?? 0) },
                     { label: 'WIN RATE', icon: TrendingUp, value: `${playerStats?.winRate ? Math.round(playerStats.winRate) : 0}%` },
-                    { label: 'RANK', icon: Flame, value: playerStats?.globalRank ? `#${playerStats.globalRank}` : '-' },
                   ].map((s) => (
                     <div key={s.label} className="flex flex-col items-center justify-center py-2.5 px-2 gap-1">
                       <div className="flex items-center gap-1 text-foreground/40 text-[8px] font-extrabold tracking-wider uppercase">
@@ -1338,38 +1337,26 @@ export default function PersonalHomePage() {
                 </div>
               </div>
 
-              {/* 3 Telemetry Metrics + Role Switcher */}
+              {/* Telemetry Metrics */}
               <div className="flex items-center gap-3">
-                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                    <Trophy className="w-5 h-5" />
+                <div className="p-3 px-5 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3.5 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <Activity className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-[10px] font-black uppercase text-foreground/50">ELO Rating</div>
-                    <div className="text-base font-black text-primary font-mono">{playerStats?.eloRating ?? 0}</div>
+                    <div className="text-[10px] font-black uppercase text-foreground/50">Matches Played</div>
+                    <div className="text-lg font-black text-foreground font-mono">{playerStats?.totalMatches ?? 0}</div>
                   </div>
                 </div>
 
-                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <div className="p-3 px-5 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3.5 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase text-foreground/50">Win Rate</div>
-                    <div className="text-base font-black text-emerald-400 font-mono">
+                    <div className="text-lg font-black text-emerald-400 font-mono">
                       {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                    <Flame className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-black uppercase text-foreground/50">Global Rank</div>
-                    <div className="text-base font-black text-amber-400 font-mono">
-                      {playerStats?.globalRank ? `#${playerStats.globalRank}` : '-'}
                     </div>
                   </div>
                 </div>

@@ -619,31 +619,24 @@ export default function ProfilePage() {
           </section>
 
           {/* Core Stats Grid */}
-          <section className="grid grid-cols-4 gap-2 mt-2">
+          <section className="grid grid-cols-3 gap-2 mt-2">
             <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
-              <Trophy className="w-4 h-4 text-primary mb-0.5" />
-              <span className="text-base font-black text-primary font-mono">{sportsProfiles[0]?.eloRating ?? 0}</span>
-              <span className="text-[8px] uppercase tracking-wider text-foreground/50 font-bold">ELO</span>
-            </div>
-            <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
-              <Activity className="w-4 h-4 text-blue-400 mb-0.5" />
+              <Activity className="w-4 h-4 text-primary mb-0.5" />
               <span className="text-base font-black text-foreground font-mono">{sportsProfiles[0]?.totalMatches ?? 0}</span>
               <span className="text-[8px] uppercase tracking-wider text-foreground/50 font-bold">Matches</span>
             </div>
+            <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
+              <Trophy className="w-4 h-4 text-emerald-400 mb-0.5" />
+              <span className="text-base font-black text-emerald-400 font-mono">{sportsProfiles[0]?.matchesWon ?? 0}</span>
+              <span className="text-[8px] uppercase tracking-wider text-foreground/50 font-bold">Wins</span>
+            </div>
             <div className="bg-surface border border-primary/20 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-[0_0_15px_rgba(0,255,102,0.05)] relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-              <Target className="w-4 h-4 text-emerald-400 mb-0.5 relative z-10" />
-              <span className="text-base font-black text-emerald-400 relative z-10 font-mono">
+              <Target className="w-4 h-4 text-primary mb-0.5 relative z-10" />
+              <span className="text-base font-black text-primary relative z-10 font-mono">
                 {sportsProfiles[0]?.winRate ? `${Math.round(sportsProfiles[0].winRate)}%` : '0%'}
               </span>
               <span className="text-[8px] uppercase tracking-wider text-primary font-bold relative z-10">Win Rate</span>
-            </div>
-            <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
-              <Zap className="w-4 h-4 text-orange-400 mb-0.5" />
-              <span className="text-base font-black text-amber-400 font-mono">
-                {sportsProfiles[0]?.globalRank ? `#${sportsProfiles[0].globalRank}` : '-'}
-              </span>
-              <span className="text-[8px] uppercase tracking-wider text-foreground/50 font-bold">Rank</span>
             </div>
           </section>
 
@@ -1127,31 +1120,25 @@ export default function ProfilePage() {
                         </div>
 
                         <div
-                          className="grid grid-cols-4 gap-2 p-3 rounded-2xl border text-center"
+                          className="grid grid-cols-3 gap-2 p-3 rounded-2xl border text-center"
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         >
                           <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">ELO Rating</span>
-                            <span className="text-sm font-black text-primary font-mono">
-                              {sp.eloRating ?? 0}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Matches</span>
+                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Total Matches</span>
                             <span className="text-sm font-black text-foreground font-mono">
                               {sp.totalMatches ?? 0}
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Win Rate</span>
+                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Matches Won</span>
                             <span className="text-sm font-black text-emerald-400 font-mono">
-                              {sp.winRate ? `${Math.round(sp.winRate)}%` : '0%'}
+                              {sp.matchesWon ?? 0}
                             </span>
                           </div>
                           <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Global Rank</span>
-                            <span className="text-sm font-black text-amber-400 font-mono">
-                              {sp.globalRank ? `#${sp.globalRank}` : '-'}
+                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Win Rate</span>
+                            <span className="text-sm font-black text-primary font-mono">
+                              {sp.winRate ? `${Math.round(sp.winRate)}%` : '0%'}
                             </span>
                           </div>
                         </div>
