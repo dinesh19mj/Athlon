@@ -92,9 +92,11 @@ public class AuctionBiddingService {
             }
         }
 
-        // Check Team Budget
-        if (team.getRemainingBudget() < bidAmount) {
-            throw new IllegalStateException("Insufficient budget: Team remaining is " + team.getRemainingBudget() + ", bid is " + bidAmount);
+        // 4. Validate Team Remaining Purse / Budget
+        if (team.getRemainingBudget() == null || team.getRemainingBudget() < bidAmount) {
+            throw new IllegalStateException("Insufficient purse balance: Team '" + team.getTeamName() + 
+                    "' has " + (team.getRemainingBudget() != null ? team.getRemainingBudget() : 0.0) + 
+                    " pts remaining, which is less than the required bid of " + bidAmount + " pts.");
         }
 
         // 5. Systematically Activate and Reset Countdown Timer on every new bid

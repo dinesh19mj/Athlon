@@ -495,38 +495,85 @@ export default function TeamOwnerAuctionArenaPage() {
                       );
                     }
 
+                    const myTeamSummary = auctionTeams.find((t) => t.team.teamId === selectedMyTeamId);
+                    const currentBid = auctionState.currentBid || auctionState.activePlayer?.basePrice || 0;
+                    const minRequiredBid = currentBid + (bumpsToDisplay[0] || 50);
+                    const isPurseExhausted = myTeamSummary ? myTeamSummary.team.remainingBudget < minRequiredBid : false;
+
                     return (
                       <div className="space-y-3 pt-2 relative z-10">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                            <span className="text-xs font-black uppercase tracking-wider text-foreground/90">
-                              Place Bid for {myTeamSummary?.team.teamName || "Your Franchise"}
+                        {/* Team Franchise Selector & Remaining Purse Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-background border" style={{ borderColor: "var(--athlon-border)" }}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Zap className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                            <span className="text-xs font-black uppercase text-foreground/80 shrink-0">
+                              Bidding Franchise:
                             </span>
+                            {auctionTeams.length > 1 ? (
+                              <select
+                                value={selectedMyTeamId || ""}
+                                onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
+                                className="px-2 py-1 bg-surface border border-foreground/15 rounded-lg text-xs font-bold text-foreground outline-none focus:border-primary"
+                              >
+                                {auctionTeams.map(({ team }) => (
+                                  <option key={team.teamId} value={team.teamId}>
+                                    {team.teamName} (Purse: {team.remainingBudget} {currencyLabel})
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-xs font-black text-primary truncate">
+                                {myTeamSummary?.team.teamName || "Your Franchise"}
+                              </span>
+                            )}
                           </div>
+
                           {myTeamSummary && (
-                            <span className="text-xs font-bold text-foreground/50">
-                              Purse: <strong className="text-primary font-mono">{myTeamSummary.team.remainingBudget} {currencyLabel}</strong>
-                            </span>
+                            <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                              <span className="text-[11px] font-bold text-foreground/50">Remaining Purse:</span>
+                              <span className={`text-sm font-black font-mono px-2 py-0.5 rounded-md ${
+                                isPurseExhausted
+                                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                  : "bg-primary/20 text-primary border border-primary/30"
+                              }`}>
+                                {myTeamSummary.team.remainingBudget.toLocaleString()} {currencyLabel}
+                              </span>
+                            </div>
                           )}
                         </div>
 
+                        {/* Purse Exhaustion Alert Warning */}
+                        {isPurseExhausted && myTeamSummary && (
+                          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+                            <span className="text-base">🚫</span>
+                            <span>
+                              <strong>Purse Limit Reached:</strong> {myTeamSummary.team.teamName} has only{" "}
+                              <strong>{myTeamSummary.team.remainingBudget} {currencyLabel}</strong> remaining. You cannot place bids exceeding your purse balance.
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Point Bump Actions */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                           {bumpsToDisplay.map((inc) => {
-                            const currentBid = auctionState.currentBid || auctionState.activePlayer?.basePrice || 0;
                             const nextTargetBid = currentBid + inc;
-                            const isAffordable = !myTeamSummary || myTeamSummary.team.remainingBudget >= nextTargetBid;
+                            const isAffordable = myTeamSummary ? myTeamSummary.team.remainingBudget >= nextTargetBid : true;
 
                             return (
                               <button
                                 key={inc}
                                 disabled={placingBid || !selectedMyTeamId || !isAffordable}
                                 onClick={() => handlePlaceBid(inc)}
-                                className="py-3 px-2 rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary text-black font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-30 disabled:hover:scale-100 flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                                className={`py-3 px-2 rounded-2xl font-black transition-all flex flex-col items-center justify-center gap-0.5 ${
+                                  !isAffordable
+                                    ? "bg-surface/50 text-foreground/30 border border-foreground/10 cursor-not-allowed opacity-40"
+                                    : "bg-gradient-to-r from-primary via-amber-400 to-primary text-black hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 cursor-pointer"
+                                }`}
+                                title={!isAffordable ? `Requires ${nextTargetBid} pts (Purse: ${myTeamSummary?.team.remainingBudget || 0} pts)` : `Bid ${nextTargetBid} ${currencyLabel}`}
                               >
                                 <span className="font-mono text-base font-black">+{inc}</span>
-                                <span className="text-[9px] uppercase font-bold text-black/70">
-                                  Bid {nextTargetBid} {currencyLabel}
+                                <span className="text-[9px] uppercase font-bold text-black/70 truncate max-w-full">
+                                  {isAffordable ? `Bid ${nextTargetBid} ${currencyLabel}` : "Exceeds Purse"}
                                 </span>
                               </button>
                             );
