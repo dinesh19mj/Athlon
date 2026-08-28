@@ -300,11 +300,11 @@ export default function PersonalHomePage() {
   );
 
   return (
-    <div className="bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-black">
+    <div className="bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-black min-h-screen w-full max-w-full overflow-x-hidden">
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden h-[calc(100vh-80px)] overflow-y-auto hide-scrollbar">
+      <div className="block md:hidden h-[calc(100vh-80px)] overflow-y-auto hide-scrollbar overscroll-contain max-w-full">
         {/* HERO VIDEO */}
         <div className="px-6 relative z-10 mt-6 mb-4">
           <section className="relative w-full min-h-[160px] rounded-[24px] overflow-hidden bg-background border border-foreground/10 shadow-lg">
@@ -1288,7 +1288,7 @@ export default function PersonalHomePage() {
           2. DESKTOP VIEW ONLY (hidden on mobile, visible on md and above)
              - ULTRA STYLISH HORIZONTAL SCROLLING RAILS WITH SMOOTH NAV CONTROLS
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="hidden md:block min-h-screen bg-background pb-20">
+      <div className="hidden md:block min-h-screen bg-background pb-20 w-full max-w-full overflow-x-hidden">
         {/* Desktop Ambient Hero Banner with Video & Profile Telemetry */}
         <section className="relative w-full border-b overflow-hidden bg-gradient-to-b from-card/60 via-card/30 to-background" style={{ borderColor: 'var(--athlon-border)' }}>
           <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />

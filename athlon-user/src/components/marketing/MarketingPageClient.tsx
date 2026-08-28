@@ -130,7 +130,7 @@ export function MarketingPageClient() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-primary selection:text-black">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground font-sans selection:bg-primary selection:text-black relative">
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (hidden on md and above) - EXACT ORIGINAL DESIGN
          ══════════════════════════════════════════════════════════════════════ */}

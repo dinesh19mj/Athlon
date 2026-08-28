@@ -136,12 +136,24 @@
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
 html {
   height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: auto;
+  touch-action: pan-y;
 }
 
 body {
+  min-height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  overscroll-behavior-x: none;
   background-color: var(--athlon-background);
   color: var(--athlon-text);
-  height: 100%;
 }
 
 * {
