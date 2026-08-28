@@ -22,15 +22,28 @@ import {
   Trash2,
   RefreshCw,
   Trophy,
-  Users
+  Users,
+  Sparkles,
+  Lock
 } from 'lucide-react';
 
 const ROLES = [
   { value: 'MEMBER', label: 'Member' },
-  { value: 'ATHLETE', label: 'Athlete' },
   { value: 'COACH', label: 'Coach' },
   { value: 'ADMIN', label: 'Admin' },
   { value: 'STUDENT', label: 'Student' }
+];
+
+const AVAILABLE_SPORTS = [
+  { name: 'Badminton', icon: '🏸' },
+  { name: 'Cricket', icon: '🏏' },
+  { name: 'Football', icon: '⚽' },
+  { name: 'Tennis', icon: '🎾' },
+  { name: 'Table Tennis', icon: '🏓' },
+  { name: 'Pickleball', icon: '🥒' },
+  { name: 'Basketball', icon: '🏀' },
+  { name: 'Volleyball', icon: '🏐' },
+  { name: 'Squash', icon: '🎾' }
 ];
 
 export default function MembersPage() {
@@ -44,6 +57,12 @@ export default function MembersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
+
+  // Club Primary Sport State
+  const [clubSport, setClubSport] = useState<string>('');
+  const [selectedSportToSave, setSelectedSportToSave] = useState<string>('Badminton');
+  const [isSavingSport, setIsSavingSport] = useState<boolean>(false);
+  const [sportLoaded, setSportLoaded] = useState<boolean>(false);
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -61,8 +80,23 @@ export default function MembersPage() {
   useEffect(() => {
     if (orgUuid) {
       loadMembers();
+      loadOrgProfile();
     }
   }, [orgUuid]);
+
+  const loadOrgProfile = async () => {
+    try {
+      const profileRes = await OrganizationService.getProfileByOrgUuid(orgUuid);
+      const profileData = (profileRes as any)?.data || profileRes;
+      if (profileData?.sportsOffered) {
+        setClubSport(profileData.sportsOffered);
+      }
+    } catch (err) {
+      console.error('Failed to load organization profile:', err);
+    } finally {
+      setSportLoaded(true);
+    }
+  };
 
   const loadMembers = async () => {
     try {
@@ -81,6 +115,26 @@ export default function MembersPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     loadMembers();
+    loadOrgProfile();
+  };
+
+  // Save Club Sport
+  const handleSaveClubSport = async () => {
+    if (!selectedSportToSave) return;
+    try {
+      setIsSavingSport(true);
+      await OrganizationService.saveProfile({
+        organizationUuid: orgUuid,
+        sportsOffered: selectedSportToSave
+      });
+      setClubSport(selectedSportToSave);
+      setActionSuccess(`Successfully configured club sport as ${selectedSportToSave}! You can now add members.`);
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Failed to save club sport.');
+    } finally {
+      setIsSavingSport(false);
+    }
   };
 
   // Verify Phone Number
@@ -128,7 +182,6 @@ export default function MembersPage() {
 
     const clean = val.replace(/[^0-9]/g, '');
     if (clean.length === 10) {
-      // Auto verify
       setTimeout(() => {
         handleVerifyPhoneExplicit(clean);
       }, 300);
@@ -239,14 +292,20 @@ export default function MembersPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Club Member Directory</h1>
+          <div className="flex items-center gap-3 mb-1 flex-wrap">
+            <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Club Member</h2>
             <span className="px-3 py-1 rounded-full text-xs font-black bg-primary/15 text-primary border border-primary/25">
               {members.length} {members.length === 1 ? 'Member' : 'Members'}
             </span>
+            {clubSport && (
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center gap-1.5">
+                <span>{AVAILABLE_SPORTS.find(s => s.name === clubSport)?.icon || '🏅'}</span>
+                <span>Sport: {clubSport}</span>
+              </span>
+            )}
           </div>
           <p className="text-foreground/50 font-medium text-sm">
-            Manage athletes, coaches, and staff for {org?.name || 'your club'}.
+            Manage members for {org?.name || 'your club'}.
           </p>
         </div>
 
@@ -258,17 +317,91 @@ export default function MembersPage() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
           </button>
-          <button
-            onClick={() => {
-              resetModal();
-              setIsAddModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <UserPlus className="w-4 h-4" /> Add Member
-          </button>
+          
+          {clubSport ? (
+            <button
+              onClick={() => {
+                resetModal();
+                setIsAddModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <UserPlus className="w-4 h-4" /> Add Member
+            </button>
+          ) : (
+            <button
+              onClick={() => alert('Please configure your club sport below before adding members.')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-foreground/10 border border-foreground/10 text-foreground/50 text-sm font-bold tracking-wide cursor-not-allowed opacity-75"
+              title="Configure club sport first"
+            >
+              <Lock className="w-4 h-4" /> Add Member
+            </button>
+          )}
         </div>
       </div>
+
+      {/* REQUIREMENT: SINGLE SPORT CONFIGURATION CARD (WHEN NO SPORT CONFIGURED) */}
+      {sportLoaded && !clubSport && (
+        <div className="p-6 sm:p-8 rounded-[28px] border bg-gradient-to-br from-primary/10 via-surface to-surface border-primary/30 shadow-xl space-y-6 animate-in fade-in duration-300">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
+                <Sparkles className="w-3.5 h-3.5" />
+                Setup Required
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-foreground">Select Primary Sport for this Club</h3>
+              <p className="text-xs sm:text-sm text-foreground/60 font-medium max-w-2xl">
+                This club account is dedicated to <strong>one sport</strong>. Please select your sport to unlock member management and club match recording.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {AVAILABLE_SPORTS.map((sport) => {
+                const isSelected = selectedSportToSave === sport.name;
+                return (
+                  <button
+                    key={sport.name}
+                    type="button"
+                    onClick={() => setSelectedSportToSave(sport.name)}
+                    className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2.5 transition-all text-center ${
+                      isSelected
+                        ? 'bg-primary text-black font-black border-primary shadow-lg shadow-primary/25 scale-[1.03]'
+                        : 'bg-background/80 border-foreground/10 text-foreground/70 hover:text-foreground hover:bg-foreground/5'
+                    }`}
+                  >
+                    <span className="text-2xl">{sport.icon}</span>
+                    <span className="text-xs font-black tracking-tight">{sport.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-between gap-4 border-t border-foreground/10 flex-wrap">
+            <p className="text-xs text-foreground/50 font-medium flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-primary" />
+              Member adding and club matches will adapt to <strong>{selectedSportToSave}</strong>
+            </p>
+            <button
+              onClick={handleSaveClubSport}
+              disabled={isSavingSport}
+              className="px-6 py-3 rounded-2xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/25 flex items-center gap-2"
+            >
+              {isSavingSport ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving Sport...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" /> Save & Enable Club Members
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search, Filter Tabs & Controls */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm">
@@ -285,7 +418,7 @@ export default function MembersPage() {
 
         {/* Role Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none shrink-0">
-          {['ALL', 'MEMBER', 'ATHLETE', 'COACH', 'ADMIN', 'STUDENT'].map((role) => (
+          {['ALL', 'MEMBER', 'COACH', 'ADMIN', 'STUDENT'].map((role) => (
             <button
               key={role}
               onClick={() => setRoleFilter(role)}
@@ -320,10 +453,12 @@ export default function MembersPage() {
               <p className="text-sm text-foreground/50 max-w-md mx-auto mt-1">
                 {searchTerm || roleFilter !== 'ALL'
                   ? 'Try adjusting your search query or role filter.'
-                  : 'Start building your club directory by adding members using their phone number.'}
+                  : clubSport
+                  ? 'Start building your club directory by adding members using their phone number.'
+                  : 'Please configure your club sport above to begin adding members.'}
               </p>
             </div>
-            {!searchTerm && roleFilter === 'ALL' && (
+            {!searchTerm && roleFilter === 'ALL' && clubSport && (
               <button
                 onClick={() => {
                   resetModal();
@@ -455,11 +590,11 @@ export default function MembersPage() {
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-foreground/5 border border-foreground/10 text-foreground/70">
                             {member.role === 'ADMIN' ? (
-                              <Shield className="w-3 h-3 text-purple-400" />
+                              <Shield className="w-3.5 h-3.5 text-purple-400" />
                             ) : member.role === 'COACH' ? (
-                              <Trophy className="w-3 h-3 text-amber-400" />
+                              <Trophy className="w-3.5 h-3.5 text-amber-400" />
                             ) : (
-                              <User className="w-3 h-3 text-primary/70" />
+                              <User className="w-3.5 h-3.5 text-primary/70" />
                             )}
                             <span>{member.role || 'MEMBER'}</span>
                           </span>
@@ -646,7 +781,7 @@ export default function MembersPage() {
                   <label className="text-xs font-black uppercase tracking-wider text-foreground/70">
                     Assign Club Role
                   </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {ROLES.map((r) => (
                       <button
                         key={r.value}

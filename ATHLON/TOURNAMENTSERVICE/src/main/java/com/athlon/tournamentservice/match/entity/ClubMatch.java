@@ -22,8 +22,14 @@ public class ClubMatch {
     @Column(name = "orgid")
     private Long orgId;
 
-    @Column(name = "sporttype")
+    @Column(name = "orguuid", length = 100)
+    private String orgUuid;
+
+    @Column(name = "sporttype", length = 100)
     private String sportType;
+
+    @Column(name = "matchtype", length = 50)
+    private String matchType;
 
     @Column(name = "matchdate")
     private LocalDate matchDate;
@@ -34,10 +40,13 @@ public class ClubMatch {
     @Column(name = "teambplayers", columnDefinition = "TEXT")
     private String teamBPlayers;
 
-    @Column(name = "score")
+    @Column(name = "score", columnDefinition = "TEXT")
     private String score;
 
-    @Column(name = "status")
+    @Column(name = "winner", length = 100)
+    private String winner;
+
+    @Column(name = "status", length = 50)
     private String status;
 
     @Column(name = "createdby")
@@ -62,12 +71,28 @@ public class ClubMatch {
         this.orgId = orgId;
     }
 
+    public String getOrgUuid() {
+        return orgUuid;
+    }
+
+    public void setOrgUuid(String orgUuid) {
+        this.orgUuid = orgUuid;
+    }
+
     public String getSportType() {
         return sportType;
     }
 
     public void setSportType(String sportType) {
         this.sportType = sportType;
+    }
+
+    public String getMatchType() {
+        return matchType;
+    }
+
+    public void setMatchType(String matchType) {
+        this.matchType = matchType;
     }
 
     public LocalDate getMatchDate() {
@@ -102,6 +127,14 @@ public class ClubMatch {
         this.score = score;
     }
 
+    public String getWinner() {
+        return winner;
+    }
+
+    public void setWinner(String winner) {
+        this.winner = winner;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -126,4 +159,3 @@ public class ClubMatch {
         this.createdOn = createdOn;
     }
 }
-

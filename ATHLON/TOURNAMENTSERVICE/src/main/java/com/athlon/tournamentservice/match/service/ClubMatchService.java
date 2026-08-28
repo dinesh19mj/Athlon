@@ -17,8 +17,8 @@ public class ClubMatchService {
 
     public ClubMatch createMatch(ClubMatch match) {
         match.setCreatedOn(LocalDateTime.now());
-        if (match.getStatus() == null) {
-            match.setStatus("SCHEDULED");
+        if (match.getStatus() == null || match.getStatus().trim().isEmpty()) {
+            match.setStatus("COMPLETED");
         }
         return clubMatchRepository.save(match);
     }
@@ -27,14 +27,32 @@ public class ClubMatchService {
         ClubMatch match = clubMatchRepository.findById(matchId)
             .orElseThrow(() -> new RuntimeException("Match not found"));
         match.setScore(score);
-        if (status != null) {
+        if (status != null && !status.trim().isEmpty()) {
             match.setStatus(status);
         }
         return clubMatchRepository.save(match);
     }
 
     public List<ClubMatch> getMatchesByOrg(Long orgId) {
-        return clubMatchRepository.findByOrgId(orgId);
+        return clubMatchRepository.findByOrgIdOrderByMatchDateDesc(orgId);
+    }
+
+    public List<ClubMatch> getMatchesByOrgIdentifier(String orgIdentifier) {
+        if (orgIdentifier == null || orgIdentifier.trim().isEmpty()) {
+            return List.of();
+        }
+        try {
+            Long numericOrgId = Long.parseLong(orgIdentifier);
+            List<ClubMatch> list = clubMatchRepository.findByOrgIdOrderByMatchDateDesc(numericOrgId);
+            if (!list.isEmpty()) {
+                return list;
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        return clubMatchRepository.findByOrgUuidOrderByMatchDateDesc(orgIdentifier);
+    }
+
+    public void deleteMatch(Long matchId) {
+        clubMatchRepository.deleteById(matchId);
     }
 }
-

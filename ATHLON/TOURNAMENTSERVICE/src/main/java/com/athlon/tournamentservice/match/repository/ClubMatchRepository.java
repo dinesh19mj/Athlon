@@ -8,6 +8,7 @@ import java.util.List;
 
 @Repository
 public interface ClubMatchRepository extends JpaRepository<ClubMatch, Long> {
+    List<ClubMatch> findByOrgIdOrderByMatchDateDesc(Long orgId);
+    List<ClubMatch> findByOrgUuidOrderByMatchDateDesc(String orgUuid);
     List<ClubMatch> findByOrgId(Long orgId);
 }
-

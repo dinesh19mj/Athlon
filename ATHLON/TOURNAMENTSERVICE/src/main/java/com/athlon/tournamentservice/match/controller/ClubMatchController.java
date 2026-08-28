@@ -3,6 +3,7 @@ package com.athlon.tournamentservice.match.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +19,7 @@ import com.athlon.tournamentservice.match.service.ClubMatchService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/clubmatch")
+@RequestMapping({"/api/tournament/clubmatch", "/clubmatch"})
 public class ClubMatchController {
 
     @Autowired
@@ -47,14 +48,23 @@ public class ClubMatchController {
         }
     }
 
-    @GetMapping("/org/{orgId}")
-    public ResponseEntity<List<ClubMatch>> getMatchesByOrg(@PathVariable("orgId") Long orgId) {
+    @GetMapping("/org/{orgIdentifier}")
+    public ResponseEntity<List<ClubMatch>> getMatchesByOrg(@PathVariable("orgIdentifier") String orgIdentifier) {
         try {
-            List<ClubMatch> matches = clubMatchService.getMatchesByOrg(orgId);
+            List<ClubMatch> matches = clubMatchService.getMatchesByOrgIdentifier(orgIdentifier);
             return new ResponseEntity<>(matches, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-}
 
+    @DeleteMapping("/{matchId}")
+    public ResponseEntity<Void> deleteMatch(@PathVariable("matchId") Long matchId) {
+        try {
+            clubMatchService.deleteMatch(matchId);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+}
