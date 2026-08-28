@@ -26,6 +26,8 @@ import {
   Sparkles,
   Crown,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Check
 } from 'lucide-react';
 
@@ -194,8 +196,23 @@ export default function MatchesPage() {
   const [clubSport, setClubSport] = useState<string>('Badminton');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  // Date filter: defaults to current local date
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  // Date navigation helpers
+  const handleShiftDate = (days: number) => {
+    const base = selectedDate ? new Date(selectedDate) : new Date();
+    base.setDate(base.getDate() + days);
+    setSelectedDate(base.toISOString().split('T')[0]);
+  };
+
+  const handleSetToday = () => {
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const handleSetAllDates = () => {
+    setSelectedDate('');
+  };
 
   // Add Match Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -370,16 +387,8 @@ export default function MatchesPage() {
   };
 
   const filteredMatches = matches.filter((m) => {
-    const matchesSearch =
-      (m.teamAPlayers || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.teamBPlayers || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.score || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.sportType || '').toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === 'ALL' || (m.status || '').toUpperCase() === statusFilter.toUpperCase();
-
-    return matchesSearch && matchesStatus;
+    if (!selectedDate) return true; // Show all if no date selected
+    return m.matchDate === selectedDate;
   });
 
   return (
@@ -398,7 +407,7 @@ export default function MatchesPage() {
           <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Club Matches</h2>
             <span className="px-3 py-1 rounded-full text-xs font-black bg-primary/15 text-primary border border-primary/25">
-              {matches.length} {matches.length === 1 ? 'Match' : 'Matches'}
+              {matches.length} Total
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center gap-1.5">
               <span>{AVAILABLE_SPORTS_ICONS[clubSport] || '🏅'}</span>
@@ -406,7 +415,7 @@ export default function MatchesPage() {
             </span>
           </div>
           <p className="text-foreground/50 font-medium text-sm">
-            Record and track individual friendly matches and scores for {org?.name || 'your club'}.
+            Record and track daily friendly match results and scores for {org?.name || 'your club'}.
           </p>
         </div>
 
@@ -430,33 +439,71 @@ export default function MatchesPage() {
         </div>
       </div>
 
-      {/* Search & Filter Controls */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm">
-        <div className="relative flex-grow">
-          <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
-          <input
-            type="text"
-            placeholder="Search matches by athlete name, score, or date..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-background border border-foreground/10 rounded-xl pl-12 pr-4 py-2.5 text-sm font-medium text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-          />
+      {/* Date Navigation & Calendar Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 bg-surface border border-foreground/5 rounded-2xl p-3.5 sm:p-4 shadow-sm">
+        {/* Left Side: Day Shifter & Date Picker */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleShiftDate(-1)}
+            className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
+            title="Previous Day"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Calendar Date Input Picker */}
+          <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
+            <Calendar className="w-4 h-4 text-primary shrink-0 mr-2" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+            />
+          </div>
+
+          <button
+            onClick={() => handleShiftDate(1)}
+            className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
+            title="Next Day"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {selectedDate && (
+            <span className="hidden md:inline-block text-xs font-bold text-foreground/60 ml-2">
+              {new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+          )}
         </div>
 
-        {/* Status Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none shrink-0">
-          {['ALL', 'COMPLETED', 'SCHEDULED'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 ${statusFilter === st
+        {/* Right Side: Quick Filters & Counter */}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <button
+            onClick={handleSetToday}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+              selectedDate === new Date().toISOString().split('T')[0]
                 ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'bg-background/60 text-foreground/60 hover:text-foreground border border-foreground/5'
-                }`}
-            >
-              {st === 'ALL' ? 'All Matches' : st}
-            </button>
-          ))}
+                : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+            }`}
+          >
+            Today
+          </button>
+
+          <button
+            onClick={handleSetAllDates}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+              selectedDate === ''
+                ? 'bg-primary text-black shadow-md shadow-primary/20'
+                : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+            }`}
+          >
+            All Dates
+          </button>
+
+          <div className="px-3 py-1.5 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-black text-foreground/60 ml-1">
+            {filteredMatches.length} {filteredMatches.length === 1 ? 'Match' : 'Matches'}
+          </div>
         </div>
       </div>
 
@@ -470,29 +517,30 @@ export default function MatchesPage() {
         ) : filteredMatches.length === 0 ? (
           <div className="py-20 px-6 text-center space-y-4">
             <div className="w-16 h-16 rounded-3xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
-              <Trophy className="w-8 h-8" />
+              <Calendar className="w-8 h-8" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">
-                {searchTerm || statusFilter !== 'ALL' ? 'No matching matches found' : 'No matches recorded yet'}
+                {selectedDate
+                  ? `No matches recorded on ${new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                  : 'No matches recorded yet'}
               </h3>
               <p className="text-sm text-foreground/50 max-w-md mx-auto mt-1">
-                {searchTerm || statusFilter !== 'ALL'
-                  ? 'Try adjusting your search query or filter.'
+                {selectedDate
+                  ? 'Switch date or record a new match for this day.'
                   : 'Start recording single friendly match results and scores for your club athletes.'}
               </p>
             </div>
-            {!searchTerm && statusFilter === 'ALL' && (
-              <button
-                onClick={() => {
-                  resetModal();
-                  setIsAddModalOpen(true);
-                }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
-              >
-                <Plus className="w-4 h-4" /> Record First Match
-              </button>
-            )}
+            <button
+              onClick={() => {
+                resetModal();
+                if (selectedDate) setMatchDate(selectedDate);
+                setIsAddModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
+            >
+              <Plus className="w-4 h-4" /> Record Match for {selectedDate ? new Date(selectedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Today'}
+            </button>
           </div>
         ) : (
           <>
