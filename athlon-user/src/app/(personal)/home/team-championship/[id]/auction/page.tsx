@@ -583,10 +583,7 @@ export default function TeamOwnerAuctionArenaPage() {
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="px-2 py-0.5 rounded-md bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-black text-[9px] uppercase animate-pulse">
-                        🔴 Live
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-black/40 border border-white/10 font-mono font-black text-[9.5px] text-foreground/70">
-                        Lot #{auctionState.activePlayer.auctionPlayerId}
+                        🔴 Live Call
                       </span>
                     </div>
                   </div>
@@ -608,9 +605,6 @@ export default function TeamOwnerAuctionArenaPage() {
                           </span>
                         )}
                       </div>
-                      <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md bg-black/95 border border-foreground/20 font-mono font-black text-primary text-[8.5px] shadow-md">
-                        #{auctionState.activePlayer.auctionPlayerId}
-                      </span>
                     </div>
 
                     {/* Athlete Details & Countdown Dial */}
@@ -1074,13 +1068,10 @@ export default function TeamOwnerAuctionArenaPage() {
                       </span>
                     </div>
 
-                    {/* Floor Status & Lot Number */}
+                    {/* Floor Status */}
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="px-2.5 py-0.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-black text-[10px] uppercase animate-pulse">
                         🔴 Bid Call Active
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/10 font-mono font-black text-xs text-foreground/70">
-                        Lot #{auctionState.activePlayer.auctionPlayerId}
                       </span>
                     </div>
                   </div>
@@ -1107,11 +1098,6 @@ export default function TeamOwnerAuctionArenaPage() {
                             </span>
                           )}
                         </div>
-                        <span className={`absolute -bottom-1.5 -right-1.5 px-2 py-0.5 rounded-lg bg-black/95 border border-foreground/20 font-mono font-black text-primary shadow-lg ${
-                          isFullscreen ? "text-xs px-2.5 py-1" : "text-[9.5px]"
-                        }`}>
-                          #{auctionState.activePlayer.auctionPlayerId}
-                        </span>
                       </div>
 
                       {/* Athlete Name & Headline */}
