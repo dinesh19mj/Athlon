@@ -35,12 +35,23 @@ public class AuctionBiddingService {
 
     @Transactional
     public synchronized AuctionBid placeBid(PlaceBidRequest request) {
-        // 1. Fetch & Validate Auction
-        AuctionConfig config = configRepository.findById(request.getAuctionId())
-                .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
+        // 1. Fetch & Validate Auction (check both auctionId PK and championshipId)
+        AuctionConfig config = null;
+        if (request.getAuctionId() != null) {
+            config = configRepository.findById(request.getAuctionId())
+                    .or(() -> configRepository.findByChampionshipId(request.getAuctionId()))
+                    .orElse(null);
+        }
+        if (config == null) {
+            throw new IllegalArgumentException("Auction configuration not found for ID: " + request.getAuctionId());
+        }
 
-        if (!"ACTIVE".equalsIgnoreCase(config.getStatus()) && !"PAUSED".equalsIgnoreCase(config.getStatus())) {
+        if (!"ACTIVE".equalsIgnoreCase(config.getStatus()) && !"PAUSED".equalsIgnoreCase(config.getStatus()) && !"READY".equalsIgnoreCase(config.getStatus())) {
             throw new IllegalStateException("Auction is not active (status: " + config.getStatus() + ")");
+        }
+
+        if ("PAUSED".equalsIgnoreCase(config.getStatus()) || config.getTimerPausedRemainingSeconds() != null) {
+            throw new IllegalStateException("Auction timer is currently paused by the organizer. Bidding is locked.");
         }
 
         // 2. Fetch & Validate Player
@@ -53,6 +64,7 @@ public class AuctionBiddingService {
 
         // 3. Fetch & Validate Team
         AuctionTeam team = teamRepository.findByAuctionIdAndTeamId(config.getAuctionId(), request.getTeamId())
+                .or(() -> teamRepository.findByTeamId(request.getTeamId()))
                 .orElseThrow(() -> new IllegalArgumentException("Team not registered in this auction"));
 
         if (!Boolean.TRUE.equals(team.getIsEligible())) {
@@ -60,53 +72,58 @@ public class AuctionBiddingService {
         }
 
         // Check squad capacity
-        if (team.getPlayersAcquiredCount() + team.getReservedSlotsCount() >= team.getSquadCapacity()) {
-            throw new IllegalStateException("Team squad is already full (" + team.getSquadCapacity() + " slots)");
+        int acquired = team.getPlayersAcquiredCount() != null ? team.getPlayersAcquiredCount() : 0;
+        int reserved = team.getReservedSlotsCount() != null ? team.getReservedSlotsCount() : 0;
+        int capacity = team.getSquadCapacity() != null && team.getSquadCapacity() > 0 ? team.getSquadCapacity() : 100;
+        if (acquired + reserved >= capacity) {
+            throw new IllegalStateException("Team squad is already full (" + capacity + " slots)");
         }
 
         // 4. Validate Bid Amount
-        Double currentBid = config.getCurrentBid() != null && config.getCurrentBid() > 0 ? config.getCurrentBid() : player.getBasePrice();
-        Double minIncrement = config.getBidIncrement();
+        double basePrice = player.getBasePrice() != null && player.getBasePrice() > 0 ? player.getBasePrice() : 100.0;
+        double currentBid = config.getCurrentBid() != null && config.getCurrentBid() > 0 ? config.getCurrentBid() : 0.0;
+        double minIncrement = config.getBidIncrement() != null && config.getBidIncrement() > 0 ? config.getBidIncrement() : 50.0;
 
         if (player.getCategoryId() != null) {
             categoryConfigRepository.findByAuctionIdAndCategoryId(config.getAuctionId(), player.getCategoryId())
                     .ifPresent(catConfig -> {
-                        if (catConfig.getMinBidIncrement() != null) {
-                            // Use category specific increment if configured
+                        if (catConfig.getMinBidIncrement() != null && catConfig.getMinBidIncrement() > 0) {
+                            // category override
                         }
                     });
         }
 
         Double bidAmount = request.getBidAmount();
-        if ("CALLED".equalsIgnoreCase(player.getState()) && (config.getCurrentBid() == null || config.getCurrentBid() == 0.0)) {
-            // Opening bid can equal base price
-            if (bidAmount < player.getBasePrice()) {
-                throw new IllegalArgumentException("Opening bid must be at least the base price of " + player.getBasePrice());
+        if (bidAmount == null || bidAmount <= 0) {
+            throw new IllegalArgumentException("Bid amount must be a positive number.");
+        }
+
+        if (currentBid <= 0.0) {
+            // Opening bid must be at least base price
+            if (bidAmount < basePrice) {
+                throw new IllegalArgumentException("Opening bid must be at least the base price of " + basePrice);
             }
         } else {
-            if (bidAmount <= config.getCurrentBid()) {
-                throw new IllegalArgumentException("Bid amount (" + bidAmount + ") must be greater than current bid (" + config.getCurrentBid() + ")");
-            }
-            if ((bidAmount - config.getCurrentBid()) < minIncrement) {
-                throw new IllegalArgumentException("Minimum bid increment is " + minIncrement + ". Expected at least " + (config.getCurrentBid() + minIncrement));
+            if (bidAmount <= currentBid) {
+                throw new IllegalArgumentException("Bid amount (" + bidAmount + ") must be greater than current high bid (" + currentBid + ")");
             }
         }
 
-        // 4. Validate Team Remaining Purse / Budget
-        if (team.getRemainingBudget() == null || team.getRemainingBudget() < bidAmount) {
+        // 5. Validate Team Remaining Purse / Budget
+        double remainingBudget = team.getRemainingBudget() != null ? team.getRemainingBudget() : 0.0;
+        if (remainingBudget < bidAmount) {
             throw new IllegalStateException("Insufficient purse balance: Team '" + team.getTeamName() + 
-                    "' has " + (team.getRemainingBudget() != null ? team.getRemainingBudget() : 0.0) + 
-                    " pts remaining, which is less than the required bid of " + bidAmount + " pts.");
+                    "' has " + remainingBudget + " pts remaining, which is less than the required bid of " + bidAmount + " pts.");
         }
 
-        // 5. Systematically Activate and Reset Countdown Timer on every new bid
+        // 6. Systematically Activate and Reset Countdown Timer on every new bid
         LocalDateTime now = LocalDateTime.now();
         int timerSec = (config.getTimerSeconds() != null && config.getTimerSeconds() > 0) ? config.getTimerSeconds() : 60;
         config.setTimerEndTime(now.plusSeconds(timerSec));
         config.setTimerPausedRemainingSeconds(null);
         config.setStatus("ACTIVE");
 
-        // 6. Update Auction Config & Player Current Leader
+        // 7. Update Auction Config & Player Current Leader
         config.setCurrentBid(bidAmount);
         config.setWinningTeamId(team.getTeamId());
         configRepository.save(config);
@@ -117,7 +134,7 @@ public class AuctionBiddingService {
         player.setWinningTeamName(team.getTeamName());
         playerRepository.save(player);
 
-        // 7. Save Bid Record
+        // 8. Save Bid Record
         AuctionBid bid = new AuctionBid();
         bid.setAuctionId(config.getAuctionId());
         bid.setAuctionPlayerId(player.getAuctionPlayerId());

@@ -285,8 +285,9 @@ export default function TeamOwnerAuctionArenaPage() {
       setPlacingBid(true);
       const current = auctionState.currentBid || auctionState.activePlayer.basePrice;
       const nextBid = current + increment;
+      const targetAuctionId = auctionState.config?.auctionId || championship.championshipId;
       await AuctionService.placeBid(
-        championship.championshipId,
+        targetAuctionId,
         auctionState.activePlayer.auctionPlayerId,
         selectedMyTeamId,
         nextBid,
@@ -325,8 +326,9 @@ export default function TeamOwnerAuctionArenaPage() {
 
     try {
       setPlacingBid(true);
+      const targetAuctionId = auctionState.config?.auctionId || championship.championshipId;
       await AuctionService.placeBid(
-        championship.championshipId,
+        targetAuctionId,
         auctionState.activePlayer.auctionPlayerId,
         selectedMyTeamId,
         val,
