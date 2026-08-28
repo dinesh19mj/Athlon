@@ -76,6 +76,7 @@ export default function TeamOwnerAuctionArenaPage() {
   const [selectedTeamModalId, setSelectedTeamModalId] = useState<number | null>(null);
   const [isCustomBidOpen, setIsCustomBidOpen] = useState(false);
   const [customBidAmount, setCustomBidAmount] = useState<string>("");
+  const [selectedIncrement, setSelectedIncrement] = useState<number>(50);
 
   const prevActivePlayerId = useRef<number | null>(null);
   const prevCurrentBid = useRef<number | null>(null);
@@ -261,6 +262,13 @@ export default function TeamOwnerAuctionArenaPage() {
   const bumpsToDisplay = configuredBumps.length > 0 ? configuredBumps : [50, 100, 250, 500, 1000];
   const currentBid = auctionState?.currentBid || auctionState?.activePlayer?.basePrice || 0;
   const isAutomatic = (auctionState?.config?.biddingMode || "MANUAL") === "AUTOMATIC";
+
+  // Ensure default selected increment matches configured increments
+  useEffect(() => {
+    if (bumpsToDisplay.length > 0 && !bumpsToDisplay.includes(selectedIncrement)) {
+      setSelectedIncrement(bumpsToDisplay[0]);
+    }
+  }, [auctionState?.config?.quickPointBumps]);
 
   const handlePlaceBid = async (increment: number) => {
     if (!championship?.championshipId || !auctionState?.activePlayer || !selectedMyTeamId) return;
@@ -712,127 +720,173 @@ export default function TeamOwnerAuctionArenaPage() {
                   )}
                 </div>
 
-                {/* 2. Interactive Franchise Cockpit & Quick Point Bumps */}
-                {isAutomatic && isAuthenticated && myTeamSummary && (
-                  <div className="rounded-2xl border p-3 space-y-2 bg-surface/90 backdrop-blur-xl shadow-md" style={{ borderColor: "var(--athlon-border)" }}>
-                    {/* Active Franchise & Purse Mini Pods */}
-                    {(() => {
-                      const initialBudget = myTeamSummary.team.initialBudget || 5000;
-                      const remainingBudget = myTeamSummary.team.remainingBudget ?? initialBudget;
-                      const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
-                      const minRequiredBid = currentBid + (bumpsToDisplay[0] || 50);
-                      const isPurseExhausted = remainingBudget < minRequiredBid;
+                {/* 2. Interactive Franchise Cockpit & Single Active Price Tag Bidding Button */}
+                {isAutomatic && isAuthenticated && myTeamSummary && (() => {
+                  const initialBudget = myTeamSummary.team.initialBudget || 5000;
+                  const remainingBudget = myTeamSummary.team.remainingBudget ?? initialBudget;
+                  const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
+                  const activeNextBid = currentBid + selectedIncrement;
+                  const isAffordable = remainingBudget >= activeNextBid;
 
-                      return (
-                        <>
-                          <div className="grid grid-cols-2 gap-2">
-                            {/* Franchise */}
-                            <div className="p-2 rounded-xl border bg-surface/60 flex items-center gap-2 min-w-0" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                              <div className="w-7 h-7 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-black text-xs shrink-0">
-                                {myTeamSummary.team.teamName.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h4 className="font-black text-foreground text-[11px] truncate leading-tight">
-                                  {myTeamSummary.team.teamName}
-                                </h4>
-                                <span className="text-[8.5px] text-foreground/50 font-bold block truncate">
-                                  {myTeamSummary.team.playersAcquiredCount || 0} Drafted
+                  return (
+                    <div className="rounded-2xl border p-3 space-y-2.5 bg-surface/90 backdrop-blur-xl shadow-md" style={{ borderColor: "var(--athlon-border)" }}>
+                      {/* Active Franchise & Purse Mini Pods */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Franchise */}
+                        <div className="p-2 rounded-xl border bg-surface/60 flex items-center gap-2 min-w-0" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                          <div className="w-7 h-7 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                            {myTeamSummary.team.teamName.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-black text-foreground text-[11px] truncate leading-tight">
+                              {myTeamSummary.team.teamName}
+                            </h4>
+                            <span className="text-[8.5px] text-foreground/50 font-bold block truncate">
+                              {myTeamSummary.team.playersAcquiredCount || 0} Drafted
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Purse */}
+                        <div className="p-2 rounded-xl border bg-surface/60 flex flex-col justify-between" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[8px] font-black uppercase text-foreground/60 flex items-center gap-1">
+                              <Coins className="w-2.5 h-2.5 text-amber-400" /> Purse
+                            </span>
+                            <span className="text-[8px] font-mono font-bold text-foreground/70">
+                              {Math.round(percentLeft)}%
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className={`font-black font-mono text-xs ${!isAffordable ? "text-red-400" : "text-primary"}`}>
+                              {remainingBudget.toLocaleString()}
+                            </span>
+                            <span className="text-[8px] font-black text-primary/70 uppercase font-sans">{currencyLabel}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Increment Selector Tabs */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between px-0.5">
+                          <span className="text-[9px] font-black uppercase text-foreground/50 tracking-wider">Select Increment</span>
+                          <span className="text-[9.5px] font-mono font-bold text-primary">Active: +{selectedIncrement} {currencyLabel}</span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1 p-0.5 rounded-xl bg-background/80 border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                          {bumpsToDisplay.map((inc) => {
+                            const isSelected = selectedIncrement === inc;
+                            return (
+                              <button
+                                key={inc}
+                                type="button"
+                                onClick={() => setSelectedIncrement(inc)}
+                                className={`py-1.5 px-1 rounded-lg font-mono font-black text-[11px] transition-all flex items-center justify-center cursor-pointer ${
+                                  isSelected
+                                    ? "bg-primary text-black shadow-sm scale-[1.02]"
+                                    : "text-foreground/70 hover:text-foreground hover:bg-surface"
+                                }`}
+                              >
+                                +{inc}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* SINGLE HERO ACTIVE PRICE TAG BIDDING BUTTON */}
+                      <div>
+                        <button
+                          type="button"
+                          disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading}
+                          onClick={() => handlePlaceBid(selectedIncrement)}
+                          className={`w-full py-3 px-4 rounded-2xl font-black transition-all flex flex-col items-center justify-center shadow-xl select-none cursor-pointer ${
+                            isMyTeamLeading
+                              ? "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-500/40 text-amber-400 cursor-not-allowed opacity-90"
+                              : !isAffordable
+                              ? "bg-red-500/15 border border-red-500/30 text-red-400 cursor-not-allowed opacity-60"
+                              : "bg-gradient-to-r from-primary via-emerald-400 to-primary text-black hover:scale-[1.02] active:scale-[0.98] shadow-primary/25"
+                          }`}
+                        >
+                          {isMyTeamLeading ? (
+                            <div className="flex items-center gap-1.5">
+                              <Crown className="w-4 h-4 text-amber-400" />
+                              <span className="text-xs uppercase font-extrabold tracking-wide">
+                                You Hold Winning Bid ({currentBid.toLocaleString()} {currencyLabel})
+                              </span>
+                            </div>
+                          ) : !isAffordable ? (
+                            <div className="flex items-center gap-1.5">
+                              <AlertTriangle className="w-4 h-4 text-red-400" />
+                              <span className="text-xs uppercase font-extrabold">
+                                Purse Insufficient for {activeNextBid.toLocaleString()} {currencyLabel}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between w-full px-2">
+                              <div className="text-left">
+                                <span className="text-[10px] font-black uppercase text-black/75 block leading-none">
+                                  Place Bid (+{selectedIncrement} {currencyLabel})
                                 </span>
+                                <span className="text-sm font-bold text-black/80 block mt-0.5 leading-none">
+                                  Next Increment
+                                </span>
+                              </div>
+                              <div className="flex items-baseline gap-1 bg-black/15 px-3 py-1.5 rounded-xl border border-black/10">
+                                <span className="font-mono font-black text-lg text-black leading-none">
+                                  {activeNextBid.toLocaleString()}
+                                </span>
+                                <span className="font-black text-[10px] uppercase text-black/80">{currencyLabel}</span>
                               </div>
                             </div>
+                          )}
+                        </button>
+                      </div>
 
-                            {/* Purse */}
-                            <div className="p-2 rounded-xl border bg-surface/60 flex flex-col justify-between" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="text-[8px] font-black uppercase text-foreground/60 flex items-center gap-1">
-                                  <Coins className="w-2.5 h-2.5 text-amber-400" /> Purse
-                                </span>
-                                <span className="text-[8px] font-mono font-bold text-foreground/70">
-                                  {Math.round(percentLeft)}%
-                                </span>
-                              </div>
-                              <div className="flex items-baseline gap-1">
-                                <span className={`font-black font-mono text-xs ${isPurseExhausted ? "text-red-400" : "text-primary"}`}>
-                                  {remainingBudget.toLocaleString()}
-                                </span>
-                                <span className="text-[8px] font-black text-primary/70 uppercase font-sans">{currencyLabel}</span>
-                              </div>
+                      {/* Custom Bid Drawer Trigger & Form */}
+                      <div className="pt-0.5">
+                        {isCustomBidOpen ? (
+                          <div className="w-full flex items-center gap-1.5 animate-fadeIn">
+                            <div className="relative flex-1">
+                              <Coins className="w-3 h-3 text-primary absolute left-2.5 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="number"
+                                placeholder={`Bid > ${currentBid}...`}
+                                value={customBidAmount}
+                                onChange={(e) => setCustomBidAmount(e.target.value)}
+                                className="w-full pl-7 pr-2.5 py-1.5 rounded-xl bg-background border border-foreground/15 text-foreground font-mono font-black text-xs outline-none focus:border-primary"
+                              />
                             </div>
+                            <button
+                              onClick={handlePlaceCustomBid}
+                              disabled={placingBid || !customBidAmount}
+                              className="px-3.5 py-1.5 rounded-xl bg-primary text-black font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>Bid</span>
+                            </button>
+                            <button
+                              onClick={() => setIsCustomBidOpen(false)}
+                              className="p-1.5 rounded-xl border border-foreground/15 text-foreground/50 hover:text-foreground text-xs"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
-
-                          {/* 5-Column Quick Bumps Grid */}
-                          <div className="grid grid-cols-5 gap-1.5 pt-0.5">
-                            {bumpsToDisplay.map((inc) => {
-                              const nextTargetBid = currentBid + inc;
-                              const isAffordable = remainingBudget >= nextTargetBid;
-
-                              return (
-                                <button
-                                  key={inc}
-                                  disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading}
-                                  onClick={() => handlePlaceBid(inc)}
-                                  className={`py-2 px-1 rounded-xl font-black transition-all flex flex-col items-center justify-center select-none cursor-pointer ${
-                                    !isAffordable || isMyTeamLeading
-                                      ? "bg-surface/50 text-foreground/30 border border-foreground/10 cursor-not-allowed opacity-40"
-                                      : "bg-gradient-to-r from-primary via-emerald-400 to-primary text-black hover:scale-105 active:scale-95 shadow-md shadow-primary/20"
-                                  }`}
-                                >
-                                  <span className="font-mono font-black text-xs leading-none">+{inc}</span>
-                                  <span className="uppercase font-extrabold text-black/80 truncate max-w-full text-[7.5px] leading-none mt-0.5">
-                                    {isMyTeamLeading ? "Leading" : isAffordable ? `${nextTargetBid.toLocaleString()}` : "Exceeds"}
-                                  </span>
-                                </button>
-                              );
-                            })}
+                        ) : (
+                          <div className="w-full flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setIsCustomBidOpen(true)}
+                              className="text-[10px] font-bold text-foreground/50 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer py-0.5 px-1 rounded hover:bg-white/5"
+                            >
+                              <Sliders className="w-2.5 h-2.5 text-primary" />
+                              <span>Custom Bid Amount</span>
+                            </button>
                           </div>
-
-                          {/* Custom Bid Drawer Trigger & Form */}
-                          <div className="pt-0.5">
-                            {isCustomBidOpen ? (
-                              <div className="w-full flex items-center gap-1.5 animate-fadeIn">
-                                <div className="relative flex-1">
-                                  <Coins className="w-3 h-3 text-primary absolute left-2.5 top-1/2 -translate-y-1/2" />
-                                  <input
-                                    type="number"
-                                    placeholder={`Bid > ${currentBid}...`}
-                                    value={customBidAmount}
-                                    onChange={(e) => setCustomBidAmount(e.target.value)}
-                                    className="w-full pl-7 pr-2.5 py-1.5 rounded-xl bg-background border border-foreground/15 text-foreground font-mono font-black text-xs outline-none focus:border-primary"
-                                  />
-                                </div>
-                                <button
-                                  onClick={handlePlaceCustomBid}
-                                  disabled={placingBid || !customBidAmount}
-                                  className="px-3.5 py-1.5 rounded-xl bg-primary text-black font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-                                >
-                                  <Send className="w-3 h-3" />
-                                  <span>Bid</span>
-                                </button>
-                                <button
-                                  onClick={() => setIsCustomBidOpen(false)}
-                                  className="p-1.5 rounded-xl border border-foreground/15 text-foreground/50 hover:text-foreground text-xs"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="w-full flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={() => setIsCustomBidOpen(true)}
-                                  className="text-[10px] font-bold text-foreground/50 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer py-0.5 px-1 rounded hover:bg-white/5"
-                                >
-                                  <Sliders className="w-2.5 h-2.5 text-primary" />
-                                  <span>Custom Bid Amount</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             ) : (
               /* Standby Floor Screen */
@@ -1287,8 +1341,8 @@ export default function TeamOwnerAuctionArenaPage() {
                     }
 
                     // Authenticated Franchise Owner Bidding Controls
-                    const minRequiredBid = currentBid + (bumpsToDisplay[0] || 50);
-                    const isPurseExhausted = myTeamSummary ? myTeamSummary.team.remainingBudget < minRequiredBid : false;
+                    const activeNextBid = currentBid + selectedIncrement;
+                    const isAffordable = myTeamSummary ? myTeamSummary.team.remainingBudget >= activeNextBid : true;
 
                     return (
                       <div className={`relative z-10 shrink-0 ${isFullscreen ? "space-y-4 pt-2" : "space-y-2.5"}`}>
@@ -1361,7 +1415,7 @@ export default function TeamOwnerAuctionArenaPage() {
                                         className={`font-black font-mono tracking-tight leading-none ${
                                           isFullscreen ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
                                         } ${
-                                          isPurseExhausted ? "text-red-400" : "text-primary"
+                                          !isAffordable ? "text-red-400" : "text-primary"
                                         }`}
                                       >
                                         {remainingBudget.toLocaleString()}
@@ -1383,54 +1437,84 @@ export default function TeamOwnerAuctionArenaPage() {
                                   </div>
                                 </div>
                               </div>
-
-                              {/* Purse Exhaustion Alert Warning */}
-                              {isPurseExhausted && (
-                                <div className="p-2 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] flex items-center gap-2 animate-pulse">
-                                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-400" />
-                                  <span>
-                                    <strong>Purse Exhausted:</strong> Only{" "}
-                                    <strong>{myTeamSummary.team.remainingBudget.toLocaleString()} {currencyLabel}</strong> left. Cannot bid higher.
-                                  </span>
-                                </div>
-                              )}
                             </div>
                           );
                         })()}
 
-                        {/* Quick Point Bump Action Buttons */}
-                        <div className="grid grid-cols-5 gap-2">
-                          {bumpsToDisplay.map((inc) => {
-                            const nextTargetBid = currentBid + inc;
-                            const isAffordable = myTeamSummary ? myTeamSummary.team.remainingBudget >= nextTargetBid : true;
+                        {/* Increment Selector Tabs */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between px-1">
+                            <span className="text-[11px] font-black uppercase text-foreground/50 tracking-wider">Select Increment</span>
+                            <span className="text-xs font-mono font-black text-primary">Active Price Tag: +{selectedIncrement} {currencyLabel}</span>
+                          </div>
+                          <div className="grid grid-cols-5 gap-1.5 p-1 rounded-2xl bg-background/80 border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                            {bumpsToDisplay.map((inc) => {
+                              const isSelected = selectedIncrement === inc;
+                              return (
+                                <button
+                                  key={inc}
+                                  type="button"
+                                  onClick={() => setSelectedIncrement(inc)}
+                                  className={`py-2 px-2 rounded-xl font-mono font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
+                                    isSelected
+                                      ? "bg-primary text-black shadow-md scale-[1.02]"
+                                      : "text-foreground/70 hover:text-foreground hover:bg-surface"
+                                  }`}
+                                >
+                                  +{inc}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
 
-                            return (
-                              <button
-                                key={inc}
-                                disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading}
-                                onClick={() => handlePlaceBid(inc)}
-                                className={`rounded-2xl font-black transition-all flex flex-col items-center justify-center select-none cursor-pointer ${
-                                  isFullscreen ? "py-4 px-2.5 gap-1 shadow-xl" : "py-2.5 px-1.5 gap-0.5 shadow-md rounded-xl"
-                                } ${
-                                  !isAffordable || isMyTeamLeading
-                                    ? "bg-surface/50 text-foreground/30 border border-foreground/10 cursor-not-allowed opacity-40"
-                                    : "bg-gradient-to-r from-primary via-emerald-400 to-primary text-black hover:scale-105 active:scale-95 shadow-primary/20 cursor-pointer"
-                                }`}
-                                title={
-                                  isMyTeamLeading
-                                    ? "You are currently holding the highest bid!"
-                                    : !isAffordable
-                                    ? `Requires ${nextTargetBid} pts (Purse: ${myTeamSummary?.team.remainingBudget || 0} pts)`
-                                    : `Place bid for ${nextTargetBid} ${currencyLabel}`
-                                }
-                              >
-                                <span className={`font-mono font-black tracking-tight leading-none ${isFullscreen ? "text-lg" : "text-base"}`}>+{inc}</span>
-                                <span className={`uppercase font-extrabold text-black/75 truncate max-w-full leading-none ${isFullscreen ? "text-[9px]" : "text-[8.5px]"}`}>
-                                  {isMyTeamLeading ? "Leading" : isAffordable ? `${nextTargetBid.toLocaleString()}` : "Exceeds"}
+                        {/* SINGLE HERO ACTIVE PRICE TAG BIDDING BUTTON */}
+                        <div>
+                          <button
+                            type="button"
+                            disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading}
+                            onClick={() => handlePlaceBid(selectedIncrement)}
+                            className={`w-full py-4 px-6 rounded-2xl font-black transition-all flex flex-col items-center justify-center shadow-xl select-none cursor-pointer ${
+                              isMyTeamLeading
+                                ? "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-500/40 text-amber-400 cursor-not-allowed opacity-90"
+                                : !isAffordable
+                                ? "bg-red-500/15 border border-red-500/30 text-red-400 cursor-not-allowed opacity-60"
+                                : "bg-gradient-to-r from-primary via-emerald-400 to-primary text-black hover:scale-[1.01] active:scale-[0.99] shadow-primary/25"
+                            }`}
+                          >
+                            {isMyTeamLeading ? (
+                              <div className="flex items-center gap-2">
+                                <Crown className="w-5 h-5 text-amber-400" />
+                                <span className="text-sm uppercase font-extrabold tracking-wide">
+                                  Your Franchise Holds Winning Bid ({currentBid.toLocaleString()} {currencyLabel})
                                 </span>
-                              </button>
-                            );
-                          })}
+                              </div>
+                            ) : !isAffordable ? (
+                              <div className="flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-red-400" />
+                                <span className="text-sm uppercase font-extrabold">
+                                  Purse Insufficient for {activeNextBid.toLocaleString()} {currencyLabel}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between w-full px-3">
+                                <div className="text-left">
+                                  <span className="text-xs font-black uppercase text-black/75 block leading-none">
+                                    Place Active Bid (+{selectedIncrement} {currencyLabel})
+                                  </span>
+                                  <span className="text-sm font-bold text-black/80 block mt-0.5 leading-none">
+                                    Next Bidding Step
+                                  </span>
+                                </div>
+                                <div className="flex items-baseline gap-1.5 bg-black/15 px-4 py-2 rounded-xl border border-black/10">
+                                  <span className="font-mono font-black text-2xl text-black leading-none">
+                                    {activeNextBid.toLocaleString()}
+                                  </span>
+                                  <span className="font-black text-xs uppercase text-black/80">{currencyLabel}</span>
+                                </div>
+                              </div>
+                            )}
+                          </button>
                         </div>
 
                         {/* Custom Bid Drawer Trigger & Form */}
