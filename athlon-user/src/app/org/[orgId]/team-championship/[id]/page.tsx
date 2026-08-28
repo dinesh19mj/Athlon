@@ -4033,72 +4033,28 @@ export default function TeamChampionshipDashboardPage() {
           });
 
           return (
-            <div className="space-y-6">
-              {/* TOP CHAMPIONSHIP TELEMETRY HUD BAR */}
-              <div
-                className="p-5 md:p-6 rounded-3xl border relative overflow-hidden shadow-sm"
-                style={{
-                  backgroundColor: "var(--athlon-card)",
-                  borderColor: "var(--athlon-border)",
-                }}
-              >
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                        <Shield className="w-4 h-4" />
-                      </div>
-                      <h2 className="text-xl font-black text-foreground tracking-tight">
-                        Squads & Participation Command Center
-                      </h2>
-                    </div>
-                    <p className="text-xs text-foreground/60 max-w-2xl">
-                      Monitor franchise roster allocations, acquisition breakdown, and audit compliance with the{" "}
-                      <span className="font-bold text-foreground/90">"Every Player Must Play"</span> league participation mandate.
+            <div className="space-y-4">
+              {/* COMPACT CLEAN HEADER STRIP */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-foreground tracking-tight">
+                      Squads & Participation Audit
+                    </h2>
+                    <p className="text-[11px] text-foreground/50">
+                      {teams.length} Franchises • {totalRosteredAthletes} Rostered Athletes
                     </p>
                   </div>
+                </div>
 
-                  {/* Top Stats Pill Cluster */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div
-                      className="px-4 py-2.5 rounded-2xl border flex items-center gap-3 bg-surface/50"
-                      style={{ borderColor: "var(--athlon-border-subtle)" }}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-xs">
-                        <Users className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Franchises</div>
-                        <div className="text-sm font-black text-foreground leading-none">{teams.length} Teams</div>
-                      </div>
-                    </div>
-
-                    <div
-                      className="px-4 py-2.5 rounded-2xl border flex items-center gap-3 bg-surface/50"
-                      style={{ borderColor: "var(--athlon-border-subtle)" }}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-black text-xs">
-                        <UserCheck className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Rostered Athletes</div>
-                        <div className="text-sm font-black text-foreground leading-none">{totalRosteredAthletes} Players</div>
-                      </div>
-                    </div>
-
-                    <div
-                      className="px-4 py-2.5 rounded-2xl border flex items-center gap-3 bg-surface/50"
-                      style={{ borderColor: "var(--athlon-border-subtle)" }}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-black text-xs">
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Participation Rule</div>
-                        <div className="text-sm font-black text-foreground leading-none">Mandatory League</div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2.5 py-1 rounded-xl bg-surface border text-foreground/70 font-bold text-[11px] flex items-center gap-1.5" style={{ borderColor: "var(--athlon-border)" }}>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    Mandatory League Participation
+                  </span>
                 </div>
               </div>
 
