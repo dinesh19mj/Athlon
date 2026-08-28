@@ -823,75 +823,94 @@ export default function TeamOwnerAuctionArenaPage() {
 
                   return (
                     <div className={`relative z-10 shrink-0 ${isFullscreen ? "space-y-4 pt-2" : "space-y-2.5"}`}>
-                      {/* Franchise Cockpit Command Card */}
+                      {/* Franchise Cockpit: Two Separate Containers for Active Franchise & Purse */}
                       {myTeamSummary && (() => {
                         const initialBudget = myTeamSummary.team.initialBudget || 5000;
                         const remainingBudget = myTeamSummary.team.remainingBudget ?? initialBudget;
                         const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
 
                         return (
-                          <div
-                            className={`border bg-gradient-to-br from-surface/90 via-surface/60 to-background/90 backdrop-blur-xl shadow-md relative overflow-hidden ${
-                              isFullscreen ? "p-4 sm:p-5 rounded-3xl space-y-3.5" : "p-3 sm:p-3.5 rounded-2xl space-y-2"
-                            }`}
-                            style={{ borderColor: "var(--athlon-border)" }}
-                          >
-                            <div className="flex items-center justify-between gap-3 relative z-10">
-                              {/* Left: Team Crest & Identity */}
-                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className={`rounded-2xl bg-gradient-to-tr from-primary/30 via-indigo-500/20 to-primary/10 border border-primary/60 flex items-center justify-center text-primary font-black shadow-sm shrink-0 ${
-                                  isFullscreen ? "w-12 h-12 text-xl" : "w-9 h-9 text-base rounded-xl"
-                                }`}>
-                                  {myTeamSummary.team.teamName.charAt(0).toUpperCase()}
+                          <div className="space-y-2">
+                            <div className={`grid grid-cols-2 ${isFullscreen ? "gap-4" : "gap-3"}`}>
+                              {/* CONTAINER 1: Active Franchise Team */}
+                              <div
+                                className={`border bg-gradient-to-br from-surface/90 via-surface/60 to-background/90 backdrop-blur-xl shadow-md flex flex-col justify-between ${
+                                  isFullscreen ? "p-4 sm:p-5 rounded-3xl gap-2.5" : "p-3 sm:p-3.5 rounded-2xl gap-1.5"
+                                }`}
+                                style={{ borderColor: "var(--athlon-border)" }}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className={`font-black uppercase tracking-wider text-primary/80 flex items-center gap-1.5 ${isFullscreen ? "text-[11px]" : "text-[9.5px]"}`}>
+                                    <Shield className={`text-primary ${isFullscreen ? "w-3.5 h-3.5" : "w-3 h-3"}`} />
+                                    <span>Active Franchise</span>
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8.5px] font-bold text-foreground/60 uppercase">
+                                    Locked
+                                  </span>
                                 </div>
 
-                                <div className="space-y-0.5 min-w-0 flex-1">
-                                  <div className="flex items-center gap-1 text-[9.5px] font-black uppercase tracking-wider text-primary/80">
-                                    <Shield className="w-3 h-3 text-primary" />
-                                    <span>Active Franchise</span>
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`rounded-xl bg-gradient-to-tr from-primary/30 via-indigo-500/20 to-primary/10 border border-primary/60 flex items-center justify-center text-primary font-black shadow-sm shrink-0 ${
+                                    isFullscreen ? "w-11 h-11 text-lg rounded-2xl" : "w-8 h-8 text-sm"
+                                  }`}>
+                                    {myTeamSummary.team.teamName.charAt(0).toUpperCase()}
                                   </div>
 
-                                  <h4 className={`font-black text-foreground truncate tracking-tight ${
-                                    isFullscreen ? "text-base sm:text-xl" : "text-sm sm:text-base"
-                                  }`}>
-                                    {myTeamSummary.team.teamName}
-                                  </h4>
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className={`font-black text-foreground truncate tracking-tight ${
+                                      isFullscreen ? "text-base sm:text-lg" : "text-xs sm:text-sm"
+                                    }`}>
+                                      {myTeamSummary.team.teamName}
+                                    </h4>
+                                    <span className="text-[9px] text-foreground/50 font-bold block truncate">
+                                      {myTeamSummary.team.playersAcquiredCount || 0} Players Drafted
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Right: Purse Telemetry Pill & Meter */}
-                              <div className="flex flex-col items-end gap-0.5 shrink-0">
-                                <div className="flex items-center gap-1.5 text-[9.5px] font-black uppercase text-foreground/50 tracking-wider">
-                                  <Coins className="w-3 h-3 text-amber-400" />
-                                  <span>Purse</span>
-                                  <span className="text-[8.5px] font-bold font-mono px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-foreground/70">
-                                    {Math.round(percentLeft)}%
+                              {/* CONTAINER 2: Franchise Purse Balance */}
+                              <div
+                                className={`border bg-gradient-to-br from-surface/90 via-surface/60 to-background/90 backdrop-blur-xl shadow-md flex flex-col justify-between ${
+                                  isFullscreen ? "p-4 sm:p-5 rounded-3xl gap-2.5" : "p-3 sm:p-3.5 rounded-2xl gap-1.5"
+                                }`}
+                                style={{ borderColor: "var(--athlon-border)" }}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className={`font-black uppercase tracking-wider text-foreground/60 flex items-center gap-1.5 ${isFullscreen ? "text-[11px]" : "text-[9.5px]"}`}>
+                                    <Coins className={`text-amber-400 ${isFullscreen ? "w-3.5 h-3.5" : "w-3 h-3"}`} />
+                                    <span>Purse Balance</span>
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8.5px] font-mono font-bold text-foreground/70">
+                                    {Math.round(percentLeft)}% Left
                                   </span>
                                 </div>
 
-                                <div className="flex items-baseline gap-1">
-                                  <span
-                                    className={`font-black font-mono tracking-tight leading-none ${
-                                      isFullscreen ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
-                                    } ${
-                                      isPurseExhausted ? "text-red-400" : "text-primary"
-                                    }`}
-                                  >
-                                    {remainingBudget.toLocaleString()}
-                                  </span>
-                                  <span className="text-[10px] font-black text-primary/70 uppercase font-sans">
-                                    {currencyLabel}
-                                  </span>
-                                </div>
+                                <div className="space-y-1">
+                                  <div className="flex items-baseline gap-1">
+                                    <span
+                                      className={`font-black font-mono tracking-tight leading-none ${
+                                        isFullscreen ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
+                                      } ${
+                                        isPurseExhausted ? "text-red-400" : "text-primary"
+                                      }`}
+                                    >
+                                      {remainingBudget.toLocaleString()}
+                                    </span>
+                                    <span className="text-[10px] font-black text-primary/70 uppercase font-sans">
+                                      {currencyLabel}
+                                    </span>
+                                  </div>
 
-                                {/* Micro Battery / Progress Bar */}
-                                <div className={`h-1 rounded-full bg-foreground/10 overflow-hidden ${isFullscreen ? "w-32 sm:w-36" : "w-24 sm:w-28"}`}>
-                                  <div
-                                    className={`h-full rounded-full transition-all duration-500 ${
-                                      percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
-                                    }`}
-                                    style={{ width: `${percentLeft}%` }}
-                                  />
+                                  {/* Micro Battery / Progress Bar */}
+                                  <div className="w-full h-1 rounded-full bg-foreground/10 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-500 ${
+                                        percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
+                                      }`}
+                                      style={{ width: `${percentLeft}%` }}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
