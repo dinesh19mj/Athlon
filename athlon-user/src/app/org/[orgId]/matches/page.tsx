@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { ClubMatchService, ClubMatch } from '@/lib/api/clubMatch';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
+import { UserService } from '@/lib/api/user';
 import {
   Search,
   Plus,
@@ -23,7 +24,9 @@ import {
   X,
   RefreshCw,
   Sparkles,
-  Crown
+  Crown,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
 const AVAILABLE_SPORTS_ICONS: Record<string, string> = {
@@ -37,6 +40,148 @@ const AVAILABLE_SPORTS_ICONS: Record<string, string> = {
   Volleyball: '🏐',
   Squash: '🎾'
 };
+
+// Custom Member Selector with Photo and Name only
+function MemberSelector({
+  label,
+  value,
+  onChange,
+  members,
+  disabledNames = []
+}: {
+  label: string;
+  value: string;
+  onChange: (name: string) => void;
+  members: OrganizationMemberResponse[];
+  disabledNames?: string[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedMember = members.find((m) => m.fullName === value);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
+          selectedMember
+            ? 'bg-background border-foreground/20 text-foreground shadow-sm'
+            : 'bg-background/80 border-foreground/10 text-foreground/40 hover:border-primary/40'
+        }`}
+        style={{ borderColor: 'var(--athlon-border)' }}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          {selectedMember ? (
+            <>
+              <div className="w-7 h-7 rounded-lg bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                {selectedMember.photo ? (
+                  <img
+                    src={UserService.getPhotoUrl(selectedMember.photo)}
+                    alt={selectedMember.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs font-black text-primary">
+                    {selectedMember.fullName?.charAt(0)?.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-bold text-foreground truncate">
+                {selectedMember.fullName}
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-7 h-7 rounded-lg bg-foreground/5 border border-foreground/10 flex items-center justify-center text-foreground/30 shrink-0">
+                <User className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-xs font-medium text-foreground/40">{label}</span>
+            </>
+          )}
+        </div>
+
+        {value ? (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange('');
+            }}
+            className="p-1 rounded-md hover:bg-foreground/10 text-foreground/40 hover:text-foreground transition-colors"
+            title="Clear selection"
+          >
+            <X className="w-3.5 h-3.5" />
+          </div>
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5 text-foreground/40 shrink-0 ml-1" />
+        )}
+      </button>
+
+      {/* DROPDOWN MENU */}
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-20"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className="absolute top-full left-0 right-0 mt-1.5 z-30 max-h-52 overflow-y-auto rounded-2xl border shadow-2xl p-1.5 space-y-1 bg-surface animate-in fade-in zoom-in-95 duration-150"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border)'
+            }}
+          >
+            {members.length === 0 ? (
+              <div className="p-3 text-center text-xs text-foreground/40 font-medium">
+                No club members found
+              </div>
+            ) : (
+              members.map((m) => {
+                const isDisabled = disabledNames.includes(m.fullName);
+                const isSelected = m.fullName === value;
+                return (
+                  <button
+                    key={m.organizationMemberUuid}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                      onChange(m.fullName);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition-all ${
+                      isSelected
+                        ? 'bg-primary text-black font-black shadow-sm'
+                        : isDisabled
+                        ? 'opacity-40 cursor-not-allowed bg-transparent'
+                        : 'hover:bg-foreground/5 text-foreground'
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                      {m.photo ? (
+                        <img
+                          src={UserService.getPhotoUrl(m.photo)}
+                          alt={m.fullName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className={`text-xs font-black ${isSelected ? 'text-black' : 'text-primary'}`}>
+                          {m.fullName?.charAt(0)?.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-bold truncate flex-grow">
+                      {m.fullName}
+                    </span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-black shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function MatchesPage() {
   const params = useParams();
@@ -143,7 +288,12 @@ export default function MatchesPage() {
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamAPlayer1.trim() || !teamBPlayer1.trim()) {
-      setModalError('Please enter at least Player 1 for both Team A and Team B.');
+      setModalError('Please select Player 1 for both Team A and Team B.');
+      return;
+    }
+
+    if (matchType === 'DOUBLES' && (!teamAPlayer2.trim() || !teamBPlayer2.trim())) {
+      setModalError('Please select Player 2 for both sides in doubles match.');
       return;
     }
 
@@ -161,7 +311,7 @@ export default function MatchesPage() {
       ? `${teamBPlayer1.trim()} / ${teamBPlayer2.trim()}`
       : teamBPlayer1.trim();
 
-    // Single match score: e.g. "21-18"
+    // Single match score: e.g. "21 - 18"
     const scoreString = `${teamAScore.trim()} - ${teamBScore.trim()}`;
     const winnerString = selectedWinner === 'TEAM_A' ? teamAString : selectedWinner === 'TEAM_B' ? teamBString : '';
 
@@ -558,7 +708,11 @@ export default function MatchesPage() {
                     <div className="grid grid-cols-2 gap-1 bg-background p-1 rounded-2xl border" style={{ borderColor: 'var(--athlon-border)' }}>
                       <button
                         type="button"
-                        onClick={() => setMatchType('SINGLES')}
+                        onClick={() => {
+                          setMatchType('SINGLES');
+                          setTeamAPlayer2('');
+                          setTeamBPlayer2('');
+                        }}
                         className={`py-2 rounded-xl text-xs font-bold transition-all text-center ${
                           matchType === 'SINGLES'
                             ? 'bg-primary text-black font-black shadow-sm'
@@ -615,56 +769,24 @@ export default function MatchesPage() {
                       )}
                     </div>
 
-                    {/* Member Dropdown Selectors */}
+                    {/* Member Selectors with Photo + Name */}
                     <div className="space-y-2">
-                      <div>
-                        <select
-                          value={teamAPlayer1}
-                          onChange={(e) => setTeamAPlayer1(e.target.value)}
-                          className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                        >
-                          <option value="">Select Player 1 (Club Member)...</option>
-                          {members.map(m => (
-                            <option
-                              key={m.organizationMemberUuid}
-                              value={m.fullName}
-                              disabled={
-                                m.fullName === teamBPlayer1 ||
-                                m.fullName === teamBPlayer2 ||
-                                m.fullName === teamAPlayer2
-                              }
-                            >
-                              {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <MemberSelector
+                        label="Select Player 1..."
+                        value={teamAPlayer1}
+                        onChange={setTeamAPlayer1}
+                        members={members}
+                        disabledNames={[teamBPlayer1, teamBPlayer2, teamAPlayer2].filter(Boolean)}
+                      />
 
                       {matchType === 'DOUBLES' && (
-                        <div>
-                          <select
-                            value={teamAPlayer2}
-                            onChange={(e) => setTeamAPlayer2(e.target.value)}
-                            className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all animate-in fade-in duration-200"
-                            style={{ borderColor: 'var(--athlon-border)' }}
-                          >
-                            <option value="">Select Player 2 (Partner)...</option>
-                            {members.map(m => (
-                              <option
-                                key={m.organizationMemberUuid}
-                                value={m.fullName}
-                                disabled={
-                                  m.fullName === teamAPlayer1 ||
-                                  m.fullName === teamBPlayer1 ||
-                                  m.fullName === teamBPlayer2
-                                }
-                              >
-                                {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <MemberSelector
+                          label="Select Player 2 (Partner)..."
+                          value={teamAPlayer2}
+                          onChange={setTeamAPlayer2}
+                          members={members}
+                          disabledNames={[teamAPlayer1, teamBPlayer1, teamBPlayer2].filter(Boolean)}
+                        />
                       )}
                     </div>
 
@@ -699,56 +821,24 @@ export default function MatchesPage() {
                       )}
                     </div>
 
-                    {/* Member Dropdown Selectors */}
+                    {/* Member Selectors with Photo + Name */}
                     <div className="space-y-2">
-                      <div>
-                        <select
-                          value={teamBPlayer1}
-                          onChange={(e) => setTeamBPlayer1(e.target.value)}
-                          className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                        >
-                          <option value="">Select Player 1 (Club Member)...</option>
-                          {members.map(m => (
-                            <option
-                              key={m.organizationMemberUuid}
-                              value={m.fullName}
-                              disabled={
-                                m.fullName === teamAPlayer1 ||
-                                m.fullName === teamAPlayer2 ||
-                                m.fullName === teamBPlayer2
-                              }
-                            >
-                              {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <MemberSelector
+                        label="Select Player 1..."
+                        value={teamBPlayer1}
+                        onChange={setTeamBPlayer1}
+                        members={members}
+                        disabledNames={[teamAPlayer1, teamAPlayer2, teamBPlayer2].filter(Boolean)}
+                      />
 
                       {matchType === 'DOUBLES' && (
-                        <div>
-                          <select
-                            value={teamBPlayer2}
-                            onChange={(e) => setTeamBPlayer2(e.target.value)}
-                            className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all animate-in fade-in duration-200"
-                            style={{ borderColor: 'var(--athlon-border)' }}
-                          >
-                            <option value="">Select Player 2 (Partner)...</option>
-                            {members.map(m => (
-                              <option
-                                key={m.organizationMemberUuid}
-                                value={m.fullName}
-                                disabled={
-                                  m.fullName === teamAPlayer1 ||
-                                  m.fullName === teamAPlayer2 ||
-                                  m.fullName === teamBPlayer1
-                                }
-                              >
-                                {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <MemberSelector
+                          label="Select Player 2 (Partner)..."
+                          value={teamBPlayer2}
+                          onChange={setTeamBPlayer2}
+                          members={members}
+                          disabledNames={[teamAPlayer1, teamAPlayer2, teamBPlayer1].filter(Boolean)}
+                        />
                       )}
                     </div>
 
