@@ -120,6 +120,7 @@ export default function TeamChampionshipDashboardPage() {
   const [categoryTrayFilter, setCategoryTrayFilter] = useState<"ALL" | "WAITING" | "SOLD" | "UNSOLD">("ALL");
   const [rightTrayTab, setRightTrayTab] = useState<"BIDS" | "QUEUE">("QUEUE");
   const [isManualLocked, setIsManualLocked] = useState(false);
+  const [displayRemainingSeconds, setDisplayRemainingSeconds] = useState<number>(60);
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -403,15 +404,42 @@ export default function TeamChampionshipDashboardPage() {
 
   const isTimerPaused = auctionState?.config?.status === "PAUSED" || Boolean(auctionState?.config?.timerPausedRemainingSeconds);
 
+  // Sync server authority remaining timer to local display
+  useEffect(() => {
+    if (auctionState?.remainingTimerSeconds !== undefined && auctionState?.remainingTimerSeconds !== null) {
+      setDisplayRemainingSeconds(auctionState.remainingTimerSeconds);
+    }
+  }, [auctionState?.remainingTimerSeconds, auctionState?.activePlayer?.auctionPlayerId]);
+
+  // Precise 1-second countdown ticker for smooth, single-second countdown
+  useEffect(() => {
+    if (isTimerPaused || !auctionState?.activePlayer) return;
+
+    const interval = setInterval(() => {
+      setDisplayRemainingSeconds((prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isTimerPaused, auctionState?.activePlayer?.auctionPlayerId]);
+
   const handleTogglePauseTimer = async () => {
     if (!championship?.championshipId) return;
     try {
       if (isTimerPaused) {
         const updated = await AuctionService.resumeTimer(championship.championshipId);
         setAuctionState(updated);
+        if (updated?.remainingTimerSeconds !== undefined) {
+          setDisplayRemainingSeconds(updated.remainingTimerSeconds);
+        }
       } else {
         const updated = await AuctionService.pauseTimer(championship.championshipId);
         setAuctionState(updated);
+        if (updated?.remainingTimerSeconds !== undefined) {
+          setDisplayRemainingSeconds(updated.remainingTimerSeconds);
+        }
       }
     } catch (err: any) {
       console.error("Failed to toggle timer pause:", err);
@@ -422,6 +450,8 @@ export default function TeamChampionshipDashboardPage() {
   const handleResetTimer = async () => {
     if (!championship?.championshipId) return;
     try {
+      const fullSecs = auctionState?.config?.timerSeconds || timerDurationSeconds || 60;
+      setDisplayRemainingSeconds(fullSecs);
       const updated = await AuctionService.resetTimer(championship.championshipId);
       setAuctionState(updated);
       setIsManualLocked(false);
@@ -2368,7 +2398,7 @@ export default function TeamChampionshipDashboardPage() {
                                       <>
                                         <Play className="w-3 h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
                                         <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
-                                          {auctionState?.remainingTimerSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
+                                          {displayRemainingSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
                                             ? "STANDBY"
                                             : "PAUSED"}
                                         </span>
@@ -2387,7 +2417,7 @@ export default function TeamChampionshipDashboardPage() {
                                     className={`text-2xl sm:text-3xl font-black font-mono block leading-none my-0.5 ${isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
                                       }`}
                                   >
-                                    {auctionState?.remainingTimerSeconds ?? timerDurationSeconds ?? 60}s
+                                    {displayRemainingSeconds}s
                                   </span>
 
                                   <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
@@ -2437,7 +2467,7 @@ export default function TeamChampionshipDashboardPage() {
                           /* MODE 1: MANUAL BIDDING DESK (Direct Points & Map to Team) */
                           /* ======================================================== */
                           (() => {
-                            const isTimerExpired = (auctionState?.remainingTimerSeconds ?? 60) <= 0;
+                            const isTimerExpired = displayRemainingSeconds <= 0;
                             const isReadyToLock = isTimerExpired || isManualLocked;
 
                             return (
@@ -2515,7 +2545,7 @@ export default function TeamChampionshipDashboardPage() {
                                           <>
                                             <Play className="w-3 h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
                                             <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
-                                              {auctionState?.remainingTimerSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
+                                              {displayRemainingSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
                                                 ? "STANDBY"
                                                 : "PAUSED"}
                                             </span>
@@ -2541,7 +2571,7 @@ export default function TeamChampionshipDashboardPage() {
                                         className={`text-2xl sm:text-3xl font-black font-mono block leading-none my-0.5 ${isTimerExpired ? "text-red-400" : isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
                                           }`}
                                       >
-                                        {auctionState?.remainingTimerSeconds ?? timerDurationSeconds ?? 60}s
+                                        {displayRemainingSeconds}s
                                       </span>
 
                                       <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
