@@ -495,30 +495,18 @@ export default function TeamOwnerAuctionArenaPage() {
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
-          {/* Franchise Selector & Purse Pill (for Logged-in Users) */}
-          {isAuthenticated && auctionTeams.length > 0 && (
+          {/* Locked Franchise & Purse Pill (for Logged-in Users) */}
+          {isAuthenticated && myTeamSummary && (
             <div className="flex items-center gap-2">
-              {auctionTeams.length > 1 ? (
-                <select
-                  value={selectedMyTeamId || ""}
-                  onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
-                  className="px-3 py-2 rounded-2xl border bg-surface/90 text-xs font-black text-foreground outline-none focus:border-primary hidden md:inline-block cursor-pointer shadow-sm"
-                  style={{ borderColor: "var(--athlon-border)" }}
-                >
-                  {auctionTeams.map((t) => (
-                    <option key={t.team.teamId} value={t.team.teamId}>
-                      {t.team.teamName} ({t.team.remainingBudget.toLocaleString()} {currencyLabel})
-                    </option>
-                  ))}
-                </select>
-              ) : null}
+              <div className="px-3.5 py-2 rounded-2xl bg-surface/90 border border-foreground/15 text-xs font-black text-foreground shadow-sm hidden md:flex items-center gap-2">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span className="truncate max-w-[150px]">{myTeamSummary.team.teamName}</span>
+              </div>
 
-              {myTeamSummary && (
-                <div className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/40 text-primary font-black text-xs shadow-sm flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-primary animate-pulse" />
-                  <span>{myTeamSummary.team.remainingBudget.toLocaleString()} <span className="text-[10px] font-sans font-bold">{currencyLabel}</span></span>
-                </div>
-              )}
+              <div className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/40 text-primary font-black text-xs shadow-sm flex items-center gap-2">
+                <Coins className="w-4 h-4 text-primary animate-pulse" />
+                <span>{myTeamSummary.team.remainingBudget.toLocaleString()} <span className="text-[10px] font-sans font-bold">{currencyLabel}</span></span>
+              </div>
             </div>
           )}
 
@@ -848,26 +836,9 @@ export default function TeamOwnerAuctionArenaPage() {
                                     <span>Active Franchise Team</span>
                                   </div>
 
-                                  {auctionTeams.length > 1 ? (
-                                    <div className="relative inline-block max-w-full sm:max-w-xs">
-                                      <select
-                                        value={selectedMyTeamId || ""}
-                                        onChange={(e) => setSelectedMyTeamId(Number(e.target.value))}
-                                        className="w-full appearance-none pr-8 pl-3 py-1.5 rounded-xl bg-background/90 border border-foreground/15 text-sm sm:text-base font-black text-foreground outline-none focus:border-primary cursor-pointer shadow-inner transition-all hover:bg-background"
-                                      >
-                                        {auctionTeams.map(({ team }) => (
-                                          <option key={team.teamId} value={team.teamId}>
-                                            {team.teamName} ({team.remainingBudget.toLocaleString()} {currencyLabel})
-                                          </option>
-                                        ))}
-                                      </select>
-                                      <ChevronDown className="w-4 h-4 text-foreground/50 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                    </div>
-                                  ) : (
-                                    <h4 className="text-base sm:text-lg font-black text-foreground truncate">
-                                      {myTeamSummary.team.teamName}
-                                    </h4>
-                                  )}
+                                  <h4 className="text-base sm:text-xl font-black text-foreground truncate tracking-tight">
+                                    {myTeamSummary.team.teamName}
+                                  </h4>
                                 </div>
                               </div>
 
