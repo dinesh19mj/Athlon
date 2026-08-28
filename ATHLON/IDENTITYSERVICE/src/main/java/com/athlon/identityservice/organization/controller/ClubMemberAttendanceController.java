@@ -23,7 +23,7 @@ import com.athlon.identityservice.organization.dto.response.ClubMemberAttendance
 import com.athlon.identityservice.organization.service.ClubMemberAttendanceService;
 
 @RestController
-@RequestMapping({"/api/identity/club/attendance", "/club/attendance"})
+@RequestMapping("/api/identity/club/attendance")
 public class ClubMemberAttendanceController {
 
     private final ClubMemberAttendanceService attendanceService;
