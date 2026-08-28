@@ -540,6 +540,15 @@ export default function MatchesPage() {
                   </div>
                 )}
 
+                {members.length === 0 && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                    <div>
+                      <span className="font-bold">No Members in Club Directory:</span> Please add athletes to your club first in the Members tab to choose them for matches.
+                    </div>
+                  </div>
+                )}
+
                 {/* Match Format & Date */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -586,7 +595,7 @@ export default function MatchesPage() {
                   </div>
                 </div>
 
-                {/* VISUAL MATCHUP ARENA (TEAM A vs TEAM B WITH SCOREBOARDS) */}
+                {/* VISUAL MATCHUP ARENA (TEAM A vs TEAM B WITH MEMBER SELECTORS) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
                   
                   {/* TEAM A CARD */}
@@ -597,7 +606,7 @@ export default function MatchesPage() {
                   }`}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5" /> Team A
+                        <User className="w-3.5 h-3.5" /> Team A (Athlete)
                       </span>
                       {selectedWinner === 'TEAM_A' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -606,41 +615,62 @@ export default function MatchesPage() {
                       )}
                     </div>
 
-                    {/* Players Input */}
+                    {/* Member Dropdown Selectors */}
                     <div className="space-y-2">
                       <div>
-                        <input
-                          type="text"
-                          list="club-members-list-a1"
-                          placeholder="Player 1 (Member name)..."
+                        <select
                           value={teamAPlayer1}
                           onChange={(e) => setTeamAPlayer1(e.target.value)}
-                          className="w-full bg-background border rounded-xl px-3.5 py-2 text-xs font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary transition-all"
+                          className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all"
                           style={{ borderColor: 'var(--athlon-border)' }}
-                        />
-                        <datalist id="club-members-list-a1">
+                        >
+                          <option value="">Select Player 1 (Club Member)...</option>
                           {members.map(m => (
-                            <option key={m.organizationMemberUuid} value={m.fullName} />
+                            <option
+                              key={m.organizationMemberUuid}
+                              value={m.fullName}
+                              disabled={
+                                m.fullName === teamBPlayer1 ||
+                                m.fullName === teamBPlayer2 ||
+                                m.fullName === teamAPlayer2
+                              }
+                            >
+                              {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
+                            </option>
                           ))}
-                        </datalist>
+                        </select>
                       </div>
 
                       {matchType === 'DOUBLES' && (
-                        <input
-                          type="text"
-                          list="club-members-list-a2"
-                          placeholder="Player 2 (Partner)..."
-                          value={teamAPlayer2}
-                          onChange={(e) => setTeamAPlayer2(e.target.value)}
-                          className="w-full bg-background border rounded-xl px-3.5 py-2 text-xs font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary transition-all animate-in fade-in duration-200"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                        />
+                        <div>
+                          <select
+                            value={teamAPlayer2}
+                            onChange={(e) => setTeamAPlayer2(e.target.value)}
+                            className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all animate-in fade-in duration-200"
+                            style={{ borderColor: 'var(--athlon-border)' }}
+                          >
+                            <option value="">Select Player 2 (Partner)...</option>
+                            {members.map(m => (
+                              <option
+                                key={m.organizationMemberUuid}
+                                value={m.fullName}
+                                disabled={
+                                  m.fullName === teamAPlayer1 ||
+                                  m.fullName === teamBPlayer1 ||
+                                  m.fullName === teamBPlayer2
+                                }
+                              >
+                                {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       )}
                     </div>
 
                     {/* Score Input Box */}
                     <div className="pt-1 flex items-center justify-between bg-background/80 p-2.5 rounded-xl border border-blue-500/15">
-                      <span className="text-[11px] font-black uppercase text-foreground/50">Final Score:</span>
+                      <span className="text-[11px] font-black uppercase text-foreground/50">Score:</span>
                       <input
                         type="number"
                         placeholder="21"
@@ -660,7 +690,7 @@ export default function MatchesPage() {
                   }`}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5" /> Team B
+                        <User className="w-3.5 h-3.5" /> Team B (Opponent)
                       </span>
                       {selectedWinner === 'TEAM_B' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -669,41 +699,62 @@ export default function MatchesPage() {
                       )}
                     </div>
 
-                    {/* Players Input */}
+                    {/* Member Dropdown Selectors */}
                     <div className="space-y-2">
                       <div>
-                        <input
-                          type="text"
-                          list="club-members-list-b1"
-                          placeholder="Player 1 (Member name)..."
+                        <select
                           value={teamBPlayer1}
                           onChange={(e) => setTeamBPlayer1(e.target.value)}
-                          className="w-full bg-background border rounded-xl px-3.5 py-2 text-xs font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary transition-all"
+                          className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all"
                           style={{ borderColor: 'var(--athlon-border)' }}
-                        />
-                        <datalist id="club-members-list-b1">
+                        >
+                          <option value="">Select Player 1 (Club Member)...</option>
                           {members.map(m => (
-                            <option key={m.organizationMemberUuid} value={m.fullName} />
+                            <option
+                              key={m.organizationMemberUuid}
+                              value={m.fullName}
+                              disabled={
+                                m.fullName === teamAPlayer1 ||
+                                m.fullName === teamAPlayer2 ||
+                                m.fullName === teamBPlayer2
+                              }
+                            >
+                              {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
+                            </option>
                           ))}
-                        </datalist>
+                        </select>
                       </div>
 
                       {matchType === 'DOUBLES' && (
-                        <input
-                          type="text"
-                          list="club-members-list-b2"
-                          placeholder="Player 2 (Partner)..."
-                          value={teamBPlayer2}
-                          onChange={(e) => setTeamBPlayer2(e.target.value)}
-                          className="w-full bg-background border rounded-xl px-3.5 py-2 text-xs font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary transition-all animate-in fade-in duration-200"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                        />
+                        <div>
+                          <select
+                            value={teamBPlayer2}
+                            onChange={(e) => setTeamBPlayer2(e.target.value)}
+                            className="w-full bg-background border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary transition-all animate-in fade-in duration-200"
+                            style={{ borderColor: 'var(--athlon-border)' }}
+                          >
+                            <option value="">Select Player 2 (Partner)...</option>
+                            {members.map(m => (
+                              <option
+                                key={m.organizationMemberUuid}
+                                value={m.fullName}
+                                disabled={
+                                  m.fullName === teamAPlayer1 ||
+                                  m.fullName === teamAPlayer2 ||
+                                  m.fullName === teamBPlayer1
+                                }
+                              >
+                                {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''} - {m.role}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       )}
                     </div>
 
                     {/* Score Input Box */}
                     <div className="pt-1 flex items-center justify-between bg-background/80 p-2.5 rounded-xl border border-purple-500/15">
-                      <span className="text-[11px] font-black uppercase text-foreground/50">Final Score:</span>
+                      <span className="text-[11px] font-black uppercase text-foreground/50">Score:</span>
                       <input
                         type="number"
                         placeholder="18"
