@@ -287,22 +287,26 @@ public class UserService {
                 spr.setSportName(sp.getSportName());
                 spr.setCategory(sp.getCategory());
                 spr.setCurrentRanking(sp.getCurrentRanking());
-                spr.setEloRating(sp.getEloRating() != null ? sp.getEloRating() : 1200);
-                spr.setHighestElo(sp.getHighestElo() != null ? sp.getHighestElo() : 1200);
+                spr.setEloRating(sp.getEloRating() != null ? sp.getEloRating() : 0);
+                spr.setHighestElo(sp.getHighestElo() != null ? sp.getHighestElo() : 0);
                 spr.setTotalMatches(sp.getTotalMatches() != null ? sp.getTotalMatches() : 0);
                 spr.setMatchesWon(sp.getMatchesWon() != null ? sp.getMatchesWon() : 0);
                 spr.setMatchesLost(sp.getMatchesLost() != null ? sp.getMatchesLost() : 0);
                 spr.setWinRate(sp.getWinRate() != null ? sp.getWinRate() : 0.0);
                 spr.setCurrentStreak(sp.getCurrentStreak() != null ? sp.getCurrentStreak() : 0);
 
-                try {
-                    long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
-                            sp.getSportName(),
-                            sp.getEloRating() != null ? sp.getEloRating() : 1200,
-                            sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
-                    );
-                    spr.setGlobalRank((int) (higherPlayers + 1));
-                } catch (Exception e) {
+                if (sp.getTotalMatches() != null && sp.getTotalMatches() > 0) {
+                    try {
+                        long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
+                                sp.getSportName(),
+                                sp.getEloRating() != null ? sp.getEloRating() : 0,
+                                sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
+                        );
+                        spr.setGlobalRank((int) (higherPlayers + 1));
+                    } catch (Exception e) {
+                        spr.setGlobalRank(null);
+                    }
+                } else {
                     spr.setGlobalRank(null);
                 }
 
@@ -328,14 +332,14 @@ public class UserService {
         if (sp == null) {
             SportsProfileResponse defaultSpr = new SportsProfileResponse();
             defaultSpr.setSportName(sport);
-            defaultSpr.setEloRating(1200);
-            defaultSpr.setHighestElo(1200);
+            defaultSpr.setEloRating(0);
+            defaultSpr.setHighestElo(0);
             defaultSpr.setTotalMatches(0);
             defaultSpr.setMatchesWon(0);
             defaultSpr.setMatchesLost(0);
             defaultSpr.setWinRate(0.0);
             defaultSpr.setCurrentStreak(0);
-            defaultSpr.setGlobalRank(1);
+            defaultSpr.setGlobalRank(null);
             return defaultSpr;
         }
 
@@ -344,22 +348,26 @@ public class UserService {
         spr.setSportName(sp.getSportName());
         spr.setCategory(sp.getCategory());
         spr.setCurrentRanking(sp.getCurrentRanking());
-        spr.setEloRating(sp.getEloRating() != null ? sp.getEloRating() : 1200);
-        spr.setHighestElo(sp.getHighestElo() != null ? sp.getHighestElo() : 1200);
+        spr.setEloRating(sp.getEloRating() != null ? sp.getEloRating() : 0);
+        spr.setHighestElo(sp.getHighestElo() != null ? sp.getHighestElo() : 0);
         spr.setTotalMatches(sp.getTotalMatches() != null ? sp.getTotalMatches() : 0);
         spr.setMatchesWon(sp.getMatchesWon() != null ? sp.getMatchesWon() : 0);
         spr.setMatchesLost(sp.getMatchesLost() != null ? sp.getMatchesLost() : 0);
         spr.setWinRate(sp.getWinRate() != null ? sp.getWinRate() : 0.0);
         spr.setCurrentStreak(sp.getCurrentStreak() != null ? sp.getCurrentStreak() : 0);
 
-        try {
-            long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
-                    sp.getSportName(),
-                    sp.getEloRating() != null ? sp.getEloRating() : 1200,
-                    sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
-            );
-            spr.setGlobalRank((int) (higherPlayers + 1));
-        } catch (Exception e) {
+        if (sp.getTotalMatches() != null && sp.getTotalMatches() > 0) {
+            try {
+                long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
+                        sp.getSportName(),
+                        sp.getEloRating() != null ? sp.getEloRating() : 0,
+                        sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
+                );
+                spr.setGlobalRank((int) (higherPlayers + 1));
+            } catch (Exception e) {
+                spr.setGlobalRank(null);
+            }
+        } else {
             spr.setGlobalRank(null);
         }
 
@@ -381,9 +389,8 @@ public class UserService {
         SportsProfile profile = new SportsProfile(user.getUserId(), user.getUserUuid(), request.getSportName(), request.getCategory());
         profile.setCurrentRanking(request.getCurrentRanking());
         profile.setCareerHighlights(request.getCareerHighlights());
-        profile.setCategory(request.getCategory());
-        profile.setEloRating(1200);
-        profile.setHighestElo(1200);
+        profile.setEloRating(0);
+        profile.setHighestElo(0);
         profile.setTotalMatches(0);
         profile.setMatchesWon(0);
         profile.setMatchesLost(0);
@@ -404,7 +411,7 @@ public class UserService {
         response.setMatchesLost(profile.getMatchesLost());
         response.setWinRate(profile.getWinRate());
         response.setCurrentStreak(profile.getCurrentStreak());
-        response.setGlobalRank(1);
+        response.setGlobalRank(null);
         response.setVerificationStatus(profile.getVerificationStatus());
         response.setCareerHighlights(profile.getCareerHighlights());
         response.setActive(profile.isActive());

@@ -622,7 +622,7 @@ export default function ProfilePage() {
           <section className="grid grid-cols-4 gap-2 mt-2">
             <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
               <Trophy className="w-4 h-4 text-primary mb-0.5" />
-              <span className="text-base font-black text-primary font-mono">{sportsProfiles[0]?.eloRating ?? 1200}</span>
+              <span className="text-base font-black text-primary font-mono">{sportsProfiles[0]?.eloRating ?? 0}</span>
               <span className="text-[8px] uppercase tracking-wider text-foreground/50 font-bold">ELO</span>
             </div>
             <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
@@ -1133,7 +1133,7 @@ export default function ProfilePage() {
                           <div>
                             <span className="text-[9px] uppercase font-bold text-foreground/40 block">ELO Rating</span>
                             <span className="text-sm font-black text-primary font-mono">
-                              {sp.eloRating ?? 1200}
+                              {sp.eloRating ?? 0}
                             </span>
                           </div>
                           <div>

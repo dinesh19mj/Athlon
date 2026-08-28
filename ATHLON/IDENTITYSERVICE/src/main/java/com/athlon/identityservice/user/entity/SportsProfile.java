@@ -43,10 +43,10 @@ public class SportsProfile {
     private Integer currentRanking;
 
     @Column(name = "elo_rating")
-    private Integer eloRating = 1200;
+    private Integer eloRating = 0;
 
     @Column(name = "highest_elo")
-    private Integer highestElo = 1200;
+    private Integer highestElo = 0;
 
     @Column(name = "total_matches")
     private Integer totalMatches = 0;
@@ -91,8 +91,8 @@ public class SportsProfile {
         this.userUuid = userUuid;
         this.sportName = sportName;
         this.category = category;
-        this.eloRating = 1200;
-        this.highestElo = 1200;
+        this.eloRating = 0;
+        this.highestElo = 0;
         this.totalMatches = 0;
         this.matchesWon = 0;
         this.matchesLost = 0;
@@ -111,7 +111,7 @@ public class SportsProfile {
             isActive = 1;
         }
         if (eloRating == null) {
-            eloRating = 1200;
+            eloRating = 0;
         }
         if (highestElo == null) {
             highestElo = eloRating;
@@ -193,7 +193,7 @@ public class SportsProfile {
     }
 
     public Integer getEloRating() {
-        return eloRating != null ? eloRating : 1200;
+        return eloRating != null ? eloRating : 0;
     }
 
     public void setEloRating(Integer eloRating) {
@@ -204,7 +204,7 @@ public class SportsProfile {
     }
 
     public Integer getHighestElo() {
-        return highestElo != null ? highestElo : (eloRating != null ? eloRating : 1200);
+        return highestElo != null ? highestElo : (eloRating != null ? eloRating : 0);
     }
 
     public void setHighestElo(Integer highestElo) {

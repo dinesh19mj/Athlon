@@ -391,7 +391,7 @@ export default function PersonalHomePage() {
                         RATING
                       </span>
                       <span className="text-primary font-black text-sm sm:text-base leading-none">
-                        {playerStats?.eloRating ?? 1200}
+                        {playerStats?.eloRating ?? 0}
                       </span>
                     </div>
                     <Trophy className="w-3.5 h-3.5 text-primary shrink-0 opacity-90" />
@@ -1346,7 +1346,7 @@ export default function PersonalHomePage() {
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase text-foreground/50">ELO Rating</div>
-                    <div className="text-base font-black text-primary font-mono">{playerStats?.eloRating ?? 1200}</div>
+                    <div className="text-base font-black text-primary font-mono">{playerStats?.eloRating ?? 0}</div>
                   </div>
                 </div>
 
