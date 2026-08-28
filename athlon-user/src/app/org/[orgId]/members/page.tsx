@@ -426,9 +426,9 @@ export default function MembersPage() {
 
       {/* ADD MEMBER MODAL (PHONE VERIFICATION FLOW) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div
-            className="w-full max-w-lg rounded-[28px] border shadow-2xl p-6 md:p-8 space-y-6 animate-in zoom-in-95 duration-200"
+            className="w-full max-w-lg rounded-t-[28px] sm:rounded-[28px] border shadow-2xl p-5 sm:p-7 space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
             style={{
               backgroundColor: 'var(--athlon-surface)',
               borderColor: 'var(--athlon-border)'
@@ -437,11 +437,11 @@ export default function MembersPage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-foreground">Add Club Member</h3>
+                  <h3 className="text-lg sm:text-xl font-black text-foreground">Add Club Member</h3>
                   <p className="text-xs text-foreground/50 font-medium">Verify phone number and assign club role</p>
                 </div>
               </div>
@@ -450,14 +450,14 @@ export default function MembersPage() {
                   setIsAddModalOpen(false);
                   resetModal();
                 }}
-                className="w-9 h-9 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground flex items-center justify-center transition-colors"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground flex items-center justify-center transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {actionError && (
-              <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2">
+              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{actionError}</span>
               </div>
@@ -501,23 +501,18 @@ export default function MembersPage() {
                 </div>
               </div>
 
-              {/* VERIFIED USER PREVIEW CARD */}
+              {/* SIMPLIFIED VERIFIED USER PREVIEW CARD */}
               {verifiedUser && (
                 <div
-                  className="p-4 rounded-2xl border bg-emerald-500/5 border-emerald-500/30 space-y-3 animate-in fade-in duration-300"
+                  className="p-4 rounded-2xl border bg-emerald-500/5 border-emerald-500/30 space-y-2.5 animate-in fade-in duration-300"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-400">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      Verified Athlon Account
-                    </span>
-                    <span className="text-[10px] font-mono text-foreground/40 font-bold">
-                      UUID: {verifiedUser.uuid.substring(0, 8)}...
-                    </span>
+                  <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    Verified Account
                   </div>
 
-                  <div className="flex items-center gap-3.5 pt-1">
-                    <div className="w-12 h-12 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="flex items-center gap-3.5 pt-0.5">
+                    <div className="w-11 h-11 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
                       {verifiedUser.photo ? (
                         <img
                           src={UserService.getPhotoUrl(verifiedUser.photo)}
@@ -531,15 +526,9 @@ export default function MembersPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-grow">
-                      <h4 className="text-sm font-black text-foreground truncate">
+                      <h4 className="text-base font-black text-foreground truncate">
                         {verifiedUser.firstName} {verifiedUser.lastName || ''}
                       </h4>
-                      <p className="text-xs text-foreground/60 font-medium truncate">{verifiedUser.email}</p>
-                      {verifiedUser.district && (
-                        <p className="text-[10px] text-foreground/40 font-semibold">
-                          {verifiedUser.district}, {verifiedUser.state || 'India'}
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -577,7 +566,7 @@ export default function MembersPage() {
                         key={r.value}
                         type="button"
                         onClick={() => setSelectedRole(r.value)}
-                        className={`p-3 rounded-2xl border text-xs font-bold transition-all text-center ${
+                        className={`p-2.5 sm:p-3 rounded-2xl border text-xs font-bold transition-all text-center ${
                           selectedRole === r.value
                             ? 'bg-primary/15 border-primary text-primary shadow-sm'
                             : 'bg-background/60 border-foreground/5 text-foreground/60 hover:text-foreground'
