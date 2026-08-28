@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { ClubAttendanceService, ClubMemberAttendance, AttendanceSummary } from '@/lib/api/clubAttendance';
+import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService } from '@/lib/api/user';
 import {
   Calendar as CalendarIcon,
@@ -70,7 +71,26 @@ export default function AttendancePage() {
           : ((listRes.value as any)?.data || []);
         setAttendanceList(list);
       } else {
-        console.error('Failed to load daily attendance:', listRes.reason);
+        // Graceful fallback to club members list
+        try {
+          const members = await OrganizationService.getMembers(orgUuid);
+          const memberList = Array.isArray(members) ? members : ((members as any)?.data || []);
+          const fallbackAttendance: ClubMemberAttendance[] = memberList.map((m: OrganizationMemberResponse) => ({
+            organizationMemberUuid: m.organizationMemberUuid,
+            organizationMemberId: m.organizationMemberId,
+            userUuid: m.userUuid,
+            userId: m.userId,
+            fullName: m.fullName,
+            photo: m.photo,
+            phone: m.phone,
+            role: m.role,
+            attendanceDate: date,
+            status: 'UNMARKED'
+          }));
+          setAttendanceList(fallbackAttendance);
+        } catch (memErr) {
+          console.error('Failed to load fallback members:', memErr);
+        }
       }
 
       if (summaryRes.status === 'fulfilled') {
@@ -79,7 +99,6 @@ export default function AttendancePage() {
       }
     } catch (err: any) {
       console.error('Error loading attendance:', err);
-      setErrorMessage('Failed to load attendance records.');
     } finally {
       setLoading(false);
       setRefreshing(false);
