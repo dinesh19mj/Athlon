@@ -146,8 +146,6 @@ body {
 
 * {
   border-color: var(--athlon-border);
-  scrollbar-width: thin;
-  scrollbar-color: var(--athlon-border) transparent;
 }
 
 ::selection {
@@ -217,13 +215,42 @@ body {
   box-shadow: 0 0 0 2px var(--athlon-primary-soft);
 }
 
-/* Scrollbar */
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Scrollbar Utilities & Global Suppression */
+.hide-scrollbar,
+.no-scrollbar,
+.scrollbar-none,
+[class*="hide-scrollbar"],
+[class*="overflow-x-auto"],
+[class*="overflow-y-auto"].hide-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+
+.hide-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar,
+[class*="hide-scrollbar"]::-webkit-scrollbar,
+[class*="overflow-x-auto"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* Custom Sleek Scrollbar for other containers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--athlon-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--athlon-border-strong);
 }
 
 /* ─── Ant Design Overrides ─────────────────────────────────────────────────── */
