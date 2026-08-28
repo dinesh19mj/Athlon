@@ -439,33 +439,33 @@ export default function TeamOwnerAuctionArenaPage() {
 
       {/* ─── 1. TOP BROADCAST CONTROL BAR ─── */}
       <header
-        className={`backdrop-blur-2xl border-b px-4 sm:px-8 py-3.5 flex items-center justify-between shrink-0 transition-all z-40 ${
+        className={`backdrop-blur-2xl border-b px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between shrink-0 transition-all z-40 ${
           isFullscreen ? "bg-surface/90 border-foreground/10" : "sticky top-0"
         }`}
         style={{ backgroundColor: isFullscreen ? undefined : "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
       >
-        <div className="flex items-center gap-3.5 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
           <Link
             href={`/home/team-championship/${championship.championshipUuid}`}
-            className="p-2.5 rounded-2xl border border-foreground/10 hover:bg-foreground/5 transition-all text-foreground/70 shrink-0"
+            className="p-2 sm:p-2.5 rounded-2xl border border-foreground/10 hover:bg-foreground/5 transition-all text-foreground/70 shrink-0"
             title="Back to Championship Home"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
 
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border flex items-center gap-1.5 shrink-0 bg-red-500/20 text-red-400 border-red-500/30 animate-pulse shadow-sm">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                LIVE ON-AIR ARENA
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="px-2.5 sm:px-3 py-0.5 rounded-full text-[8.5px] sm:text-[9.5px] font-black uppercase tracking-wider border flex items-center gap-1 sm:gap-1.5 shrink-0 bg-red-500/20 text-red-400 border-red-500/30 animate-pulse shadow-sm">
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500 animate-ping" />
+                LIVE
               </span>
 
-              <h1 className="text-sm sm:text-base font-black text-foreground truncate max-w-[180px] sm:max-w-md tracking-tight">
+              <h1 className="text-xs sm:text-base font-black text-foreground truncate max-w-[130px] sm:max-w-md tracking-tight">
                 {championship.name}
               </h1>
 
               {!isAuthenticated && (
-                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-foreground/70">
+                <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-foreground/70">
                   <Eye className="w-3 h-3 text-primary" /> Spectator Mode
                 </span>
               )}
@@ -474,32 +474,32 @@ export default function TeamOwnerAuctionArenaPage() {
         </div>
 
         {/* Right Actions: Locked Franchise & Purse / Login / Audio & Fullscreen */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Sound Toggle */}
           <button
             type="button"
             onClick={() => setSoundEnabled((prev) => !prev)}
-            className={`p-2.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center shadow-sm cursor-pointer ${
+            className={`p-2 sm:p-2.5 rounded-2xl border text-xs font-black transition-all flex items-center justify-center shadow-sm cursor-pointer ${
               soundEnabled
                 ? "bg-surface hover:bg-white/10 text-primary border-primary/40 shadow-primary/10"
                 : "bg-surface/50 text-foreground/40 border-foreground/10"
             }`}
             title={soundEnabled ? "Mute Arena Audio" : "Enable Arena Audio"}
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
 
           {/* Locked Franchise & Purse Pill (for Logged-in Users) */}
           {isAuthenticated && myTeamSummary && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <div className="px-3.5 py-2 rounded-2xl bg-surface/90 border border-foreground/15 text-xs font-black text-foreground shadow-sm hidden md:flex items-center gap-2">
                 <Shield className="w-3.5 h-3.5 text-primary" />
                 <span className="truncate max-w-[150px]">{myTeamSummary.team.teamName}</span>
               </div>
 
-              <div className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/40 text-primary font-black text-xs shadow-sm flex items-center gap-2">
-                <Coins className="w-4 h-4 text-primary animate-pulse" />
-                <span>{myTeamSummary.team.remainingBudget.toLocaleString()} <span className="text-[10px] font-sans font-bold">{currencyLabel}</span></span>
+              <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/40 text-primary font-black text-[11px] sm:text-xs shadow-sm flex items-center gap-1.5 sm:gap-2">
+                <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary animate-pulse" />
+                <span>{myTeamSummary.team.remainingBudget.toLocaleString()} <span className="text-[9px] sm:text-[10px] font-sans font-bold">{currencyLabel}</span></span>
               </div>
             </div>
           )}
@@ -508,17 +508,17 @@ export default function TeamOwnerAuctionArenaPage() {
           {!isAuthenticated && (
             <Link
               href={`/auth/login?redirect=/home/team-championship/${championship.championshipUuid}/auction`}
-              className="px-4 py-2 rounded-2xl bg-gradient-to-r from-primary via-emerald-400 to-primary text-black font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center gap-1.5"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl bg-gradient-to-r from-primary via-emerald-400 to-primary text-black font-black text-[11px] sm:text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center gap-1.5"
             >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Log In to Bid</span>
+              <LogIn className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span>Log In</span>
             </Link>
           )}
 
           {/* Maximize to Fullscreen for Big Screens & Projectors */}
           <button
             onClick={toggleFullscreen}
-            className={`p-2.5 sm:px-4 sm:py-2 rounded-2xl border font-black text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer ${
+            className={`p-2 sm:px-4 sm:py-2 rounded-2xl border font-black text-xs transition-all flex items-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer ${
               isFullscreen
                 ? "bg-amber-500 text-black border-amber-400 hover:bg-amber-400"
                 : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
@@ -527,12 +527,12 @@ export default function TeamOwnerAuctionArenaPage() {
           >
             {isFullscreen ? (
               <>
-                <Minimize2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Exit Fullscreen</span>
+                <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Exit</span>
               </>
             ) : (
               <>
-                <Maximize2 className="w-4 h-4 text-primary" />
+                <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
                 <span className="hidden sm:inline">Maximize</span>
               </>
             )}
@@ -541,10 +541,10 @@ export default function TeamOwnerAuctionArenaPage() {
       </header>
 
       {/* ─── 2. MAIN ARENA ARENA COCKPIT ─── */}
-      <main className={isFullscreen ? "flex-1 min-h-0 overflow-hidden w-full flex flex-col" : "max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-1 flex flex-col justify-center"}>
+      <main className={isFullscreen ? "flex-1 min-h-0 overflow-hidden w-full flex flex-col" : "max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 w-full flex-1 flex flex-col justify-center"}>
         
         {/* Main 2-Column Cockpit Container */}
-        <div className={`grid grid-cols-1 lg:grid-cols-12 ${isFullscreen ? "flex-1 min-h-0 gap-0 divide-x divide-foreground/10 bg-surface/15" : "gap-6 items-stretch"}`}>
+        <div className={`grid grid-cols-1 lg:grid-cols-12 ${isFullscreen ? "flex-1 min-h-0 gap-0 divide-x divide-foreground/10 bg-surface/15" : "gap-4 sm:gap-6 items-stretch"}`}>
           
           {/* ════════════════════════════════════════════════════════════════════ */}
           {/* SECTION 1 (LEFT 8 COLS): SPOTLIGHT ARENA STAGE & BID COMMAND DOCK  */}
@@ -565,67 +565,67 @@ export default function TeamOwnerAuctionArenaPage() {
                   <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-0" />
 
                   {/* 1. Stage Header: Category Badge, Base Price, Live Status */}
-                  <div className="flex items-center justify-between gap-3 border-b pb-2.5 relative z-10 shrink-0" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-3 py-1 rounded-xl bg-primary/20 text-primary border border-primary/40 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                        <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+                  <div className="flex items-center justify-between gap-2 sm:gap-3 border-b pb-2 sm:pb-2.5 relative z-10 shrink-0" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-xl bg-primary/20 text-primary border border-primary/40 text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1 sm:gap-1.5 shadow-sm">
+                        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary animate-pulse" />
                         <span>{auctionState.activePlayer.categoryName || "Category Phase"}</span>
                       </span>
 
-                      <span className="px-3 py-1 rounded-xl bg-surface border border-foreground/15 text-xs font-bold text-foreground/80 flex items-center gap-1.5 shadow-sm">
-                        <Coins className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-xl bg-surface border border-foreground/15 text-[11px] sm:text-xs font-bold text-foreground/80 flex items-center gap-1 sm:gap-1.5 shadow-sm">
+                        <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
                         <span>Base: <strong className="text-primary font-mono">{getCategoryBasePrice(auctionState.activePlayer.categoryName, auctionState.activePlayer.categoryId, auctionState.activePlayer.basePrice)} {currencyLabel}</strong></span>
                       </span>
                     </div>
 
                     {/* Floor Status & Lot Number */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="px-2.5 py-0.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-black text-[10px] uppercase animate-pulse">
-                        🔴 Bid Call Active
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                      <span className="px-2 sm:px-2.5 py-0.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-black text-[9px] sm:text-[10px] uppercase animate-pulse">
+                        🔴 Bid Call
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/10 font-mono font-black text-xs text-foreground/70">
+                      <span className="px-2 sm:px-2.5 py-0.5 rounded-lg bg-black/40 border border-white/10 font-mono font-black text-[10px] sm:text-xs text-foreground/70">
                         Lot #{auctionState.activePlayer.auctionPlayerId}
                       </span>
                     </div>
                   </div>
 
                   {/* 2. Spotlight Athlete Card & Digital Stadium Timer */}
-                  <div className={`flex items-center justify-between gap-4 relative z-10 shrink-0 ${isFullscreen ? "flex-col md:flex-row items-center gap-7 py-2" : ""}`}>
-                    <div className={`flex items-center min-w-0 flex-1 ${isFullscreen ? "gap-6 text-center md:text-left flex-col md:flex-row" : "gap-4"}`}>
+                  <div className={`flex items-center justify-between gap-3 sm:gap-4 relative z-10 shrink-0 ${isFullscreen ? "flex-col md:flex-row items-center gap-7 py-2" : ""}`}>
+                    <div className={`flex items-center min-w-0 flex-1 ${isFullscreen ? "gap-6 text-center md:text-left flex-col md:flex-row" : "gap-3 sm:gap-4"}`}>
                       {/* Athlete Avatar Frame */}
                       <div className="relative shrink-0">
-                        <div className={`rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-2 border-primary/80 flex items-center justify-center shadow-2xl shadow-primary/25 overflow-hidden ${
+                        <div className={`rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-2 border-primary/80 flex items-center justify-center shadow-xl sm:shadow-2xl shadow-primary/25 overflow-hidden ${
                           isFullscreen
                             ? "w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 p-1"
-                            : "w-20 h-20 sm:w-24 sm:h-24 p-0.5 rounded-2xl"
+                            : "w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 p-0.5"
                         }`}>
                           {auctionState.activePlayer.avatarUrl ? (
                             <img
                               src={auctionState.activePlayer.avatarUrl}
                               alt={auctionState.activePlayer.playerName}
-                              className={`w-full h-full object-cover ${isFullscreen ? "rounded-[22px]" : "rounded-[14px]"}`}
+                              className={`w-full h-full object-cover ${isFullscreen ? "rounded-[22px]" : "rounded-[12px] sm:rounded-[14px]"}`}
                             />
                           ) : (
-                            <span className={`font-black text-primary tracking-wider ${isFullscreen ? "text-4xl sm:text-6xl md:text-7xl" : "text-2xl sm:text-3xl"}`}>
+                            <span className={`font-black text-primary tracking-wider ${isFullscreen ? "text-4xl sm:text-6xl md:text-7xl" : "text-xl sm:text-2xl lg:text-3xl"}`}>
                               {auctionState.activePlayer.playerName.substring(0, 2).toUpperCase()}
                             </span>
                           )}
                         </div>
-                        <span className={`absolute -bottom-1.5 -right-1.5 px-2 py-0.5 rounded-lg bg-black/95 border border-primary font-mono font-black text-primary shadow-lg ${
-                          isFullscreen ? "text-xs px-2.5 py-1" : "text-[9.5px]"
+                        <span className={`absolute -bottom-1 -right-1 sm:-bottom-1.5 sm:-right-1.5 px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-md sm:rounded-lg bg-black/95 border border-primary font-mono font-black text-primary shadow-lg ${
+                          isFullscreen ? "text-xs px-2.5 py-1" : "text-[8.5px] sm:text-[9.5px]"
                         }`}>
                           #{auctionState.activePlayer.auctionPlayerId}
                         </span>
                       </div>
 
                       {/* Athlete Name & Headline */}
-                      <div className={`min-w-0 flex-1 ${isFullscreen ? "space-y-2 text-center md:text-left" : "space-y-1"}`}>
-                        <div className={`inline-flex items-center gap-1.5 font-black uppercase tracking-wider text-primary ${isFullscreen ? "text-xs" : "text-[10.5px]"}`}>
-                          <Flame className={`text-primary fill-primary/30 animate-pulse ${isFullscreen ? "w-4 h-4" : "w-3.5 h-3.5"}`} />
+                      <div className={`min-w-0 flex-1 ${isFullscreen ? "space-y-2 text-center md:text-left" : "space-y-0.5 sm:space-y-1"}`}>
+                        <div className={`inline-flex items-center gap-1 sm:gap-1.5 font-black uppercase tracking-wider text-primary ${isFullscreen ? "text-xs" : "text-[9.5px] sm:text-[10.5px]"}`}>
+                          <Flame className={`text-primary fill-primary/30 animate-pulse ${isFullscreen ? "w-4 h-4" : "w-3 h-3 sm:w-3.5 sm:h-3.5"}`} />
                           <span>Spotlight Athlete</span>
                         </div>
                         <h2 className={`font-black text-foreground tracking-tight truncate leading-tight ${
-                          isFullscreen ? "text-3xl sm:text-4xl md:text-5xl" : "text-2xl sm:text-3xl"
+                          isFullscreen ? "text-3xl sm:text-4xl md:text-5xl" : "text-lg sm:text-2xl lg:text-3xl"
                         }`}>
                           {auctionState.activePlayer.playerName}
                         </h2>
@@ -635,7 +635,7 @@ export default function TeamOwnerAuctionArenaPage() {
                     {/* Segmented Digital Stadium Timer */}
                     <div
                       className={`border text-center shrink-0 shadow-lg flex flex-col justify-center gap-0.5 transition-all bg-surface/90 backdrop-blur-xl ${
-                        isFullscreen ? "p-5 rounded-3xl min-w-[140px] md:min-w-[160px]" : "px-5 py-2.5 rounded-2xl min-w-[130px]"
+                        isFullscreen ? "p-5 rounded-3xl min-w-[140px] md:min-w-[160px]" : "px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-2xl min-w-[95px] sm:min-w-[130px]"
                       }`}
                       style={{
                         borderColor: isTimerPaused ? "#f59e0b" : displayRemainingSeconds <= 10 ? "#ef4444" : "var(--athlon-border)",
@@ -644,20 +644,20 @@ export default function TeamOwnerAuctionArenaPage() {
                       <div className="flex items-center justify-center gap-1">
                         {isTimerPaused ? (
                           <>
-                            <Pause className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                            <span className={`font-black uppercase text-amber-400 ${isFullscreen ? "text-[10px]" : "text-[9.5px]"}`}>PAUSED</span>
+                            <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 animate-pulse" />
+                            <span className={`font-black uppercase text-amber-400 ${isFullscreen ? "text-[10px]" : "text-[8.5px] sm:text-[9.5px]"}`}>PAUSED</span>
                           </>
                         ) : (
                           <>
-                            <Clock className="w-3.5 h-3.5 text-primary animate-spin" />
-                            <span className={`font-black uppercase text-primary ${isFullscreen ? "text-[10px]" : "text-[9.5px]"}`}>Timer</span>
+                            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary animate-spin" />
+                            <span className={`font-black uppercase text-primary ${isFullscreen ? "text-[10px]" : "text-[8.5px] sm:text-[9.5px]"}`}>Timer</span>
                           </>
                         )}
                       </div>
 
                       <span
                         className={`font-black font-mono block leading-none my-0.5 ${
-                          isFullscreen ? "text-4xl sm:text-5xl" : "text-2xl sm:text-3xl"
+                          isFullscreen ? "text-4xl sm:text-5xl" : "text-xl sm:text-2xl lg:text-3xl"
                         } ${
                           isTimerPaused
                             ? "text-amber-300"
@@ -669,40 +669,40 @@ export default function TeamOwnerAuctionArenaPage() {
                         {displayRemainingSeconds}s
                       </span>
 
-                      <span className={`font-bold uppercase text-foreground/40 block ${isFullscreen ? "text-[9.5px]" : "text-[9px]"}`}>
-                        {isTimerPaused ? "Timer on Hold" : displayRemainingSeconds <= 10 ? "Closing Bids!" : "Remaining"}
+                      <span className={`font-bold uppercase text-foreground/40 block ${isFullscreen ? "text-[9.5px]" : "text-[8px] sm:text-[9px]"}`}>
+                        {isTimerPaused ? "On Hold" : displayRemainingSeconds <= 10 ? "Closing!" : "Remaining"}
                       </span>
                     </div>
                   </div>
 
                   {/* 3. Dual Telemetry Displays (Current High Bid & Leading Franchise) */}
-                  <div className={`grid grid-cols-2 relative z-10 shrink-0 ${isFullscreen ? "gap-4 pt-1" : "gap-3"}`}>
+                  <div className={`grid grid-cols-2 relative z-10 shrink-0 ${isFullscreen ? "gap-4 pt-1" : "gap-2.5 sm:gap-3"}`}>
                     {/* Current High Bid Card */}
                     <div
-                      className={`border space-y-1 bg-gradient-to-br from-primary/15 via-surface to-background/80 shadow-md relative overflow-hidden ${
-                        isFullscreen ? "p-5 rounded-3xl" : "p-3.5 rounded-2xl"
+                      className={`border space-y-0.5 sm:space-y-1 bg-gradient-to-br from-primary/15 via-surface to-background/80 shadow-md relative overflow-hidden ${
+                        isFullscreen ? "p-5 rounded-3xl" : "p-2.5 sm:p-3.5 rounded-2xl"
                       }`}
                       style={{ borderColor: "var(--athlon-border-subtle)" }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`font-black uppercase text-foreground/60 tracking-wider flex items-center gap-1.5 ${isFullscreen ? "text-xs" : "text-[10px]"}`}>
-                          <TrendingUp className={`text-primary ${isFullscreen ? "w-4 h-4" : "w-3.5 h-3.5"}`} /> Current High Bid
+                        <span className={`font-black uppercase text-foreground/60 tracking-wider flex items-center gap-1 ${isFullscreen ? "text-xs" : "text-[9px] sm:text-[10px]"}`}>
+                          <TrendingUp className={`text-primary ${isFullscreen ? "w-4 h-4" : "w-3 h-3 sm:w-3.5 sm:h-3.5"}`} /> Current High Bid
                         </span>
-                        <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary animate-ping" />
                       </div>
 
-                      <div className="flex items-baseline gap-1.5">
-                        <span className={`font-black text-primary font-mono tracking-tight ${isFullscreen ? "text-3xl sm:text-4xl md:text-5xl" : "text-2xl sm:text-3xl"}`}>
+                      <div className="flex items-baseline gap-1 sm:gap-1.5">
+                        <span className={`font-black text-primary font-mono tracking-tight ${isFullscreen ? "text-3xl sm:text-4xl md:text-5xl" : "text-xl sm:text-2xl lg:text-3xl"}`}>
                           {(auctionState.currentBid || auctionState.activePlayer.basePrice || 100).toLocaleString()}
                         </span>
-                        <span className={`font-black text-primary/70 uppercase ${isFullscreen ? "text-sm" : "text-xs"}`}>{currencyLabel}</span>
+                        <span className={`font-black text-primary/70 uppercase ${isFullscreen ? "text-sm" : "text-[10px] sm:text-xs"}`}>{currencyLabel}</span>
                       </div>
                     </div>
 
                     {/* Leading Franchise Bidder Card */}
                     <div
-                      className={`border space-y-1 shadow-md relative overflow-hidden transition-all ${
-                        isFullscreen ? "p-5 rounded-3xl" : "p-3.5 rounded-2xl"
+                      className={`border space-y-0.5 sm:space-y-1 shadow-md relative overflow-hidden transition-all ${
+                        isFullscreen ? "p-5 rounded-3xl" : "p-2.5 sm:p-3.5 rounded-2xl"
                       } ${
                         isMyTeamLeading
                           ? "bg-gradient-to-br from-amber-500/20 via-yellow-500/10 to-surface border-amber-500/50 ring-1 ring-amber-500/30"
@@ -711,25 +711,25 @@ export default function TeamOwnerAuctionArenaPage() {
                       style={{ borderColor: isMyTeamLeading ? undefined : "var(--athlon-border-subtle)" }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`font-black uppercase text-foreground/60 tracking-wider flex items-center gap-1.5 ${isFullscreen ? "text-xs" : "text-[10px]"}`}>
-                          <Crown className={`${isMyTeamLeading ? "text-amber-400" : "text-primary"} ${isFullscreen ? "w-4 h-4" : "w-3.5 h-3.5"}`} /> Leading Franchise
+                        <span className={`font-black uppercase text-foreground/60 tracking-wider flex items-center gap-1 ${isFullscreen ? "text-xs" : "text-[9px] sm:text-[10px]"}`}>
+                          <Crown className={`${isMyTeamLeading ? "text-amber-400" : "text-primary"} ${isFullscreen ? "w-4 h-4" : "w-3 h-3 sm:w-3.5 sm:h-3.5"}`} /> Leading Franchise
                         </span>
                         {isMyTeamLeading && (
-                          <span className={`rounded-full bg-amber-400 text-black font-black uppercase ${isFullscreen ? "px-2 py-0.5 text-[9px]" : "px-2 py-0.5 text-[8.5px]"}`}>
+                          <span className={`rounded-full bg-amber-400 text-black font-black uppercase ${isFullscreen ? "px-2 py-0.5 text-[9px]" : "px-1.5 py-0.2 sm:px-2 sm:py-0.5 text-[7.5px] sm:text-[8.5px]"}`}>
                             Your Team
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                         <div className={`rounded-xl flex items-center justify-center font-black shrink-0 shadow-sm ${
-                          isFullscreen ? "w-9 h-9 text-sm rounded-2xl" : "w-8 h-8 text-xs"
+                          isFullscreen ? "w-9 h-9 text-sm rounded-2xl" : "w-6 h-6 sm:w-8 sm:h-8 text-[11px] sm:text-xs"
                         } ${
                           isMyTeamLeading ? "bg-amber-400 text-black" : "bg-primary/20 text-primary border border-primary/30"
                         }`}>
                           {auctionState.winningTeamName ? auctionState.winningTeamName.charAt(0) : "?"}
                         </div>
-                        <span className={`font-black text-foreground truncate ${isFullscreen ? "text-lg sm:text-xl" : "text-sm sm:text-base"}`}>
+                        <span className={`font-black text-foreground truncate ${isFullscreen ? "text-lg sm:text-xl" : "text-xs sm:text-sm lg:text-base"}`}>
                           {auctionState.winningTeamName || "No Bids Placed Yet"}
                         </span>
                       </div>
@@ -739,11 +739,11 @@ export default function TeamOwnerAuctionArenaPage() {
                   {/* 4. Winning Banner Callout (when logged in team holds high bid) */}
                   {isMyTeamLeading && (
                     <div className={`rounded-2xl bg-gradient-to-r from-amber-500/25 via-yellow-500/15 to-transparent border border-amber-500/50 flex items-center justify-between text-amber-400 font-black shadow-md animate-fadeIn shrink-0 ${
-                      isFullscreen ? "p-4 text-xs" : "p-2.5 text-xs"
+                      isFullscreen ? "p-4 text-xs" : "p-2 sm:p-2.5 text-[11px] sm:text-xs"
                     }`}>
-                      <span className="flex items-center gap-2">
-                        <Crown className={`text-amber-400 shrink-0 ${isFullscreen ? "w-5 h-5" : "w-4 h-4"}`} />
-                        <span>👑 YOUR FRANCHISE IS CURRENTLY HOLDING THE HIGHEST BID!</span>
+                      <span className="flex items-center gap-1.5 sm:gap-2">
+                        <Crown className={`text-amber-400 shrink-0 ${isFullscreen ? "w-5 h-5" : "w-3.5 h-3.5 sm:w-4 sm:h-4"}`} />
+                        <span className="truncate">👑 YOUR FRANCHISE HOLDS HIGHEST BID!</span>
                       </span>
                       <span className="hidden sm:inline px-2 py-0.5 rounded-lg bg-amber-400 text-black font-black text-[9px] uppercase">
                         Top Bid
@@ -766,19 +766,19 @@ export default function TeamOwnerAuctionArenaPage() {
                     if (!isAutomatic) {
                       return (
                         <div
-                          className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs relative z-10 shadow-inner shrink-0"
+                          className="p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs relative z-10 shadow-inner shrink-0"
                           style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg shrink-0">
+                          <div className="flex items-center gap-2.5 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-base sm:text-lg shrink-0">
                               ✋
                             </div>
                             <div>
                               <span className="font-black text-foreground block text-xs sm:text-sm">
                                 Manual Auctioneer Floor Active
                               </span>
-                              <span className="text-[11px] text-foreground/60">
-                                Bids are announced on the floor and keyed in directly by the auctioneer. Watch live for assignments.
+                              <span className="text-[10px] sm:text-[11px] text-foreground/60">
+                                Bids are announced on floor and keyed in directly by auctioneer.
                               </span>
                             </div>
                           </div>
@@ -790,20 +790,20 @@ export default function TeamOwnerAuctionArenaPage() {
                     if (!isAuthenticated) {
                       return (
                         <div
-                          className="p-4 rounded-2xl border space-y-2 relative z-10 text-center shadow-md bg-surface/80 shrink-0"
+                          className="p-3.5 sm:p-4 rounded-2xl border space-y-1.5 sm:space-y-2 relative z-10 text-center shadow-md bg-surface/80 shrink-0"
                           style={{ borderColor: "var(--athlon-border-subtle)" }}
                         >
-                          <div className="flex flex-col items-center justify-center gap-1.5 max-w-md mx-auto">
-                            <Zap className="w-6 h-6 text-primary animate-pulse" />
-                            <h4 className="text-sm font-black text-foreground">
+                          <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 max-w-md mx-auto">
+                            <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary animate-pulse" />
+                            <h4 className="text-xs sm:text-sm font-black text-foreground">
                               Live Interactive Franchise Bidding
                             </h4>
-                            <p className="text-[11px] text-foreground/60">
+                            <p className="text-[10px] sm:text-[11px] text-foreground/60">
                               Team owners are bidding live. Log in to place bids with your franchise purse.
                             </p>
                             <Link
                               href={`/auth/login?redirect=/home/team-championship/${championship.championshipUuid}/auction`}
-                              className="mt-1 px-5 py-2 rounded-xl bg-gradient-to-r from-primary via-emerald-400 to-primary text-black font-black text-xs shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                              className="mt-1 px-4 sm:px-5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-primary via-emerald-400 to-primary text-black font-black text-xs shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
                             >
                               <LogIn className="w-3.5 h-3.5" />
                               <span>Log In to Place Bids</span>
@@ -819,7 +819,7 @@ export default function TeamOwnerAuctionArenaPage() {
                     const isPurseExhausted = myTeamSummary ? myTeamSummary.team.remainingBudget < minRequiredBid : false;
 
                     return (
-                      <div className={`relative z-10 shrink-0 ${isFullscreen ? "space-y-4 pt-2" : "space-y-2.5"}`}>
+                      <div className={`relative z-10 shrink-0 ${isFullscreen ? "space-y-4 pt-2" : "space-y-2 sm:space-y-2.5"}`}>
                         {/* Franchise Cockpit: Two Separate Containers for Active Franchise & Purse */}
                         {myTeamSummary && (() => {
                           const initialBudget = myTeamSummary.team.initialBudget || 5000;
@@ -827,28 +827,28 @@ export default function TeamOwnerAuctionArenaPage() {
                           const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
 
                           return (
-                            <div className="space-y-2">
-                              <div className={`grid grid-cols-2 ${isFullscreen ? "gap-4" : "gap-3"}`}>
+                            <div className="space-y-1.5 sm:space-y-2">
+                              <div className={`grid grid-cols-2 ${isFullscreen ? "gap-4" : "gap-2 sm:gap-3"}`}>
                                 {/* CONTAINER 1: Active Franchise Team */}
                                 <div
                                   className={`border bg-gradient-to-br from-surface/90 via-surface/60 to-background/90 backdrop-blur-xl shadow-md flex flex-col justify-between ${
-                                    isFullscreen ? "p-4 sm:p-5 rounded-2xl gap-2.5" : "p-3 sm:p-3.5 rounded-2xl gap-1.5"
+                                    isFullscreen ? "p-4 sm:p-5 rounded-2xl gap-2.5" : "p-2.5 sm:p-3.5 rounded-2xl gap-1 sm:gap-1.5"
                                   }`}
                                   style={{ borderColor: "var(--athlon-border)" }}
                                 >
                                   <div className="flex items-center justify-between gap-1">
-                                    <span className={`font-black uppercase tracking-wider text-primary/80 flex items-center gap-1.5 ${isFullscreen ? "text-[11px]" : "text-[9.5px]"}`}>
+                                    <span className={`font-black uppercase tracking-wider text-primary/80 flex items-center gap-1 sm:gap-1.5 ${isFullscreen ? "text-[11px]" : "text-[8.5px] sm:text-[9.5px]"}`}>
                                       <Shield className={`text-primary ${isFullscreen ? "w-3.5 h-3.5" : "w-3 h-3"}`} />
                                       <span>Active Franchise</span>
                                     </span>
-                                    <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8.5px] font-bold text-foreground/60 uppercase">
+                                    <span className="px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-md bg-white/5 border border-white/10 text-[7.5px] sm:text-[8.5px] font-bold text-foreground/60 uppercase">
                                       Locked
                                     </span>
                                   </div>
 
-                                  <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                                     <div className={`rounded-xl bg-gradient-to-tr from-primary/30 via-indigo-500/20 to-primary/10 border border-primary/60 flex items-center justify-center text-primary font-black shadow-sm shrink-0 ${
-                                      isFullscreen ? "w-11 h-11 text-lg rounded-2xl" : "w-8 h-8 text-sm"
+                                      isFullscreen ? "w-11 h-11 text-lg rounded-2xl" : "w-7 h-7 sm:w-8 sm:h-8 text-xs sm:text-sm"
                                     }`}>
                                       {myTeamSummary.team.teamName.charAt(0).toUpperCase()}
                                     </div>
@@ -859,7 +859,7 @@ export default function TeamOwnerAuctionArenaPage() {
                                       }`}>
                                         {myTeamSummary.team.teamName}
                                       </h4>
-                                      <span className="text-[9px] text-foreground/50 font-bold block truncate">
+                                      <span className="text-[8.5px] sm:text-[9px] text-foreground/50 font-bold block truncate">
                                         {myTeamSummary.team.playersAcquiredCount || 0} Players Drafted
                                       </span>
                                     </div>
@@ -869,32 +869,32 @@ export default function TeamOwnerAuctionArenaPage() {
                                 {/* CONTAINER 2: Franchise Purse Balance */}
                                 <div
                                   className={`border bg-gradient-to-br from-surface/90 via-surface/60 to-background/90 backdrop-blur-xl shadow-md flex flex-col justify-between ${
-                                    isFullscreen ? "p-4 sm:p-5 rounded-2xl gap-2.5" : "p-3 sm:p-3.5 rounded-2xl gap-1.5"
+                                    isFullscreen ? "p-4 sm:p-5 rounded-2xl gap-2.5" : "p-2.5 sm:p-3.5 rounded-2xl gap-1 sm:gap-1.5"
                                   }`}
                                   style={{ borderColor: "var(--athlon-border)" }}
                                 >
                                   <div className="flex items-center justify-between gap-1">
-                                    <span className={`font-black uppercase tracking-wider text-foreground/60 flex items-center gap-1.5 ${isFullscreen ? "text-[11px]" : "text-[9.5px]"}`}>
+                                    <span className={`font-black uppercase tracking-wider text-foreground/60 flex items-center gap-1 sm:gap-1.5 ${isFullscreen ? "text-[11px]" : "text-[8.5px] sm:text-[9.5px]"}`}>
                                       <Coins className={`text-amber-400 ${isFullscreen ? "w-3.5 h-3.5" : "w-3 h-3"}`} />
                                       <span>Purse Balance</span>
                                     </span>
-                                    <span className="px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[8.5px] font-mono font-bold text-foreground/70">
+                                    <span className="px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-md bg-white/5 border border-white/10 text-[7.5px] sm:text-[8.5px] font-mono font-bold text-foreground/70">
                                       {Math.round(percentLeft)}% Left
                                     </span>
                                   </div>
 
-                                  <div className="space-y-1">
+                                  <div className="space-y-0.5 sm:space-y-1">
                                     <div className="flex items-baseline gap-1">
                                       <span
                                         className={`font-black font-mono tracking-tight leading-none ${
-                                          isFullscreen ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
+                                          isFullscreen ? "text-2xl sm:text-3xl" : "text-lg sm:text-xl lg:text-2xl"
                                         } ${
                                           isPurseExhausted ? "text-red-400" : "text-primary"
                                         }`}
                                       >
                                         {remainingBudget.toLocaleString()}
                                       </span>
-                                      <span className="text-[10px] font-black text-primary/70 uppercase font-sans">
+                                      <span className="text-[9px] sm:text-[10px] font-black text-primary/70 uppercase font-sans">
                                         {currencyLabel}
                                       </span>
                                     </div>
@@ -914,7 +914,7 @@ export default function TeamOwnerAuctionArenaPage() {
 
                               {/* Purse Exhaustion Alert Warning */}
                               {isPurseExhausted && (
-                                <div className="p-2 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] flex items-center gap-2 animate-pulse">
+                                <div className="p-2 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-[10px] sm:text-[11px] flex items-center gap-2 animate-pulse">
                                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-400" />
                                   <span>
                                     <strong>Purse Exhausted:</strong> Only{" "}
@@ -927,7 +927,7 @@ export default function TeamOwnerAuctionArenaPage() {
                         })()}
 
                         {/* Quick Point Bump Action Buttons */}
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                           {bumpsToDisplay.map((inc) => {
                             const nextTargetBid = currentBid + inc;
                             const isAffordable = myTeamSummary ? myTeamSummary.team.remainingBudget >= nextTargetBid : true;
@@ -937,8 +937,8 @@ export default function TeamOwnerAuctionArenaPage() {
                                 key={inc}
                                 disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading}
                                 onClick={() => handlePlaceBid(inc)}
-                                className={`rounded-2xl font-black transition-all flex flex-col items-center justify-center select-none cursor-pointer ${
-                                  isFullscreen ? "py-4 px-2.5 gap-1 shadow-xl" : "py-2.5 px-1.5 gap-0.5 shadow-md rounded-xl"
+                                className={`rounded-xl sm:rounded-2xl font-black transition-all flex flex-col items-center justify-center select-none cursor-pointer ${
+                                  isFullscreen ? "py-4 px-2.5 gap-1 shadow-xl" : "py-2 sm:py-2.5 px-1 sm:px-1.5 gap-0.5 shadow-md"
                                 } ${
                                   !isAffordable || isMyTeamLeading
                                     ? "bg-surface/50 text-foreground/30 border border-foreground/10 cursor-not-allowed opacity-40"
@@ -952,8 +952,8 @@ export default function TeamOwnerAuctionArenaPage() {
                                     : `Place bid for ${nextTargetBid} ${currencyLabel}`
                                 }
                               >
-                                <span className={`font-mono font-black tracking-tight leading-none ${isFullscreen ? "text-lg" : "text-base"}`}>+{inc}</span>
-                                <span className={`uppercase font-extrabold text-black/75 truncate max-w-full leading-none ${isFullscreen ? "text-[9px]" : "text-[8.5px]"}`}>
+                                <span className={`font-mono font-black tracking-tight leading-none ${isFullscreen ? "text-lg" : "text-xs sm:text-sm lg:text-base"}`}>+{inc}</span>
+                                <span className={`uppercase font-extrabold text-black/75 truncate max-w-full leading-none ${isFullscreen ? "text-[9px]" : "text-[7.5px] sm:text-[8.5px]"}`}>
                                   {isMyTeamLeading ? "Leading" : isAffordable ? `${nextTargetBid.toLocaleString()}` : "Exceeds"}
                                 </span>
                               </button>
@@ -964,7 +964,7 @@ export default function TeamOwnerAuctionArenaPage() {
                         {/* Custom Bid Drawer Trigger & Form */}
                         <div className="flex items-center justify-between pt-0.5">
                           {isCustomBidOpen ? (
-                            <div className="w-full flex items-center gap-2 animate-fadeIn">
+                            <div className="w-full flex items-center gap-1.5 sm:gap-2 animate-fadeIn">
                               <div className="relative flex-1">
                                 <Coins className="w-3.5 h-3.5 text-primary absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
@@ -978,7 +978,7 @@ export default function TeamOwnerAuctionArenaPage() {
                               <button
                                 onClick={handlePlaceCustomBid}
                                 disabled={placingBid || !customBidAmount}
-                                className="px-4 py-1.5 rounded-xl bg-primary text-black font-black text-xs shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                                className="px-3.5 sm:px-4 py-1.5 rounded-xl bg-primary text-black font-black text-xs shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
                               >
                                 <Send className="w-3 h-3" />
                                 <span>Bid</span>
@@ -995,7 +995,7 @@ export default function TeamOwnerAuctionArenaPage() {
                               <button
                                 type="button"
                                 onClick={() => setIsCustomBidOpen(true)}
-                                className="text-[11px] font-bold text-foreground/50 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer py-0.5 px-1.5 rounded hover:bg-white/5"
+                                className="text-[10.5px] sm:text-[11px] font-bold text-foreground/50 hover:text-primary transition-colors flex items-center gap-1 cursor-pointer py-0.5 px-1.5 rounded hover:bg-white/5"
                               >
                                 <Sliders className="w-3 h-3 text-primary" />
                                 <span>Custom Bid Amount</span>
@@ -1010,14 +1010,14 @@ export default function TeamOwnerAuctionArenaPage() {
               ) : (
                 /* Standby Floor Screen */
                 <div
-                  className="rounded-[32px] border border-dashed text-center space-y-4 shadow-sm relative overflow-hidden flex flex-col items-center justify-center p-16 h-full"
+                  className="rounded-[32px] border border-dashed text-center space-y-4 shadow-sm relative overflow-hidden flex flex-col items-center justify-center p-8 sm:p-16 h-full"
                   style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                 >
-                  <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary mx-auto shadow-inner">
-                    <Gavel className="w-10 h-10 animate-pulse" />
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary mx-auto shadow-inner">
+                    <Gavel className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
                   </div>
                   <div className="space-y-1.5 max-w-md mx-auto">
-                    <h3 className="text-xl font-black text-foreground uppercase tracking-tight">
+                    <h3 className="text-lg sm:text-xl font-black text-foreground uppercase tracking-tight">
                       Arena Floor Standby
                     </h3>
                     <p className="text-xs sm:text-sm text-foreground/50 leading-relaxed">
@@ -1033,7 +1033,7 @@ export default function TeamOwnerAuctionArenaPage() {
 
               return (
                 <div
-                  className="rounded-[32px] border shadow-2xl relative flex flex-col justify-between transition-all duration-300 h-[640px] max-h-[calc(100vh-140px)] p-5 sm:p-6 overflow-hidden gap-3.5"
+                  className="rounded-[32px] border shadow-2xl relative flex flex-col justify-between transition-all duration-300 min-h-[520px] lg:h-[640px] lg:max-h-[calc(100vh-140px)] p-4 sm:p-5 lg:p-6 overflow-hidden gap-3 lg:gap-3.5"
                   style={{
                     backgroundColor: "var(--athlon-card)",
                     borderColor: isMyTeamLeading ? "#f59e0b" : "var(--athlon-primary, #6366f1)",
@@ -1061,7 +1061,7 @@ export default function TeamOwnerAuctionArenaPage() {
               const consoleContent = (
                 <>
                   {/* Header Navigation Tabs for Right Console */}
-                  <div className="shrink-0 border-b pb-2.5" style={{ borderColor: "var(--athlon-border)" }}>
+                  <div className="shrink-0 border-b pb-2 sm:pb-2.5" style={{ borderColor: "var(--athlon-border)" }}>
                     <div className="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-background/90 border shadow-inner" style={{ borderColor: "var(--athlon-border)" }}>
                       <button
                         type="button"
@@ -1128,14 +1128,14 @@ export default function TeamOwnerAuctionArenaPage() {
                             return (
                               <div
                                 key={bid.bidId}
-                                className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-all ${
+                                className={`p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-all ${
                                   isTopBid
                                     ? "bg-gradient-to-r from-primary/20 via-surface to-surface border-primary/50 shadow-md ring-1 ring-primary/30 animate-fadeIn"
                                     : "bg-surface border-foreground/10 hover:bg-white/5"
                                 }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm ${
+                                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm ${
                                     isTopBid ? "bg-primary text-black" : "bg-surface border border-foreground/20 text-foreground/80"
                                   }`}>
                                     {bid.teamName.charAt(0)}
@@ -1157,10 +1157,10 @@ export default function TeamOwnerAuctionArenaPage() {
                             );
                           })
                         ) : (
-                          <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center text-xs text-foreground/40 space-y-2 p-6">
-                            <Radio className="w-8 h-8 mx-auto text-foreground/30 animate-pulse" />
+                          <div className="h-full min-h-[180px] sm:min-h-[220px] flex flex-col items-center justify-center text-center text-xs text-foreground/40 space-y-2 p-6">
+                            <Radio className="w-7 h-7 sm:w-8 sm:h-8 mx-auto text-foreground/30 animate-pulse" />
                             <p className="font-bold">No bids submitted yet</p>
-                            <p className="text-[10.5px]">Incoming live franchise bids will appear here in real-time.</p>
+                            <p className="text-[10px] sm:text-[10.5px]">Incoming live franchise bids will appear here in real-time.</p>
                           </div>
                         )}
                       </div>
@@ -1168,9 +1168,9 @@ export default function TeamOwnerAuctionArenaPage() {
 
                     {/* 2. DRAFT QUEUE POOL */}
                     {rightSidebarTab === "queue" && (
-                      <div className="flex-1 min-h-0 flex flex-col space-y-3">
+                      <div className="flex-1 min-h-0 flex flex-col space-y-2.5 sm:space-y-3">
                         {/* Search & Category Filter */}
-                        <div className="space-y-2 shrink-0">
+                        <div className="space-y-1.5 sm:space-y-2 shrink-0">
                           <div className="relative">
                             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
                             <input
@@ -1178,7 +1178,7 @@ export default function TeamOwnerAuctionArenaPage() {
                               placeholder="Search upcoming athlete..."
                               value={queueSearchQuery}
                               onChange={(e) => setQueueSearchQuery(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 rounded-xl bg-background border border-foreground/15 text-xs text-foreground outline-none focus:border-primary"
+                              className="w-full pl-9 pr-3 py-1.5 sm:py-2 rounded-xl bg-background border border-foreground/15 text-xs text-foreground outline-none focus:border-primary"
                             />
                           </div>
 
@@ -1201,14 +1201,14 @@ export default function TeamOwnerAuctionArenaPage() {
 
                         <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-2 pr-0.5">
                           {filteredQueuePlayers.length === 0 ? (
-                            <div className="p-8 text-center text-xs text-foreground/40 font-bold">
+                            <div className="p-6 sm:p-8 text-center text-xs text-foreground/40 font-bold">
                               No athletes in queue matching filter.
                             </div>
                           ) : (
                             filteredQueuePlayers.map((p) => (
                               <div
                                 key={p.auctionPlayerId}
-                                className="p-3 rounded-2xl border flex items-center justify-between text-xs transition-all hover:bg-white/5 bg-surface"
+                                className="p-2.5 sm:p-3 rounded-2xl border flex items-center justify-between text-xs transition-all hover:bg-white/5 bg-surface"
                                 style={{ borderColor: "var(--athlon-border-subtle)" }}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -1221,7 +1221,7 @@ export default function TeamOwnerAuctionArenaPage() {
                                   </div>
                                   <div className="min-w-0 flex-1">
                                     <h5 className="font-black text-foreground truncate">{p.playerName}</h5>
-                                    <span className="text-[9.5px] text-foreground/50 block truncate">{p.categoryName || "Open"}</span>
+                                    <span className="text-[9px] sm:text-[9.5px] text-foreground/50 block truncate">{p.categoryName || "Open"}</span>
                                   </div>
                                 </div>
 
@@ -1237,7 +1237,7 @@ export default function TeamOwnerAuctionArenaPage() {
 
                     {/* 3. FRANCHISE PURSES SNAPSHOT */}
                     {rightSidebarTab === "purses" && (
-                      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-3 pr-0.5">
+                      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-2.5 sm:space-y-3 pr-0.5">
                         {auctionTeams.map((at) => {
                           const initialBudget = at.team.initialBudget || 5000;
                           const remainingBudget = at.team.remainingBudget ?? initialBudget;
@@ -1247,17 +1247,17 @@ export default function TeamOwnerAuctionArenaPage() {
                             <div
                               key={at.team.teamId}
                               onClick={() => setSelectedTeamModalId(at.team.teamId)}
-                              className="p-3.5 rounded-2xl border space-y-2.5 bg-surface hover:bg-white/5 transition-all cursor-pointer shadow-sm"
+                              className="p-3 sm:p-3.5 rounded-2xl border space-y-2 sm:space-y-2.5 bg-surface hover:bg-white/5 transition-all cursor-pointer shadow-sm"
                               style={{ borderColor: "var(--athlon-border-subtle)" }}
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0">
                                     {at.team.teamName.charAt(0)}
                                   </div>
                                   <div className="min-w-0">
                                     <h5 className="font-black text-foreground text-xs truncate">{at.team.teamName}</h5>
-                                    <span className="text-[10px] text-foreground/50">{at.team.playersAcquiredCount || 0} Drafted</span>
+                                    <span className="text-[9.5px] sm:text-[10px] text-foreground/50">{at.team.playersAcquiredCount || 0} Drafted</span>
                                   </div>
                                 </div>
 
@@ -1265,7 +1265,7 @@ export default function TeamOwnerAuctionArenaPage() {
                                   <span className="font-mono font-black text-primary text-xs block">
                                     {remainingBudget.toLocaleString()} pts
                                   </span>
-                                  <span className="text-[9.5px] text-foreground/40 font-bold block">{Math.round(percentLeft)}% left</span>
+                                  <span className="text-[9px] sm:text-[9.5px] text-foreground/40 font-bold block">{Math.round(percentLeft)}% left</span>
                                 </div>
                               </div>
 
@@ -1286,10 +1286,10 @@ export default function TeamOwnerAuctionArenaPage() {
 
                     {/* 4. DRAFTED PLAYERS */}
                     {rightSidebarTab === "sold" && (
-                      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-2.5 pr-0.5">
+                      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-2 sm:space-y-2.5 pr-0.5">
                         {soldPlayers.length === 0 ? (
-                          <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center text-xs text-foreground/40 space-y-1 p-6">
-                            <Trophy className="w-8 h-8 mx-auto text-foreground/30 mb-1" />
+                          <div className="h-full min-h-[180px] sm:min-h-[220px] flex flex-col items-center justify-center text-center text-xs text-foreground/40 space-y-1 p-6">
+                            <Trophy className="w-7 h-7 sm:w-8 sm:h-8 mx-auto text-foreground/30 mb-1" />
                             <p className="font-bold">No drafted players yet</p>
                             <p className="text-[10px]">Athletes sold to teams will show here.</p>
                           </div>
@@ -1297,11 +1297,11 @@ export default function TeamOwnerAuctionArenaPage() {
                           soldPlayers.map((p) => (
                             <div
                               key={p.auctionPlayerId}
-                              className="p-3 rounded-2xl border flex items-center justify-between text-xs bg-surface"
+                              className="p-2.5 sm:p-3 rounded-2xl border flex items-center justify-between text-xs bg-surface"
                               style={{ borderColor: "var(--athlon-border-subtle)" }}
                             >
                               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-xs shrink-0 overflow-hidden">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-xs shrink-0 overflow-hidden">
                                   {p.avatarUrl ? (
                                     <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
                                   ) : (
@@ -1310,7 +1310,7 @@ export default function TeamOwnerAuctionArenaPage() {
                                 </div>
                                 <div className="min-w-0">
                                   <h5 className="font-black text-foreground truncate">{p.playerName}</h5>
-                                  <span className="text-[9.5px] text-foreground/60 font-semibold truncate block">
+                                  <span className="text-[9px] sm:text-[9.5px] text-foreground/60 font-semibold truncate block">
                                     Drafted by <strong>{p.winningTeamName || "Franchise"}</strong>
                                   </span>
                                 </div>
@@ -1334,7 +1334,7 @@ export default function TeamOwnerAuctionArenaPage() {
 
               return (
                 <div
-                  className="rounded-[32px] border shadow-2xl relative flex flex-col backdrop-blur-2xl transition-all duration-300 h-[640px] max-h-[calc(100vh-140px)] p-5 sm:p-6 overflow-hidden gap-4"
+                  className="rounded-[32px] border shadow-2xl relative flex flex-col backdrop-blur-2xl transition-all duration-300 min-h-[460px] lg:h-[640px] lg:max-h-[calc(100vh-140px)] p-4 sm:p-5 lg:p-6 overflow-hidden gap-3.5 lg:gap-4"
                   style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                 >
                   {consoleContent}
