@@ -525,10 +525,10 @@ export default function TeamOwnerAuctionArenaPage() {
             </Link>
           )}
 
-          {/* Maximize to Fullscreen for Big Screens & Projectors */}
+          {/* Maximize to Fullscreen for Big Screens & Projectors (Desktop Only) */}
           <button
             onClick={toggleFullscreen}
-            className={`p-2 sm:px-4 sm:py-2 rounded-2xl border font-black text-xs transition-all flex items-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer ${
+            className={`hidden lg:flex px-4 py-2 rounded-2xl border font-black text-xs transition-all items-center gap-2 shadow-sm cursor-pointer ${
               isFullscreen
                 ? "bg-amber-500 text-black border-amber-400 hover:bg-amber-400"
                 : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
@@ -537,13 +537,13 @@ export default function TeamOwnerAuctionArenaPage() {
           >
             {isFullscreen ? (
               <>
-                <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Exit</span>
+                <Minimize2 className="w-4 h-4" />
+                <span>Exit Fullscreen</span>
               </>
             ) : (
               <>
-                <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-                <span className="hidden sm:inline">Maximize</span>
+                <Maximize2 className="w-4 h-4 text-primary" />
+                <span>Maximize</span>
               </>
             )}
           </button>
