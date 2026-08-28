@@ -398,10 +398,11 @@ export default function PersonalHomePage() {
                   </div>
                 </div>
 
-                {/* 2 Stats Grid (Compact) */}
-                <div className="grid grid-cols-2 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
+                {/* 3 Stats Grid (Compact) */}
+                <div className="grid grid-cols-3 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
                   {[
-                    { label: 'MATCHES PLAYED', icon: Activity, value: String(playerStats?.totalMatches ?? 0) },
+                    { label: 'MATCHES', icon: Activity, value: String(playerStats?.totalMatches ?? 0) },
+                    { label: 'WINS', icon: Trophy, value: String(playerStats?.matchesWon ?? 0) },
                     { label: 'WIN RATE', icon: TrendingUp, value: `${playerStats?.winRate ? Math.round(playerStats.winRate) : 0}%` },
                   ].map((s) => (
                     <div key={s.label} className="flex flex-col items-center justify-center py-2.5 px-2 gap-1">
@@ -1337,19 +1338,29 @@ export default function PersonalHomePage() {
                 </div>
               </div>
 
-              {/* Telemetry Metrics */}
+              {/* 3 Telemetry Metrics: Matches, Wins, Win Rate */}
               <div className="flex items-center gap-3">
-                <div className="p-3 px-5 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3.5 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
                   <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                     <Activity className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-[10px] font-black uppercase text-foreground/50">Matches Played</div>
+                    <div className="text-[10px] font-black uppercase text-foreground/50">Matches</div>
                     <div className="text-lg font-black text-foreground font-mono">{playerStats?.totalMatches ?? 0}</div>
                   </div>
                 </div>
 
-                <div className="p-3 px-5 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3.5 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black uppercase text-foreground/50">Wins</div>
+                    <div className="text-lg font-black text-amber-400 font-mono">{playerStats?.matchesWon ?? 0}</div>
+                  </div>
+                </div>
+
+                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                     <TrendingUp className="w-5 h-5" />
                   </div>
