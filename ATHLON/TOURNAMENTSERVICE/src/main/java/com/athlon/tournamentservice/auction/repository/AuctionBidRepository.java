@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface AuctionBidRepository extends JpaRepository<AuctionBid, Long> {
     List<AuctionBid> findByAuctionPlayerIdOrderByBidAmountDesc(Long auctionPlayerId);
+    List<AuctionBid> findByAuctionPlayerIdOrderByCreatedAtDesc(Long auctionPlayerId);
     List<AuctionBid> findByAuctionIdOrderByCreatedAtDesc(Long auctionId);
     List<AuctionBid> findByAuctionIdAndTeamId(Long auctionId, Long teamId);
 }

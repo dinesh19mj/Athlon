@@ -116,6 +116,7 @@ export default function TeamChampionshipDashboardPage() {
   const [customTimerInput, setCustomTimerInput] = useState<string>("");
   const [customBumpInput, setCustomBumpInput] = useState<string>("");
   const [categoryTrayFilter, setCategoryTrayFilter] = useState<"ALL" | "WAITING" | "SOLD" | "UNSOLD">("ALL");
+  const [rightTrayTab, setRightTrayTab] = useState<"BIDS" | "QUEUE">("QUEUE");
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -434,6 +435,8 @@ export default function TeamChampionshipDashboardPage() {
       } else if (auctionTeams.length > 0 && !manualWinningTeamId) {
         setManualWinningTeamId(auctionTeams[0].team.teamId);
       }
+      // Automatically switch right tray to live podcast stream when an active player is called
+      setRightTrayTab("BIDS");
     }
   }, [auctionState?.activePlayer?.auctionPlayerId, auctionState?.currentBid, auctionState?.winningTeamId]);
 
@@ -2060,9 +2063,9 @@ export default function TeamChampionshipDashboardPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-base font-black text-foreground tracking-tight">
                         {isAuctionLive
-                          ? "🔴 LIVE AUCTION ARENA (BROADCASTING)"
+                          ? "LIVE AUCTION ARENA (BROADCASTING)"
                           : isAuctionPaused
-                            ? "⏸️ LIVE AUCTION PAUSED (OFF-AIR)"
+                            ? "LIVE AUCTION PAUSED (OFF-AIR)"
                             : "Live Auction Arena (Standby)"}
                       </h3>
                       <span
@@ -2345,7 +2348,7 @@ export default function TeamChampionshipDashboardPage() {
                               </span>
 
                               <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
-                                {isTimerPaused ? "▶ Start Timer" : "⏸ Pause"}
+                                {isTimerPaused ? "Start Timer" : "Pause"}
                               </span>
                             </button>
                           </div>
@@ -2673,210 +2676,340 @@ export default function TeamChampionshipDashboardPage() {
                   </div>
                 </div>
 
-                {/* RIGHT 3 COLS: COMPACT CATEGORY PLAYERS TRAY & QUEUE */}
+                {/* RIGHT 3 COLS: LIVE BIDDING PODCAST & CATEGORY PLAYERS TRAY */}
                 <div className="lg:col-span-3 flex flex-col">
                   <div
                     className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-md flex flex-col p-4 justify-between overflow-y-auto overflow-x-hidden hide-scrollbar"
                     style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
-                    <div className="flex items-center justify-between border-b pb-2.5 shrink-0" style={{ borderColor: "var(--athlon-border)" }}>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <h4 className="text-xs font-black text-foreground uppercase tracking-tight truncate">
-                            {activeCategory?.name || "Category"} ({categoryPlayers.length})
-                          </h4>
+                    {/* Mode Navigation Tabs: Live Bidding Podcast vs Category Queue */}
+                    <div className="border-b pb-2.5 shrink-0 space-y-2" style={{ borderColor: "var(--athlon-border)" }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1 p-1 rounded-xl bg-background border flex-1" style={{ borderColor: "var(--athlon-border)" }}>
+                          <button
+                            type="button"
+                            onClick={() => setRightTrayTab("BIDS")}
+                            className={`flex-1 py-1 px-2 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                              rightTrayTab === "BIDS"
+                                ? "bg-primary text-black shadow-sm"
+                                : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                            }`}
+                          >
+                            <Radio className={`w-3 h-3 ${rightTrayTab === "BIDS" && activePlayer ? "animate-pulse text-red-600" : ""}`} />
+                            <span>Podcast ({auctionState?.recentBids?.length || 0})</span>
+                            {activePlayer && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setRightTrayTab("QUEUE")}
+                            className={`flex-1 py-1 px-2 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                              rightTrayTab === "QUEUE"
+                                ? "bg-primary text-black shadow-sm"
+                                : "text-foreground/60 hover:text-foreground hover:bg-surface"
+                            }`}
+                          >
+                            <Users className="w-3 h-3" />
+                            <span>Queue ({categoryPlayers.length})</span>
+                          </button>
                         </div>
-                        <span className="text-[10px] text-foreground/50 block">
-                          Base: <strong className="text-primary font-mono">{activeCategory?.basePrice || 1000} pts</strong>
-                        </span>
+
+                        {/* Spin Player Shortcut Button */}
+                        <button
+                          onClick={() => {
+                            if (!isAuctionLive) {
+                              alert("Please click 'Start Live Auction' above before spinning players!");
+                              return;
+                            }
+                            runPlayerSnipper();
+                          }}
+                          disabled={!isAuctionLive || isSpinningPlayer || waitingCategoryPlayers.length === 0}
+                          className={`px-2.5 py-1.5 rounded-xl font-black text-[10px] shadow-sm transition-all flex items-center gap-1 shrink-0 ${
+                            isAuctionLive && waitingCategoryPlayers.length > 0
+                              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-amber-500/20 hover:scale-105 active:scale-95 cursor-pointer"
+                              : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
+                          }`}
+                          title={isAuctionLive ? "Spin next waiting player" : "Start Live Auction first to enable"}
+                        >
+                          <Shuffle className="w-3 h-3" />
+                          <span>Spin</span>
+                        </button>
                       </div>
 
-                      {/* Spin Player Shortcut Button */}
-                      <button
-                        onClick={() => {
-                          if (!isAuctionLive) {
-                            alert("Please click 'Start Live Auction' above before spinning players!");
-                            return;
-                          }
-                          runPlayerSnipper();
-                        }}
-                        disabled={!isAuctionLive || isSpinningPlayer || waitingCategoryPlayers.length === 0}
-                        className={`px-2.5 py-1.5 rounded-xl font-black text-[10px] shadow-sm transition-all flex items-center gap-1 shrink-0 ${isAuctionLive && waitingCategoryPlayers.length > 0
-                          ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-amber-500/20 hover:scale-105 active:scale-95 cursor-pointer"
-                          : "bg-surface text-foreground/40 border border-foreground/15 cursor-not-allowed opacity-50"
-                          }`}
-                        title={isAuctionLive ? "Spin next waiting player" : "Start Live Auction first to enable"}
-                      >
-                        <Shuffle className="w-3 h-3" />
-                        <span>Spin</span>
-                      </button>
+                      {rightTrayTab === "QUEUE" && (
+                        <div className="flex items-center justify-between text-[10px] text-foreground/50 px-0.5">
+                          <span>{activeCategory?.name || "Category"}: <strong>{categoryPlayers.length} athletes</strong></span>
+                          <span>Base: <strong className="text-primary font-mono">{activeCategory?.basePrice || 1000} pts</strong></span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Filter Pills: All | Active | Sold | Unsold */}
-                    {(() => {
-                      const waitingCategoryCount = categoryPlayers.filter((p) => p.state === "WAITING" || p.state === "CALLED" || p.state === "BIDDING").length;
-                      const soldCategoryCount = categoryPlayers.filter((p) => p.state === "SOLD" || p.state === "ASSIGNED").length;
-                      const unsoldCategoryCount = categoryPlayers.filter((p) => p.state === "UNSOLD").length;
+                    {/* CONTENT 1: LIVE BIDDING PODCAST STREAM */}
+                    {rightTrayTab === "BIDS" ? (
+                      <div className="flex-1 flex flex-col min-h-0 mt-2">
+                        <div className="flex items-center justify-between pb-2 px-0.5 text-[10px] font-black uppercase tracking-wider text-foreground/50">
+                          <span className="flex items-center gap-1.5">
+                            <Radio className="w-3 h-3 text-red-400 animate-pulse" /> Real-Time Bids Feed
+                          </span>
+                          <span className="font-mono text-primary font-bold">
+                            High: {auctionState?.currentBid || activePlayerBasePrice} pts
+                          </span>
+                        </div>
 
-                      const displayedPlayers = categoryPlayers.filter((p) => {
-                        if (categoryTrayFilter === "WAITING") return p.state === "WAITING" || p.state === "CALLED" || p.state === "BIDDING";
-                        if (categoryTrayFilter === "SOLD") return p.state === "SOLD" || p.state === "ASSIGNED";
-                        if (categoryTrayFilter === "UNSOLD") return p.state === "UNSOLD";
-                        return true;
-                      });
+                        <div className="flex-1 overflow-y-auto hide-scrollbar space-y-2 pr-0.5">
+                          {auctionState?.recentBids && auctionState.recentBids.length > 0 ? (
+                            auctionState.recentBids.map((bid, idx) => {
+                              const isWinning = idx === 0 || bid.isWinningBid;
+                              const teamInitials = bid.teamName
+                                ? bid.teamName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+                                : "T";
 
-                      return (
-                        <>
-                          <div className="flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto hide-scrollbar shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setCategoryTrayFilter("ALL")}
-                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border ${
-                                categoryTrayFilter === "ALL"
-                                  ? "bg-primary text-black border-primary shadow-sm"
-                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
-                              }`}
-                            >
-                              All ({categoryPlayers.length})
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setCategoryTrayFilter("WAITING")}
-                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${
-                                categoryTrayFilter === "WAITING"
-                                  ? "bg-amber-400 text-black border-amber-400 shadow-sm font-black"
-                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
-                              }`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "WAITING" ? "bg-black" : "bg-amber-400"}`} />
-                              Active ({waitingCategoryCount})
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setCategoryTrayFilter("SOLD")}
-                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${
-                                categoryTrayFilter === "SOLD"
-                                  ? "bg-emerald-400 text-black border-emerald-400 shadow-sm font-black"
-                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
-                              }`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "SOLD" ? "bg-black" : "bg-emerald-400"}`} />
-                              Sold ({soldCategoryCount})
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setCategoryTrayFilter("UNSOLD")}
-                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${
-                                categoryTrayFilter === "UNSOLD"
-                                  ? "bg-red-400 text-black border-red-400 shadow-sm font-black"
-                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
-                              }`}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "UNSOLD" ? "bg-black" : "bg-red-400"}`} />
-                              Unsold ({unsoldCategoryCount})
-                            </button>
-                          </div>
-
-                          {/* Scrollable Athlete List Container (Filtered) */}
-                          <div className="flex-1 overflow-y-auto hide-scrollbar space-y-1.5 pr-0.5 mt-1.5">
-                            {displayedPlayers.length === 0 ? (
-                              <div className="p-6 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase my-auto">
-                                No {categoryTrayFilter.toLowerCase()} athletes in this category.
-                              </div>
-                            ) : (
-                              displayedPlayers.map((p) => {
-                                const isOnFloor = activePlayer?.auctionPlayerId === p.auctionPlayerId;
-                                const isSold = p.state === "SOLD" || p.state === "ASSIGNED";
-                                const isUnsold = p.state === "UNSOLD";
-                                const isWaiting = p.state === "WAITING";
-                                const effectiveBase = activeCategory?.basePrice && activeCategory.basePrice > 0
-                                  ? activeCategory.basePrice
-                                  : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
-
-                                return (
-                                  <div
-                                    key={p.auctionPlayerId}
-                                    onClick={() => {
-                                      if (!isAuctionLive) {
-                                        alert("Please click 'Start Live Auction' above to begin the bidding session first!");
-                                        return;
-                                      }
-                                      if (!isOnFloor && !isSold && !activePlayer) {
-                                        handleCallPlayer(p.auctionPlayerId);
-                                      }
-                                    }}
-                                    className={`group p-2 sm:p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${!isAuctionLive
-                                      ? "bg-surface/50 border-foreground/10 opacity-70 cursor-not-allowed"
-                                      : isOnFloor
-                                        ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
-                                        : isSold
-                                          ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
-                                          : isUnsold
-                                            ? "bg-red-500/5 border-red-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer"
-                                            : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
+                              return (
+                                <div
+                                  key={bid.bidId || idx}
+                                  className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 shadow-md ${
+                                    isWinning
+                                      ? "bg-gradient-to-r from-amber-500/20 via-primary/15 to-surface/80 border-amber-400/70 shadow-amber-500/10 ring-1 ring-amber-400/30"
+                                      : "bg-surface/70 hover:bg-surface border-foreground/10"
+                                  }`}
+                                >
+                                  {/* Left: Team Avatar & Name */}
+                                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                    <div
+                                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner border shrink-0 ${
+                                        isWinning
+                                          ? "bg-gradient-to-br from-amber-400 to-primary text-black border-amber-300 font-black shadow-md shadow-amber-500/30"
+                                          : "bg-primary/15 text-primary border-primary/30"
                                       }`}
-                                    title={
-                                      !isAuctionLive
-                                        ? "Start live auction first"
-                                        : isOnFloor
-                                          ? "Currently on Floor"
-                                          : isSold
-                                            ? `Sold to ${p.winningTeamName || "Team"} for ${p.finalBid} pts`
-                                            : isUnsold
-                                              ? "Click to re-call unsold athlete to floor"
-                                              : "Click to call athlete to floor"
-                                    }
-                                  >
-                                    {/* Athlete Avatar & Info */}
-                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                      <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
-                                        {p.avatarUrl ? (
-                                          <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
-                                        ) : (
-                                          p.playerName.substring(0, 2).toUpperCase()
+                                    >
+                                      {teamInitials}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <h5 className="font-black text-xs text-foreground truncate">
+                                          {bid.teamName}
+                                        </h5>
+                                        {isWinning && (
+                                          <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-amber-400 text-black shrink-0 animate-pulse">
+                                            Leader
+                                          </span>
                                         )}
                                       </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <h5 className="font-black text-xs text-foreground truncate group-hover:text-primary transition-colors">
-                                          {p.playerName}
-                                        </h5>
-                                        <span className="text-[10px] text-foreground/50 block">
-                                          Base: <strong className="text-primary font-mono">{effectiveBase} pts</strong>
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Right Status Indicator */}
-                                    <div className="shrink-0">
-                                      {isOnFloor ? (
-                                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase flex items-center gap-1">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                                          Floor
-                                        </span>
-                                      ) : isSold ? (
-                                        <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase block truncate max-w-[85px]">
-                                          Sold
-                                        </span>
-                                      ) : isUnsold ? (
-                                        <span className="px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-black uppercase block">
-                                          Unsold
-                                        </span>
-                                      ) : (
-                                        <span className="px-1.5 py-0.5 rounded-md bg-surface text-foreground/40 border border-foreground/10 text-[9px] font-black uppercase block group-hover:border-primary/40 group-hover:text-primary transition-colors">
-                                          Pool
-                                        </span>
-                                      )}
+                                      <span className="text-[10px] text-foreground/40 block">
+                                        {isWinning ? "Current Highest Bidder" : "Submitted Bid"}
+                                      </span>
                                     </div>
                                   </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()}
+
+                                  {/* Right: Bidding Points Amount */}
+                                  <div className="text-right shrink-0">
+                                    <span
+                                      className={`text-sm sm:text-base font-black font-mono block leading-none ${
+                                        isWinning ? "text-amber-300 drop-shadow-sm" : "text-foreground font-mono"
+                                      }`}
+                                    >
+                                      {bid.bidAmount.toLocaleString()}
+                                    </span>
+                                    <span className="text-[9px] font-mono font-bold text-foreground/40 uppercase block mt-0.5">
+                                      Points
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            /* Standby Podcast State when no bids placed yet */
+                            <div className="flex-1 flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed text-center space-y-3 my-auto" style={{ borderColor: "var(--athlon-border)" }}>
+                              <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mx-auto shadow-inner">
+                                <Radio className="w-6 h-6 animate-pulse" />
+                              </div>
+                              <div className="space-y-1">
+                                <h5 className="text-xs font-black text-foreground uppercase tracking-tight">
+                                  {activePlayer ? `Floor Open for ${activePlayer.playerName}` : "No Active Bidding Session"}
+                                </h5>
+                                <p className="text-[10px] text-foreground/50 max-w-xs mx-auto">
+                                  {activePlayer
+                                    ? "Franchise bids will broadcast live here one-by-one as owners place bids."
+                                    : "Call an athlete to the floor to begin live franchise podcast bidding."}
+                                </p>
+                              </div>
+                              {activePlayer && (
+                                <div className="px-3 py-1 rounded-xl bg-surface border border-foreground/10 text-[10px] font-mono text-foreground/70">
+                                  Opening Base: <strong className="text-primary">{activePlayerBasePrice} pts</strong>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* CONTENT 2: CATEGORY QUEUE (ATHLETE LIST & FILTERS) */
+                      <div className="flex-1 flex flex-col min-h-0">
+                        {/* Filter Pills: All | Active | Sold | Unsold */}
+                        {(() => {
+                          const waitingCategoryCount = categoryPlayers.filter((p) => p.state === "WAITING" || p.state === "CALLED" || p.state === "BIDDING").length;
+                          const soldCategoryCount = categoryPlayers.filter((p) => p.state === "SOLD" || p.state === "ASSIGNED").length;
+                          const unsoldCategoryCount = categoryPlayers.filter((p) => p.state === "UNSOLD").length;
+
+                          const displayedPlayers = categoryPlayers.filter((p) => {
+                            if (categoryTrayFilter === "WAITING") return p.state === "WAITING" || p.state === "CALLED" || p.state === "BIDDING";
+                            if (categoryTrayFilter === "SOLD") return p.state === "SOLD" || p.state === "ASSIGNED";
+                            if (categoryTrayFilter === "UNSOLD") return p.state === "UNSOLD";
+                            return true;
+                          });
+
+                          return (
+                            <>
+                              <div className="flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto hide-scrollbar shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setCategoryTrayFilter("ALL")}
+                                  className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border ${categoryTrayFilter === "ALL"
+                                    ? "bg-primary text-black border-primary shadow-sm"
+                                    : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                                    }`}
+                                >
+                                  All ({categoryPlayers.length})
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCategoryTrayFilter("WAITING")}
+                                  className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${categoryTrayFilter === "WAITING"
+                                    ? "bg-amber-400 text-black border-amber-400 shadow-sm font-black"
+                                    : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                                    }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "WAITING" ? "bg-black" : "bg-amber-400"}`} />
+                                  Active ({waitingCategoryCount})
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCategoryTrayFilter("SOLD")}
+                                  className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${categoryTrayFilter === "SOLD"
+                                    ? "bg-emerald-400 text-black border-emerald-400 shadow-sm font-black"
+                                    : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                                    }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "SOLD" ? "bg-black" : "bg-emerald-400"}`} />
+                                  Sold ({soldCategoryCount})
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCategoryTrayFilter("UNSOLD")}
+                                  className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${categoryTrayFilter === "UNSOLD"
+                                    ? "bg-red-400 text-black border-red-400 shadow-sm font-black"
+                                    : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                                    }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "UNSOLD" ? "bg-black" : "bg-red-400"}`} />
+                                  Unsold ({unsoldCategoryCount})
+                                </button>
+                              </div>
+
+                              {/* Scrollable Athlete List Container (Filtered) */}
+                              <div className="flex-1 overflow-y-auto hide-scrollbar space-y-1.5 pr-0.5 mt-1.5">
+                                {displayedPlayers.length === 0 ? (
+                                  <div className="p-6 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase my-auto">
+                                    No {categoryTrayFilter.toLowerCase()} athletes in this category.
+                                  </div>
+                                ) : (
+                                  displayedPlayers.map((p) => {
+                                    const isOnFloor = activePlayer?.auctionPlayerId === p.auctionPlayerId;
+                                    const isSold = p.state === "SOLD" || p.state === "ASSIGNED";
+                                    const isUnsold = p.state === "UNSOLD";
+                                    const isWaiting = p.state === "WAITING";
+                                    const effectiveBase = activeCategory?.basePrice && activeCategory.basePrice > 0
+                                      ? activeCategory.basePrice
+                                      : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
+
+                                    return (
+                                      <div
+                                        key={p.auctionPlayerId}
+                                        onClick={() => {
+                                          if (!isAuctionLive) {
+                                            alert("Please click 'Start Live Auction' above to begin the bidding session first!");
+                                            return;
+                                          }
+                                          if (!isOnFloor && !isSold && !activePlayer) {
+                                            handleCallPlayer(p.auctionPlayerId);
+                                          }
+                                        }}
+                                        className={`group p-2 sm:p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${!isAuctionLive
+                                          ? "bg-surface/50 border-foreground/10 opacity-70 cursor-not-allowed"
+                                          : isOnFloor
+                                            ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
+                                            : isSold
+                                              ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
+                                              : isUnsold
+                                                ? "bg-red-500/5 border-red-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer"
+                                                : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
+                                          }`}
+                                        title={
+                                          !isAuctionLive
+                                            ? "Start live auction first"
+                                            : isOnFloor
+                                              ? "Currently on Floor"
+                                              : isSold
+                                                ? `Sold to ${p.winningTeamName || "Team"} for ${p.finalBid} pts`
+                                                : isUnsold
+                                                  ? "Click to re-call unsold athlete to floor"
+                                                  : "Click to call athlete to floor"
+                                        }
+                                      >
+                                        {/* Athlete Avatar & Info */}
+                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                          <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
+                                            {p.avatarUrl ? (
+                                              <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
+                                            ) : (
+                                              p.playerName.substring(0, 2).toUpperCase()
+                                            )}
+                                          </div>
+
+                                          <div className="min-w-0 flex-1">
+                                            <h5 className="font-black text-xs text-foreground truncate group-hover:text-primary transition-colors">
+                                              {p.playerName}
+                                            </h5>
+                                            <span className="text-[10px] text-foreground/50 block">
+                                              Base: <strong className="text-primary font-mono">{effectiveBase} pts</strong>
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Right Status Indicator */}
+                                        <div className="shrink-0">
+                                          {isOnFloor ? (
+                                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase flex items-center gap-1">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                                              Floor
+                                            </span>
+                                          ) : isSold ? (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase block truncate max-w-[85px]">
+                                              Sold
+                                            </span>
+                                          ) : isUnsold ? (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-black uppercase block">
+                                              Unsold
+                                            </span>
+                                          ) : (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-surface text-foreground/40 border border-foreground/10 text-[9px] font-black uppercase block group-hover:border-primary/40 group-hover:text-primary transition-colors">
+                                              Pool
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

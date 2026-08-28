@@ -346,7 +346,11 @@ public class AuctionEngineService {
         }
 
         state.setTeams(teamRepository.findByAuctionId(auctionId));
-        state.setRecentBids(bidRepository.findByAuctionIdOrderByCreatedAtDesc(auctionId).stream().limit(15).collect(Collectors.toList()));
+        if (config.getActivePlayerId() != null) {
+            state.setRecentBids(bidRepository.findByAuctionPlayerIdOrderByCreatedAtDesc(config.getActivePlayerId()).stream().limit(30).collect(Collectors.toList()));
+        } else {
+            state.setRecentBids(bidRepository.findByAuctionIdOrderByCreatedAtDesc(auctionId).stream().limit(20).collect(Collectors.toList()));
+        }
 
         List<AuctionPlayer> allPlayers = playerRepository.findByAuctionId(auctionId);
         state.setTotalPlayersInPool(allPlayers.size());
