@@ -766,74 +766,77 @@ export default function TeamOwnerAuctionArenaPage() {
                         </div>
                       </div>
 
-                      {/* Compact Horizontal Row: Increment Selector + Custom Bid Button */}
-                      <div className="flex items-center gap-1.5 pt-0.5">
-                        <div className="flex-1 grid grid-cols-5 gap-1 p-0.5 rounded-xl bg-background/80 border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                          {bumpsToDisplay.map((inc) => {
-                            const isSelected = selectedIncrement === inc;
-                            return (
-                              <button
-                                key={inc}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedIncrement(inc);
-                                  setIsCustomBidOpen(false);
+                      {/* Compact Single Horizontal Row: Increment Selector / Inline Custom Bid Input */}
+                      <div className="flex items-center gap-1.5 pt-0.5 min-h-[38px]">
+                        {isCustomBidOpen ? (
+                          <div className="flex-1 flex items-center gap-1.5 animate-fadeIn">
+                            <div className="relative flex-1">
+                              <Coins className="w-3 h-3 text-primary absolute left-2.5 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="number"
+                                autoFocus
+                                placeholder={`Enter Bid > ${currentBid}...`}
+                                value={customBidAmount}
+                                onChange={(e) => setCustomBidAmount(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handlePlaceCustomBid();
                                 }}
-                                className={`py-1.5 rounded-lg font-mono font-black text-[11px] transition-all flex items-center justify-center cursor-pointer ${
-                                  isSelected
-                                    ? "bg-primary text-black shadow-sm scale-[1.02]"
-                                    : "text-foreground/70 hover:text-foreground hover:bg-surface"
-                                }`}
-                              >
-                                +{inc}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setIsCustomBidOpen((prev) => !prev)}
-                          className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-tight flex items-center gap-1 shrink-0 cursor-pointer transition-all ${
-                            isCustomBidOpen
-                              ? "bg-primary text-black border-primary"
-                              : "bg-surface text-foreground/70 border-foreground/15 hover:text-primary hover:border-primary/40"
-                          }`}
-                        >
-                          <Sliders className="w-3 h-3 text-current" />
-                          <span>Custom</span>
-                        </button>
-                      </div>
-
-                      {/* Custom Bid Drawer if open */}
-                      {isCustomBidOpen && (
-                        <div className="w-full flex items-center gap-1.5 animate-fadeIn">
-                          <div className="relative flex-1">
-                            <Coins className="w-3 h-3 text-primary absolute left-2.5 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="number"
-                              placeholder={`Bid > ${currentBid}...`}
-                              value={customBidAmount}
-                              onChange={(e) => setCustomBidAmount(e.target.value)}
-                              className="w-full pl-7 pr-2.5 py-1.5 rounded-xl bg-background border border-foreground/15 text-foreground font-mono font-black text-xs outline-none focus:border-primary"
-                            />
+                                className="w-full pl-7 pr-2.5 py-1.5 rounded-xl bg-background border border-primary/50 text-foreground font-mono font-black text-xs outline-none focus:ring-1 focus:ring-primary"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handlePlaceCustomBid}
+                              disabled={placingBid || !customBidAmount}
+                              className="px-3 py-1.5 rounded-xl bg-primary text-black font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 shrink-0"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>Bid</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCustomBidOpen(false);
+                                setCustomBidAmount("");
+                              }}
+                              className="p-1.5 rounded-xl border border-foreground/15 text-foreground/50 hover:text-foreground text-xs cursor-pointer shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
-                          <button
-                            onClick={handlePlaceCustomBid}
-                            disabled={placingBid || !customBidAmount}
-                            className="px-3.5 py-1.5 rounded-xl bg-primary text-black font-black text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-                          >
-                            <Send className="w-3 h-3" />
-                            <span>Bid</span>
-                          </button>
-                          <button
-                            onClick={() => setIsCustomBidOpen(false)}
-                            className="p-1.5 rounded-xl border border-foreground/15 text-foreground/50 hover:text-foreground text-xs"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
+                        ) : (
+                          <>
+                            <div className="flex-1 grid grid-cols-5 gap-1 p-0.5 rounded-xl bg-background/80 border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                              {bumpsToDisplay.map((inc) => {
+                                const isSelected = selectedIncrement === inc;
+                                return (
+                                  <button
+                                    key={inc}
+                                    type="button"
+                                    onClick={() => setSelectedIncrement(inc)}
+                                    className={`py-1.5 rounded-lg font-mono font-black text-[11px] transition-all flex items-center justify-center cursor-pointer ${
+                                      isSelected
+                                        ? "bg-primary text-black shadow-sm scale-[1.02]"
+                                        : "text-foreground/70 hover:text-foreground hover:bg-surface"
+                                    }`}
+                                  >
+                                    +{inc}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setIsCustomBidOpen(true)}
+                              className="px-2.5 py-1.5 rounded-xl border bg-surface text-foreground/70 border-foreground/15 hover:text-primary hover:border-primary/40 text-[10px] font-black uppercase tracking-tight flex items-center gap-1 shrink-0 cursor-pointer transition-all"
+                            >
+                              <Sliders className="w-3 h-3 text-current" />
+                              <span>Custom</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
 
                       {/* SINGLE HERO ACTIVE PRICE TAG BIDDING BUTTON */}
                       <button
@@ -1436,74 +1439,77 @@ export default function TeamOwnerAuctionArenaPage() {
                           );
                         })()}
 
-                        {/* Compact Horizontal Row: Increment Selector + Custom Bid Button */}
-                        <div className="flex items-center gap-2 pt-0.5">
-                          <div className="flex-1 grid grid-cols-5 gap-1.5 p-1 rounded-2xl bg-background/80 border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                            {bumpsToDisplay.map((inc) => {
-                              const isSelected = selectedIncrement === inc;
-                              return (
-                                <button
-                                  key={inc}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedIncrement(inc);
-                                    setIsCustomBidOpen(false);
+                        {/* Compact Single Horizontal Row: Increment Selector / Inline Custom Bid Input */}
+                        <div className="flex items-center gap-2 pt-0.5 min-h-[44px]">
+                          {isCustomBidOpen ? (
+                            <div className="flex-1 flex items-center gap-2 animate-fadeIn">
+                              <div className="relative flex-1">
+                                <Coins className="w-3.5 h-3.5 text-primary absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                  type="number"
+                                  autoFocus
+                                  placeholder={`Enter Custom Bid > ${currentBid}...`}
+                                  value={customBidAmount}
+                                  onChange={(e) => setCustomBidAmount(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handlePlaceCustomBid();
                                   }}
-                                  className={`py-2 px-2 rounded-xl font-mono font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
-                                    isSelected
-                                      ? "bg-primary text-black shadow-md scale-[1.02]"
-                                      : "text-foreground/70 hover:text-foreground hover:bg-surface"
-                                  }`}
-                                >
-                                  +{inc}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setIsCustomBidOpen((prev) => !prev)}
-                            className={`px-3.5 py-2.5 rounded-2xl border text-xs font-black uppercase tracking-tight flex items-center gap-1.5 shrink-0 cursor-pointer transition-all ${
-                              isCustomBidOpen
-                                ? "bg-primary text-black border-primary"
-                                : "bg-surface text-foreground/70 border-foreground/15 hover:text-primary hover:border-primary/40"
-                            }`}
-                          >
-                            <Sliders className="w-3.5 h-3.5 text-current" />
-                            <span>Custom</span>
-                          </button>
-                        </div>
-
-                        {/* Custom Bid Drawer Trigger & Form */}
-                        {isCustomBidOpen && (
-                          <div className="w-full flex items-center gap-2 animate-fadeIn">
-                            <div className="relative flex-1">
-                              <Coins className="w-3.5 h-3.5 text-primary absolute left-3 top-1/2 -translate-y-1/2" />
-                              <input
-                                type="number"
-                                placeholder={`Amount > ${currentBid}...`}
-                                value={customBidAmount}
-                                onChange={(e) => setCustomBidAmount(e.target.value)}
-                                className="w-full pl-8 pr-3 py-2 rounded-xl bg-background border border-foreground/15 text-foreground font-mono font-black text-xs outline-none focus:border-primary"
-                              />
+                                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-background border border-primary/50 text-foreground font-mono font-black text-xs outline-none focus:ring-1 focus:ring-primary"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handlePlaceCustomBid}
+                                disabled={placingBid || !customBidAmount}
+                                className="px-5 py-2 rounded-xl bg-primary text-black font-black text-xs shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 shrink-0"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                                <span>Bid</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsCustomBidOpen(false);
+                                  setCustomBidAmount("");
+                                }}
+                                className="p-2 rounded-xl border border-foreground/15 text-foreground/50 hover:text-foreground text-xs cursor-pointer shrink-0"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            <button
-                              onClick={handlePlaceCustomBid}
-                              disabled={placingBid || !customBidAmount}
-                              className="px-5 py-2 rounded-xl bg-primary text-black font-black text-xs shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                              <span>Bid</span>
-                            </button>
-                            <button
-                              onClick={() => setIsCustomBidOpen(false)}
-                              className="p-2 rounded-xl border border-foreground/15 text-foreground/50 hover:text-foreground text-xs cursor-pointer"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
+                          ) : (
+                            <>
+                              <div className="flex-1 grid grid-cols-5 gap-1.5 p-1 rounded-2xl bg-background/80 border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                {bumpsToDisplay.map((inc) => {
+                                  const isSelected = selectedIncrement === inc;
+                                  return (
+                                    <button
+                                      key={inc}
+                                      type="button"
+                                      onClick={() => setSelectedIncrement(inc)}
+                                      className={`py-2 px-2 rounded-xl font-mono font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
+                                        isSelected
+                                          ? "bg-primary text-black shadow-md scale-[1.02]"
+                                          : "text-foreground/70 hover:text-foreground hover:bg-surface"
+                                      }`}
+                                    >
+                                      +{inc}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setIsCustomBidOpen(true)}
+                                className="px-3.5 py-2.5 rounded-2xl border bg-surface text-foreground/70 border-foreground/15 hover:text-primary hover:border-primary/40 text-xs font-black uppercase tracking-tight flex items-center gap-1.5 shrink-0 cursor-pointer transition-all"
+                              >
+                                <Sliders className="w-3.5 h-3.5 text-current" />
+                                <span>Custom</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
 
                         {/* SINGLE HERO ACTIVE PRICE TAG BIDDING BUTTON */}
                         <button
