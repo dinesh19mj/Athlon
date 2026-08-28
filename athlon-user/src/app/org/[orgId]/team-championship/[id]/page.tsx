@@ -2052,17 +2052,20 @@ export default function TeamChampionshipDashboardPage() {
             <div
               className={
                 isAuctionFullscreen
-                  ? "fixed inset-0 z-[9999] bg-background w-screen h-screen overflow-hidden p-3 sm:p-4 flex flex-col justify-between select-none"
+                  ? "fixed inset-0 z-[9999] bg-background w-screen h-screen overflow-hidden flex flex-col justify-between select-none"
                   : "space-y-6"
               }
             >
               {/* 1. Live Broadcast Stage Switcher & Projector Header */}
               <div
-                className={`p-4 sm:p-5 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shrink-0 ${isAuctionLive
-                  ? "bg-gradient-to-r from-red-500/15 via-primary/10 to-transparent border-red-500/30"
-                  : isAuctionPaused
-                    ? "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-500/30"
-                    : "bg-surface/60 border-foreground/10"
+                className={`border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 transition-all ${isAuctionFullscreen
+                  ? "rounded-none px-6 py-3.5 bg-surface/90 backdrop-blur-xl border-foreground/10"
+                  : "p-4 sm:p-5 rounded-3xl border shadow-xl"
+                  } ${isAuctionLive
+                    ? "bg-gradient-to-r from-red-500/15 via-primary/10 to-transparent border-red-500/30"
+                    : isAuctionPaused
+                      ? "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-500/30"
+                      : "bg-surface/60 border-foreground/10"
                   }`}
               >
                 <div className="flex items-center gap-3">
@@ -2201,16 +2204,16 @@ export default function TeamChampionshipDashboardPage() {
               </div>
 
               {/* 2. MAIN SINGLE-PAGE ARENA COCKPIT (Floor Spotlight + Category Queue Tray) */}
-              <div className={`grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch ${isAuctionFullscreen ? "flex-1 min-h-0" : ""}`}>
+              <div className={`grid grid-cols-1 lg:grid-cols-12 ${isAuctionFullscreen ? "flex-1 min-h-0 gap-0 divide-x divide-foreground/10 bg-surface/10" : "gap-5 items-stretch"}`}>
                 {/* LEFT 9 COLS: MAXIMUM SIZE PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
-                <div className="lg:col-span-9 flex flex-col min-h-0">
+                <div className={`flex flex-col min-h-0 ${isAuctionFullscreen ? "lg:col-span-9 h-full p-5 sm:p-7 overflow-y-auto hide-scrollbar" : "lg:col-span-9"}`}>
                   <div
-                    className={`rounded-3xl border shadow-2xl relative flex flex-col transition-all duration-300 ${isAuctionFullscreen
-                      ? "h-full min-h-0 p-3 sm:p-4 justify-between overflow-hidden"
-                      : "h-[620px] max-h-[calc(100vh-180px)] p-4 sm:p-5 overflow-y-auto hide-scrollbar"
+                    className={`flex flex-col justify-between transition-all duration-300 ${isAuctionFullscreen
+                      ? "h-full p-0 border-0 shadow-none bg-transparent"
+                      : "h-[620px] max-h-[calc(100vh-180px)] rounded-3xl border shadow-2xl p-4 sm:p-5 overflow-y-auto hide-scrollbar"
                       }`}
                     style={{
-                      backgroundColor: "var(--athlon-card)",
+                      backgroundColor: isAuctionFullscreen ? "transparent" : "var(--athlon-card)",
                       borderColor: activePlayer ? "var(--athlon-primary, #6366f1)" : "var(--athlon-border)",
                     }}
                   >
@@ -2829,13 +2832,13 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
 
                 {/* RIGHT 3 COLS: LIVE BIDDING PODCAST & CATEGORY PLAYERS TRAY */}
-                <div className="lg:col-span-3 flex flex-col min-h-0">
+                <div className={`flex flex-col min-h-0 ${isAuctionFullscreen ? "lg:col-span-3 h-full p-4 sm:p-5 bg-surface/30 backdrop-blur-md" : "lg:col-span-3"}`}>
                   <div
-                    className={`rounded-3xl border shadow-md flex flex-col ${isAuctionFullscreen
-                      ? "h-full min-h-0 p-3 overflow-hidden"
-                      : "h-[620px] max-h-[calc(100vh-180px)] p-4 overflow-y-auto hide-scrollbar"
+                    className={`flex flex-col justify-between ${isAuctionFullscreen
+                      ? "h-full min-h-0 p-0 border-0 shadow-none bg-transparent overflow-hidden"
+                      : "h-[620px] max-h-[calc(100vh-180px)] rounded-3xl border shadow-md p-4 overflow-y-auto hide-scrollbar"
                       }`}
-                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                    style={{ backgroundColor: isAuctionFullscreen ? "transparent" : "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
                     {/* Header: Mode Switcher (for Automatic Bidding) OR Direct Category Header (for Manual Bidding) */}
                     {auctionBiddingMode === "AUTOMATIC" ? (
