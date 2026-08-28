@@ -999,276 +999,279 @@ export default function TeamOwnerAuctionArenaPage() {
           {/* ════════════════════════════════════════════════════════════════════ */}
           <div className={`flex flex-col min-h-0 ${isFullscreen ? "lg:col-span-4 h-full p-4 sm:p-5 bg-surface/30 backdrop-blur-md" : "lg:col-span-4"}`}>
             <div
-              className={`rounded-[32px] border shadow-2xl relative flex flex-col justify-between backdrop-blur-2xl transition-all duration-300 ${
+              className={`rounded-[32px] border shadow-2xl relative flex flex-col backdrop-blur-2xl transition-all duration-300 ${
                 isFullscreen
-                  ? "h-full p-0 border-0 shadow-none bg-transparent overflow-hidden"
-                  : "h-[680px] max-h-[calc(100vh-140px)] p-5 sm:p-6 overflow-y-auto hide-scrollbar"
+                  ? "h-full p-0 border-0 shadow-none bg-transparent overflow-hidden gap-3.5"
+                  : "h-[680px] max-h-[calc(100vh-140px)] p-5 sm:p-6 overflow-hidden gap-4"
               }`}
               style={{ backgroundColor: isFullscreen ? "transparent" : "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
             >
               {/* Header Navigation Tabs for Right Console */}
-              <div className="flex items-center justify-between border-b pb-3 gap-1" style={{ borderColor: "var(--athlon-border)" }}>
-                <div className="flex items-center gap-1 p-1 rounded-2xl bg-background border flex-1" style={{ borderColor: "var(--athlon-border)" }}>
+              <div className="shrink-0">
+                <div className="flex items-center gap-1 p-1.5 rounded-2xl bg-background/90 border shadow-inner" style={{ borderColor: "var(--athlon-border)" }}>
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("feed")}
-                    className={`flex-1 py-1.5 px-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       rightSidebarTab === "feed"
-                        ? "bg-primary text-black shadow-sm"
+                        ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
-                    <Radio className="w-3 h-3 text-red-500 animate-pulse" />
+                    <Radio className="w-3 h-3 text-red-500 animate-pulse shrink-0" />
                     <span>Feed</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("queue")}
-                    className={`flex-1 py-1.5 px-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       rightSidebarTab === "queue"
-                        ? "bg-primary text-black shadow-sm"
+                        ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
-                    <Users className="w-3 h-3" />
+                    <Users className="w-3 h-3 shrink-0" />
                     <span>Queue ({waitingPlayers.length})</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("purses")}
-                    className={`flex-1 py-1.5 px-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       rightSidebarTab === "purses"
-                        ? "bg-primary text-black shadow-sm"
+                        ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
-                    <Shield className="w-3 h-3" />
+                    <Shield className="w-3 h-3 shrink-0" />
                     <span>Teams</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRightSidebarTab("sold")}
-                    className={`flex-1 py-1.5 px-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-2 px-1.5 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       rightSidebarTab === "sold"
-                        ? "bg-primary text-black shadow-sm"
+                        ? "bg-primary text-black shadow-md"
                         : "text-foreground/60 hover:text-foreground hover:bg-surface"
                     }`}
                   >
-                    <CheckCircle2 className="w-3 h-3" />
+                    <CheckCircle2 className="w-3 h-3 shrink-0" />
                     <span>Drafted ({soldPlayers.length})</span>
                   </button>
                 </div>
               </div>
 
-              {/* TAB CONTENT: 1. LIVE BIDDING FEED */}
-              {rightSidebarTab === "feed" && (
-                <div className="space-y-2.5 max-h-[500px] overflow-y-auto hide-scrollbar">
-                  {auctionState?.recentBids && auctionState.recentBids.length > 0 ? (
-                    auctionState.recentBids.map((bid, idx) => {
-                      const isTopBid = idx === 0;
+              {/* TAB CONTENT PANELS (FLEX-1 WITH CLEAN INDEPENDENT SCROLLING) */}
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                {/* 1. LIVE BIDDING FEED */}
+                {rightSidebarTab === "feed" && (
+                  <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-2.5 pr-0.5">
+                    {auctionState?.recentBids && auctionState.recentBids.length > 0 ? (
+                      auctionState.recentBids.map((bid, idx) => {
+                        const isTopBid = idx === 0;
+                        return (
+                          <div
+                            key={bid.bidId}
+                            className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-all ${
+                              isTopBid
+                                ? "bg-gradient-to-r from-primary/20 via-surface to-surface border-primary/50 shadow-md ring-1 ring-primary/30 animate-fadeIn"
+                                : "bg-surface border-foreground/10 hover:bg-white/5"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm ${
+                                isTopBid ? "bg-primary text-black" : "bg-surface border border-foreground/20 text-foreground/80"
+                              }`}>
+                                {bid.teamName.charAt(0)}
+                              </div>
+                              <div className="min-w-0">
+                                <span className="font-black text-foreground truncate block text-xs">{bid.teamName}</span>
+                                {isTopBid ? (
+                                  <span className="text-[9px] font-black uppercase text-primary block">👑 High Bidder</span>
+                                ) : (
+                                  <span className="text-[9px] text-foreground/40 block">Placed Bid</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <span className="font-mono font-black text-primary text-sm ml-2 shrink-0">
+                              {bid.bidAmount.toLocaleString()} {currencyLabel}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center text-xs text-foreground/40 space-y-2 p-6">
+                        <Radio className="w-8 h-8 mx-auto text-foreground/30 animate-pulse" />
+                        <p className="font-bold">No bids submitted yet</p>
+                        <p className="text-[10.5px]">Incoming live franchise bids will appear here in real-time.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 2. DRAFT QUEUE POOL */}
+                {rightSidebarTab === "queue" && (
+                  <div className="flex-1 min-h-0 flex flex-col space-y-3">
+                    {/* Search & Category Filter */}
+                    <div className="space-y-2 shrink-0">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+                        <input
+                          type="text"
+                          placeholder="Search upcoming athlete..."
+                          value={queueSearchQuery}
+                          onChange={(e) => setQueueSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-background border border-foreground/15 text-xs text-foreground outline-none focus:border-primary"
+                        />
+                      </div>
+
+                      {championship.categories && championship.categories.length > 0 && (
+                        <select
+                          value={queueCategoryFilter}
+                          onChange={(e) => setQueueCategoryFilter(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-xl border bg-background text-xs font-bold text-foreground outline-none focus:border-primary cursor-pointer"
+                          style={{ borderColor: "var(--athlon-border)" }}
+                        >
+                          <option value="ALL">All Categories ({waitingPlayers.length})</option>
+                          {championship.categories.map((c) => (
+                            <option key={c.categoryId || c.name} value={c.name}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-2 pr-0.5">
+                      {filteredQueuePlayers.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-foreground/40 font-bold">
+                          No athletes in queue matching filter.
+                        </div>
+                      ) : (
+                        filteredQueuePlayers.map((p) => (
+                          <div
+                            key={p.auctionPlayerId}
+                            className="p-3 rounded-2xl border flex items-center justify-between text-xs transition-all hover:bg-white/5 bg-surface"
+                            style={{ borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
+                                {p.avatarUrl ? (
+                                  <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
+                                ) : (
+                                  p.playerName.substring(0, 2).toUpperCase()
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h5 className="font-black text-foreground truncate">{p.playerName}</h5>
+                                <span className="text-[9.5px] text-foreground/50 block truncate">{p.categoryName || "Open"}</span>
+                              </div>
+                            </div>
+
+                            <span className="text-xs font-mono font-black text-primary ml-1 shrink-0">
+                              {getCategoryBasePrice(p.categoryName, p.categoryId, p.basePrice)} pts
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. FRANCHISE PURSES SNAPSHOT */}
+                {rightSidebarTab === "purses" && (
+                  <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-3 pr-0.5">
+                    {auctionTeams.map((at) => {
+                      const initialBudget = at.team.initialBudget || 5000;
+                      const remainingBudget = at.team.remainingBudget ?? initialBudget;
+                      const spentBudget = at.team.spentBudget || (initialBudget - remainingBudget);
+                      const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
+
                       return (
                         <div
-                          key={bid.bidId}
-                          className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-all ${
-                            isTopBid
-                              ? "bg-gradient-to-r from-primary/20 via-surface to-surface border-primary/50 shadow-md ring-1 ring-primary/30 animate-fadeIn"
-                              : "bg-surface border-foreground/10 hover:bg-white/5"
-                          }`}
+                          key={at.team.teamId}
+                          onClick={() => setSelectedTeamModalId(at.team.teamId)}
+                          className="p-3.5 rounded-2xl border space-y-2.5 bg-surface hover:bg-white/5 transition-all cursor-pointer shadow-sm"
+                          style={{ borderColor: "var(--athlon-border-subtle)" }}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm ${
-                              isTopBid ? "bg-primary text-black" : "bg-surface border border-foreground/20 text-foreground/80"
-                            }`}>
-                              {bid.teamName.charAt(0)}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                                {at.team.teamName.charAt(0)}
+                              </div>
+                              <div className="min-w-0">
+                                <h5 className="font-black text-foreground text-xs truncate">{at.team.teamName}</h5>
+                                <span className="text-[10px] text-foreground/50">{at.team.playersAcquiredCount || 0} Drafted</span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <span className="font-black text-foreground truncate block text-xs">{bid.teamName}</span>
-                              {isTopBid ? (
-                                <span className="text-[9px] font-black uppercase text-primary block">👑 High Bidder</span>
-                              ) : (
-                                <span className="text-[9px] text-foreground/40 block">Placed Bid</span>
-                              )}
+
+                            <div className="text-right shrink-0">
+                              <span className="font-mono font-black text-primary text-xs block">
+                                {remainingBudget.toLocaleString()} pts
+                              </span>
+                              <span className="text-[9.5px] text-foreground/40 font-bold block">{Math.round(percentLeft)}% left</span>
                             </div>
                           </div>
 
-                          <span className="font-mono font-black text-primary text-sm ml-2 shrink-0">
-                            {bid.bidAmount.toLocaleString()} {currencyLabel}
-                          </span>
+                          {/* Progress Bar */}
+                          <div className="w-full bg-foreground/10 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
+                              }`}
+                              style={{ width: `${percentLeft}%` }}
+                            />
+                          </div>
                         </div>
                       );
-                    })
-                  ) : (
-                    <div className="p-14 text-center text-xs text-foreground/40 space-y-2">
-                      <Radio className="w-8 h-8 mx-auto text-foreground/30 animate-pulse" />
-                      <p className="font-bold">No bids submitted yet</p>
-                      <p className="text-[10.5px]">Incoming live franchise bids will appear here in real-time.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* TAB CONTENT: 2. DRAFT QUEUE POOL */}
-              {rightSidebarTab === "queue" && (
-                <div className="space-y-3">
-                  {/* Search & Category Filter */}
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
-                      <input
-                        type="text"
-                        placeholder="Search upcoming athlete..."
-                        value={queueSearchQuery}
-                        onChange={(e) => setQueueSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-background border border-foreground/15 text-xs text-foreground outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    {championship.categories && championship.categories.length > 0 && (
-                      <select
-                        value={queueCategoryFilter}
-                        onChange={(e) => setQueueCategoryFilter(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl border bg-background text-xs font-bold text-foreground outline-none focus:border-primary cursor-pointer"
-                        style={{ borderColor: "var(--athlon-border)" }}
-                      >
-                        <option value="ALL">All Categories ({waitingPlayers.length})</option>
-                        {championship.categories.map((c) => (
-                          <option key={c.categoryId || c.name} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                    })}
                   </div>
+                )}
 
-                  <div className="space-y-2 max-h-[420px] overflow-y-auto hide-scrollbar">
-                    {filteredQueuePlayers.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-foreground/40 font-bold">
-                        No athletes in queue matching filter.
+                {/* 4. DRAFTED PLAYERS */}
+                {rightSidebarTab === "sold" && (
+                  <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar space-y-2.5 pr-0.5">
+                    {soldPlayers.length === 0 ? (
+                      <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center text-xs text-foreground/40 space-y-1 p-6">
+                        <Trophy className="w-8 h-8 mx-auto text-foreground/30 mb-1" />
+                        <p className="font-bold">No drafted players yet</p>
+                        <p className="text-[10px]">Athletes sold to teams will show here.</p>
                       </div>
                     ) : (
-                      filteredQueuePlayers.map((p) => (
+                      soldPlayers.map((p) => (
                         <div
                           key={p.auctionPlayerId}
-                          className="p-3 rounded-2xl border flex items-center justify-between text-xs transition-all hover:bg-white/5 bg-surface"
+                          className="p-3 rounded-2xl border flex items-center justify-between text-xs bg-surface"
                           style={{ borderColor: "var(--athlon-border-subtle)" }}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-xs shrink-0 overflow-hidden">
                               {p.avatarUrl ? (
                                 <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
                               ) : (
                                 p.playerName.substring(0, 2).toUpperCase()
                               )}
                             </div>
-                            <div className="min-w-0 flex-1">
+                            <div className="min-w-0">
                               <h5 className="font-black text-foreground truncate">{p.playerName}</h5>
-                              <span className="text-[9.5px] text-foreground/50 block truncate">{p.categoryName || "Open"}</span>
+                              <span className="text-[9.5px] text-foreground/60 font-semibold truncate block">
+                                Drafted by <strong>{p.winningTeamName || "Franchise"}</strong>
+                              </span>
                             </div>
                           </div>
 
-                          <span className="text-xs font-mono font-black text-primary ml-1 shrink-0">
-                            {getCategoryBasePrice(p.categoryName, p.categoryId, p.basePrice)} pts
+                          <span className="font-mono font-black text-emerald-400 text-xs ml-2 shrink-0">
+                            {(p.finalBid || p.basePrice || 1000).toLocaleString()} pts
                           </span>
                         </div>
                       ))
                     )}
                   </div>
-                </div>
-              )}
-
-              {/* TAB CONTENT: 3. FRANCHISE PURSES SNAPSHOT */}
-              {rightSidebarTab === "purses" && (
-                <div className="space-y-3 max-h-[480px] overflow-y-auto hide-scrollbar">
-                  {auctionTeams.map((at) => {
-                    const initialBudget = at.team.initialBudget || 5000;
-                    const remainingBudget = at.team.remainingBudget ?? initialBudget;
-                    const spentBudget = at.team.spentBudget || (initialBudget - remainingBudget);
-                    const percentLeft = Math.max(0, Math.min(100, (remainingBudget / initialBudget) * 100));
-
-                    return (
-                      <div
-                        key={at.team.teamId}
-                        onClick={() => setSelectedTeamModalId(at.team.teamId)}
-                        className="p-3.5 rounded-2xl border space-y-2.5 bg-surface hover:bg-white/5 transition-all cursor-pointer shadow-sm"
-                        style={{ borderColor: "var(--athlon-border-subtle)" }}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0">
-                              {at.team.teamName.charAt(0)}
-                            </div>
-                            <div className="min-w-0">
-                              <h5 className="font-black text-foreground text-xs truncate">{at.team.teamName}</h5>
-                              <span className="text-[10px] text-foreground/50">{at.team.playersAcquiredCount || 0} Drafted</span>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <span className="font-mono font-black text-primary text-xs block">
-                              {remainingBudget.toLocaleString()} pts
-                            </span>
-                            <span className="text-[9.5px] text-foreground/40 font-bold block">{Math.round(percentLeft)}% left</span>
-                          </div>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-full bg-foreground/10 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${
-                              percentLeft > 50 ? "bg-emerald-500" : percentLeft > 20 ? "bg-amber-500" : "bg-red-500"
-                            }`}
-                            style={{ width: `${percentLeft}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* TAB CONTENT: 4. DRAFTED PLAYERS */}
-              {rightSidebarTab === "sold" && (
-                <div className="space-y-2.5 max-h-[480px] overflow-y-auto hide-scrollbar">
-                  {soldPlayers.length === 0 ? (
-                    <div className="p-12 text-center text-xs text-foreground/40 space-y-1">
-                      <Trophy className="w-8 h-8 mx-auto text-foreground/30 mb-1" />
-                      <p className="font-bold">No drafted players yet</p>
-                      <p className="text-[10px]">Athletes sold to teams will show here.</p>
-                    </div>
-                  ) : (
-                    soldPlayers.map((p) => (
-                      <div
-                        key={p.auctionPlayerId}
-                        className="p-3 rounded-2xl border flex items-center justify-between text-xs bg-surface"
-                        style={{ borderColor: "var(--athlon-border-subtle)" }}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-xs shrink-0 overflow-hidden">
-                            {p.avatarUrl ? (
-                              <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
-                            ) : (
-                              p.playerName.substring(0, 2).toUpperCase()
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <h5 className="font-black text-foreground truncate">{p.playerName}</h5>
-                            <span className="text-[9.5px] text-foreground/60 font-semibold truncate block">
-                              Drafted by <strong>{p.winningTeamName || "Franchise"}</strong>
-                            </span>
-                          </div>
-                        </div>
-
-                        <span className="font-mono font-black text-emerald-400 text-xs ml-2 shrink-0">
-                          {(p.finalBid || p.basePrice || 1000).toLocaleString()} pts
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
