@@ -177,6 +177,20 @@ public class AuctionEngineService {
     }
 
     @Transactional
+    public AuctionStateDTO resetTimer(Long auctionId) {
+        AuctionConfig config = configRepository.findById(auctionId)
+                .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
+
+        int fullDuration = (config.getTimerSeconds() != null && config.getTimerSeconds() > 0) ? config.getTimerSeconds() : 60;
+        config.setTimerEndTime(LocalDateTime.now().plusSeconds(fullDuration));
+        config.setTimerPausedRemainingSeconds(null);
+        config.setStatus("ACTIVE");
+        configRepository.save(config);
+
+        return getAuctionState(auctionId);
+    }
+
+    @Transactional
     public AuctionStateDTO markPlayerUnsold(Long auctionId, Long auctionPlayerId) {
         AuctionConfig config = configRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));

@@ -66,6 +66,11 @@ public class AuctionController {
         return ResponseEntity.ok(engineService.resumeTimer(auctionId));
     }
 
+    @PostMapping("/{auctionId}/reset-timer")
+    public ResponseEntity<AuctionStateDTO> resetTimer(@PathVariable("auctionId") Long auctionId) {
+        return ResponseEntity.ok(engineService.resetTimer(auctionId));
+    }
+
     @PostMapping("/bid")
     public ResponseEntity<AuctionBid> placeBid(@RequestBody PlaceBidRequest request) {
         return ResponseEntity.ok(biddingService.placeBid(request));

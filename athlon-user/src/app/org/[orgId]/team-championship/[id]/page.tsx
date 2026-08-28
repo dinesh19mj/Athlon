@@ -119,6 +119,7 @@ export default function TeamChampionshipDashboardPage() {
   const [customBumpInput, setCustomBumpInput] = useState<string>("");
   const [categoryTrayFilter, setCategoryTrayFilter] = useState<"ALL" | "WAITING" | "SOLD" | "UNSOLD">("ALL");
   const [rightTrayTab, setRightTrayTab] = useState<"BIDS" | "QUEUE">("QUEUE");
+  const [isManualLocked, setIsManualLocked] = useState(false);
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -418,9 +419,22 @@ export default function TeamChampionshipDashboardPage() {
     }
   };
 
+  const handleResetTimer = async () => {
+    if (!championship?.championshipId) return;
+    try {
+      const updated = await AuctionService.resetTimer(championship.championshipId);
+      setAuctionState(updated);
+      setIsManualLocked(false);
+    } catch (err: any) {
+      console.error("Failed to reset timer:", err);
+      alert(err.message || "Failed to reset timer");
+    }
+  };
+
   // Sync active player details into manual lock desk
   useEffect(() => {
     if (auctionState?.activePlayer) {
+      setIsManualLocked(false);
       const activeCat = championship?.categories?.find(
         (c) =>
           c.name?.toLowerCase() === (auctionState.activePlayer?.categoryName || "").toLowerCase() ||
@@ -2419,103 +2433,251 @@ export default function TeamChampionshipDashboardPage() {
                           /* ======================================================== */
                           /* MODE 1: MANUAL BIDDING DESK (Direct Points & Map to Team) */
                           /* ======================================================== */
-                          <div className="flex-1 flex flex-col justify-between py-1 space-y-3 relative z-10">
-                            {/* Standard Hero Card */}
-                            <div className="p-5 rounded-3xl bg-gradient-to-br from-surface/90 via-surface/70 to-surface/50 backdrop-blur-xl border shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5 relative overflow-hidden" style={{ borderColor: "var(--athlon-border)" }}>
-                              <div className="flex items-center gap-4 flex-1 min-w-0">
-                                <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-primary/40 to-indigo-500/30 border-2 border-primary p-1 flex items-center justify-center shadow-lg shrink-0 overflow-hidden">
-                                  {activePlayer.avatarUrl ? (
-                                    <img src={activePlayer.avatarUrl} alt={activePlayer.playerName} className="w-full h-full object-cover rounded-xl" />
-                                  ) : (
-                                    <span className="text-2xl font-black text-primary">
-                                      {activePlayer.playerName.substring(0, 2).toUpperCase()}
-                                    </span>
-                                  )}
-                                </div>
+                          (() => {
+                            const isTimerExpired = (auctionState?.remainingTimerSeconds ?? 60) <= 0;
+                            const isReadyToLock = isTimerExpired || isManualLocked;
 
-                                <div className="space-y-1 min-w-0">
-                                  <span className="px-2.5 py-0.5 rounded-lg bg-primary/20 text-primary border border-primary/30 text-[10px] font-black uppercase">
-                                    {activePlayer.categoryName || "Category Phase"}
-                                  </span>
-                                  <h2 className="text-2xl sm:text-3xl font-black text-foreground truncate">
-                                    {activePlayer.playerName}
-                                  </h2>
-                                  <span className="text-xs text-foreground/60 block">
-                                    Base: <strong className="text-primary font-mono">{activePlayerBasePrice} pts</strong>
-                                  </span>
-                                </div>
-                              </div>
+                            return (
+                              <div className="flex-1 flex flex-col justify-between space-y-3 animate-fadeIn min-h-0">
+                                {/* Grand Center Stage Container (Same high impact scale as automatic) */}
+                                <div
+                                  className="flex-1 rounded-3xl bg-gradient-to-br from-surface/90 via-surface/70 to-surface/40 backdrop-blur-xl border shadow-2xl p-5 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
+                                  style={{ borderColor: "var(--athlon-border)" }}
+                                >
+                                  {/* Ambient Spotlight Flare */}
+                                  <div className="absolute top-1/2 left-20 -translate-y-1/2 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none -z-0" />
+                                  <div className="absolute bottom-0 right-10 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -z-0" />
 
-                              <button
-                                onClick={() => handleUpdateAuctionSettings("AUTOMATIC")}
-                                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-xs shadow-sm hover:scale-105 transition-all flex items-center gap-1.5"
-                              >
-                                <Zap className="w-3.5 h-3.5 fill-current" />
-                                <span>Switch to Automatic</span>
-                              </button>
-                            </div>
+                                  {/* Left: Extra Large Athlete Photo & Details */}
+                                  <div className="flex flex-col sm:flex-row items-center sm:items-center gap-6 min-w-0 relative z-10 flex-1">
+                                    {/* Massive Ultra-Large Athlete Photo Frame */}
+                                    <div className="relative shrink-0 group">
+                                      <div className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-4 border-primary/80 p-1.5 flex items-center justify-center shadow-2xl shadow-primary/30 overflow-hidden transition-all duration-300 group-hover:scale-105">
+                                        {activePlayer.avatarUrl ? (
+                                          <img
+                                            src={activePlayer.avatarUrl}
+                                            alt={activePlayer.playerName}
+                                            className="w-full h-full object-cover rounded-[20px]"
+                                          />
+                                        ) : (
+                                          <span className="text-5xl sm:text-6xl md:text-7xl font-black text-primary tracking-wider drop-shadow-lg">
+                                            {activePlayer.playerName.substring(0, 2).toUpperCase()}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="absolute -bottom-2.5 -right-2.5 px-3 py-1 rounded-xl bg-black/95 border-2 border-primary text-xs font-mono font-black text-primary shadow-xl">
+                                        #{activePlayer.auctionPlayerId}
+                                      </span>
+                                    </div>
 
-                            {/* Manual Controls Desk */}
-                            <div className="p-4 rounded-2xl border space-y-3 shadow-md bg-surface/50 backdrop-blur-sm" style={{ borderColor: "var(--athlon-border)" }}>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                  <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
-                                    Final Locked Points
-                                  </label>
-                                  <div className="relative">
-                                    <input
-                                      type="number"
-                                      value={manualWinningBid || ""}
-                                      onChange={(e) => setManualWinningBid(Number(e.target.value))}
-                                      placeholder="Enter final points..."
-                                      className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-mono font-black text-sm outline-none focus:border-primary"
-                                      style={{ borderColor: "var(--athlon-border)" }}
-                                    />
-                                    <span className="absolute right-3 top-2 text-xs font-bold text-foreground/40 pointer-events-none">
-                                      pts
-                                    </span>
+                                    {/* Athlete Identity & Category Information */}
+                                    <div className="text-center sm:text-left space-y-2 min-w-0">
+                                      <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                        <span className="px-3.5 py-1 rounded-xl bg-primary/20 text-primary border border-primary/40 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                                          <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+                                          <span>{activePlayer.categoryName || activeCategory?.name || "Category Phase"}</span>
+                                        </span>
+                                        <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase">
+                                          ✋ Manual Bidding Floor
+                                        </span>
+                                      </div>
+
+                                      <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight truncate drop-shadow-md leading-tight">
+                                        {activePlayer.playerName}
+                                      </h2>
+
+                                      <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap pt-0.5">
+                                        <span className="text-xs px-3 py-1 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1.5 shadow-sm">
+                                          <span className="text-primary/60 text-[10px] uppercase font-black">Base Price:</span>
+                                          <strong className="font-mono font-black text-sm">{activePlayerBasePrice} pts</strong>
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Right: Timer Pod + Restart Timer Button */}
+                                  <div className="flex flex-col sm:flex-row md:flex-col items-center gap-3 shrink-0 relative z-10 w-full sm:w-auto md:w-60">
+                                    {/* Interactive Countdown Timer */}
+                                    <button
+                                      type="button"
+                                      onClick={handleTogglePauseTimer}
+                                      className={`w-full text-center px-4 py-3 rounded-2xl border shadow-xl transition-all cursor-pointer select-none group flex flex-col justify-between ${
+                                        isTimerPaused
+                                          ? "bg-amber-500/15 border-amber-400/80 hover:border-emerald-400 hover:bg-emerald-500/15 shadow-amber-500/10"
+                                          : isTimerExpired
+                                            ? "bg-red-500/15 border-red-400/80 shadow-red-500/10"
+                                            : "bg-background/90 hover:bg-surface border-foreground/10 hover:border-amber-400/80"
+                                      }`}
+                                      style={{ borderColor: isTimerPaused ? "#f59e0b" : isTimerExpired ? "#ef4444" : "var(--athlon-border)" }}
+                                      title={isTimerPaused ? "Click to Start / Resume Timer" : "Click to Pause Timer"}
+                                    >
+                                      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                                        {isTimerPaused ? (
+                                          <>
+                                            <Play className="w-3 h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
+                                              {auctionState?.remainingTimerSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
+                                                ? "STANDBY"
+                                                : "PAUSED"}
+                                            </span>
+                                          </>
+                                        ) : isTimerExpired ? (
+                                          <>
+                                            <Lock className="w-3 h-3 text-red-400 shrink-0" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-red-400 animate-pulse">
+                                              TIMER FINISHED
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Pause className="w-3 h-3 text-amber-400/70 group-hover:text-amber-400 transition-colors shrink-0" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
+                                              Floor Countdown
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+
+                                      <span
+                                        className={`text-2xl sm:text-3xl font-black font-mono block leading-none my-0.5 ${
+                                          isTimerExpired ? "text-red-400" : isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
+                                        }`}
+                                      >
+                                        {auctionState?.remainingTimerSeconds ?? timerDurationSeconds ?? 60}s
+                                      </span>
+
+                                      <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
+                                        {isTimerExpired ? "Locked" : isTimerPaused ? "Start Timer" : "Pause"}
+                                      </span>
+                                    </button>
+
+                                    {/* Dedicated Restart Timer Button */}
+                                    <button
+                                      type="button"
+                                      onClick={handleResetTimer}
+                                      className="w-full py-2.5 px-4 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center justify-center gap-2 shadow-sm hover:border-amber-400/60"
+                                      title="Reset timer countdown back to initial full seconds"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>🔄 Restart Timer</span>
+                                    </button>
                                   </div>
                                 </div>
 
-                                <div>
-                                  <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
-                                    Map to Franchise Team
-                                  </label>
-                                  <select
-                                    value={manualWinningTeamId || ""}
-                                    onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
-                                    className="w-full px-3 py-2 rounded-xl border bg-background text-foreground font-black text-xs outline-none focus:border-primary"
-                                    style={{ borderColor: "var(--athlon-border)" }}
-                                  >
-                                    <option value="">-- Select Team --</option>
-                                    {auctionTeams.map((at) => (
-                                      <option key={at.team.teamId} value={at.team.teamId}>
-                                        {at.team.teamName} (Purse: {at.team.remainingBudget} pts)
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
+                                {/* Lock Controls or Timer In-Progress Bar */}
+                                {isReadyToLock ? (
+                                  /* LOCKED / FINISHED STATE: Enter Final Locked Points & Map to Franchise */
+                                  <div className="p-4 sm:p-5 rounded-3xl border space-y-3.5 shadow-xl bg-surface/70 backdrop-blur-md animate-fadeIn" style={{ borderColor: "var(--athlon-border)" }}>
+                                    <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                      <div className="flex items-center gap-2">
+                                        <Lock className="w-4 h-4 text-amber-400" />
+                                        <span className="text-xs font-black uppercase tracking-wider text-foreground">
+                                          Final Gavel Lock & Team Assignment
+                                        </span>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                                        Bidding Finalized
+                                      </span>
+                                    </div>
 
-                              <div className="flex items-center gap-2.5 pt-0.5">
-                                <button
-                                  onClick={handleAssignPlayerManual}
-                                  disabled={assigningLoading || !manualWinningTeamId}
-                                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs hover:scale-102 active:scale-98 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-40"
-                                >
-                                  <Gavel className="w-4 h-4" />
-                                  <span>{assigningLoading ? "Processing..." : "🔨 SOLD & MAP TO TEAM"}</span>
-                                </button>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
+                                          Final Locked Points
+                                        </label>
+                                        <div className="relative">
+                                          <input
+                                            type="number"
+                                            value={manualWinningBid || ""}
+                                            onChange={(e) => setManualWinningBid(Number(e.target.value))}
+                                            placeholder="Enter final points..."
+                                            className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-foreground font-mono font-black text-base outline-none focus:border-primary shadow-inner"
+                                            style={{ borderColor: "var(--athlon-border)" }}
+                                          />
+                                          <span className="absolute right-3.5 top-2.5 text-xs font-bold text-foreground/40 pointer-events-none">
+                                            pts
+                                          </span>
+                                        </div>
+                                      </div>
 
-                                <button
-                                  onClick={handleMarkUnsold}
-                                  className="px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-black text-xs hover:bg-red-500/20 transition-all"
-                                >
-                                  UNSOLD
-                                </button>
+                                      <div>
+                                        <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
+                                          Map to Franchise Team
+                                        </label>
+                                        <select
+                                          value={manualWinningTeamId || ""}
+                                          onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
+                                          className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-foreground font-black text-xs sm:text-sm outline-none focus:border-primary shadow-inner"
+                                          style={{ borderColor: "var(--athlon-border)" }}
+                                        >
+                                          <option value="">-- Select Franchise Team --</option>
+                                          {auctionTeams.map((at) => (
+                                            <option key={at.team.teamId} value={at.team.teamId}>
+                                              {at.team.teamName} (Purse: {at.team.remainingBudget} pts)
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2.5 pt-1">
+                                      <button
+                                        onClick={handleAssignPlayerManual}
+                                        disabled={assigningLoading || !manualWinningTeamId}
+                                        className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs sm:text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:scale-100"
+                                      >
+                                        <Gavel className="w-4 h-4" />
+                                        <span>{assigningLoading ? "Processing..." : "🔨 SOLD & MAP TO TEAM"}</span>
+                                      </button>
+
+                                      <button
+                                        onClick={handleMarkUnsold}
+                                        className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all"
+                                      >
+                                        UNSOLD
+                                      </button>
+
+                                      <button
+                                        onClick={handleResetTimer}
+                                        className="px-4 py-3.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground font-black text-xs transition-all flex items-center gap-1.5"
+                                        title="Restart timer and continue bidding"
+                                      >
+                                        <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                                        <span>Resume Bid</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* LIVE FLOOR RUNNING: Clean bar with Lock Now button */
+                                  <div className="flex items-center gap-2.5 pt-0.5 shrink-0">
+                                    <button
+                                      onClick={() => setIsManualLocked(true)}
+                                      className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-black font-black text-xs sm:text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2"
+                                    >
+                                      <Lock className="w-4 h-4" />
+                                      <span>🔒 Lock Bidding & Enter Final Points</span>
+                                    </button>
+
+                                    <button
+                                      onClick={handleMarkUnsold}
+                                      className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all"
+                                    >
+                                      UNSOLD
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleUpdateAuctionSettings("AUTOMATIC")}
+                                      className="px-3.5 py-3.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground/70 hover:text-foreground font-black text-xs transition-all flex items-center gap-1.5"
+                                      title="Switch to Automatic Live Bidding mode"
+                                    >
+                                      <Zap className="w-4 h-4 text-amber-400" />
+                                      <span className="hidden sm:inline">Automatic Mode</span>
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </div>
+                            );
+                          })()
                         )}
                       </div>
                     ) : (

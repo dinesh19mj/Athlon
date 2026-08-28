@@ -186,6 +186,13 @@ export const AuctionService = {
     return unwrap<AuctionState>(res);
   },
 
+  resetTimer: async (auctionId: number): Promise<AuctionState> => {
+    const res = await fetchClient<any>(`/api/tournament/auction/${auctionId}/reset-timer`, {
+      method: 'POST',
+    });
+    return unwrap<AuctionState>(res);
+  },
+
   assignPlayer: async (auctionId: number, auctionPlayerId: number, winningTeamId: number, finalBidAmount?: number, organizerUserId?: number): Promise<AuctionState> => {
     const res = await fetchClient<any>('/api/tournament/auction/assign', {
       method: 'POST',
