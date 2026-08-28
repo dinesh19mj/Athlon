@@ -2566,87 +2566,205 @@ export default function TeamChampionshipDashboardPage() {
 
                                 {/* Lock Controls or Timer In-Progress Bar */}
                                 {isReadyToLock ? (
-                                  /* LOCKED / FINISHED STATE: Enter Final Locked Points & Map to Franchise */
-                                  <div className="p-4 sm:p-5 rounded-3xl border space-y-3.5 shadow-xl bg-surface/70 backdrop-blur-md animate-fadeIn" style={{ borderColor: "var(--athlon-border)" }}>
-                                    <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                                      <div className="flex items-center gap-2">
-                                        <Lock className="w-4 h-4 text-amber-400" />
-                                        <span className="text-xs font-black uppercase tracking-wider text-foreground">
-                                          Final Gavel Lock & Team Assignment
-                                        </span>
-                                      </div>
-                                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
-                                        Bidding Finalized
-                                      </span>
-                                    </div>
+                                  /* ======================================================== */
+                                  /* ULTRA-STYLED FINAL GAVEL LOCK & TEAM ASSIGNMENT DESK    */
+                                  /* ======================================================== */
+                                  (() => {
+                                    const selectedManualTeam = auctionTeams.find((at) => at.team.teamId === manualWinningTeamId);
+                                    const isExceedingPurse = Boolean(
+                                      selectedManualTeam && (manualWinningBid || 0) > selectedManualTeam.team.remainingBudget
+                                    );
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                      <div>
-                                        <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
-                                          Final Locked Points
-                                        </label>
-                                        <div className="relative">
-                                          <input
-                                            type="number"
-                                            value={manualWinningBid || ""}
-                                            onChange={(e) => setManualWinningBid(Number(e.target.value))}
-                                            placeholder="Enter final points..."
-                                            className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-foreground font-mono font-black text-base outline-none focus:border-primary shadow-inner"
+                                    return (
+                                      <div
+                                        className="p-5 sm:p-6 rounded-3xl border shadow-2xl bg-gradient-to-br from-surface/95 via-surface/85 to-background/90 backdrop-blur-2xl space-y-4 animate-fadeIn relative overflow-hidden ring-1 ring-primary/20"
+                                        style={{ borderColor: "var(--athlon-border)" }}
+                                      >
+                                        {/* Subtle Glow Flare */}
+                                        <div className="absolute -top-10 -right-10 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none -z-0" />
+                                        <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-0" />
+
+                                        {/* 1. Header Bar */}
+                                        <div className="flex items-center justify-between border-b pb-3 relative z-10" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                          <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm">
+                                              <Gavel className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                              <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+                                                Final Gavel Lock & Team Assignment
+                                              </h4>
+                                              <p className="text-[10px] text-foreground/50 font-medium">
+                                                Review final floor bid and confirm the winning franchise
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono font-black text-[11px] uppercase shadow-sm">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                                            <span>Bidding Finalized</span>
+                                          </div>
+                                        </div>
+
+                                        {/* 2. Dual Interactive Glass Cards */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                                          {/* Card A: Final Locked Points */}
+                                          <div
+                                            className="p-4 rounded-2xl bg-background/80 border shadow-inner flex flex-col justify-between space-y-3 transition-all hover:border-primary/40 group"
                                             style={{ borderColor: "var(--athlon-border)" }}
-                                          />
-                                          <span className="absolute right-3.5 top-2.5 text-xs font-bold text-foreground/40 pointer-events-none">
-                                            pts
-                                          </span>
+                                          >
+                                            <div className="flex items-center justify-between">
+                                              <label className="text-[11px] font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
+                                                <Coins className="w-3.5 h-3.5 text-primary" /> Final Locked Points
+                                              </label>
+                                              <span className="text-[10px] font-mono text-foreground/40 font-bold">
+                                                Base: {activePlayerBasePrice} pts
+                                              </span>
+                                            </div>
+
+                                            {/* Input Box */}
+                                            <div className="relative">
+                                              <input
+                                                type="number"
+                                                value={manualWinningBid || ""}
+                                                onChange={(e) => setManualWinningBid(Number(e.target.value))}
+                                                placeholder="0"
+                                                className="w-full pl-4 pr-14 py-3 rounded-xl border bg-surface text-foreground font-mono font-black text-2xl sm:text-3xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
+                                                style={{ borderColor: "var(--athlon-border)" }}
+                                              />
+                                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black uppercase font-mono text-primary/70 pointer-events-none px-2 py-1 rounded-lg bg-primary/10 border border-primary/20">
+                                                PTS
+                                              </span>
+                                            </div>
+
+                                            {/* Quick Point Increment Helpers */}
+                                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                              <span className="text-[10px] text-foreground/40 font-bold uppercase mr-1">Quick:</span>
+                                              {[50, 100, 250, 500, 1000].map((inc) => (
+                                                <button
+                                                  key={inc}
+                                                  type="button"
+                                                  onClick={() => setManualWinningBid((prev) => (Number(prev) || 0) + inc)}
+                                                  className="px-2.5 py-1 rounded-lg bg-surface hover:bg-white/10 border border-foreground/10 text-foreground font-mono font-bold text-[10px] transition-all hover:border-primary/40 hover:text-primary active:scale-95"
+                                                >
+                                                  +{inc}
+                                                </button>
+                                              ))}
+                                              <button
+                                                type="button"
+                                                onClick={() => setManualWinningBid(activePlayerBasePrice)}
+                                                className="px-2.5 py-1 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary font-mono font-black text-[10px] transition-all ml-auto active:scale-95"
+                                                title="Reset to Base Price"
+                                              >
+                                                Reset Base
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          {/* Card B: Map to Franchise Team */}
+                                          <div
+                                            className="p-4 rounded-2xl bg-background/80 border shadow-inner flex flex-col justify-between space-y-3 transition-all hover:border-primary/40 group"
+                                            style={{ borderColor: "var(--athlon-border)" }}
+                                          >
+                                            <div className="flex items-center justify-between">
+                                              <label className="text-[11px] font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
+                                                <Shield className="w-3.5 h-3.5 text-primary" /> Map to Franchise Team
+                                              </label>
+                                              {selectedManualTeam && (
+                                                <span
+                                                  className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-md border ${
+                                                    isExceedingPurse
+                                                      ? "bg-red-500/15 border-red-500/30 text-red-400"
+                                                      : "bg-primary/15 border-primary/30 text-primary"
+                                                  }`}
+                                                >
+                                                  Purse: {selectedManualTeam.team.remainingBudget} pts
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {/* Team Selector Dropdown */}
+                                            <div className="relative">
+                                              <select
+                                                value={manualWinningTeamId || ""}
+                                                onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
+                                                className="w-full px-4 py-3.5 rounded-xl border bg-surface text-foreground font-black text-xs sm:text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer appearance-none shadow-inner"
+                                                style={{ borderColor: "var(--athlon-border)" }}
+                                              >
+                                                <option value="">-- Choose Winning Franchise Team --</option>
+                                                {auctionTeams.map((at) => (
+                                                  <option key={at.team.teamId} value={at.team.teamId}>
+                                                    {at.team.teamName} • Purse: {at.team.remainingBudget} pts
+                                                  </option>
+                                                ))}
+                                              </select>
+                                              <ChevronDown className="w-4 h-4 text-foreground/40 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            </div>
+
+                                            {/* Selected Team Live Summary Strip */}
+                                            <div className="flex items-center justify-between pt-0.5 text-xs">
+                                              {selectedManualTeam ? (
+                                                isExceedingPurse ? (
+                                                  <span className="text-red-400 font-bold text-[11px] flex items-center gap-1">
+                                                    ⚠️ Bid exceeds remaining purse ({selectedManualTeam.team.remainingBudget} pts)
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
+                                                    ✓ Purse remaining after seal: {selectedManualTeam.team.remainingBudget - (manualWinningBid || 0)} pts
+                                                  </span>
+                                                )
+                                              ) : (
+                                                <span className="text-foreground/40 text-[11px] font-medium">
+                                                  Select which franchise won the bidding round
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* 3. Action Button HUD */}
+                                        <div className="flex items-center gap-3 pt-2 relative z-10">
+                                          <button
+                                            onClick={handleAssignPlayerManual}
+                                            disabled={
+                                              assigningLoading ||
+                                              !manualWinningTeamId ||
+                                              !manualWinningBid ||
+                                              isExceedingPurse
+                                            }
+                                            className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-sm sm:text-base hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
+                                          >
+                                            <Gavel className="w-5 h-5" />
+                                            <span>
+                                              {assigningLoading
+                                                ? "Processing Gavel Seal..."
+                                                : isExceedingPurse
+                                                  ? "EXCEEDS REMAINING PURSE"
+                                                  : selectedManualTeam
+                                                    ? `🔨 SEAL & MAP TO ${selectedManualTeam.team.teamName.toUpperCase()} (${manualWinningBid || 0} PTS)`
+                                                    : "SELECT A FRANCHISE TEAM TO SEAL"}
+                                            </span>
+                                          </button>
+
+                                          <button
+                                            onClick={handleMarkUnsold}
+                                            className="px-6 py-4 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all shrink-0"
+                                          >
+                                            UNSOLD
+                                          </button>
+
+                                          <button
+                                            onClick={handleResetTimer}
+                                            className="px-5 py-4 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground font-black text-xs transition-all flex items-center gap-2 shrink-0 hover:border-amber-400/50"
+                                            title="Restart countdown timer and resume live floor bids"
+                                          >
+                                            <RotateCcw className="w-4 h-4 text-amber-400" />
+                                            <span>Resume Bid</span>
+                                          </button>
                                         </div>
                                       </div>
-
-                                      <div>
-                                        <label className="text-[10px] font-black uppercase text-foreground/60 block mb-1">
-                                          Map to Franchise Team
-                                        </label>
-                                        <select
-                                          value={manualWinningTeamId || ""}
-                                          onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
-                                          className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-foreground font-black text-xs sm:text-sm outline-none focus:border-primary shadow-inner"
-                                          style={{ borderColor: "var(--athlon-border)" }}
-                                        >
-                                          <option value="">-- Select Franchise Team --</option>
-                                          {auctionTeams.map((at) => (
-                                            <option key={at.team.teamId} value={at.team.teamId}>
-                                              {at.team.teamName} (Purse: {at.team.remainingBudget} pts)
-                                            </option>
-                                          ))}
-                                        </select>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2.5 pt-1">
-                                      <button
-                                        onClick={handleAssignPlayerManual}
-                                        disabled={assigningLoading || !manualWinningTeamId}
-                                        className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs sm:text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:scale-100"
-                                      >
-                                        <Gavel className="w-4 h-4" />
-                                        <span>{assigningLoading ? "Processing..." : "🔨 SOLD & MAP TO TEAM"}</span>
-                                      </button>
-
-                                      <button
-                                        onClick={handleMarkUnsold}
-                                        className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all"
-                                      >
-                                        UNSOLD
-                                      </button>
-
-                                      <button
-                                        onClick={handleResetTimer}
-                                        className="px-4 py-3.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground font-black text-xs transition-all flex items-center gap-1.5"
-                                        title="Restart timer and continue bidding"
-                                      >
-                                        <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                                        <span>Resume Bid</span>
-                                      </button>
-                                    </div>
-                                  </div>
+                                    );
+                                  })()
                                 ) : (
                                   /* LIVE FLOOR RUNNING: Clean bar with Lock Now button */
                                   <div className="flex items-center gap-2.5 pt-0.5 shrink-0">
