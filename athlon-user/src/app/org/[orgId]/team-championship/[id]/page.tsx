@@ -2301,7 +2301,7 @@ export default function TeamChampionshipDashboardPage() {
                               </span>
                             </div>
 
-                            {/* Interactive Click-to-Pause/Resume Timer Container Button (Identical Dimensions) */}
+                            {/* Interactive Click-to-Start/Pause/Resume Timer Container Button (Identical Dimensions) */}
                             <button
                               type="button"
                               onClick={handleTogglePauseTimer}
@@ -2312,8 +2312,8 @@ export default function TeamChampionshipDashboardPage() {
                               style={{ borderColor: isTimerPaused ? "#f59e0b" : "var(--athlon-border)" }}
                               title={
                                 isTimerPaused
-                                  ? "Timer is paused. Click anywhere on this box to Resume!"
-                                  : "Timer is running. Click anywhere on this box to Pause!"
+                                  ? "Timer is on hold. Click anywhere on this box to Start / Resume Countdown!"
+                                  : "Timer is running live. Click anywhere on this box to Pause!"
                               }
                             >
                               <div className="flex items-center justify-center gap-1.5 mb-0.5">
@@ -2321,14 +2321,16 @@ export default function TeamChampionshipDashboardPage() {
                                   <>
                                     <Play className="w-3 h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
                                     <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
-                                      PAUSED
+                                      {auctionState?.remainingTimerSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
+                                        ? "STANDBY"
+                                        : "PAUSED"}
                                     </span>
                                   </>
                                 ) : (
                                   <>
                                     <Pause className="w-3 h-3 text-amber-400/70 group-hover:text-amber-400 transition-colors shrink-0" />
                                     <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
-                                      Timer
+                                      Live Timer
                                     </span>
                                   </>
                                 )}
@@ -2338,11 +2340,11 @@ export default function TeamChampionshipDashboardPage() {
                                 className={`text-2xl sm:text-3xl lg:text-4xl font-black font-mono block leading-none my-auto ${isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
                                   }`}
                               >
-                                {auctionState?.remainingTimerSeconds ?? 30}s
+                                {auctionState?.remainingTimerSeconds ?? timerDurationSeconds ?? 60}s
                               </span>
 
-                              <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-amber-400">
-                                {isTimerPaused ? "Resume" : "Pause"}
+                              <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
+                                {isTimerPaused ? "▶ Start Timer" : "⏸ Pause"}
                               </span>
                             </button>
                           </div>

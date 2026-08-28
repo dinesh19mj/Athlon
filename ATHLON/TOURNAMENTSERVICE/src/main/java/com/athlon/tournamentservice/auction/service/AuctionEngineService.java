@@ -126,12 +126,12 @@ public class AuctionEngineService {
         }
 
         int timerSec = (config.getTimerSeconds() != null && config.getTimerSeconds() > 0) ? config.getTimerSeconds() : 60;
-        config.setStatus("ACTIVE");
+        config.setStatus("PAUSED");
         config.setActivePlayerId(player.getAuctionPlayerId());
         config.setCurrentBid(basePrice != null ? basePrice : player.getBasePrice());
         config.setWinningTeamId(null);
-        config.setTimerEndTime(LocalDateTime.now().plusSeconds(timerSec));
-        config.setTimerPausedRemainingSeconds(null);
+        config.setTimerEndTime(null);
+        config.setTimerPausedRemainingSeconds(timerSec);
         configRepository.save(config);
 
         player.setState("CALLED");

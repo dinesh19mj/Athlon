@@ -39,7 +39,7 @@ public class AuctionBiddingService {
         AuctionConfig config = configRepository.findById(request.getAuctionId())
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
 
-        if (!"ACTIVE".equalsIgnoreCase(config.getStatus())) {
+        if (!"ACTIVE".equalsIgnoreCase(config.getStatus()) && !"PAUSED".equalsIgnoreCase(config.getStatus())) {
             throw new IllegalStateException("Auction is not active (status: " + config.getStatus() + ")");
         }
 
@@ -97,10 +97,12 @@ public class AuctionBiddingService {
             throw new IllegalStateException("Insufficient budget: Team remaining is " + team.getRemainingBudget() + ", bid is " + bidAmount);
         }
 
-        // 5. Systematically Reset Countdown Timer on every new bid
+        // 5. Systematically Activate and Reset Countdown Timer on every new bid
         LocalDateTime now = LocalDateTime.now();
         int timerSec = (config.getTimerSeconds() != null && config.getTimerSeconds() > 0) ? config.getTimerSeconds() : 60;
         config.setTimerEndTime(now.plusSeconds(timerSec));
+        config.setTimerPausedRemainingSeconds(null);
+        config.setStatus("ACTIVE");
 
         // 6. Update Auction Config & Player Current Leader
         config.setCurrentBid(bidAmount);
