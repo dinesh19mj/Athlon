@@ -411,4 +411,61 @@ public class UserService {
         
         return response;
     }
+
+    @Transactional
+    public void recordMatchResult(com.athlon.identityservice.user.dto.request.RecordMatchResultRequest request) {
+        String sport = request.getSportName() != null ? request.getSportName() : "Badminton";
+
+        SportsProfile winnerProfile = sportsProfileRepository.findByUserUuidAndSportName(request.getWinnerUserUuid(), sport)
+                .orElseGet(() -> {
+                    var userOpt = userRepository.findByUserUuid(request.getWinnerUserUuid());
+                    if (userOpt.isEmpty()) return null;
+                    SportsProfile sp = new SportsProfile(userOpt.get().getUserId(), request.getWinnerUserUuid(), sport, "Open");
+                    return sportsProfileRepository.save(sp);
+                });
+
+        SportsProfile loserProfile = sportsProfileRepository.findByUserUuidAndSportName(request.getLoserUserUuid(), sport)
+                .orElseGet(() -> {
+                    var userOpt = userRepository.findByUserUuid(request.getLoserUserUuid());
+                    if (userOpt.isEmpty()) return null;
+                    SportsProfile sp = new SportsProfile(userOpt.get().getUserId(), request.getLoserUserUuid(), sport, "Open");
+                    return sportsProfileRepository.save(sp);
+                });
+
+        if (winnerProfile == null || loserProfile == null) {
+            return;
+        }
+
+        int rWinner = winnerProfile.getEloRating() != null ? winnerProfile.getEloRating() : 1200;
+        int rLoser = loserProfile.getEloRating() != null ? loserProfile.getEloRating() : 1200;
+
+        // Calculate expected probability for winner
+        double expectedWinner = 1.0 / (1.0 + Math.pow(10.0, (rLoser - rWinner) / 400.0));
+        
+        // Standard K-factor = 32
+        int delta = (int) Math.round(32 * (1.0 - expectedWinner));
+        delta = Math.max(1, delta); // Minimum 1 point change
+
+        // Update Winner
+        winnerProfile.setEloRating(rWinner + delta);
+        winnerProfile.setTotalMatches((winnerProfile.getTotalMatches() != null ? winnerProfile.getTotalMatches() : 0) + 1);
+        winnerProfile.setMatchesWon((winnerProfile.getMatchesWon() != null ? winnerProfile.getMatchesWon() : 0) + 1);
+        int currentWinStreak = winnerProfile.getCurrentStreak() != null && winnerProfile.getCurrentStreak() > 0 
+                ? winnerProfile.getCurrentStreak() + 1 : 1;
+        winnerProfile.setCurrentStreak(currentWinStreak);
+        double winWinRate = ((double) winnerProfile.getMatchesWon() / winnerProfile.getTotalMatches()) * 100.0;
+        winnerProfile.setWinRate(Math.round(winWinRate * 10.0) / 10.0);
+        sportsProfileRepository.save(winnerProfile);
+
+        // Update Loser
+        loserProfile.setEloRating(Math.max(100, rLoser - delta));
+        loserProfile.setTotalMatches((loserProfile.getTotalMatches() != null ? loserProfile.getTotalMatches() : 0) + 1);
+        loserProfile.setMatchesLost((loserProfile.getMatchesLost() != null ? loserProfile.getMatchesLost() : 0) + 1);
+        int currentLossStreak = loserProfile.getCurrentStreak() != null && loserProfile.getCurrentStreak() < 0 
+                ? loserProfile.getCurrentStreak() - 1 : -1;
+        loserProfile.setCurrentStreak(currentLossStreak);
+        double lossWinRate = ((double) loserProfile.getMatchesWon() / loserProfile.getTotalMatches()) * 100.0;
+        loserProfile.setWinRate(Math.round(lossWinRate * 10.0) / 10.0);
+        sportsProfileRepository.save(loserProfile);
+    }
 }

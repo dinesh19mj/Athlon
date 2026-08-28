@@ -148,4 +148,11 @@ public class UserController {
         SportsProfileResponse response = userService.getUserStats(uuid, sportName);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PostMapping("/recordMatchResult")
+    public ResponseEntity<ApiResponse<Void>> recordMatchResult(
+            @Valid @RequestBody com.athlon.identityservice.user.dto.request.RecordMatchResultRequest request) {
+        userService.recordMatchResult(request);
+        return ResponseEntity.ok(ApiResponse.success("Match telemetry recorded and ratings updated successfully", null));
+    }
 }
