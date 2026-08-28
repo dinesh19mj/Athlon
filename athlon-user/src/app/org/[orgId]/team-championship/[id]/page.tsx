@@ -107,6 +107,7 @@ export default function TeamChampionshipDashboardPage() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("ALL");
   const [searchPlayerQuery, setSearchPlayerQuery] = useState("");
   const [selectedAuctionCategoryFilter, setSelectedAuctionCategoryFilter] = useState<string>("ALL");
+  const [auctionPlayerStatusFilter, setAuctionPlayerStatusFilter] = useState<"ALL" | "AVAILABLE" | "ASSIGNED" | "UNSOLD">("ALL");
   const [searchAuctionPlayerQuery, setSearchAuctionPlayerQuery] = useState("");
   const [customBidAmount, setCustomBidAmount] = useState<number>(0);
   const [isAuctionFullscreen, setIsAuctionFullscreen] = useState(false);
@@ -1744,13 +1745,19 @@ export default function TeamChampionshipDashboardPage() {
           );
         })()}
 
-        {/* TAB 3.5: AUCTION PLAYERS (APPROVED & PAID PLAYERS CATEGORY-WISE) */}
+        {/* TAB 3.5: AUCTION PLAYERS (APPROVED, PAID & ASSIGNED PLAYERS CATEGORY-WISE) */}
         {activeTab === "auction-players" && (() => {
-          const eligiblePlayers = players.filter(
-            (p) => p.status === "APPROVED" && p.paymentStatus === "PAID"
-          );
+          // Include all approved, paid, and assigned/sold auction pool players
+          const eligiblePlayers = players.filter((p) => {
+            const matchingAp = auctionPlayers.find((ap) => ap.playerId === p.playerId);
+            return (
+              ["APPROVED", "ASSIGNED", "SOLD", "DRAFTED"].includes(p.status) ||
+              Boolean(matchingAp) ||
+              (p.status === "APPROVED" && p.paymentStatus === "PAID")
+            );
+          });
 
-          // Extract unique categories for approved & paid players
+          // Extract unique categories for all eligible auction pool players
           const categoriesList = Array.from(
             new Set([
               ...(championship?.categories?.map((c) => c.name) || []),
@@ -1758,12 +1765,31 @@ export default function TeamChampionshipDashboardPage() {
             ])
           ).filter(Boolean);
 
-          const filteredPlayers = eligiblePlayers.filter(
-            (p) =>
+          const filteredPlayers = eligiblePlayers.filter((p) => {
+            const matchingAp = auctionPlayers.find((ap) => ap.playerId === p.playerId);
+            const isAssigned =
+              p.status === "ASSIGNED" ||
+              p.status === "SOLD" ||
+              p.status === "DRAFTED" ||
+              matchingAp?.state === "ASSIGNED" ||
+              matchingAp?.state === "SOLD" ||
+              Boolean(matchingAp?.winningTeamName);
+            const isUnsold = matchingAp?.state === "UNSOLD";
+            const isAvailable = !isAssigned && !isUnsold;
+
+            if (auctionPlayerStatusFilter === "AVAILABLE" && !isAvailable) return false;
+            if (auctionPlayerStatusFilter === "ASSIGNED" && !isAssigned) return false;
+            if (auctionPlayerStatusFilter === "UNSOLD" && !isUnsold) return false;
+
+            const matchesSearch =
+              !searchAuctionPlayerQuery.trim() ||
               p.fullName.toLowerCase().includes(searchAuctionPlayerQuery.toLowerCase()) ||
               (p.phone && p.phone.includes(searchAuctionPlayerQuery)) ||
-              (p.categoryName && p.categoryName.toLowerCase().includes(searchAuctionPlayerQuery.toLowerCase()))
-          );
+              (p.categoryName && p.categoryName.toLowerCase().includes(searchAuctionPlayerQuery.toLowerCase())) ||
+              (matchingAp?.winningTeamName && matchingAp.winningTeamName.toLowerCase().includes(searchAuctionPlayerQuery.toLowerCase()));
+
+            return matchesSearch;
+          });
 
           // Group by category
           const groupedPlayers: Record<string, typeof players> = {};
@@ -1788,6 +1814,20 @@ export default function TeamChampionshipDashboardPage() {
             ([catName]) => selectedAuctionCategoryFilter === "ALL" || selectedAuctionCategoryFilter === catName
           );
 
+          const totalAssigned = eligiblePlayers.filter((p) => {
+            const matchingAp = auctionPlayers.find((ap) => ap.playerId === p.playerId);
+            return (
+              p.status === "ASSIGNED" ||
+              p.status === "SOLD" ||
+              p.status === "DRAFTED" ||
+              matchingAp?.state === "ASSIGNED" ||
+              matchingAp?.state === "SOLD" ||
+              Boolean(matchingAp?.winningTeamName)
+            );
+          }).length;
+
+          const totalAvailable = eligiblePlayers.length - totalAssigned;
+
           return (
             <div className="space-y-6">
               {/* Header / Search / Filter Pills */}
@@ -1803,7 +1843,7 @@ export default function TeamChampionshipDashboardPage() {
                       </span>
                     </div>
                     <p className="text-xs text-foreground/50 mt-0.5">
-                      Approved athletes eligible for the live auction draft, organized category-wise
+                      Approved athletes eligible for the live auction draft, organized category-wise ({totalAssigned} assigned, {totalAvailable} remaining)
                     </p>
                   </div>
 
@@ -1822,7 +1862,7 @@ export default function TeamChampionshipDashboardPage() {
 
                     <button
                       onClick={() => setActiveTab("auction")}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 shrink-0"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 shrink-0 cursor-pointer"
                     >
                       <Gavel className="w-3.5 h-3.5" />
                       <span>Live Auction Arena</span>
@@ -1830,46 +1870,101 @@ export default function TeamChampionshipDashboardPage() {
                   </div>
                 </div>
 
-                {/* Category Filter Pills */}
-                {categoriesList.length > 0 && (
+                {/* Status & Category Filter Pills */}
+                <div className="space-y-2">
+                  {/* Status Filters */}
                   <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                     <button
-                      onClick={() => setSelectedAuctionCategoryFilter("ALL")}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${selectedAuctionCategoryFilter === "ALL"
-                        ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
-                        : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
-                        }`}
+                      onClick={() => setAuctionPlayerStatusFilter("ALL")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
+                        auctionPlayerStatusFilter === "ALL"
+                          ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                          : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                      }`}
                     >
-                      <span>All Categories</span>
+                      <span>All Players</span>
                       <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/20 text-inherit">
                         {eligiblePlayers.length}
                       </span>
                     </button>
 
-                    {categoriesList.map((catName) => {
-                      const count = eligiblePlayers.filter(
-                        (p) => (p.categoryName || "Open").toLowerCase() === catName.toLowerCase()
-                      ).length;
-                      const isSelected = selectedAuctionCategoryFilter === catName;
+                    <button
+                      onClick={() => setAuctionPlayerStatusFilter("AVAILABLE")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
+                        auctionPlayerStatusFilter === "AVAILABLE"
+                          ? "bg-emerald-500 text-black border-emerald-500 shadow-sm"
+                          : "bg-surface text-foreground/70 hover:text-emerald-400 border-foreground/10"
+                      }`}
+                    >
+                      <span>Available ({totalAvailable})</span>
+                    </button>
 
-                      return (
-                        <button
-                          key={catName}
-                          onClick={() => setSelectedAuctionCategoryFilter(isSelected ? "ALL" : catName)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border ${isSelected
-                            ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
-                            : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
-                            }`}
-                        >
-                          <span>{catName}</span>
-                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/20 text-inherit">
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
+                    <button
+                      onClick={() => setAuctionPlayerStatusFilter("ASSIGNED")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
+                        auctionPlayerStatusFilter === "ASSIGNED"
+                          ? "bg-purple-500 text-white border-purple-500 shadow-sm"
+                          : "bg-surface text-foreground/70 hover:text-purple-400 border-foreground/10"
+                      }`}
+                    >
+                      <span>Assigned to Team ({totalAssigned})</span>
+                    </button>
+
+                    <button
+                      onClick={() => setAuctionPlayerStatusFilter("UNSOLD")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
+                        auctionPlayerStatusFilter === "UNSOLD"
+                          ? "bg-amber-500 text-black border-amber-500 shadow-sm"
+                          : "bg-surface text-foreground/70 hover:text-amber-400 border-foreground/10"
+                      }`}
+                    >
+                      <span>Unsold</span>
+                    </button>
                   </div>
-                )}
+
+                  {/* Category Filter Pills */}
+                  {categoriesList.length > 0 && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                      <button
+                        onClick={() => setSelectedAuctionCategoryFilter("ALL")}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
+                          selectedAuctionCategoryFilter === "ALL"
+                            ? "bg-foreground/15 text-foreground border-foreground/30 font-black"
+                            : "bg-surface text-foreground/60 hover:text-foreground border-foreground/10"
+                        }`}
+                      >
+                        <span>All Categories</span>
+                        <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/10 text-inherit">
+                          {eligiblePlayers.length}
+                        </span>
+                      </button>
+
+                      {categoriesList.map((catName) => {
+                        const count = eligiblePlayers.filter(
+                          (p) => (p.categoryName || "Open").toLowerCase() === catName.toLowerCase()
+                        ).length;
+                        const isSelected = selectedAuctionCategoryFilter === catName;
+
+                        return (
+                          <button
+                            key={catName}
+                            onClick={() => setSelectedAuctionCategoryFilter(isSelected ? "ALL" : catName)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
+                              isSelected
+                                ? "bg-primary text-black border-primary shadow-sm shadow-primary/20"
+                                : "bg-surface text-foreground/70 hover:text-foreground border-foreground/10"
+                            }`}
+                          >
+                            <span>{catName}</span>
+                            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-black/20 text-inherit">
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Category-Wise Grouped Player Lists */}
@@ -1940,7 +2035,7 @@ export default function TeamChampionshipDashboardPage() {
                               borderColor: "var(--athlon-border-subtle)",
                             }}
                           >
-                            No verified auction athletes in {catName}.
+                            No matching auction athletes in {catName}.
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1965,23 +2060,48 @@ export default function TeamChampionshipDashboardPage() {
                                 (ap) => ap.playerId === p.playerId
                               );
 
+                              const isAssigned =
+                                p.status === "ASSIGNED" ||
+                                p.status === "SOLD" ||
+                                p.status === "DRAFTED" ||
+                                matchingAuctionPlayer?.state === "ASSIGNED" ||
+                                matchingAuctionPlayer?.state === "SOLD" ||
+                                Boolean(matchingAuctionPlayer?.winningTeamName);
+
+                              const isUnsold = matchingAuctionPlayer?.state === "UNSOLD";
+                              const isBidding = matchingAuctionPlayer?.state === "BIDDING";
+
                               return (
                                 <div
                                   key={p.playerId}
                                   className="group relative rounded-[22px] border transition-all duration-300 hover:shadow-xl hover:border-primary/40 flex flex-col justify-between overflow-hidden"
                                   style={{
                                     backgroundColor: "var(--athlon-card)",
-                                    borderColor: "var(--athlon-border)",
+                                    borderColor: isAssigned ? "rgba(168, 85, 247, 0.3)" : "var(--athlon-border)",
                                   }}
                                 >
-                                  {/* Top Emerald Gradient Bar */}
-                                  <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-primary" />
+                                  {/* Top Accent Gradient Bar */}
+                                  <div
+                                    className={`h-1 w-full ${
+                                      isAssigned
+                                        ? "bg-gradient-to-r from-purple-500 via-indigo-400 to-purple-500"
+                                        : isUnsold
+                                        ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500"
+                                        : "bg-gradient-to-r from-emerald-500 via-teal-400 to-primary"
+                                    }`}
+                                  />
 
                                   <div className="p-4 space-y-3">
                                     {/* Player Identity */}
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="flex items-center gap-2.5 min-w-0">
-                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner border shrink-0 bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30">
+                                        <div
+                                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner border shrink-0 ${
+                                            isAssigned
+                                              ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                                              : "bg-gradient-to-br from-emerald-500/20 to-primary/10 text-emerald-400 border-emerald-500/30"
+                                          }`}
+                                        >
                                           {initials}
                                         </div>
 
@@ -1995,14 +2115,25 @@ export default function TeamChampionshipDashboardPage() {
                                         </div>
                                       </div>
 
-                                      {/* Verified & Paid Badges */}
+                                      {/* Dynamic Status Badges */}
                                       <div className="flex flex-col items-end gap-1 shrink-0">
-                                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
-                                          APPROVED
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-emerald-500/15 text-emerald-300 border-emerald-500/25">
-                                          PAID
-                                        </span>
+                                        {isAssigned ? (
+                                          <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-purple-500/15 text-purple-300 border-purple-500/30">
+                                            ASSIGNED
+                                          </span>
+                                        ) : isUnsold ? (
+                                          <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-amber-500/15 text-amber-300 border-amber-500/30">
+                                            UNSOLD
+                                          </span>
+                                        ) : isBidding ? (
+                                          <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-emerald-500/15 text-emerald-400 border-emerald-500/30 animate-pulse">
+                                            ON FLOOR
+                                          </span>
+                                        ) : (
+                                          <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                                            READY
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
 
@@ -2036,24 +2167,57 @@ export default function TeamChampionshipDashboardPage() {
                                       </div>
                                     </div>
 
-                                    {/* Action to Call to Floor or Auction Status */}
+                                    {/* Action to Call to Floor or Assigned Team Badge */}
                                     <div className="pt-1">
-                                      <button
-                                        onClick={() => {
-                                          if (matchingAuctionPlayer?.auctionPlayerId) {
-                                            handleCallPlayer(matchingAuctionPlayer.auctionPlayerId);
-                                          }
-                                          setActiveTab("auction");
-                                        }}
-                                        className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-primary via-amber-400 to-primary text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                                      >
-                                        <Gavel className="w-3.5 h-3.5" />
-                                        <span>Call to Floor</span>
-                                      </button>
+                                      {isAssigned ? (
+                                        <div className="w-full py-2 px-3 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 font-bold text-xs flex items-center justify-between shadow-sm">
+                                          <div className="flex items-center gap-1.5 truncate">
+                                            <CheckCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                            <span className="truncate font-black">{matchingAuctionPlayer?.winningTeamName || "Assigned"}</span>
+                                          </div>
+                                          <span className="font-mono font-black text-purple-200 shrink-0">
+                                            {(matchingAuctionPlayer?.finalBid || p.basePrice || 0).toLocaleString()} pts
+                                          </span>
+                                        </div>
+                                      ) : isUnsold ? (
+                                        <button
+                                          onClick={() => {
+                                            if (matchingAuctionPlayer?.auctionPlayerId) {
+                                              handleCallPlayer(matchingAuctionPlayer.auctionPlayerId);
+                                            }
+                                            setActiveTab("auction");
+                                          }}
+                                          className="w-full py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                        >
+                                          <RotateCcw className="w-3.5 h-3.5" />
+                                          <span>Recall to Floor</span>
+                                        </button>
+                                      ) : isBidding ? (
+                                        <button
+                                          onClick={() => setActiveTab("auction")}
+                                          className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 animate-pulse cursor-pointer"
+                                        >
+                                          <Flame className="w-3.5 h-3.5" />
+                                          <span>Live on Floor</span>
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => {
+                                            if (matchingAuctionPlayer?.auctionPlayerId) {
+                                              handleCallPlayer(matchingAuctionPlayer.auctionPlayerId);
+                                            }
+                                            setActiveTab("auction");
+                                          }}
+                                          className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-primary via-amber-400 to-primary text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                                        >
+                                          <Gavel className="w-3.5 h-3.5" />
+                                          <span>Call to Floor</span>
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
 
-                                  {/* Card Footer: Base Price */}
+                                  {/* Card Footer: Base Price or Sold Price */}
                                   <div
                                     className="px-4 py-2.5 border-t flex items-center justify-between mt-1 text-[11px]"
                                     style={{
@@ -2062,10 +2226,12 @@ export default function TeamChampionshipDashboardPage() {
                                     }}
                                   >
                                     <span className="font-bold text-foreground/40 uppercase text-[10px]">
-                                      Base Price
+                                      {isAssigned ? "Winning Bid" : "Base Price"}
                                     </span>
-                                    <span className="font-mono font-black text-primary">
-                                      {effectiveBasePrice} pts
+                                    <span className={`font-mono font-black ${isAssigned ? "text-purple-300" : "text-primary"}`}>
+                                      {isAssigned && matchingAuctionPlayer?.finalBid
+                                        ? `${matchingAuctionPlayer.finalBid.toLocaleString()} pts`
+                                        : `${effectiveBasePrice.toLocaleString()} pts`}
                                     </span>
                                   </div>
                                 </div>
