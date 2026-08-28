@@ -546,23 +546,27 @@ export default function TeamOwnerAuctionArenaPage() {
         </div>
       </header>
 
-      {/* ─── 2. MAIN ARENA ARENA COCKPIT ─── */}
-      <main className={`max-w-7xl mx-auto px-4 sm:px-6 ${isFullscreen ? "flex-1 min-h-0 py-4 overflow-y-auto hide-scrollbar w-full" : "mt-6 space-y-6"}`}>
+      {/* ─── 2. MAIN ARENA COCKPIT ─── */}
+      <main className={isFullscreen ? "flex-1 min-h-0 overflow-hidden w-full flex flex-col" : "max-w-7xl mx-auto px-4 sm:px-6 mt-6 space-y-6"}>
         
         {/* Main Stage Grid (Left 8 Cols Stage + Right 4 Cols Telemetry Console) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className={`grid grid-cols-1 lg:grid-cols-12 ${isFullscreen ? "flex-1 min-h-0 gap-0 divide-x divide-foreground/10 bg-surface/15" : "gap-6 items-stretch"}`}>
           
           {/* ════════════════════════════════════════════════════════════════════ */}
           {/* LEFT 8 COLS: THE GRAND STADIUM SPOTLIGHT STAGE & BID COMMAND DOCK  */}
           {/* ════════════════════════════════════════════════════════════════════ */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className={`flex flex-col min-h-0 ${isFullscreen ? "lg:col-span-8 h-full p-5 sm:p-7 overflow-y-auto hide-scrollbar" : "lg:col-span-8"}`}>
             {auctionState?.activePlayer ? (
               <div
-                className="rounded-[32px] border p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden bg-gradient-to-br from-surface/95 via-surface/85 to-background/95 backdrop-blur-2xl transition-all duration-300"
+                className={`rounded-[32px] border shadow-2xl relative flex flex-col justify-between transition-all duration-300 ${
+                  isFullscreen
+                    ? "h-full p-0 border-0 shadow-none bg-transparent"
+                    : "h-[680px] max-h-[calc(100vh-140px)] p-6 sm:p-7 overflow-y-auto hide-scrollbar"
+                }`}
                 style={{
-                  backgroundColor: "var(--athlon-card)",
+                  backgroundColor: isFullscreen ? "transparent" : "var(--athlon-card)",
                   borderColor: isMyTeamLeading ? "#f59e0b" : "var(--athlon-primary, #6366f1)",
-                  boxShadow: `0 20px 50px -10px rgba(0,0,0,0.7), 0 0 35px -5px ${isMyTeamLeading ? "rgba(245,158,11,0.25)" : "var(--athlon-glow, rgba(99,102,241,0.25))"}`,
+                  boxShadow: isFullscreen ? "none" : `0 20px 50px -10px rgba(0,0,0,0.7), 0 0 35px -5px ${isMyTeamLeading ? "rgba(245,158,11,0.25)" : "var(--athlon-glow, rgba(99,102,241,0.25))"}`,
                 }}
               >
                 {/* Stadium Radial Aura */}
@@ -970,8 +974,10 @@ export default function TeamOwnerAuctionArenaPage() {
             ) : (
               /* Standby Floor Screen */
               <div
-                className="p-16 sm:p-20 rounded-[32px] border border-dashed text-center space-y-4 shadow-sm relative overflow-hidden"
-                style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                className={`rounded-[32px] border border-dashed text-center space-y-4 shadow-sm relative overflow-hidden flex flex-col items-center justify-center ${
+                  isFullscreen ? "h-full p-8 border-0 bg-transparent" : "h-[680px] max-h-[calc(100vh-140px)] p-16"
+                }`}
+                style={{ backgroundColor: isFullscreen ? "transparent" : "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
               >
                 <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary mx-auto shadow-inner">
                   <Gavel className="w-10 h-10 animate-pulse" />
@@ -991,10 +997,14 @@ export default function TeamOwnerAuctionArenaPage() {
           {/* ════════════════════════════════════════════════════════════════════ */}
           {/* RIGHT 4 COLS: LIVE TELEMETRY FEED, QUEUE POOL & FRANCHISE CONSOLE  */}
           {/* ════════════════════════════════════════════════════════════════════ */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className={`flex flex-col min-h-0 ${isFullscreen ? "lg:col-span-4 h-full p-4 sm:p-5 bg-surface/30 backdrop-blur-md" : "lg:col-span-4"}`}>
             <div
-              className="rounded-[32px] border p-5 sm:p-6 space-y-5 shadow-2xl relative overflow-hidden backdrop-blur-2xl flex flex-col justify-between"
-              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+              className={`rounded-[32px] border shadow-2xl relative flex flex-col justify-between backdrop-blur-2xl transition-all duration-300 ${
+                isFullscreen
+                  ? "h-full p-0 border-0 shadow-none bg-transparent overflow-hidden"
+                  : "h-[680px] max-h-[calc(100vh-140px)] p-5 sm:p-6 overflow-y-auto hide-scrollbar"
+              }`}
+              style={{ backgroundColor: isFullscreen ? "transparent" : "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
             >
               {/* Header Navigation Tabs for Right Console */}
               <div className="flex items-center justify-between border-b pb-3 gap-1" style={{ borderColor: "var(--athlon-border)" }}>
