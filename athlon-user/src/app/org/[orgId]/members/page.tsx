@@ -424,76 +424,98 @@ export default function MembersPage() {
         )}
       </div>
 
-      {/* ADD MEMBER MODAL (PHONE VERIFICATION FLOW) */}
+      {/* ADD MEMBER MODAL (STYLISH & MOBILE OPTIMIZED) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
           <div
-            className="w-full max-w-lg rounded-t-[28px] sm:rounded-[28px] border shadow-2xl p-5 sm:p-7 space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+            className="w-full max-w-lg rounded-t-[32px] sm:rounded-[28px] border shadow-[0_-10px_40px_rgba(0,0,0,0.8)] sm:shadow-2xl flex flex-col max-h-[92vh] animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200 overflow-hidden"
             style={{
               backgroundColor: 'var(--athlon-surface)',
               borderColor: 'var(--athlon-border)'
             }}
           >
+            {/* Mobile Sheet Drag Indicator */}
+            <div className="pt-3 pb-1 flex justify-center sm:hidden">
+              <div className="w-12 h-1 rounded-full bg-foreground/20" />
+            </div>
+
             {/* Modal Header */}
-            <div className="flex items-center justify-between">
+            <div className="p-5 sm:p-6 pb-3 border-b flex items-center justify-between shrink-0" style={{ borderColor: 'var(--athlon-border)' }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-sm">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-black text-foreground">Add Club Member</h3>
-                  <p className="text-xs text-foreground/50 font-medium">Verify phone number and assign club role</p>
+                  <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Add Club Member</h3>
+                  <p className="text-xs text-foreground/50 font-medium">Verify phone number and assign role</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setIsAddModalOpen(false);
                   resetModal();
                 }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground flex items-center justify-center transition-colors shrink-0"
+                className="w-9 h-9 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground flex items-center justify-center transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {actionError && (
-              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>{actionError}</span>
-              </div>
-            )}
+            {/* Modal Scrollable Body */}
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-grow">
+              {actionError && (
+                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-200">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{actionError}</span>
+                </div>
+              )}
 
-            <form onSubmit={handleAddMember} className="space-y-5">
-              {/* Phone Input with Prefix */}
-              <div className="space-y-2">
+              {/* Phone Input Box */}
+              <div className="space-y-1.5">
                 <label className="text-xs font-black uppercase tracking-wider text-foreground/70 flex items-center justify-between">
                   <span>Athlete Phone Number</span>
-                  <span className="text-[10px] text-foreground/40 font-normal">Active Athlon account required</span>
+                  <span className="text-[10px] text-primary/80 font-bold">10-Digit Mobile</span>
                 </label>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center px-3.5 py-3 rounded-2xl border bg-background text-sm font-bold text-foreground/60 select-none" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <div
+                    className="flex items-center px-3.5 py-3 rounded-2xl border bg-background text-sm font-bold text-foreground/70 select-none shadow-inner"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
                     +91
                   </div>
                   <div className="relative flex-grow">
                     <input
                       type="tel"
-                      placeholder="e.g. 9998887772"
+                      placeholder="Enter mobile number..."
                       value={phoneInput}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       maxLength={10}
                       autoFocus
-                      className="w-full bg-background border rounded-2xl px-4 py-3 text-sm font-mono font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                      className="w-full bg-background border rounded-2xl px-4 py-3 text-sm font-mono font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-inner"
                       style={{ borderColor: 'var(--athlon-border)' }}
                     />
-                    {verifyingPhone && (
-                      <Loader2 className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-primary animate-spin" />
-                    )}
+                    {verifyingPhone ? (
+                      <Loader2 className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-primary animate-spin" />
+                    ) : phoneInput.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhoneInput('');
+                          setVerifiedUser(null);
+                          setVerificationError(null);
+                        }}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/30 hover:text-foreground transition-colors p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    ) : null}
                   </div>
                   <button
                     type="button"
                     onClick={handleVerifyPhone}
                     disabled={verifyingPhone || phoneInput.replace(/[^0-9]/g, '').length < 10}
-                    className="px-4 py-3 rounded-2xl bg-surface border text-xs font-black text-foreground hover:bg-foreground/5 hover:border-primary/40 transition-all disabled:opacity-40 shrink-0"
+                    className="px-4 py-3 rounded-2xl bg-surface border text-xs font-black text-foreground hover:bg-foreground/5 hover:border-primary/40 transition-all disabled:opacity-40 shrink-0 shadow-sm"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     Verify
@@ -501,18 +523,16 @@ export default function MembersPage() {
                 </div>
               </div>
 
-              {/* SIMPLIFIED VERIFIED USER PREVIEW CARD */}
+              {/* SIMPLIFIED & STYLISH VERIFIED USER PREVIEW */}
               {verifiedUser && (
-                <div
-                  className="p-4 rounded-2xl border bg-emerald-500/5 border-emerald-500/30 space-y-2.5 animate-in fade-in duration-300"
-                >
+                <div className="p-4 rounded-2xl border bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/30 space-y-2.5 animate-in fade-in zoom-in-95 duration-300 shadow-sm">
                   <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    Verified Account
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Verified Account</span>
                   </div>
 
                   <div className="flex items-center gap-3.5 pt-0.5">
-                    <div className="w-11 h-11 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                    <div className="w-12 h-12 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
                       {verifiedUser.photo ? (
                         <img
                           src={UserService.getPhotoUrl(verifiedUser.photo)}
@@ -521,7 +541,7 @@ export default function MembersPage() {
                         />
                       ) : (
                         <span className="text-base font-black text-primary">
-                          {verifiedUser.firstName?.charAt(0)?.toUpperCase()}
+                          {verifiedUser.firstName?.charAt(0)?.toUpperCase() || 'A'}
                         </span>
                       )}
                     </div>
@@ -529,47 +549,45 @@ export default function MembersPage() {
                       <h4 className="text-base font-black text-foreground truncate">
                         {verifiedUser.firstName} {verifiedUser.lastName || ''}
                       </h4>
+                      <p className="text-xs text-foreground/50 font-medium font-mono">+91 {phoneInput}</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* VERIFICATION ERROR / USER NOT FOUND BANNER */}
+              {/* USER NOT FOUND / ERROR BANNER */}
               {verificationError && (
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 animate-in fade-in duration-300">
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 animate-in fade-in zoom-in-95 duration-300">
                   <div className="flex items-start gap-2.5">
                     <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                     <div>
                       <h4 className="text-xs font-black text-amber-300 uppercase tracking-wide">
                         No Active Account Found
                       </h4>
-                      <p className="text-xs text-foreground/70 font-medium mt-1 leading-relaxed">
+                      <p className="text-xs text-foreground/75 font-medium mt-1 leading-relaxed">
                         {verificationError}
                       </p>
                     </div>
                   </div>
-                  <div className="pt-2 border-t border-amber-500/15 text-[11px] text-foreground/50">
-                    💡 <strong>Tip:</strong> Users can sign up instantly on the Athlon mobile or web app with their mobile number. Once registered, you can add them immediately.
-                  </div>
                 </div>
               )}
 
-              {/* ROLE SELECTOR (ONLY WHEN USER VERIFIED) */}
+              {/* ROLE SELECTOR CHIPS */}
               {verifiedUser && (
                 <div className="space-y-2 animate-in fade-in duration-300">
                   <label className="text-xs font-black uppercase tracking-wider text-foreground/70">
                     Assign Club Role
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {ROLES.map((r) => (
                       <button
                         key={r.value}
                         type="button"
                         onClick={() => setSelectedRole(r.value)}
-                        className={`p-2.5 sm:p-3 rounded-2xl border text-xs font-bold transition-all text-center ${
+                        className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition-all text-center ${
                           selectedRole === r.value
-                            ? 'bg-primary/15 border-primary text-primary shadow-sm'
-                            : 'bg-background/60 border-foreground/5 text-foreground/60 hover:text-foreground'
+                            ? 'bg-primary text-black font-black border-primary shadow-md shadow-primary/20 scale-[1.02]'
+                            : 'bg-background border-foreground/10 text-foreground/60 hover:text-foreground hover:bg-foreground/5'
                         }`}
                       >
                         {r.label}
@@ -578,23 +596,30 @@ export default function MembersPage() {
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Modal Actions */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+            {/* ALWAYS-VISIBLE STICKY BOTTOM ACTION FOOTER */}
+            <div
+              className="p-4 sm:p-5 border-t bg-surface/95 backdrop-blur-md flex items-center gap-3 shrink-0"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  resetModal();
+                }}
+                className="w-1/3 py-3 rounded-2xl bg-surface border border-foreground/10 text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors text-center"
+              >
+                Cancel
+              </button>
+
+              {verifiedUser ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsAddModalOpen(false);
-                    resetModal();
-                  }}
-                  className="px-5 py-2.5 rounded-xl bg-surface border border-foreground/10 text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!verifiedUser || isSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-primary/20 flex items-center gap-2"
+                  onClick={handleAddMember}
+                  disabled={isSubmitting}
+                  className="w-2/3 py-3 rounded-2xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -606,8 +631,23 @@ export default function MembersPage() {
                     </>
                   )}
                 </button>
-              </div>
-            </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleVerifyPhone}
+                  disabled={verifyingPhone || phoneInput.replace(/[^0-9]/g, '').length < 10}
+                  className="w-2/3 py-3 rounded-2xl bg-foreground/10 border border-foreground/10 text-foreground text-xs font-black tracking-wide hover:bg-primary hover:text-black hover:border-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {verifyingPhone ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
+                    </>
+                  ) : (
+                    <>Verify Number</>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
