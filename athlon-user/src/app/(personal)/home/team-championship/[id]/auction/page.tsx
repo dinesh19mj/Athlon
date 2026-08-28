@@ -271,7 +271,7 @@ export default function TeamOwnerAuctionArenaPage() {
   }, [auctionState?.config?.quickPointBumps]);
 
   const handlePlaceBid = async (increment: number) => {
-    if (!championship?.championshipId || !auctionState?.activePlayer || !selectedMyTeamId) return;
+    if (!championship?.championshipId || !auctionState?.activePlayer || !selectedMyTeamId || isTimerPaused) return;
 
     try {
       setPlacingBid(true);
@@ -294,6 +294,10 @@ export default function TeamOwnerAuctionArenaPage() {
   };
 
   const handlePlaceCustomBid = async () => {
+    if (isTimerPaused) {
+      alert("Auction is paused by the tournament organizer. Bidding is temporarily locked.");
+      return;
+    }
     const val = Number(customBidAmount);
     if (isNaN(val) || val <= 0) {
       alert("Please enter a valid bid amount");
@@ -841,17 +845,26 @@ export default function TeamOwnerAuctionArenaPage() {
                       {/* SINGLE HERO ACTIVE PRICE TAG BIDDING BUTTON */}
                       <button
                         type="button"
-                        disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading}
+                        disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading || isTimerPaused}
                         onClick={() => handlePlaceBid(selectedIncrement)}
                         className={`w-full py-3 px-4 rounded-2xl font-black transition-all flex items-center justify-between shadow-xl select-none cursor-pointer ${
-                          isMyTeamLeading
+                          isTimerPaused
+                            ? "bg-amber-500/15 border border-amber-500/30 text-amber-400 cursor-not-allowed opacity-80 justify-center"
+                            : isMyTeamLeading
                             ? "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-500/40 text-amber-400 cursor-not-allowed opacity-90 justify-center"
                             : !isAffordable
                             ? "bg-red-500/15 border border-red-500/30 text-red-400 cursor-not-allowed opacity-60 justify-center"
                             : "bg-gradient-to-r from-primary via-emerald-400 to-primary text-black hover:scale-[1.01] active:scale-[0.99] shadow-primary/25"
                         }`}
                       >
-                        {isMyTeamLeading ? (
+                        {isTimerPaused ? (
+                          <div className="flex items-center gap-1.5">
+                            <Pause className="w-4 h-4 text-amber-400 animate-pulse" />
+                            <span className="text-xs uppercase font-extrabold tracking-wide text-amber-300">
+                              Auction Paused by Organizer
+                            </span>
+                          </div>
+                        ) : isMyTeamLeading ? (
                           <div className="flex items-center gap-1.5">
                             <Crown className="w-4 h-4 text-amber-400" />
                             <span className="text-xs uppercase font-extrabold tracking-wide">
@@ -1514,17 +1527,26 @@ export default function TeamOwnerAuctionArenaPage() {
                         {/* SINGLE HERO ACTIVE PRICE TAG BIDDING BUTTON */}
                         <button
                           type="button"
-                          disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading}
+                          disabled={placingBid || !selectedMyTeamId || !isAffordable || isMyTeamLeading || isTimerPaused}
                           onClick={() => handlePlaceBid(selectedIncrement)}
                           className={`w-full py-3.5 px-6 rounded-2xl font-black transition-all flex items-center justify-between shadow-xl select-none cursor-pointer ${
-                            isMyTeamLeading
+                            isTimerPaused
+                              ? "bg-amber-500/15 border border-amber-500/30 text-amber-400 cursor-not-allowed opacity-80 justify-center"
+                              : isMyTeamLeading
                               ? "bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-500/40 text-amber-400 cursor-not-allowed opacity-90 justify-center"
                               : !isAffordable
                               ? "bg-red-500/15 border border-red-500/30 text-red-400 cursor-not-allowed opacity-60 justify-center"
                               : "bg-gradient-to-r from-primary via-emerald-400 to-primary text-black hover:scale-[1.01] active:scale-[0.99] shadow-primary/25"
                           }`}
                         >
-                          {isMyTeamLeading ? (
+                          {isTimerPaused ? (
+                            <div className="flex items-center gap-2">
+                              <Pause className="w-5 h-5 text-amber-400 animate-pulse" />
+                              <span className="text-sm uppercase font-extrabold tracking-wide text-amber-300">
+                                Auction Paused by Tournament Organizer
+                              </span>
+                            </div>
+                          ) : isMyTeamLeading ? (
                             <div className="flex items-center gap-2">
                               <Crown className="w-5 h-5 text-amber-400" />
                               <span className="text-sm uppercase font-extrabold tracking-wide">
