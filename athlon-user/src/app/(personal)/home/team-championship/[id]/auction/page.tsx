@@ -555,7 +555,7 @@ export default function TeamOwnerAuctionArenaPage() {
           {/* ════════════════════════════════════════════════════════════════════ */}
           {/* LEFT 8 COLS: THE GRAND STADIUM SPOTLIGHT STAGE & BID COMMAND DOCK  */}
           {/* ════════════════════════════════════════════════════════════════════ */}
-          <div className={`flex flex-col min-h-0 ${isFullscreen ? "lg:col-span-8 h-full p-5 sm:p-7 overflow-y-auto hide-scrollbar" : "lg:col-span-8"}`}>
+          <div className={`flex flex-col min-h-0 ${isFullscreen ? "lg:col-span-8 h-full p-5 sm:p-6 overflow-y-auto hide-scrollbar" : "lg:col-span-8"}`}>
             {auctionState?.activePlayer ? (
               <div
                 className={`rounded-[32px] border shadow-2xl relative flex flex-col justify-between transition-all duration-300 ${
@@ -997,7 +997,7 @@ export default function TeamOwnerAuctionArenaPage() {
           {/* ════════════════════════════════════════════════════════════════════ */}
           {/* RIGHT 4 COLS: LIVE TELEMETRY FEED, QUEUE POOL & FRANCHISE CONSOLE  */}
           {/* ════════════════════════════════════════════════════════════════════ */}
-          <div className={`flex flex-col min-h-0 ${isFullscreen ? "lg:col-span-4 h-full p-4 sm:p-5 bg-surface/30 backdrop-blur-md" : "lg:col-span-4"}`}>
+          <div className={`flex flex-col min-h-0 ${isFullscreen ? "lg:col-span-4 h-full p-5 sm:p-6 bg-surface/30 backdrop-blur-md" : "lg:col-span-4"}`}>
             <div
               className={`rounded-[32px] border shadow-2xl relative flex flex-col backdrop-blur-2xl transition-all duration-300 ${
                 isFullscreen
@@ -1007,7 +1007,7 @@ export default function TeamOwnerAuctionArenaPage() {
               style={{ backgroundColor: isFullscreen ? "transparent" : "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
             >
               {/* Header Navigation Tabs for Right Console */}
-              <div className="shrink-0">
+              <div className="shrink-0 border-b pb-3" style={{ borderColor: "var(--athlon-border)" }}>
                 <div className="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-background/90 border shadow-inner" style={{ borderColor: "var(--athlon-border)" }}>
                   <button
                     type="button"
