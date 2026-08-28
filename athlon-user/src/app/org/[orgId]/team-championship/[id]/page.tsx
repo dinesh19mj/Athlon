@@ -115,6 +115,7 @@ export default function TeamChampionshipDashboardPage() {
   const [isCustomBumpModalOpen, setIsCustomBumpModalOpen] = useState<boolean>(false);
   const [customTimerInput, setCustomTimerInput] = useState<string>("");
   const [customBumpInput, setCustomBumpInput] = useState<string>("");
+  const [categoryTrayFilter, setCategoryTrayFilter] = useState<"ALL" | "WAITING" | "SOLD" | "UNSOLD">("ALL");
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -2678,7 +2679,7 @@ export default function TeamChampionshipDashboardPage() {
                     className="h-[620px] max-h-[calc(100vh-210px)] rounded-3xl border shadow-md flex flex-col p-4 justify-between overflow-y-auto overflow-x-hidden hide-scrollbar"
                     style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
                   >
-                    <div className="flex items-center justify-between border-b pb-3 shrink-0" style={{ borderColor: "var(--athlon-border)" }}>
+                    <div className="flex items-center justify-between border-b pb-2.5 shrink-0" style={{ borderColor: "var(--athlon-border)" }}>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -2712,108 +2713,170 @@ export default function TeamChampionshipDashboardPage() {
                       </button>
                     </div>
 
-                    {/* Scrollable Athlete List Container (Exact Matching Height with Internal Scroll) */}
-                    <div className="flex-1 overflow-y-auto hide-scrollbar space-y-1.5 pr-0.5 mt-2">
-                      {categoryPlayers.length === 0 ? (
-                        <div className="p-6 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase">
-                          No athletes in this category.
-                        </div>
-                      ) : (
-                        categoryPlayers.map((p) => {
-                          const isOnFloor = activePlayer?.auctionPlayerId === p.auctionPlayerId;
-                          const isSold = p.state === "SOLD" || p.state === "ASSIGNED";
-                          const isUnsold = p.state === "UNSOLD";
-                          const isWaiting = p.state === "WAITING";
-                          const effectiveBase = activeCategory?.basePrice && activeCategory.basePrice > 0
-                            ? activeCategory.basePrice
-                            : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
+                    {/* Filter Pills: All | Active | Sold | Unsold */}
+                    {(() => {
+                      const waitingCategoryCount = categoryPlayers.filter((p) => p.state === "WAITING" || p.state === "CALLED" || p.state === "BIDDING").length;
+                      const soldCategoryCount = categoryPlayers.filter((p) => p.state === "SOLD" || p.state === "ASSIGNED").length;
+                      const unsoldCategoryCount = categoryPlayers.filter((p) => p.state === "UNSOLD").length;
 
-                          return (
-                            <div
-                              key={p.auctionPlayerId}
-                              onClick={() => {
-                                if (!isAuctionLive) {
-                                  alert("Please click 'Start Live Auction' above to begin the bidding session first!");
-                                  return;
-                                }
-                                if (!isOnFloor && !isSold && !activePlayer) {
-                                  handleCallPlayer(p.auctionPlayerId);
-                                }
-                              }}
-                              className={`group p-2 sm:p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${!isAuctionLive
-                                ? "bg-surface/50 border-foreground/10 opacity-70 cursor-not-allowed"
-                                : isOnFloor
-                                  ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
-                                  : isSold
-                                    ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
-                                    : isUnsold
-                                      ? "bg-red-500/5 border-red-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer"
-                                      : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
-                                }`}
-                              title={
-                                !isAuctionLive
-                                  ? "Start live auction first"
-                                  : isOnFloor
-                                    ? "Currently on Floor"
-                                    : isSold
-                                      ? `Sold to ${p.winningTeamName || "Team"} for ${p.finalBid} pts`
-                                      : isUnsold
-                                        ? "Click to re-call unsold athlete to floor"
-                                        : "Click to call athlete to floor"
-                              }
+                      const displayedPlayers = categoryPlayers.filter((p) => {
+                        if (categoryTrayFilter === "WAITING") return p.state === "WAITING" || p.state === "CALLED" || p.state === "BIDDING";
+                        if (categoryTrayFilter === "SOLD") return p.state === "SOLD" || p.state === "ASSIGNED";
+                        if (categoryTrayFilter === "UNSOLD") return p.state === "UNSOLD";
+                        return true;
+                      });
+
+                      return (
+                        <>
+                          <div className="flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto hide-scrollbar shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setCategoryTrayFilter("ALL")}
+                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border ${
+                                categoryTrayFilter === "ALL"
+                                  ? "bg-primary text-black border-primary shadow-sm"
+                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                              }`}
                             >
-                              {/* Athlete Avatar & Info */}
-                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
-                                  {p.avatarUrl ? (
-                                    <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
-                                  ) : (
-                                    p.playerName.substring(0, 2).toUpperCase()
-                                  )}
-                                </div>
+                              All ({categoryPlayers.length})
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCategoryTrayFilter("WAITING")}
+                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${
+                                categoryTrayFilter === "WAITING"
+                                  ? "bg-amber-400 text-black border-amber-400 shadow-sm font-black"
+                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "WAITING" ? "bg-black" : "bg-amber-400"}`} />
+                              Active ({waitingCategoryCount})
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCategoryTrayFilter("SOLD")}
+                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${
+                                categoryTrayFilter === "SOLD"
+                                  ? "bg-emerald-400 text-black border-emerald-400 shadow-sm font-black"
+                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "SOLD" ? "bg-black" : "bg-emerald-400"}`} />
+                              Sold ({soldCategoryCount})
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCategoryTrayFilter("UNSOLD")}
+                              className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border flex items-center gap-1 ${
+                                categoryTrayFilter === "UNSOLD"
+                                  ? "bg-red-400 text-black border-red-400 shadow-sm font-black"
+                                  : "bg-surface text-foreground/60 border-foreground/10 hover:text-foreground"
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${categoryTrayFilter === "UNSOLD" ? "bg-black" : "bg-red-400"}`} />
+                              Unsold ({unsoldCategoryCount})
+                            </button>
+                          </div>
 
-                                <div className="min-w-0 flex-1">
-                                  <h5 className="font-black text-xs text-foreground truncate group-hover:text-primary transition-colors">
-                                    {p.playerName}
-                                  </h5>
-                                  <span className="text-[10px] text-foreground/50 block">
-                                    Base: <strong className="text-primary font-mono">{effectiveBase} pts</strong>
-                                  </span>
-                                </div>
+                          {/* Scrollable Athlete List Container (Filtered) */}
+                          <div className="flex-1 overflow-y-auto hide-scrollbar space-y-1.5 pr-0.5 mt-1.5">
+                            {displayedPlayers.length === 0 ? (
+                              <div className="p-6 rounded-2xl border border-dashed text-center text-xs text-foreground/40 font-bold uppercase my-auto">
+                                No {categoryTrayFilter.toLowerCase()} athletes in this category.
                               </div>
+                            ) : (
+                              displayedPlayers.map((p) => {
+                                const isOnFloor = activePlayer?.auctionPlayerId === p.auctionPlayerId;
+                                const isSold = p.state === "SOLD" || p.state === "ASSIGNED";
+                                const isUnsold = p.state === "UNSOLD";
+                                const isWaiting = p.state === "WAITING";
+                                const effectiveBase = activeCategory?.basePrice && activeCategory.basePrice > 0
+                                  ? activeCategory.basePrice
+                                  : (p.basePrice && p.basePrice > 0 ? p.basePrice : 1000);
 
-                              {/* Right Status Indicator */}
-                              <div className="shrink-0">
-                                {isOnFloor ? (
-                                  <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                                    Floor
-                                  </span>
-                                ) : isSold ? (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase block truncate max-w-[85px]">
-                                    Sold
-                                  </span>
-                                ) : isUnsold ? (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-black uppercase block group-hover:hidden">
-                                    Unsold
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-foreground/30 group-hover:text-primary font-black opacity-0 group-hover:opacity-100 transition-all">
-                                    Call 🔨
-                                  </span>
-                                )}
+                                return (
+                                  <div
+                                    key={p.auctionPlayerId}
+                                    onClick={() => {
+                                      if (!isAuctionLive) {
+                                        alert("Please click 'Start Live Auction' above to begin the bidding session first!");
+                                        return;
+                                      }
+                                      if (!isOnFloor && !isSold && !activePlayer) {
+                                        handleCallPlayer(p.auctionPlayerId);
+                                      }
+                                    }}
+                                    className={`group p-2 sm:p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${!isAuctionLive
+                                      ? "bg-surface/50 border-foreground/10 opacity-70 cursor-not-allowed"
+                                      : isOnFloor
+                                        ? "bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20"
+                                        : isSold
+                                          ? "bg-emerald-500/5 border-emerald-500/15 opacity-65 cursor-default"
+                                          : isUnsold
+                                            ? "bg-red-500/5 border-red-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 cursor-pointer"
+                                            : "bg-surface hover:bg-white/10 hover:border-primary/50 cursor-pointer border-foreground/10"
+                                      }`}
+                                    title={
+                                      !isAuctionLive
+                                        ? "Start live auction first"
+                                        : isOnFloor
+                                          ? "Currently on Floor"
+                                          : isSold
+                                            ? `Sold to ${p.winningTeamName || "Team"} for ${p.finalBid} pts`
+                                            : isUnsold
+                                              ? "Click to re-call unsold athlete to floor"
+                                              : "Click to call athlete to floor"
+                                    }
+                                  >
+                                    {/* Athlete Avatar & Info */}
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                      <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0 overflow-hidden">
+                                        {p.avatarUrl ? (
+                                          <img src={p.avatarUrl} alt={p.playerName} className="w-full h-full object-cover" />
+                                        ) : (
+                                          p.playerName.substring(0, 2).toUpperCase()
+                                        )}
+                                      </div>
 
-                                {isUnsold && (
-                                  <span className="text-[9px] font-black text-amber-400 hidden group-hover:inline-block">
-                                    Re-Call 🔨
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
+                                      <div className="min-w-0 flex-1">
+                                        <h5 className="font-black text-xs text-foreground truncate group-hover:text-primary transition-colors">
+                                          {p.playerName}
+                                        </h5>
+                                        <span className="text-[10px] text-foreground/50 block">
+                                          Base: <strong className="text-primary font-mono">{effectiveBase} pts</strong>
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Right Status Indicator */}
+                                    <div className="shrink-0">
+                                      {isOnFloor ? (
+                                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black uppercase flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                                          Floor
+                                        </span>
+                                      ) : isSold ? (
+                                        <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase block truncate max-w-[85px]">
+                                          Sold
+                                        </span>
+                                      ) : isUnsold ? (
+                                        <span className="px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-black uppercase block">
+                                          Unsold
+                                        </span>
+                                      ) : (
+                                        <span className="px-1.5 py-0.5 rounded-md bg-surface text-foreground/40 border border-foreground/10 text-[9px] font-black uppercase block group-hover:border-primary/40 group-hover:text-primary transition-colors">
+                                          Pool
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
