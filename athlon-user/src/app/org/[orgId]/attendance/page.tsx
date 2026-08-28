@@ -136,10 +136,12 @@ export default function AttendancePage() {
       });
 
       // Reload summary in background
-      ClubAttendanceService.getSummary(orgUuid, selectedDate).then(res => {
-        const sumData = (res as any)?.data || res;
-        setSummary(sumData);
-      });
+      ClubAttendanceService.getSummary(orgUuid, selectedDate)
+        .then(res => {
+          const sumData = (res as any)?.data || res;
+          setSummary(sumData);
+        })
+        .catch(() => {});
     } catch (err: any) {
       console.error('Failed to update attendance:', err);
       setToastSuccess('Failed to save status update.');

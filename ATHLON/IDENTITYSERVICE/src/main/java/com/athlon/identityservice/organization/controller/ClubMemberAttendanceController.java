@@ -34,8 +34,8 @@ public class ClubMemberAttendanceController {
 
     @GetMapping("/org/{organizationUuid}")
     public ResponseEntity<ApiResponse<List<ClubMemberAttendanceResponse>>> getDailyAttendance(
-            @PathVariable UUID organizationUuid,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @PathVariable("organizationUuid") UUID organizationUuid,
+            @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         
         LocalDate queryDate = date != null ? date : LocalDate.now();
         List<ClubMemberAttendanceResponse> list = attendanceService.getDailyAttendance(organizationUuid, queryDate);
@@ -62,8 +62,8 @@ public class ClubMemberAttendanceController {
 
     @GetMapping("/summary/org/{organizationUuid}")
     public ResponseEntity<ApiResponse<AttendanceSummaryResponse>> getAttendanceSummary(
-            @PathVariable UUID organizationUuid,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @PathVariable("organizationUuid") UUID organizationUuid,
+            @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         
         LocalDate queryDate = date != null ? date : LocalDate.now();
         AttendanceSummaryResponse summary = attendanceService.getAttendanceSummary(organizationUuid, queryDate);
