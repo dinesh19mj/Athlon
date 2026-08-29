@@ -704,219 +704,242 @@ export default function FinancesPage() {
       {/* ======================================================== */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-5 sm:p-7 space-y-5 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
+            
             {/* Sheet Handle for mobile */}
-            <div className="w-12 h-1.5 bg-foreground/20 rounded-full mx-auto -mt-1 mb-2 block sm:hidden" />
-
-            {/* Modal Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg sm:text-xl font-black text-foreground">
-                  {modalType === 'EXPENSE' ? 'Record Club Expense' : 'Collect Member Fee'}
-                </h3>
-                <p className="text-xs text-foreground/50 font-medium mt-0.5">
-                  {modalType === 'EXPENSE'
-                    ? 'Log court rents, shuttle tubes, or maintenance bills.'
-                    : 'Log monthly fees and tournament collections.'}
-                </p>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="pt-3 pb-1 block sm:hidden">
+              <div className="w-12 h-1.5 bg-foreground/20 rounded-full mx-auto" />
             </div>
 
-            {/* Type Switcher */}
-            <div className="grid grid-cols-2 gap-1.5 bg-background p-1.5 rounded-2xl border" style={{ borderColor: 'var(--athlon-border)' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setModalType('EXPENSE');
-                  setFormCategory('Court Rent');
-                }}
-                className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                  modalType === 'EXPENSE'
-                    ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25'
-                    : 'text-foreground/50 hover:text-rose-400'
-                }`}
-              >
-                <ArrowDownRight className="w-4 h-4" /> Expense
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setModalType('INCOME');
-                  setFormCategory('Member Fee');
-                }}
-                className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                  modalType === 'INCOME'
-                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25'
-                    : 'text-foreground/50 hover:text-emerald-400'
-                }`}
-              >
-                <ArrowUpRight className="w-4 h-4" /> Fee / Income
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleCreateTransaction} className="space-y-4">
-              {/* Category Grid */}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1.5">
-                  Select Category
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(modalType === 'EXPENSE' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setFormCategory(cat.id)}
-                      className={`p-2.5 rounded-xl text-xs font-bold transition-all text-center border flex flex-col items-center gap-1 ${
-                        formCategory === cat.id
-                          ? 'bg-primary/15 text-primary border-primary/40 shadow-sm scale-[1.02]'
-                          : 'bg-background/60 border-foreground/5 text-foreground/70 hover:bg-foreground/5'
-                      }`}
-                    >
-                      <span className="text-lg">{cat.icon}</span>
-                      <span className="truncate w-full text-[10px] font-black">{cat.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Amount Keypad Input & Quick Presets */}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
-                  Amount (₹ INR) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-black text-foreground/40">₹</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    required
-                    placeholder="0.00"
-                    value={formAmount}
-                    onChange={(e) => setFormAmount(e.target.value)}
-                    className="w-full bg-background border border-foreground/10 rounded-2xl pl-10 pr-4 py-3 text-2xl font-black text-foreground focus:outline-none focus:border-primary shadow-inner"
-                  />
-                </div>
-
-                {/* Preset Chips */}
-                <div className="flex items-center gap-1.5 mt-2 overflow-x-auto hide-scrollbar">
-                  <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-wider mr-1">Quick:</span>
-                  {QUICK_AMOUNT_PRESETS.map((amt) => (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => handlePresetAmount(amt)}
-                      className="px-2.5 py-1 rounded-lg bg-foreground/5 hover:bg-foreground/10 border border-foreground/10 text-[11px] font-mono font-black text-foreground/70 whitespace-nowrap transition-colors"
-                    >
-                      +₹{amt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
-                  Title / Description
-                </label>
-                <input
-                  type="text"
-                  placeholder={modalType === 'EXPENSE' ? 'e.g. 10 Boxes of Yonex AS-30 Shuttles' : 'e.g. August Monthly Court Fee'}
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-background border border-foreground/10 rounded-xl px-3.5 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner"
-                />
-              </div>
-
-              {/* Member Picker for Fee collections */}
-              {modalType === 'INCOME' && members.length > 0 && (
+            {/* Fixed Modal Header */}
+            <div className="px-5 sm:px-7 pt-2 sm:pt-6 pb-3 border-b border-foreground/5 space-y-3 shrink-0">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
-                    Athlete / Member
-                  </label>
-                  <select
-                    value={formMemberUuid}
-                    onChange={(e) => setFormMemberUuid(e.target.value)}
-                    className="w-full bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
-                  >
-                    <option value="">General Collection / Non-Member</option>
-                    {members.map((m) => (
-                      <option key={m.organizationMemberUuid} value={m.organizationMemberUuid}>
-                        {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <h3 className="text-lg sm:text-xl font-black text-foreground">
+                    {modalType === 'EXPENSE' ? 'Record Club Expense' : 'Collect Member Fee'}
+                  </h3>
+                  <p className="text-xs text-foreground/50 font-medium mt-0.5">
+                    {modalType === 'EXPENSE'
+                      ? 'Log court rents, shuttle tubes, or maintenance bills.'
+                      : 'Log monthly fees and tournament collections.'}
+                  </p>
                 </div>
-              )}
-
-              {/* Vendor / Paid To */}
-              {modalType === 'EXPENSE' && (
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
-                    Paid To (Vendor / Arena)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. City Badminton Arena, Pro Sports Shop"
-                    value={formPaidToOrBy}
-                    onChange={(e) => setFormPaidToOrBy(e.target.value)}
-                    className="w-full bg-background border border-foreground/10 rounded-xl px-3.5 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner"
-                  />
-                </div>
-              )}
-
-              {/* Date & Payment Method */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formDate}
-                    onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
-                    Payment Method
-                  </label>
-                  <select
-                    value={formPaymentMethod}
-                    onChange={(e) => setFormPaymentMethod(e.target.value)}
-                    className="w-full bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
-                  >
-                    {PAYMENT_METHODS.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.icon} {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-foreground/10 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors"
+                  className="p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Type Switcher */}
+              <div className="grid grid-cols-2 gap-1.5 bg-background p-1.5 rounded-2xl border" style={{ borderColor: 'var(--athlon-border)' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalType('EXPENSE');
+                    setFormCategory('Court Rent');
+                  }}
+                  className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                    modalType === 'EXPENSE'
+                      ? 'bg-rose-500 text-white shadow-md shadow-rose-500/25'
+                      : 'text-foreground/50 hover:text-rose-400'
+                  }`}
+                >
+                  <ArrowDownRight className="w-4 h-4" /> Expense
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalType('INCOME');
+                    setFormCategory('Member Fee');
+                  }}
+                  className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                    modalType === 'INCOME'
+                      ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25'
+                      : 'text-foreground/50 hover:text-emerald-400'
+                  }`}
+                >
+                  <ArrowUpRight className="w-4 h-4" /> Fee / Income
+                </button>
+              </div>
+            </div>
+
+            {/* Form with Scrollable Content Body & Sticky Action Footer */}
+            <form onSubmit={handleCreateTransaction} className="flex-1 flex flex-col min-h-0">
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto px-5 sm:px-7 py-4 space-y-4">
+                {/* Category Grid */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1.5">
+                    Select Category
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(modalType === 'EXPENSE' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setFormCategory(cat.id)}
+                        className={`p-2.5 rounded-xl text-xs font-bold transition-all text-center border flex flex-col items-center gap-1 ${
+                          formCategory === cat.id
+                            ? 'bg-primary/15 text-primary border-primary/40 shadow-sm scale-[1.02]'
+                            : 'bg-background/60 border-foreground/5 text-foreground/70 hover:bg-foreground/5'
+                        }`}
+                      >
+                        <span className="text-lg">{cat.icon}</span>
+                        <span className="truncate w-full text-[10px] font-black">{cat.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Amount Keypad Input & Quick Presets */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
+                    Amount (₹ INR) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-black text-foreground/40">₹</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="1"
+                      required
+                      placeholder="0.00"
+                      value={formAmount}
+                      onChange={(e) => setFormAmount(e.target.value)}
+                      className="w-full bg-background border border-foreground/10 rounded-2xl pl-10 pr-4 py-3 text-2xl font-black text-foreground focus:outline-none focus:border-primary shadow-inner"
+                    />
+                  </div>
+
+                  {/* Preset Chips */}
+                  <div className="flex items-center gap-1.5 mt-2 overflow-x-auto hide-scrollbar">
+                    <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-wider mr-1">Quick:</span>
+                    {QUICK_AMOUNT_PRESETS.map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => handlePresetAmount(amt)}
+                        className="px-2.5 py-1 rounded-lg bg-foreground/5 hover:bg-foreground/10 border border-foreground/10 text-[11px] font-mono font-black text-foreground/70 whitespace-nowrap transition-colors"
+                      >
+                        +₹{amt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
+                    Title / Description
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={modalType === 'EXPENSE' ? 'e.g. 10 Boxes of Yonex AS-30 Shuttles' : 'e.g. August Monthly Court Fee'}
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    className="w-full bg-background border border-foreground/10 rounded-xl px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner"
+                  />
+                </div>
+
+                {/* Member Picker for Fee collections */}
+                {modalType === 'INCOME' && members.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
+                      Athlete / Member
+                    </label>
+                    <select
+                      value={formMemberUuid}
+                      onChange={(e) => setFormMemberUuid(e.target.value)}
+                      className="w-full bg-background border border-foreground/10 rounded-xl px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
+                    >
+                      <option value="">General Collection / Non-Member</option>
+                      {members.map((m) => (
+                        <option key={m.organizationMemberUuid} value={m.organizationMemberUuid}>
+                          {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Vendor / Paid To */}
+                {modalType === 'EXPENSE' && (
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
+                      Paid To (Vendor / Arena)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. City Badminton Arena, Pro Sports Shop"
+                      value={formPaidToOrBy}
+                      onChange={(e) => setFormPaidToOrBy(e.target.value)}
+                      className="w-full bg-background border border-foreground/10 rounded-xl px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner"
+                    />
+                  </div>
+                )}
+
+                {/* Date & Payment Method */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formDate}
+                      onChange={(e) => setFormDate(e.target.value)}
+                      className="w-full bg-background border border-foreground/10 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
+                      Payment Method
+                    </label>
+                    <select
+                      value={formPaymentMethod}
+                      onChange={(e) => setFormPaymentMethod(e.target.value)}
+                      className="w-full bg-background border border-foreground/10 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
+                    >
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.icon} {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Optional Notes */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
+                    Notes (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Paid via coach GPay, invoice #1029"
+                    value={formNotes}
+                    onChange={(e) => setFormNotes(e.target.value)}
+                    className="w-full bg-background border border-foreground/10 rounded-xl px-3.5 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner"
+                  />
+                </div>
+              </div>
+
+              {/* Fixed Sticky Action Footer (Always Visible) */}
+              <div className="sticky bottom-0 bg-surface/95 backdrop-blur-md border-t border-foreground/10 px-5 sm:px-7 py-3.5 flex items-center justify-between gap-3 shrink-0 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-5 py-3 rounded-2xl border border-foreground/15 text-xs font-black text-foreground hover:bg-foreground/5 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 px-6 rounded-2xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Save Entry
                 </button>
