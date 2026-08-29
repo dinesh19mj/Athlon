@@ -103,6 +103,8 @@ export default function FinancesPage() {
   const [formPaidToOrBy, setFormPaidToOrBy] = useState('');
   const [formMemberUuid, setFormMemberUuid] = useState('');
   const [formNotes, setFormNotes] = useState('');
+  const [isMemberDropdownOpen, setIsMemberDropdownOpen] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
   useEffect(() => {
     if (orgUuid) {
@@ -166,6 +168,8 @@ export default function FinancesPage() {
     setFormPaidToOrBy('');
     setFormMemberUuid('');
     setFormNotes('');
+    setIsMemberDropdownOpen(false);
+    setMemberSearchQuery('');
     setIsModalOpen(true);
   };
 
@@ -838,24 +842,147 @@ export default function FinancesPage() {
                   />
                 </div>
 
-                {/* Member Picker for Fee collections */}
-                {modalType === 'INCOME' && members.length > 0 && (
-                  <div>
+                {/* Member Picker for Fee collections with Photo and Name */}
+                {modalType === 'INCOME' && (
+                  <div className="relative">
                     <label className="block text-[10px] font-black uppercase tracking-wider text-foreground/50 mb-1">
                       Athlete / Member
                     </label>
-                    <select
-                      value={formMemberUuid}
-                      onChange={(e) => setFormMemberUuid(e.target.value)}
-                      className="w-full bg-background border border-foreground/10 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
+
+                    {/* Trigger Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsMemberDropdownOpen(!isMemberDropdownOpen)}
+                      className="w-full bg-background border border-foreground/10 hover:border-primary/40 rounded-xl px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none transition-all flex items-center justify-between gap-2 shadow-inner"
                     >
-                      <option value="">General Collection / Non-Member</option>
-                      {members.map((m) => (
-                        <option key={m.organizationMemberUuid} value={m.organizationMemberUuid}>
-                          {m.fullName} {m.phone ? `(+91 ${m.phone})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {(() => {
+                          const selMember = members.find((m) => m.organizationMemberUuid === formMemberUuid);
+                          if (selMember) {
+                            return (
+                              <>
+                                <div className="w-7 h-7 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center text-xs font-black overflow-hidden shrink-0">
+                                  {selMember.photo ? (
+                                    <img
+                                      src={UserService.getPhotoUrl(selMember.photo)}
+                                      alt={selMember.fullName}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = 'none';
+                                      }}
+                                    />
+                                  ) : (
+                                    <span>{selMember.fullName?.charAt(0) || '👤'}</span>
+                                  )}
+                                </div>
+                                <div className="text-left truncate">
+                                  <div className="font-extrabold text-foreground truncate">{selMember.fullName}</div>
+                                  {selMember.phone && <div className="text-[10px] text-foreground/40 font-mono">+91 {selMember.phone}</div>}
+                                </div>
+                              </>
+                            );
+                          }
+                          return (
+                            <>
+                              <div className="w-7 h-7 rounded-full bg-foreground/5 border border-foreground/10 flex items-center justify-center text-xs text-foreground/40 shrink-0">
+                                👤
+                              </div>
+                              <div className="text-left text-foreground/60 font-medium truncate">
+                                General Collection / Non-Member
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-foreground/40 shrink-0 transition-transform ${isMemberDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isMemberDropdownOpen && (
+                      <div className="mt-1.5 w-full bg-surface border border-foreground/10 rounded-2xl shadow-2xl p-2 space-y-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
+                        {/* Search input if > 4 members */}
+                        {members.length > 4 && (
+                          <div className="relative mb-1">
+                            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+                            <input
+                              type="text"
+                              placeholder="Search athlete by name or phone..."
+                              value={memberSearchQuery}
+                              onChange={(e) => setMemberSearchQuery(e.target.value)}
+                              className="w-full bg-background border border-foreground/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                        )}
+
+                        <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          {/* General Collection Option */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormMemberUuid('');
+                              setIsMemberDropdownOpen(false);
+                            }}
+                            className={`w-full p-2 rounded-xl text-left flex items-center justify-between gap-2 text-xs transition-colors ${
+                              !formMemberUuid ? 'bg-primary/15 text-primary font-bold' : 'hover:bg-foreground/5 text-foreground/70'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-6 h-6 rounded-full bg-foreground/5 flex items-center justify-center text-xs text-foreground/40 shrink-0">
+                                👤
+                              </div>
+                              <span className="truncate">General Collection / Non-Member</span>
+                            </div>
+                            {!formMemberUuid && <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />}
+                          </button>
+
+                          {/* Members List */}
+                          {members
+                            .filter(
+                              (m) =>
+                                m.fullName?.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+                                m.phone?.includes(memberSearchQuery)
+                            )
+                            .map((m) => {
+                              const isSelected = formMemberUuid === m.organizationMemberUuid;
+                              return (
+                                <button
+                                  key={m.organizationMemberUuid}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormMemberUuid(m.organizationMemberUuid);
+                                    setIsMemberDropdownOpen(false);
+                                  }}
+                                  className={`w-full p-2 rounded-xl text-left flex items-center justify-between gap-2 text-xs transition-colors ${
+                                    isSelected ? 'bg-primary/15 text-primary font-bold' : 'hover:bg-foreground/5 text-foreground'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary border border-primary/20 flex items-center justify-center text-xs font-black overflow-hidden shrink-0">
+                                      {m.photo ? (
+                                        <img
+                                          src={UserService.getPhotoUrl(m.photo)}
+                                          alt={m.fullName}
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            (e.target as HTMLElement).style.display = 'none';
+                                          }}
+                                        />
+                                      ) : (
+                                        <span>{m.fullName?.charAt(0) || '👤'}</span>
+                                      )}
+                                    </div>
+                                    <div className="truncate">
+                                      <div className="font-extrabold text-foreground truncate">{m.fullName}</div>
+                                      {m.phone && <div className="text-[10px] text-foreground/40 font-mono">+91 {m.phone}</div>}
+                                    </div>
+                                  </div>
+                                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
