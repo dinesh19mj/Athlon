@@ -241,29 +241,6 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Global Summary Stats Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-          <div className="p-4 rounded-2xl bg-surface border border-foreground/5 space-y-1 shadow-sm">
-            <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">Total Athletes</div>
-            <div className="text-2xl font-black text-foreground">{members.length}</div>
-          </div>
-          <div className="p-4 rounded-2xl bg-surface border border-foreground/5 space-y-1 shadow-sm">
-            <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">Matches Recorded</div>
-            <div className="text-2xl font-black text-primary">{matches.length}</div>
-          </div>
-          <div className="p-4 rounded-2xl bg-surface border border-foreground/5 space-y-1 shadow-sm">
-            <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">Top Scorer</div>
-            <div className="text-lg font-black text-foreground truncate">
-              {sortedLeaderboard[0]?.fullName || 'None yet'}
-            </div>
-          </div>
-          <div className="p-4 rounded-2xl bg-surface border border-foreground/5 space-y-1 shadow-sm">
-            <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">High Score</div>
-            <div className="text-2xl font-black text-emerald-400">
-              {sortedLeaderboard[0]?.points || 0} <span className="text-xs font-bold text-foreground/50">PTS</span>
-            </div>
-          </div>
-        </div>
 
         {/* Loading Spinner */}
         {loading ? (
