@@ -703,8 +703,8 @@ export default function FinancesPage() {
       {/* 6. MOBILE BOTTOM-SHEET / MODAL: RECORD TRANSACTION       */}
       {/* ======================================================== */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col max-h-[88vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
             
             {/* Sheet Handle for mobile */}
             <div className="pt-3 pb-1 block sm:hidden">
@@ -852,7 +852,7 @@ export default function FinancesPage() {
                     <select
                       value={formMemberUuid}
                       onChange={(e) => setFormMemberUuid(e.target.value)}
-                      className="w-full bg-background border border-foreground/10 rounded-xl px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
+                      className="w-full bg-background border border-foreground/10 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary shadow-inner cursor-pointer"
                     >
                       <option value="">General Collection / Non-Member</option>
                       {members.map((m) => (
@@ -927,8 +927,8 @@ export default function FinancesPage() {
                 </div>
               </div>
 
-              {/* Fixed Sticky Action Footer (Always Visible) */}
-              <div className="sticky bottom-0 bg-surface/95 backdrop-blur-md border-t border-foreground/10 px-5 sm:px-7 py-3.5 flex items-center justify-between gap-3 shrink-0 shadow-lg">
+              {/* Fixed Sticky Action Footer (Always Visible above bottom bar) */}
+              <div className="sticky bottom-0 bg-surface/95 backdrop-blur-md border-t border-foreground/10 px-5 sm:px-7 pt-3.5 pb-6 sm:pb-3.5 flex items-center justify-between gap-3 shrink-0 shadow-lg">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -953,8 +953,8 @@ export default function FinancesPage() {
       {/* 7. TRANSACTION DETAIL SHEET (Tap to inspect details)     */}
       {/* ======================================================== */}
       {selectedTxDetail && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 space-y-5 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 pb-8 sm:pb-6 space-y-5 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
             <div className="w-12 h-1.5 bg-foreground/20 rounded-full mx-auto -mt-2 mb-2 block sm:hidden" />
 
             <div className="flex items-center justify-between">
