@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -38,6 +38,10 @@ import HomeRoleHeader from '@/components/home/HomeRoleHeader';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 import { Athlon3DIcon, Athlon3DIconProps } from '@/components/common/Athlon3DIcon';
+import { ClubFinanceService, FinanceSummary } from '@/lib/api/clubFinance';
+import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
+import { ClubInventoryService, InventorySummary } from '@/lib/api/clubInventory';
+import { TournamentService, Tournament } from '@/lib/api/tournaments';
 
 function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
@@ -70,9 +74,54 @@ export default function OrganizationDashboard() {
   const backgroundVideo = getThemeVideo(themeKey);
   const org = getActiveOrganization() || organizations.find((o) => o.id === orgId);
 
+  const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null);
+  const [members, setMembers] = useState<OrganizationMemberResponse[]>([]);
+  const [inventorySummary, setInventorySummary] = useState<InventorySummary | null>(null);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
+
   const toolsTrackRef = useRef<HTMLDivElement>(null);
   const eventsTrackRef = useRef<HTMLDivElement>(null);
   const liveTrackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (org?.id) {
+      setLoadingMetrics(true);
+      Promise.allSettled([
+        ClubFinanceService.getSummary(org.id),
+        OrganizationService.getMembers(org.id),
+        ClubInventoryService.getSummary(org.id),
+        TournamentService.getByOrg(org.id),
+      ]).then(([finRes, memRes, invRes, tournRes]) => {
+        if (finRes.status === 'fulfilled') {
+          const sum = (finRes.value as any)?.data || finRes.value;
+          setFinanceSummary(sum);
+        }
+        if (memRes.status === 'fulfilled') {
+          const memList = Array.isArray(memRes.value) ? memRes.value : ((memRes.value as any)?.data || []);
+          setMembers(memList);
+        }
+        if (invRes.status === 'fulfilled') {
+          const invSum = (invRes.value as any)?.data || invRes.value;
+          setInventorySummary(invSum);
+        }
+        if (tournRes.status === 'fulfilled') {
+          const tList = Array.isArray(tournRes.value) ? tournRes.value : ((tournRes.value as any)?.data || []);
+          setTournaments(tList);
+        }
+        setLoadingMetrics(false);
+      });
+    }
+  }, [org?.id]);
+
+  const newMembersThisWeek = useMemo(() => {
+    return members.filter((m) => {
+      if (!m.joinedAt) return false;
+      const joined = new Date(m.joinedAt);
+      const diffDays = (Date.now() - joined.getTime()) / (1000 * 3600 * 24);
+      return diffDays <= 7;
+    }).length;
+  }, [members]);
 
   const scrollTrack = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
     if (ref.current) {
@@ -435,27 +484,43 @@ export default function OrganizationDashboard() {
 
             {/* 2 Metrics Grid */}
             <div className="grid grid-cols-2 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
-              <div className="flex flex-col items-center justify-center py-2.5 px-2 gap-1">
+              <Link
+                href={`/org/${org.id}/finances`}
+                className="flex flex-col items-center justify-center py-2.5 px-2 gap-1 hover:bg-white/5 transition-colors"
+              >
                 <div className="flex items-center gap-1 text-foreground/40 text-[8px] font-extrabold tracking-wider uppercase">
                   <CreditCard className="w-3 h-3 text-foreground/50" />
                   <span>MONTHLY REVENUE</span>
                 </div>
                 <div className="text-foreground font-bold text-xs leading-tight flex items-baseline gap-1">
-                  <span>₹42,500</span>
-                  <span className="text-[8px] text-emerald-400 font-semibold">+12%</span>
+                  <span>₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}</span>
+                  {financeSummary && Number(financeSummary.netBalance) !== 0 ? (
+                    <span className={`text-[8px] font-semibold ${
+                      Number(financeSummary.netBalance) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}>
+                      {Number(financeSummary.netBalance) >= 0 ? `+₹${Number(financeSummary.netBalance).toLocaleString('en-IN')}` : `-₹${Math.abs(Number(financeSummary.netBalance)).toLocaleString('en-IN')}`}
+                    </span>
+                  ) : (
+                    <span className="text-[8px] text-emerald-400 font-semibold">+0%</span>
+                  )}
                 </div>
-              </div>
+              </Link>
 
-              <div className="flex flex-col items-center justify-center py-2.5 px-2 gap-1">
+              <Link
+                href={`/org/${org.id}/members`}
+                className="flex flex-col items-center justify-center py-2.5 px-2 gap-1 hover:bg-white/5 transition-colors"
+              >
                 <div className="flex items-center gap-1 text-foreground/40 text-[8px] font-extrabold tracking-wider uppercase">
                   <Users className="w-3 h-3 text-foreground/50" />
                   <span>ACTIVE MEMBERS</span>
                 </div>
                 <div className="text-foreground font-bold text-xs leading-tight flex items-baseline gap-1">
-                  <span>148</span>
-                  <span className="text-[8px] text-blue-400 font-semibold">+5 new</span>
+                  <span>{members.length}</span>
+                  <span className="text-[8px] text-blue-400 font-semibold">
+                    {newMembersThisWeek > 0 ? `+${newMembersThisWeek} new` : 'Roster'}
+                  </span>
                 </div>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -553,65 +618,93 @@ export default function OrganizationDashboard() {
 
             {/* 4 Workspace Telemetry Highlight Cards */}
             <div className="grid grid-cols-4 gap-4">
-              <div
-                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm"
+              <Link
+                href={`/org/${org.id}/finances`}
+                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-primary/40 transition-all group block"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
                 <div className="flex items-center justify-between text-foreground/50">
                   <span className="text-[10px] font-black uppercase tracking-wider">Monthly Revenue</span>
-                  <CreditCard className="w-4 h-4 text-primary" />
+                  <CreditCard className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-foreground font-mono">₹42,500</span>
-                  <span className="text-xs font-bold text-emerald-400 font-mono">+12.4%</span>
+                  <span className="text-2xl font-black text-foreground font-mono">
+                    ₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
+                  </span>
+                  {financeSummary && (
+                    <span className={`text-xs font-bold font-mono ${
+                      Number(financeSummary.netBalance || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}>
+                      {Number(financeSummary.netBalance || 0) >= 0
+                        ? `+₹${Number(financeSummary.netBalance || 0).toLocaleString('en-IN')} Net`
+                        : `-₹${Math.abs(Number(financeSummary.netBalance || 0)).toLocaleString('en-IN')} Net`}
+                    </span>
+                  )}
                 </div>
-                <span className="text-[11px] text-foreground/45 block">Verified payouts this month</span>
-              </div>
+                <span className="text-[11px] text-foreground/45 block">
+                  {financeSummary ? `${financeSummary.transactionCount} transactions recorded` : 'Verified payouts & fee collections'}
+                </span>
+              </Link>
 
-              <div
-                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm"
+              <Link
+                href={`/org/${org.id}/members`}
+                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all group block"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
                 <div className="flex items-center justify-between text-foreground/50">
                   <span className="text-[10px] font-black uppercase tracking-wider">Active Members</span>
-                  <Users className="w-4 h-4 text-blue-400" />
+                  <Users className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-foreground font-mono">148</span>
-                  <span className="text-xs font-bold text-blue-400 font-mono">+5 this week</span>
+                  <span className="text-2xl font-black text-foreground font-mono">{members.length}</span>
+                  <span className="text-xs font-bold text-blue-400 font-mono">
+                    {newMembersThisWeek > 0 ? `+${newMembersThisWeek} this week` : 'Active Roster'}
+                  </span>
                 </div>
                 <span className="text-[11px] text-foreground/45 block">Registered athlete roster</span>
-              </div>
+              </Link>
 
-              <div
-                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm"
+              <Link
+                href={`/org/${org.id}/tournaments`}
+                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-yellow-500/40 transition-all group block"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
                 <div className="flex items-center justify-between text-foreground/50">
                   <span className="text-[10px] font-black uppercase tracking-wider">Tournaments Active</span>
-                  <Trophy className="w-4 h-4 text-yellow-400" />
+                  <Trophy className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-yellow-400 font-mono">3 Events</span>
-                  <span className="text-xs font-bold text-yellow-500 font-mono">1 In Play</span>
+                  <span className="text-2xl font-black text-yellow-400 font-mono">{tournaments.length} Events</span>
+                  <span className="text-xs font-bold text-yellow-500 font-mono">
+                    {tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length > 0
+                      ? `${tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length} Live`
+                      : 'Scheduled'}
+                  </span>
                 </div>
                 <span className="text-[11px] text-foreground/45 block">Championships &amp; Opens</span>
-              </div>
+              </Link>
 
-              <div
-                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm"
+              <Link
+                href={`/org/${org.id}/inventory`}
+                className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-emerald-500/40 transition-all group block"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
                 <div className="flex items-center justify-between text-foreground/50">
-                  <span className="text-[10px] font-black uppercase tracking-wider">Live Court Radar</span>
-                  <Radio className="w-4 h-4 text-red-500 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">Club Supplies &amp; Gear</span>
+                  <Package className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-red-400 font-mono">2 Courts Live</span>
-                  <span className="text-xs font-bold text-red-500 animate-pulse font-mono">HD Stream</span>
+                  <span className="text-2xl font-black text-primary font-mono">
+                    {inventorySummary?.totalQuantity || 0} Units
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400 font-mono">
+                    {inventorySummary?.inStockCount || 0} In Stock
+                  </span>
                 </div>
-                <span className="text-[11px] text-foreground/45 block">Digital scoring console active</span>
-              </div>
+                <span className="text-[11px] text-foreground/45 block">
+                  {inventorySummary?.lowStockCount ? `${inventorySummary.lowStockCount} low stock alerts` : 'Shuttles & equipment ready'}
+                </span>
+              </Link>
             </div>
           </div>
         </section>
