@@ -227,14 +227,6 @@ export default function OrganizationDashboard() {
         bg: 'bg-red-500/10',
       });
       actions.push({
-        id: `/org/${org.id}/match-setup`,
-        label: 'Setup',
-        description: 'Officiating console',
-        icon: SlidersHorizontal,
-        color: 'text-amber-500',
-        bg: 'bg-amber-500/10',
-      });
-      actions.push({
         id: `/org/${org.id}/attendance`,
         label: 'Attendance',
         description: 'Court bookings & check-ins',
