@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -45,8 +47,24 @@ public class CreateFinanceRequest {
         return organizationUuid;
     }
 
-    public void setOrganizationUuid(UUID organizationUuid) {
-        this.organizationUuid = organizationUuid;
+    @JsonSetter("organizationUuid")
+    public void setOrganizationUuid(Object orgUuidObj) {
+        if (orgUuidObj == null) {
+            this.organizationUuid = null;
+        } else if (orgUuidObj instanceof UUID) {
+            this.organizationUuid = (UUID) orgUuidObj;
+        } else {
+            String str = orgUuidObj.toString().trim();
+            if (str.isEmpty() || "null".equalsIgnoreCase(str) || "undefined".equalsIgnoreCase(str)) {
+                this.organizationUuid = null;
+            } else {
+                try {
+                    this.organizationUuid = UUID.fromString(str);
+                } catch (IllegalArgumentException e) {
+                    this.organizationUuid = null;
+                }
+            }
+        }
     }
 
     public String getTransactionType() {
@@ -109,8 +127,24 @@ public class CreateFinanceRequest {
         return memberUuid;
     }
 
-    public void setMemberUuid(UUID memberUuid) {
-        this.memberUuid = memberUuid;
+    @JsonSetter("memberUuid")
+    public void setMemberUuid(Object memberUuidObj) {
+        if (memberUuidObj == null) {
+            this.memberUuid = null;
+        } else if (memberUuidObj instanceof UUID) {
+            this.memberUuid = (UUID) memberUuidObj;
+        } else {
+            String str = memberUuidObj.toString().trim();
+            if (str.isEmpty() || "null".equalsIgnoreCase(str) || "undefined".equalsIgnoreCase(str)) {
+                this.memberUuid = null;
+            } else {
+                try {
+                    this.memberUuid = UUID.fromString(str);
+                } catch (IllegalArgumentException e) {
+                    this.memberUuid = null;
+                }
+            }
+        }
     }
 
     public String getNotes() {

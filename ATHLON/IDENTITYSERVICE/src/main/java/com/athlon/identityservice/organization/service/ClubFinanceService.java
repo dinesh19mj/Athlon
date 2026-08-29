@@ -208,13 +208,19 @@ public class ClubFinanceService {
 
         // Populate member name if linked to a member
         if (finance.getMemberUuid() != null) {
-            organizationMemberRepository.findByOrganizationMemberUuid(finance.getMemberUuid())
-                    .ifPresent(m -> {
-                        userProfileRepository.findByUserId(m.getUserId()).ifPresent(p -> {
-                            String fullName = ((p.getFirstName() != null ? p.getFirstName() : "") + " " + (p.getLastName() != null ? p.getLastName() : "")).trim();
-                            resp.setMemberName(fullName.isEmpty() ? "Athlete" : fullName);
+            try {
+                organizationMemberRepository.findByOrganizationMemberUuid(finance.getMemberUuid())
+                        .ifPresent(m -> {
+                            if (m.getUserId() != null) {
+                                userProfileRepository.findByUserId(m.getUserId()).ifPresent(p -> {
+                                    String fullName = ((p.getFirstName() != null ? p.getFirstName() : "") + " " + (p.getLastName() != null ? p.getLastName() : "")).trim();
+                                    resp.setMemberName(fullName.isEmpty() ? "Athlete" : fullName);
+                                });
+                            }
                         });
-                    });
+            } catch (Exception ignored) {
+                // Safeguard against missing profile lookups
+            }
         }
 
         return resp;

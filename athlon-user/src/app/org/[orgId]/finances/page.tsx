@@ -184,17 +184,21 @@ export default function FinancesPage() {
 
     try {
       setSubmitting(true);
+      const cleanMemberUuid = formMemberUuid && formMemberUuid.trim() !== '' ? formMemberUuid.trim() : undefined;
+      const cleanPaidToOrBy = formPaidToOrBy && formPaidToOrBy.trim() !== '' ? formPaidToOrBy.trim() : undefined;
+      const cleanNotes = formNotes && formNotes.trim() !== '' ? formNotes.trim() : undefined;
+
       const payload: CreateFinancePayload = {
         organizationUuid: orgUuid,
         transactionType: modalType,
         category: formCategory,
-        title: formTitle || formCategory,
+        title: formTitle && formTitle.trim() !== '' ? formTitle.trim() : formCategory,
         amount: parseFloat(formAmount),
         transactionDate: formDate || getLocalDateString(),
-        paymentMethod: formPaymentMethod,
-        paidToOrBy: formPaidToOrBy,
-        memberUuid: formMemberUuid || undefined,
-        notes: formNotes
+        paymentMethod: formPaymentMethod || 'UPI',
+        paidToOrBy: cleanPaidToOrBy,
+        memberUuid: cleanMemberUuid,
+        notes: cleanNotes
       };
 
       await ClubFinanceService.createFinance(payload);
