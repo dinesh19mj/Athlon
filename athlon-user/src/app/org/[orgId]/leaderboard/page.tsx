@@ -287,73 +287,6 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Date Navigation & Calendar Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 bg-surface border border-foreground/5 rounded-2xl p-3.5 sm:p-4 shadow-sm">
-          {/* Left Side: Day Steppers & Date Picker */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleShiftDate(-1)}
-              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-              title="Previous Day"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {/* Calendar Date Input Picker */}
-            <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
-              <CalendarIcon className="w-4 h-4 text-primary shrink-0 mr-2" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => {
-                  setIsAllTime(false);
-                  setSelectedDate(e.target.value);
-                }}
-                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
-              />
-            </div>
-
-            <button
-              onClick={() => handleShiftDate(1)}
-              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-              title="Next Day"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            {!isAllTime && selectedDate && (
-              <span className="hidden md:inline-block text-xs font-bold text-foreground/60 ml-2">
-                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-              </span>
-            )}
-          </div>
-
-          {/* Right Side: Quick Selectors (Today, All Time) */}
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button
-              onClick={handleSetToday}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-                !isAllTime && selectedDate === getLocalDateString()
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-              }`}
-            >
-              Today
-            </button>
-
-            <button
-              onClick={handleSetAllTime}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-                isAllTime
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-              }`}
-            >
-              All Time
-            </button>
-          </div>
-        </div>
-
         {/* Loading Spinner */}
         {loading ? (
           <div className="py-28 flex flex-col items-center justify-center gap-3">
@@ -382,7 +315,7 @@ export default function LeaderboardPage() {
           <>
             {/* TOP 3 PODIUM ARENA */}
             {activePlayers.length > 0 ? (
-              <div className="flex justify-center items-end gap-2 sm:gap-4 md:gap-6 pt-6 pb-2 max-w-4xl mx-auto px-2">
+              <div className="flex justify-center items-end gap-2 sm:gap-4 md:gap-6 pt-4 pb-2 max-w-4xl mx-auto px-2">
                 {/* 2nd Place (Silver) */}
                 {topThree[1] && (
                   <div className="flex flex-col items-center w-1/3 max-w-[220px] group transition-all">
@@ -499,6 +432,72 @@ export default function LeaderboardPage() {
               </div>
             )}
 
+            {/* Date Navigation & Calendar Filter Bar (Placed Below Podium) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 bg-surface border border-foreground/5 rounded-2xl p-3.5 sm:p-4 shadow-sm">
+              {/* Left Side: Day Steppers & Date Picker */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleShiftDate(-1)}
+                  className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
+                  title="Previous Day"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Calendar Date Input Picker */}
+                <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
+                  <CalendarIcon className="w-4 h-4 text-primary shrink-0 mr-2" />
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => {
+                      setIsAllTime(false);
+                      setSelectedDate(e.target.value);
+                    }}
+                    className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+                  />
+                </div>
+
+                <button
+                  onClick={() => handleShiftDate(1)}
+                  className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
+                  title="Next Day"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                {!isAllTime && selectedDate && (
+                  <span className="hidden md:inline-block text-xs font-bold text-foreground/60 ml-2">
+                    {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
+
+              {/* Right Side: Quick Selectors (Today, All Time) */}
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <button
+                  onClick={handleSetToday}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    !isAllTime && selectedDate === getLocalDateString()
+                      ? 'bg-primary text-black shadow-md shadow-primary/20'
+                      : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+                  }`}
+                >
+                  Today
+                </button>
+
+                <button
+                  onClick={handleSetAllTime}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    isAllTime
+                      ? 'bg-primary text-black shadow-md shadow-primary/20'
+                      : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+                  }`}
+                >
+                  All Time
+                </button>
+              </div>
+            </div>
             {/* Filter & Sort Bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm">
               {/* Search Box */}
