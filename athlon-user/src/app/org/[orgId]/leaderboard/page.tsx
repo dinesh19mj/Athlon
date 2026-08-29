@@ -320,6 +320,9 @@ export default function LeaderboardPage() {
                 {topThree[1] && (
                   <div className="flex flex-col items-center w-1/3 max-w-[220px] group transition-all">
                     <div className="relative mb-5 transform transition-transform group-hover:-translate-y-1.5 duration-300">
+                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 animate-bounce" style={{ animationDelay: '0.15s' }}>
+                        <Crown className="w-6 h-6 text-slate-300 drop-shadow-[0_0_10px_rgba(203,213,225,0.6)] fill-slate-300" />
+                      </div>
                       <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden ring-4 ring-slate-300 shadow-[0_0_25px_rgba(203,213,225,0.25)] bg-surface flex items-center justify-center">
                         {topThree[1].photo ? (
                           <img
@@ -393,6 +396,9 @@ export default function LeaderboardPage() {
                 {topThree[2] && (
                   <div className="flex flex-col items-center w-1/3 max-w-[220px] group transition-all">
                     <div className="relative mb-5 transform transition-transform group-hover:-translate-y-1.5 duration-300">
+                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 animate-bounce" style={{ animationDelay: '0.3s' }}>
+                        <Crown className="w-6 h-6 text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.6)] fill-amber-500" />
+                      </div>
                       <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden ring-4 ring-amber-700/80 shadow-[0_0_25px_rgba(180,83,9,0.25)] bg-surface flex items-center justify-center">
                         {topThree[2].photo ? (
                           <img
