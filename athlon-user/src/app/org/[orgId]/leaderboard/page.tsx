@@ -22,7 +22,10 @@ import {
   ArrowUpRight,
   Shield,
   User,
-  Sparkles
+  Sparkles,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const AVAILABLE_SPORTS_ICONS: Record<string, string> = {
@@ -35,6 +38,14 @@ const AVAILABLE_SPORTS_ICONS: Record<string, string> = {
   Basketball: '🏀',
   Volleyball: '🏐',
   Squash: '🎾'
+};
+
+// Helper to get local date formatted as YYYY-MM-DD
+const getLocalDateString = (d: Date = new Date()): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 interface MemberStats {
@@ -66,6 +77,10 @@ export default function LeaderboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'POINTS' | 'WIN_RATE' | 'WINS'>('POINTS');
+  
+  // Date-wise filtering
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString());
+  const [isAllTime, setIsAllTime] = useState<boolean>(false);
 
   useEffect(() => {
     if (orgUuid) {
@@ -115,15 +130,40 @@ export default function LeaderboardPage() {
     loadData();
   };
 
-  // Compute live player standings from matches & members
+  const handleShiftDate = (days: number) => {
+    setIsAllTime(false);
+    const base = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
+    base.setDate(base.getDate() + days);
+    setSelectedDate(getLocalDateString(base));
+  };
+
+  const handleSetToday = () => {
+    setIsAllTime(false);
+    setSelectedDate(getLocalDateString());
+  };
+
+  const handleSetAllTime = () => {
+    setIsAllTime(true);
+  };
+
+  // Filter matches based on selected date or All-Time
+  const filteredMatches = useMemo(() => {
+    if (isAllTime) return matches;
+    return matches.filter((m) => {
+      const matchDateStr = (m.matchDate || '').split('T')[0];
+      return matchDateStr === selectedDate;
+    });
+  }, [matches, selectedDate, isAllTime]);
+
+  // Compute live player standings from filtered matches & members
   const leaderboardData: MemberStats[] = useMemo(() => {
     if (!members.length) return [];
 
     return members.map((member) => {
       const name = member.fullName.trim().toLowerCase();
 
-      // Find all matches where this member played
-      const playerMatches = matches.filter((m) => {
+      // Find all matches where this member played in the selected timeframe
+      const playerMatches = filteredMatches.filter((m) => {
         const teamA = (m.teamAPlayers || '').toLowerCase();
         const teamB = (m.teamBPlayers || '').toLowerCase();
         return teamA.includes(name) || teamB.includes(name);
@@ -169,7 +209,7 @@ export default function LeaderboardPage() {
         form: form.reverse()
       };
     });
-  }, [members, matches]);
+  }, [members, filteredMatches]);
 
   // Sort and filter leaderboard
   const sortedLeaderboard = useMemo(() => {
@@ -178,6 +218,10 @@ export default function LeaderboardPage() {
     );
 
     return filtered.sort((a, b) => {
+      // Prioritize athletes who played in this timeframe
+      if (b.matchesPlayed > 0 && a.matchesPlayed === 0) return 1;
+      if (a.matchesPlayed > 0 && b.matchesPlayed === 0) return -1;
+
       if (sortBy === 'POINTS') {
         if (b.points !== a.points) return b.points - a.points;
         return b.winRate - a.winRate;
@@ -194,15 +238,15 @@ export default function LeaderboardPage() {
     });
   }, [leaderboardData, searchTerm, sortBy]);
 
-  const topThree = sortedLeaderboard.slice(0, 3);
-  const restOfList = sortedLeaderboard.slice(3);
+  const activePlayers = sortedLeaderboard.filter((m) => m.matchesPlayed > 0);
+  const topThree = (activePlayers.length > 0 ? activePlayers : sortedLeaderboard).slice(0, 3);
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-background">
       {/* Background Glow */}
       <div className="absolute top-0 left-0 right-0 h-[45vh] bg-gradient-to-b from-primary/10 via-background to-background pointer-events-none" />
 
-      <div className="relative p-6 md:p-8 max-w-7xl mx-auto space-y-10 animate-in fade-in duration-500 pb-20">
+      <div className="relative p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-2">
           <div>
@@ -219,7 +263,9 @@ export default function LeaderboardPage() {
               </span>
             </div>
             <p className="text-sm md:text-base text-foreground/50 font-medium mt-1">
-              Live standings computed from recorded match results for {org?.name || 'your club'}.
+              {isAllTime
+                ? `All-time standings computed from all match results for ${org?.name || 'your club'}.`
+                : `Daily leaderboard for ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}.`}
             </p>
           </div>
 
@@ -241,12 +287,78 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
+        {/* Date Navigation & Calendar Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 bg-surface border border-foreground/5 rounded-2xl p-3.5 sm:p-4 shadow-sm">
+          {/* Left Side: Day Steppers & Date Picker */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleShiftDate(-1)}
+              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
+              title="Previous Day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Calendar Date Input Picker */}
+            <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
+              <CalendarIcon className="w-4 h-4 text-primary shrink-0 mr-2" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  setIsAllTime(false);
+                  setSelectedDate(e.target.value);
+                }}
+                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+              />
+            </div>
+
+            <button
+              onClick={() => handleShiftDate(1)}
+              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
+              title="Next Day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            {!isAllTime && selectedDate && (
+              <span className="hidden md:inline-block text-xs font-bold text-foreground/60 ml-2">
+                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            )}
+          </div>
+
+          {/* Right Side: Quick Selectors (Today, All Time) */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              onClick={handleSetToday}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                !isAllTime && selectedDate === getLocalDateString()
+                  ? 'bg-primary text-black shadow-md shadow-primary/20'
+                  : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+              }`}
+            >
+              Today
+            </button>
+
+            <button
+              onClick={handleSetAllTime}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                isAllTime
+                  ? 'bg-primary text-black shadow-md shadow-primary/20'
+                  : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+              }`}
+            >
+              All Time
+            </button>
+          </div>
+        </div>
 
         {/* Loading Spinner */}
         {loading ? (
           <div className="py-28 flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-foreground/50">Calculating live standings...</p>
+            <p className="text-sm font-semibold text-foreground/50">Calculating standings for selected date...</p>
           </div>
         ) : members.length === 0 ? (
           <div className="py-20 px-6 text-center space-y-4 bg-surface border border-foreground/5 rounded-3xl">
@@ -269,8 +381,8 @@ export default function LeaderboardPage() {
         ) : (
           <>
             {/* TOP 3 PODIUM ARENA */}
-            {sortedLeaderboard.some((m) => m.matchesPlayed > 0) && (
-              <div className="flex justify-center items-end gap-2 sm:gap-4 md:gap-6 pt-8 pb-4 max-w-4xl mx-auto px-2">
+            {activePlayers.length > 0 ? (
+              <div className="flex justify-center items-end gap-2 sm:gap-4 md:gap-6 pt-6 pb-2 max-w-4xl mx-auto px-2">
                 {/* 2nd Place (Silver) */}
                 {topThree[1] && (
                   <div className="flex flex-col items-center w-1/3 max-w-[220px] group transition-all">
@@ -379,6 +491,12 @@ export default function LeaderboardPage() {
                   </div>
                 )}
               </div>
+            ) : (
+              <div className="p-8 text-center bg-surface/50 border border-foreground/5 rounded-2xl">
+                <div className="text-sm font-bold text-foreground/50">
+                  No matches recorded on this date. Use <strong>All Time</strong> or choose a different date to see standings.
+                </div>
+              </div>
             )}
 
             {/* Filter & Sort Bar */}
@@ -439,9 +557,10 @@ export default function LeaderboardPage() {
                   <tbody className="divide-y divide-foreground/5">
                     {sortedLeaderboard.map((item, index) => {
                       const rank = index + 1;
-                      const isGold = rank === 1;
-                      const isSilver = rank === 2;
-                      const isBronze = rank === 3;
+                      const hasPlayed = item.matchesPlayed > 0;
+                      const isGold = rank === 1 && hasPlayed;
+                      const isSilver = rank === 2 && hasPlayed;
+                      const isBronze = rank === 3 && hasPlayed;
 
                       return (
                         <tr key={item.memberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
@@ -564,9 +683,10 @@ export default function LeaderboardPage() {
               <div className="block md:hidden divide-y divide-foreground/5">
                 {sortedLeaderboard.map((item, index) => {
                   const rank = index + 1;
-                  const isGold = rank === 1;
-                  const isSilver = rank === 2;
-                  const isBronze = rank === 3;
+                  const hasPlayed = item.matchesPlayed > 0;
+                  const isGold = rank === 1 && hasPlayed;
+                  const isSilver = rank === 2 && hasPlayed;
+                  const isBronze = rank === 3 && hasPlayed;
 
                   return (
                     <div key={item.memberUuid} className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors">
