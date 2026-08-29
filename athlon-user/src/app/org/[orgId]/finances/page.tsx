@@ -703,16 +703,11 @@ export default function FinancesPage() {
       {/* 6. MOBILE BOTTOM-SHEET / MODAL: RECORD TRANSACTION       */}
       {/* ======================================================== */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col max-h-[88vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-4 sm:pt-6 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-surface border border-foreground/10 rounded-[28px] sm:rounded-[32px] shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden animate-in zoom-in-95 duration-200">
             
-            {/* Sheet Handle for mobile */}
-            <div className="pt-3 pb-1 block sm:hidden">
-              <div className="w-12 h-1.5 bg-foreground/20 rounded-full mx-auto" />
-            </div>
-
             {/* Fixed Modal Header */}
-            <div className="px-5 sm:px-7 pt-2 sm:pt-6 pb-3 border-b border-foreground/5 space-y-3 shrink-0">
+            <div className="px-5 sm:px-7 pt-4 sm:pt-6 pb-3 border-b border-foreground/5 space-y-3 shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg sm:text-xl font-black text-foreground">
@@ -953,10 +948,8 @@ export default function FinancesPage() {
       {/* 7. TRANSACTION DETAIL SHEET (Tap to inspect details)     */}
       {/* ======================================================== */}
       {selectedTxDetail && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-surface border-t sm:border border-foreground/10 rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 pb-8 sm:pb-6 space-y-5 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
-            <div className="w-12 h-1.5 bg-foreground/20 rounded-full mx-auto -mt-2 mb-2 block sm:hidden" />
-
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-4 sm:pt-6 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-surface border border-foreground/10 rounded-[28px] sm:rounded-[32px] shadow-2xl p-6 pb-6 space-y-5 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-base ${
