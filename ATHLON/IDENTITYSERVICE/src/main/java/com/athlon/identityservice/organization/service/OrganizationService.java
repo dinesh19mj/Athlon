@@ -266,9 +266,50 @@ public class OrganizationService {
 
     @Transactional(readOnly = true)
     public List<OrganizationResponse> getOrganizationsByUserUuid(UUID userUuid) {
-        return organizationRepository.findByUserUuid(userUuid).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        java.util.Map<UUID, OrganizationResponse> result = new java.util.LinkedHashMap<>();
+
+        // 1. Organizations created/owned by the user (Admin role)
+        List<Organization> ownedOrgs = organizationRepository.findByUserUuid(userUuid);
+        for (Organization o : ownedOrgs) {
+            OrganizationResponse resp = mapToResponse(o);
+            resp.setRole("ADMIN");
+            result.put(o.getOrganizationUuid(), resp);
+        }
+
+        // 2. Organizations where user is an active member
+        List<OrganizationMember> memberships = organizationMemberRepository.findByUserUuid(userUuid);
+        for (OrganizationMember m : memberships) {
+            if (m.getIsActive() != null && m.getIsActive() == 1 && m.getOrganizationUuid() != null) {
+                if (!result.containsKey(m.getOrganizationUuid())) {
+                    organizationRepository.findByOrganizationUuid(m.getOrganizationUuid()).ifPresent(org -> {
+                        OrganizationResponse resp = mapToResponse(org);
+                        resp.setRole(m.getRole() != null ? m.getRole().toUpperCase() : "MEMBER");
+                        result.put(org.getOrganizationUuid(), resp);
+                    });
+                }
+            }
+        }
+
+        return new java.util.ArrayList<>(result.values());
+    }
+
+    @Transactional(readOnly = true)
+    public String getUserRoleInOrganization(UUID organizationUuid, UUID userUuid) {
+        Organization org = organizationRepository.findByOrganizationUuid(organizationUuid).orElse(null);
+        if (org == null) return "MEMBER";
+
+        // If creator
+        if (org.getUserUuid() != null && org.getUserUuid().equals(userUuid)) {
+            return "ADMIN";
+        }
+
+        // Check organization_members table
+        Optional<OrganizationMember> memberOpt = organizationMemberRepository.findByOrganizationUuidAndUserUuid(organizationUuid, userUuid);
+        if (memberOpt.isPresent() && memberOpt.get().getIsActive() != null && memberOpt.get().getIsActive() == 1) {
+            return memberOpt.get().getRole() != null ? memberOpt.get().getRole().toUpperCase() : "MEMBER";
+        }
+
+        return "MEMBER";
     }
 
     // -------------------------------------------------------------

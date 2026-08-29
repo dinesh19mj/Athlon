@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService, UserResponse } from '@/lib/api/user';
+import { useOrgRole } from '@/hooks/use-org-role';
 import {
   Search,
   Plus,
@@ -51,6 +52,8 @@ export default function MembersPage() {
   const orgIdParam = (params?.orgId as string) || '';
   const { getActiveOrganization } = useWorkspaceStore();
   const org = getActiveOrganization();
+  const orgUuid = org?.id || orgIdParam;
+  const { role, isAdmin, canManage } = useOrgRole(orgUuid);
 
   const [members, setMembers] = useState<OrganizationMemberResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,8 +77,6 @@ export default function MembersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-
-  const orgUuid = org?.id || orgIdParam;
 
   useEffect(() => {
     if (orgUuid) {
@@ -318,30 +319,36 @@ export default function MembersPage() {
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
           </button>
           
-          {clubSport ? (
-            <button
-              onClick={() => {
-                resetModal();
-                setIsAddModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <UserPlus className="w-4 h-4" /> Add Member
-            </button>
+          {canManage ? (
+            clubSport ? (
+              <button
+                onClick={() => {
+                  resetModal();
+                  setIsAddModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <UserPlus className="w-4 h-4" /> Add Member
+              </button>
+            ) : (
+              <button
+                onClick={() => alert('Please configure your club sport below before adding members.')}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-foreground/10 border border-foreground/10 text-foreground/50 text-sm font-bold tracking-wide cursor-not-allowed opacity-75"
+                title="Configure club sport first"
+              >
+                <Lock className="w-4 h-4" /> Add Member
+              </button>
+            )
           ) : (
-            <button
-              onClick={() => alert('Please configure your club sport below before adding members.')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-foreground/10 border border-foreground/10 text-foreground/50 text-sm font-bold tracking-wide cursor-not-allowed opacity-75"
-              title="Configure club sport first"
-            >
-              <Lock className="w-4 h-4" /> Add Member
-            </button>
+            <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/60">
+              <Lock className="w-3.5 h-3.5" /> Member View (Read-Only)
+            </span>
           )}
         </div>
       </div>
 
       {/* REQUIREMENT: SINGLE SPORT CONFIGURATION CARD (WHEN NO SPORT CONFIGURED) */}
-      {sportLoaded && !clubSport && (
+      {sportLoaded && !clubSport && canManage && (
         <div className="p-6 sm:p-8 rounded-[28px] border bg-gradient-to-br from-primary/10 via-surface to-surface border-primary/30 shadow-xl space-y-6 animate-in fade-in duration-300">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1.5">
@@ -482,7 +489,9 @@ export default function MembersPage() {
                     <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Role</th>
                     <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Status</th>
                     <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Joined</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
+                    {canManage && (
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-foreground/5">
@@ -544,15 +553,17 @@ export default function MembersPage() {
                         {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}
                       </td>
 
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
-                          className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
-                          title="Remove member"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+                      {canManage && (
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
+                            className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
+                            title="Remove member"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -606,13 +617,15 @@ export default function MembersPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
-                      className="p-2.5 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-                      title="Remove member"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canManage && (
+                      <button
+                        onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
+                        className="p-2.5 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                        title="Remove member"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Bottom Details Strip */}

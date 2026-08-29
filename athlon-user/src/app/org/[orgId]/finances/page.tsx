@@ -31,8 +31,10 @@ import {
   Sparkles,
   PieChart,
   DollarSign,
-  ChevronDown
+  ChevronDown,
+  Lock
 } from 'lucide-react';
+import { useOrgRole } from '@/hooks/use-org-role';
 
 const getLocalDateString = (d: Date = new Date()): string => {
   const year = d.getFullYear();
@@ -73,6 +75,7 @@ export default function FinancesPage() {
   const org = getActiveOrganization();
 
   const orgUuid = org?.id || orgIdParam;
+  const { role, isAdmin, canManage } = useOrgRole(orgUuid);
 
   const [finances, setFinances] = useState<ClubFinance[]>([]);
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
@@ -386,20 +389,28 @@ export default function FinancesPage() {
           </div>
 
           {/* Quick Action Buttons inside Hero Card */}
-          <div className="relative grid grid-cols-2 gap-2.5 pt-4">
-            <button
-              onClick={() => handleOpenAdd('EXPENSE')}
-              className="py-3 px-4 rounded-2xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Plus className="w-4 h-4" /> Add Expense
-            </button>
-            <button
-              onClick={() => handleOpenAdd('INCOME')}
-              className="py-3 px-4 rounded-2xl bg-surface border border-foreground/10 text-foreground text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:bg-foreground/5 transition-all active:scale-[0.98]"
-            >
-              <DollarSign className="w-4 h-4 text-emerald-400" /> Collect Fee
-            </button>
-          </div>
+          {canManage ? (
+            <div className="relative grid grid-cols-2 gap-2.5 pt-4">
+              <button
+                onClick={() => handleOpenAdd('EXPENSE')}
+                className="py-3 px-4 rounded-2xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Plus className="w-4 h-4" /> Add Expense
+              </button>
+              <button
+                onClick={() => handleOpenAdd('INCOME')}
+                className="py-3 px-4 rounded-2xl bg-surface border border-foreground/10 text-foreground text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:bg-foreground/5 transition-all active:scale-[0.98]"
+              >
+                <DollarSign className="w-4 h-4 text-emerald-400" /> Collect Fee
+              </button>
+            </div>
+          ) : (
+            <div className="relative pt-3">
+              <div className="py-2.5 px-4 rounded-2xl bg-foreground/5 border border-foreground/10 text-foreground/60 text-xs font-bold text-center flex items-center justify-center gap-2">
+                <Lock className="w-3.5 h-3.5" /> Club Member View • Financial Ledger is Read-Only
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ======================================================== */}
@@ -686,16 +697,18 @@ export default function FinancesPage() {
                             </div>
                           </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (item.financeUuid) handleDelete(item.financeUuid);
-                            }}
-                            className="p-2 rounded-xl text-foreground/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {canManage && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (item.financeUuid) handleDelete(item.financeUuid);
+                              }}
+                              className="p-2 rounded-xl text-foreground/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

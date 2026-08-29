@@ -131,6 +131,14 @@ public class OrganizationController {
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
+    @GetMapping("/{orgUuid}/user-role/{userUuid}")
+    public ResponseEntity<ApiResponse<String>> getUserRoleInOrganization(
+            @PathVariable("orgUuid") UUID orgUuid,
+            @PathVariable("userUuid") UUID userUuid) {
+        String role = organizationService.getUserRoleInOrganization(orgUuid, userUuid);
+        return ResponseEntity.ok(ApiResponse.success("User role retrieved successfully", role));
+    }
+
     @GetMapping("/{orgUuid}/members")
     public ResponseEntity<ApiResponse<List<com.athlon.identityservice.organization.dto.response.OrganizationMemberResponse>>> getOrganizationMembers(
             @PathVariable("orgUuid") UUID orgUuid) {

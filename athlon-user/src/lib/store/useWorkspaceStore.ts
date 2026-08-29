@@ -8,6 +8,7 @@ export interface Organization {
   name: string;
   type: WorkspaceType;
   logo?: string;
+  role?: string; // 'ADMIN' | 'OWNER' | 'MANAGER' | 'MEMBER' | 'COACH' | 'STUDENT' | 'ATHLETE'
 }
 
 export interface PersonalProfile {
@@ -34,6 +35,7 @@ interface WorkspaceState {
   
   // Helpers
   getActiveOrganization: () => Organization | undefined;
+  isOrgAdmin: (orgId?: string) => boolean;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
@@ -55,6 +57,16 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const { activeWorkspaceId, organizations } = get();
         if (activeWorkspaceId === 'PERSONAL') return undefined;
         return organizations.find((org) => org.id === activeWorkspaceId);
+      },
+
+      isOrgAdmin: (orgId) => {
+        const { activeWorkspaceId, organizations } = get();
+        const targetId = orgId || activeWorkspaceId;
+        if (targetId === 'PERSONAL') return true;
+        const org = organizations.find((o) => o.id === targetId);
+        if (!org) return false;
+        const role = (org.role || 'ADMIN').toUpperCase();
+        return role === 'ADMIN' || role === 'OWNER' || role === 'MANAGER';
       },
     }),
     {

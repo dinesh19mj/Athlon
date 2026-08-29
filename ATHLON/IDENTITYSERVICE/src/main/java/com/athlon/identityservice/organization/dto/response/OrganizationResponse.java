@@ -10,6 +10,7 @@ public class OrganizationResponse {
     private String description;
     private boolean isActive;
     private String type;
+    private String role = "ADMIN";
     private OrganizationProfileResponse profile;
 
     public OrganizationResponse() {
@@ -61,6 +62,14 @@ public class OrganizationResponse {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public OrganizationProfileResponse getProfile() {

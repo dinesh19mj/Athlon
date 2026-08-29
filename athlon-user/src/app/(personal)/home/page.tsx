@@ -148,6 +148,7 @@ export default function PersonalHomePage() {
                 name: o.name,
                 type: o.type,
                 logo: o.logo,
+                role: o.role || 'MEMBER',
               }))
             );
           }
@@ -437,6 +438,99 @@ export default function PersonalHomePage() {
                 ))}
               </section>
             </div>
+
+            {/* My Clubs & Workspaces (Role-Aware) */}
+            {organizations && organizations.length > 0 && (
+              <div className="px-6 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-primary" />
+                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                      My Clubs &amp; Workspaces
+                    </h2>
+                  </div>
+                  <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                    {organizations.length} {organizations.length === 1 ? 'Hub' : 'Hubs'}
+                  </span>
+                </div>
+
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                  {organizations.map((orgItem) => {
+                    const roleUpper = (orgItem.role || 'MEMBER').toUpperCase();
+                    const isAdmin = roleUpper === 'ADMIN' || roleUpper === 'OWNER' || roleUpper === 'MANAGER';
+                    const isCoach = roleUpper === 'COACH';
+                    const isStudent = roleUpper === 'STUDENT';
+
+                    return (
+                      <div
+                        key={orgItem.id}
+                        className="snap-start shrink-0 w-[220px] sm:w-[240px]"
+                      >
+                        <button
+                          onClick={() => {
+                            setActiveWorkspace(orgItem.id);
+                            router.push(`/org/${orgItem.id}/dashboard`);
+                          }}
+                          className="w-full text-left p-3.5 rounded-[20px] border bg-gradient-to-br from-surface via-surface to-background/60 hover:border-primary/50 transition-all group shadow-md flex flex-col justify-between h-full space-y-2.5"
+                          style={{
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="w-9 h-9 rounded-xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center text-base shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                              {orgItem.logo ? (
+                                <img src={orgItem.logo} alt={orgItem.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <Athlon3DIcon
+                                  type={
+                                    orgItem.type === 'CLUB'
+                                      ? 'members'
+                                      : orgItem.type === 'ACADEMY'
+                                      ? 'students'
+                                      : 'tournaments'
+                                  }
+                                  size={22}
+                                  active={true}
+                                />
+                              )}
+                            </div>
+
+                            {/* Role Badge */}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                isAdmin
+                                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                  : isCoach
+                                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                  : isStudent
+                                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              }`}
+                            >
+                              {isAdmin ? '👑 Admin' : isCoach ? '🧢 Coach' : isStudent ? '🎓 Student' : '👤 Member'}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">
+                              {orgItem.name}
+                            </h4>
+                            <span className="text-[9.5px] font-semibold text-foreground/40 uppercase tracking-wider block mt-0.5">
+                              {orgItem.type} Workspace
+                            </span>
+                          </div>
+
+                          <div className="pt-2 border-t border-foreground/5 flex items-center justify-between text-[10px] font-extrabold text-primary">
+                            <span>Open Hub</span>
+                            <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Live Scores */}
             {liveScores.length > 0 && (

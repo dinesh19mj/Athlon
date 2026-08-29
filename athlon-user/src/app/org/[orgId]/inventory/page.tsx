@@ -35,8 +35,10 @@ import {
   Sparkles,
   DollarSign,
   Layers,
-  BarChart3
+  BarChart3,
+  Lock
 } from 'lucide-react';
+import { useOrgRole } from '@/hooks/use-org-role';
 
 const CATEGORIES = [
   { id: 'SHUTTLES', label: 'Shuttles & Tubes', icon: '🏸', color: 'from-blue-500/20 to-blue-600/10 text-blue-400' },
@@ -58,6 +60,7 @@ export default function InventoryPage() {
   const org = getActiveOrganization();
 
   const orgUuid = (org?.id || orgIdParam) as string;
+  const { role, isAdmin, canManage } = useOrgRole(orgUuid);
 
   const [items, setItems] = useState<ClubInventoryItem[]>([]);
   const [summary, setSummary] = useState<InventorySummary | null>(null);
@@ -411,20 +414,34 @@ export default function InventoryPage() {
           </div>
 
           {/* Quick Action Buttons inside Hero Card */}
-          <div className="relative grid grid-cols-2 gap-2.5 pt-4">
-            <button
-              onClick={() => openAddModal()}
-              className="py-3 px-4 rounded-2xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Plus className="w-4 h-4" /> Add New Item
-            </button>
-            <button
-              onClick={openLogDrawer}
-              className="py-3 px-4 rounded-2xl bg-surface border border-foreground/10 text-foreground text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:bg-foreground/5 transition-all active:scale-[0.98]"
-            >
-              <BarChart3 className="w-4 h-4 text-primary" /> View History
-            </button>
-          </div>
+          {canManage ? (
+            <div className="relative grid grid-cols-2 gap-2.5 pt-4">
+              <button
+                onClick={() => openAddModal()}
+                className="py-3 px-4 rounded-2xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Plus className="w-4 h-4" /> Add New Item
+              </button>
+              <button
+                onClick={openLogDrawer}
+                className="py-3 px-4 rounded-2xl bg-surface border border-foreground/10 text-foreground text-xs sm:text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:bg-foreground/5 transition-all active:scale-[0.98]"
+              >
+                <BarChart3 className="w-4 h-4 text-primary" /> View History
+              </button>
+            </div>
+          ) : (
+            <div className="relative grid grid-cols-2 gap-2.5 pt-4">
+              <div className="py-2.5 px-3 rounded-2xl bg-foreground/5 border border-foreground/10 text-foreground/60 text-xs font-bold flex items-center justify-center gap-1.5 text-center">
+                <Lock className="w-3.5 h-3.5" /> Member Catalog (Read-Only)
+              </div>
+              <button
+                onClick={openLogDrawer}
+                className="py-2.5 px-3 rounded-2xl bg-surface border border-foreground/10 text-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-foreground/5 transition-all"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-primary" /> Movement History
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ======================================================== */}
@@ -608,48 +625,56 @@ export default function InventoryPage() {
                     </div>
 
                     {/* Quick Action Buttons */}
-                    <div className="flex items-center justify-between gap-1.5 pt-1">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleQuickChange(item, -1)}
-                          disabled={item.quantity <= 0}
-                          className="px-2.5 py-1.5 rounded-xl bg-background border border-foreground/10 text-xs font-black text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-all disabled:opacity-30 disabled:pointer-events-none"
-                          title="Use 1 unit"
-                        >
-                          -1 {item.unit?.slice(0, 4) || ''}
-                        </button>
-                        <button
-                          onClick={() => handleQuickChange(item, 1)}
-                          className="px-2.5 py-1.5 rounded-xl bg-background border border-foreground/10 text-xs font-black text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all"
-                          title="Add 1 unit"
-                        >
-                          +1 {item.unit?.slice(0, 4) || ''}
-                        </button>
-                      </div>
+                    {canManage ? (
+                      <div className="flex items-center justify-between gap-1.5 pt-1">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleQuickChange(item, -1)}
+                            disabled={item.quantity <= 0}
+                            className="px-2.5 py-1.5 rounded-xl bg-background border border-foreground/10 text-xs font-black text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                            title="Use 1 unit"
+                          >
+                            -1 {item.unit?.slice(0, 4) || ''}
+                          </button>
+                          <button
+                            onClick={() => handleQuickChange(item, 1)}
+                            className="px-2.5 py-1.5 rounded-xl bg-background border border-foreground/10 text-xs font-black text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all"
+                            title="Add 1 unit"
+                          >
+                            +1 {item.unit?.slice(0, 4) || ''}
+                          </button>
+                        </div>
 
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openAdjustModal(item, 'CONSUMED')}
-                          className="px-3 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground text-xs font-bold transition-colors"
-                        >
-                          Log Usage
-                        </button>
-                        <button
-                          onClick={() => openAddModal(item)}
-                          className="p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
-                          title="Edit Item"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.itemUuid)}
-                          className="p-2 rounded-xl text-foreground/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openAdjustModal(item, 'CONSUMED')}
+                            className="px-3 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground text-xs font-bold transition-colors"
+                          >
+                            Log Usage
+                          </button>
+                          <button
+                            onClick={() => openAddModal(item)}
+                            className="p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
+                            title="Edit Item"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.itemUuid)}
+                            className="p-2 rounded-xl text-foreground/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="pt-1 text-right">
+                        <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                          Club Stocked Equipment
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}

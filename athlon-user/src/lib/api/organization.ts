@@ -49,6 +49,7 @@ export interface Organization {
   website?: string;
   logo?: string;
   isActive?: number;
+  role?: string;
   subscriptionPackageUuid?: string;
   profile?: OrganizationProfile;
 }
@@ -127,5 +128,8 @@ export const OrganizationService = {
     api.post<OrganizationMemberResponse>(`/api/identity/organizations/${orgUuid}/members`, data),
 
   removeMember: (orgUuid: string, memberUuid: string) =>
-    api.post<void>(`/api/identity/organizations/${orgUuid}/members/${memberUuid}/remove`, {})
+    api.post<void>(`/api/identity/organizations/${orgUuid}/members/${memberUuid}/remove`, {}),
+
+  getUserRole: (orgUuid: string, userUuid: string) =>
+    api.get<string>(`/api/identity/organizations/${orgUuid}/user-role/${userUuid}`)
 };

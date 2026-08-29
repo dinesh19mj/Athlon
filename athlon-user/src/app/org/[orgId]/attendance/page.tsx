@@ -21,8 +21,10 @@ import {
   RefreshCw,
   Sparkles,
   ShieldAlert,
-  Save
+  Save,
+  Lock
 } from 'lucide-react';
+import { useOrgRole } from '@/hooks/use-org-role';
 
 // Helper to get local date formatted as YYYY-MM-DD (avoiding UTC timezone shift)
 const getLocalDateString = (d: Date = new Date()): string => {
@@ -39,6 +41,8 @@ export default function AttendancePage() {
   const org = getActiveOrganization();
 
   const orgUuid = org?.id || orgIdParam;
+  const { role, isAdmin, isCoach, canManage } = useOrgRole(orgUuid);
+  const canTakeAttendance = isAdmin || isCoach;
 
   const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString());
   const [attendanceList, setAttendanceList] = useState<ClubMemberAttendance[]>([]);
@@ -248,13 +252,19 @@ export default function AttendancePage() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
           </button>
-          <button
-            onClick={handleSaveSheet}
-            disabled={saving || totalCount === 0}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Sheet
-          </button>
+          {canTakeAttendance ? (
+            <button
+              onClick={handleSaveSheet}
+              disabled={saving || totalCount === 0}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Sheet
+            </button>
+          ) : (
+            <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/60">
+              <Lock className="w-3.5 h-3.5" /> Member View (Read-Only)
+            </span>
+          )}
         </div>
       </div>
 
@@ -433,48 +443,65 @@ export default function AttendancePage() {
                           </span>
                         </td>
 
-                        {/* Status Toggle Buttons */}
+                        {/* Status Toggle Buttons or Read-Only Indicator */}
                         <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-1 bg-background p-1 rounded-2xl border max-w-xs mx-auto shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
-                            {/* PRESENT */}
-                            <button
-                              type="button"
-                              onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                          {canTakeAttendance ? (
+                            <div className="flex items-center justify-center gap-1 bg-background p-1 rounded-2xl border max-w-xs mx-auto shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+                              {/* PRESENT */}
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                  isPresent
+                                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 scale-[1.02]'
+                                    : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                }`}
+                              >
+                                <Check className="w-3.5 h-3.5" /> Present
+                              </button>
+
+                              {/* ABSENT */}
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                  isAbsent
+                                    ? 'bg-red-500 text-white shadow-md shadow-red-500/25 scale-[1.02]'
+                                    : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
+                                }`}
+                              >
+                                <X className="w-3.5 h-3.5" /> Absent
+                              </button>
+
+                              {/* LEAVE */}
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                  isLeave
+                                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25 scale-[1.02]'
+                                    : 'text-foreground/50 hover:text-amber-400 hover:bg-amber-500/10'
+                                }`}
+                              >
+                                <Clock className="w-3.5 h-3.5" /> Leave
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-center">
+                              <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${
                                 isPresent
-                                  ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 scale-[1.02]'
-                                  : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
-                              }`}
-                            >
-                              <Check className="w-3.5 h-3.5" /> Present
-                            </button>
-
-                            {/* ABSENT */}
-                            <button
-                              type="button"
-                              onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                                isAbsent
-                                  ? 'bg-red-500 text-white shadow-md shadow-red-500/25 scale-[1.02]'
-                                  : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
-                              }`}
-                            >
-                              <X className="w-3.5 h-3.5" /> Absent
-                            </button>
-
-                            {/* LEAVE */}
-                            <button
-                              type="button"
-                              onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
-                              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                                isLeave
-                                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25 scale-[1.02]'
-                                  : 'text-foreground/50 hover:text-amber-400 hover:bg-amber-500/10'
-                              }`}
-                            >
-                              <Clock className="w-3.5 h-3.5" /> Leave
-                            </button>
-                          </div>
+                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                                  : isAbsent
+                                  ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                                  : isLeave
+                                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                                  : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
+                              }`}>
+                                {isPresent ? <Check className="w-3.5 h-3.5" /> : isAbsent ? <X className="w-3.5 h-3.5" /> : isLeave ? <Clock className="w-3.5 h-3.5" /> : null}
+                                {member.status || 'UNMARKED'}
+                              </span>
+                            </div>
+                          )}
                         </td>
 
                         {/* Check-in Time */}
@@ -527,43 +554,60 @@ export default function AttendancePage() {
                     </div>
 
                     {/* Segmented Status Toggle Bar */}
-                    <div className="grid grid-cols-3 gap-1.5 bg-background p-1.5 rounded-2xl border shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                        className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                    {canTakeAttendance ? (
+                      <div className="grid grid-cols-3 gap-1.5 bg-background p-1.5 rounded-2xl border shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            isPresent
+                              ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25'
+                              : 'text-foreground/50 hover:bg-emerald-500/10'
+                          }`}
+                        >
+                          <Check className="w-3.5 h-3.5" /> Present
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            isAbsent
+                              ? 'bg-red-500 text-white shadow-md shadow-red-500/25'
+                              : 'text-foreground/50 hover:bg-red-500/10'
+                          }`}
+                        >
+                          <X className="w-3.5 h-3.5" /> Absent
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            isLeave
+                              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25'
+                              : 'text-foreground/50 hover:bg-amber-500/10'
+                          }`}
+                        >
+                          <Clock className="w-3.5 h-3.5" /> Leave
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="pt-1 flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-foreground/40">Status</span>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
                           isPresent
-                            ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25'
-                            : 'text-foreground/50 hover:bg-emerald-500/10'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" /> Present
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                        className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                          isAbsent
-                            ? 'bg-red-500 text-white shadow-md shadow-red-500/25'
-                            : 'text-foreground/50 hover:bg-red-500/10'
-                        }`}
-                      >
-                        <X className="w-3.5 h-3.5" /> Absent
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
-                        className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                          isLeave
-                            ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25'
-                            : 'text-foreground/50 hover:bg-amber-500/10'
-                        }`}
-                      >
-                        <Clock className="w-3.5 h-3.5" /> Leave
-                      </button>
-                    </div>
+                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                            : isAbsent
+                            ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                            : isLeave
+                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                            : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
+                        }`}>
+                          {member.status || 'UNMARKED'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
