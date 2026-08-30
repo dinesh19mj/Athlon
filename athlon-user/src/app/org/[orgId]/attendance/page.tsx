@@ -170,7 +170,7 @@ export default function AttendancePage() {
           const sumData = (res as any)?.data || res;
           setSummary(sumData);
         })
-        .catch(() => {});
+        .catch(() => { });
     } catch (err: any) {
       console.error('Failed to update attendance:', err);
       setToastSuccess('Failed to save status update.');
@@ -335,11 +335,10 @@ export default function AttendancePage() {
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             onClick={handleSetToday}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-              selectedDate === getLocalDateString()
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === getLocalDateString()
                 ? 'bg-primary text-black shadow-md shadow-primary/20'
                 : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-            }`}
+              }`}
           >
             Today
           </button>
@@ -396,89 +395,119 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Prominent My Attendance Check-In Banner (For Club Members / Athletes) */}
+      {/* ─── Modern My Attendance Check-In Deck (Member View) ─── */}
       {myAttendanceRecord && (
-        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-neutral-900 via-neutral-900/95 to-neutral-950 border border-primary/30 p-5 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4 animate-in fade-in duration-300">
-          {/* Ambient Glows */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16" />
+        <div className="relative overflow-hidden rounded-[26px] bg-surface/90 border border-white/10 p-5 sm:p-6 shadow-xl backdrop-blur-2xl transition-all duration-300">
+          {/* Subtle Ambient Background Gradient */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-40 transition-opacity duration-300"
+            style={{
+              background:
+                myAttendanceRecord.status === 'PRESENT'
+                  ? 'radial-gradient(circle at 10% 20%, rgba(16,185,129,0.12), transparent 70%)'
+                  : myAttendanceRecord.status === 'ABSENT'
+                  ? 'radial-gradient(circle at 90% 20%, rgba(239,68,68,0.12), transparent 70%)'
+                  : 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.03), transparent 70%)',
+            }}
+          />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-13 h-13 rounded-2xl bg-foreground/10 border-2 border-primary/40 overflow-hidden flex items-center justify-center shrink-0 shadow-inner ring-2 ring-primary/20">
-                {myAttendanceRecord.photo ? (
-                  <img
-                    src={UserService.getPhotoUrl(myAttendanceRecord.photo)}
-                    alt={myAttendanceRecord.fullName}
-                    className="w-full h-full object-cover"
-                  />
+          <div className="relative z-10 space-y-4">
+            {/* Top Row: User Identity & Live Status Badge */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                  {myAttendanceRecord.photo ? (
+                    <img
+                      src={UserService.getPhotoUrl(myAttendanceRecord.photo)}
+                      alt={myAttendanceRecord.fullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-base font-black text-primary">
+                      {myAttendanceRecord.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight truncate">
+                      {myAttendanceRecord.fullName}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                      You
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white/50">
+                      {myAttendanceRecord.role || role || 'Member'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/45 mt-0.5 font-medium">
+                    {selectedDate === getLocalDateString()
+                      ? "Today's Attendance Check-in"
+                      : `Attendance for ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Capsule Indicator */}
+              <div className="self-start sm:self-auto flex items-center">
+                {myAttendanceRecord.status === 'PRESENT' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Present</span>
+                    {myAttendanceRecord.checkInTime && (
+                      <span className="text-[11px] opacity-70 font-mono font-normal">
+                        • {String(myAttendanceRecord.checkInTime).slice(0, 5)}
+                      </span>
+                    )}
+                  </span>
+                ) : myAttendanceRecord.status === 'ABSENT' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-red-500/15 text-red-400 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)]">
+                    <X className="w-4 h-4" />
+                    <span>Absent</span>
+                  </span>
                 ) : (
-                  <span className="text-lg font-black text-primary">
-                    {myAttendanceRecord.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white/5 text-white/50 border border-white/10">
+                    <span className="w-2 h-2 rounded-full bg-white/30" />
+                    <span>Not Marked</span>
                   </span>
                 )}
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base sm:text-lg font-black text-foreground truncate">
-                    {myAttendanceRecord.fullName}
-                  </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary text-black shadow-md shadow-primary/25">
-                    👑 You
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-foreground/5 border border-foreground/10 text-foreground/70">
-                    {myAttendanceRecord.role || role || 'Member'}
-                  </span>
-                </div>
-                <p className="text-xs text-foreground/50 mt-0.5">
-                  {selectedDate === getLocalDateString() ? "Today's Attendance Check-in" : `Attendance for ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}`}
-                </p>
-              </div>
             </div>
 
-            {/* Current Status Badge */}
-            <div className="flex items-center gap-2.5 self-start sm:self-auto bg-background/50 border border-foreground/10 px-3.5 py-2 rounded-2xl">
-              <span className="text-xs font-bold text-foreground/40">Status:</span>
-              <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${
-                myAttendanceRecord.status === 'PRESENT'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-md shadow-emerald-500/10'
-                  : myAttendanceRecord.status === 'ABSENT'
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                  : 'bg-foreground/5 text-foreground/50 border border-foreground/10'
-              }`}>
-                {myAttendanceRecord.status === 'PRESENT' ? <Check className="w-4 h-4" /> : myAttendanceRecord.status === 'ABSENT' ? <X className="w-4 h-4" /> : null}
-                {myAttendanceRecord.status || 'UNMARKED'}
-              </span>
+            {/* Bottom Row: Tactile Dual Segmented Switch Bar */}
+            <div className="bg-background/90 p-1.5 rounded-2xl border border-white/10 shadow-inner grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'PRESENT')}
+                className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                  myAttendanceRecord.status === 'PRESENT'
+                    ? 'bg-emerald-500 text-black shadow-[0_4px_16px_rgba(16,185,129,0.35)] scale-[1.01]'
+                    : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
+                }`}
+              >
+                <Check className="w-4 h-4" strokeWidth={2.8} />
+                <span>Present</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'ABSENT')}
+                className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                  myAttendanceRecord.status === 'ABSENT'
+                    ? 'bg-red-500 text-white shadow-[0_4px_16px_rgba(239,68,68,0.35)] scale-[1.01]'
+                    : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
+                }`}
+              >
+                <X className="w-4 h-4" strokeWidth={2.8} />
+                <span>Absent</span>
+              </button>
             </div>
-          </div>
-
-          {/* 2 Large 1-Tap Action Buttons */}
-          <div className="grid grid-cols-2 gap-3 pt-2 relative z-10">
-            <button
-              type="button"
-              onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'PRESENT')}
-              className={`py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
-                myAttendanceRecord.status === 'PRESENT'
-                  ? 'bg-emerald-500 text-black shadow-emerald-500/30 ring-2 ring-emerald-400/50 scale-[1.01]'
-                  : 'bg-surface border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-              }`}
-            >
-              <Check className="w-4 h-4 shrink-0" />
-              <span>Present (Check In)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'ABSENT')}
-              className={`py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
-                myAttendanceRecord.status === 'ABSENT'
-                  ? 'bg-red-500 text-white shadow-red-500/30 ring-2 ring-red-400/50 scale-[1.01]'
-                  : 'bg-surface border border-red-500/30 text-red-400 hover:bg-red-500/10'
-              }`}
-            >
-              <X className="w-4 h-4 shrink-0" />
-              <span>Absent</span>
-            </button>
           </div>
         </div>
       )}
@@ -569,11 +598,10 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                  isPresent
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isPresent
                                     ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 scale-[1.02]'
                                     : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
-                                }`}
+                                  }`}
                               >
                                 <Check className="w-3.5 h-3.5" /> Present
                               </button>
@@ -582,24 +610,22 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                  isAbsent
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isAbsent
                                     ? 'bg-red-500 text-white shadow-md shadow-red-500/25 scale-[1.02]'
                                     : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
-                                }`}
+                                  }`}
                               >
                                 <X className="w-3.5 h-3.5" /> Absent
                               </button>
                             </div>
                           ) : (
                             <div className="flex justify-center">
-                              <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${
-                                isPresent
+                              <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${isPresent
                                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                                   : isAbsent
-                                  ? 'bg-red-500/15 text-red-400 border border-red-500/25'
-                                  : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
-                              }`}>
+                                    ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                                    : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
+                                }`}>
                                 {isPresent ? <Check className="w-3.5 h-3.5" /> : isAbsent ? <X className="w-3.5 h-3.5" /> : null}
                                 {member.status || 'UNMARKED'}
                               </span>
@@ -670,11 +696,10 @@ export default function AttendancePage() {
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                            isPresent
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isPresent
                               ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25'
                               : 'text-foreground/50 hover:bg-emerald-500/10'
-                          }`}
+                            }`}
                         >
                           <Check className="w-3.5 h-3.5" /> Present
                         </button>
@@ -682,11 +707,10 @@ export default function AttendancePage() {
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                            isAbsent
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isAbsent
                               ? 'bg-red-500 text-white shadow-md shadow-red-500/25'
                               : 'text-foreground/50 hover:bg-red-500/10'
-                          }`}
+                            }`}
                         >
                           <X className="w-3.5 h-3.5" /> Absent
                         </button>
@@ -694,13 +718,12 @@ export default function AttendancePage() {
                     ) : (
                       <div className="pt-1 flex items-center justify-between">
                         <span className="text-[11px] font-bold text-foreground/40">Status</span>
-                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
-                          isPresent
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${isPresent
                             ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                             : isAbsent
-                            ? 'bg-red-500/15 text-red-400 border border-red-500/25'
-                            : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
-                        }`}>
+                              ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                              : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
+                          }`}>
                           {member.status || 'UNMARKED'}
                         </span>
                       </div>
