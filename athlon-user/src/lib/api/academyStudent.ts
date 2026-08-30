@@ -200,29 +200,29 @@ export interface UpdateBatchPayload {
 export const AcademyStudentService = {
   // COURTS
   getCourts: async (organizationUuid: string, status?: string): Promise<AcademyCourt[]> => {
-    let url = `/identity/academy/courts/org/${organizationUuid}`;
+    let url = `/api/identity/academy/courts/org/${organizationUuid}`;
     if (status) url += `?status=${status}`;
     const res = await api.get<{ data: AcademyCourt[] }>(url);
     return (res as any)?.data || res;
   },
 
   getCourtById: async (courtUuid: string): Promise<AcademyCourt> => {
-    const res = await api.get<{ data: AcademyCourt }>(`/identity/academy/courts/${courtUuid}`);
+    const res = await api.get<{ data: AcademyCourt }>(`/api/identity/academy/courts/${courtUuid}`);
     return (res as any)?.data || res;
   },
 
   createCourt: async (payload: CreateCourtPayload): Promise<AcademyCourt> => {
-    const res = await api.post<{ data: AcademyCourt }>(`/identity/academy/courts/create`, payload);
+    const res = await api.post<{ data: AcademyCourt }>(`/api/identity/academy/courts/create`, payload);
     return (res as any)?.data || res;
   },
 
   updateCourt: async (payload: UpdateCourtPayload): Promise<AcademyCourt> => {
-    const res = await api.put<{ data: AcademyCourt }>(`/identity/academy/courts/update`, payload);
+    const res = await api.put<{ data: AcademyCourt }>(`/api/identity/academy/courts/update`, payload);
     return (res as any)?.data || res;
   },
 
   deleteCourt: async (courtUuid: string): Promise<void> => {
-    await api.delete(`/identity/academy/courts/${courtUuid}`);
+    await api.delete(`/api/identity/academy/courts/${courtUuid}`);
   },
 
   // STUDENTS
@@ -237,7 +237,7 @@ export const AcademyStudentService = {
       search?: string;
     }
   ): Promise<AcademyStudent[]> => {
-    let url = `/identity/academy/students/org/${organizationUuid}`;
+    let url = `/api/identity/academy/students/org/${organizationUuid}`;
     const query = new URLSearchParams();
     if (params?.level) query.append('level', params.level);
     if (params?.courtUuid) query.append('courtUuid', params.courtUuid);
@@ -254,48 +254,48 @@ export const AcademyStudentService = {
   },
 
   getStudentById: async (studentUuid: string): Promise<AcademyStudent> => {
-    const res = await api.get<{ data: AcademyStudent }>(`/identity/academy/students/${studentUuid}`);
+    const res = await api.get<{ data: AcademyStudent }>(`/api/identity/academy/students/${studentUuid}`);
     return (res as any)?.data || res;
   },
 
   enrollStudent: async (payload: EnrollStudentPayload): Promise<AcademyStudent> => {
-    const res = await api.post<{ data: AcademyStudent }>(`/identity/academy/students/enroll`, payload);
+    const res = await api.post<{ data: AcademyStudent }>(`/api/identity/academy/students/enroll`, payload);
     return (res as any)?.data || res;
   },
 
   updateStudent: async (payload: UpdateStudentPayload): Promise<AcademyStudent> => {
-    const res = await api.put<{ data: AcademyStudent }>(`/identity/academy/students/update`, payload);
+    const res = await api.put<{ data: AcademyStudent }>(`/api/identity/academy/students/update`, payload);
     return (res as any)?.data || res;
   },
 
   deleteStudent: async (studentUuid: string): Promise<void> => {
-    await api.delete(`/identity/academy/students/${studentUuid}`);
+    await api.delete(`/api/identity/academy/students/${studentUuid}`);
   },
 
   getSummary: async (organizationUuid: string): Promise<AcademySummary> => {
-    const res = await api.get<{ data: AcademySummary }>(`/identity/academy/students/summary/org/${organizationUuid}`);
+    const res = await api.get<{ data: AcademySummary }>(`/api/identity/academy/students/summary/org/${organizationUuid}`);
     return (res as any)?.data || res;
   },
 
   // BATCHES
   getBatches: async (organizationUuid: string, status?: string): Promise<AcademyBatch[]> => {
-    let url = `/identity/academy/batches/org/${organizationUuid}`;
+    let url = `/api/identity/academy/batches/org/${organizationUuid}`;
     if (status) url += `?status=${status}`;
     const res = await api.get<{ data: AcademyBatch[] }>(url);
     return (res as any)?.data || res;
   },
 
   createBatch: async (payload: CreateBatchPayload): Promise<AcademyBatch> => {
-    const res = await api.post<{ data: AcademyBatch }>(`/identity/academy/batches/create`, payload);
+    const res = await api.post<{ data: AcademyBatch }>(`/api/identity/academy/batches/create`, payload);
     return (res as any)?.data || res;
   },
 
   updateBatch: async (payload: UpdateBatchPayload): Promise<AcademyBatch> => {
-    const res = await api.put<{ data: AcademyBatch }>(`/identity/academy/batches/update`, payload);
+    const res = await api.put<{ data: AcademyBatch }>(`/api/identity/academy/batches/update`, payload);
     return (res as any)?.data || res;
   },
 
   deleteBatch: async (batchUuid: string): Promise<void> => {
-    await api.delete(`/identity/academy/batches/${batchUuid}`);
+    await api.delete(`/api/identity/academy/batches/${batchUuid}`);
   }
 };
