@@ -1,168 +1,1251 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
-import { Search, Plus, Filter, MoreVertical, Phone, GraduationCap, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useOrgRole } from '@/hooks/use-org-role';
+import {
+  AcademyStudentService,
+  AcademyStudent,
+  AcademyBatch,
+  AcademySummary,
+  EnrollStudentPayload,
+  UpdateStudentPayload,
+  CreateBatchPayload,
+  StudentLevel,
+  FeeStatus
+} from '@/lib/api/academyStudent';
+import {
+  Search,
+  Plus,
+  Filter,
+  MoreVertical,
+  Phone,
+  GraduationCap,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Users,
+  Layers,
+  Sparkles,
+  CreditCard,
+  Edit2,
+  Trash2,
+  Calendar,
+  HeartPulse,
+  UserCheck,
+  X,
+  ChevronDown,
+  Mail,
+  Shield,
+  Loader2,
+  TrendingUp,
+  Award,
+  Zap,
+  Info,
+  CalendarDays,
+  User
+} from 'lucide-react';
 
-const MOCK_STUDENTS = [
-  { id: '1', name: 'Aarav Patel', age: 12, level: 'Beginner', batch: 'Kids Evening', parent: 'Suresh Patel', phone: '+91 98765 43210', feeStatus: 'Paid' },
-  { id: '2', name: 'Riya Sharma', age: 16, level: 'Advanced', batch: 'Elite Sparing', parent: 'Anita Sharma', phone: '+91 87654 32109', feeStatus: 'Overdue' },
-  { id: '3', name: 'Kabir Singh', age: 14, level: 'Intermediate', batch: 'Morning Batch', parent: 'Raj Singh', phone: '+91 76543 21098', feeStatus: 'Paid' },
-  { id: '4', name: 'Neha Gupta', age: 10, level: 'Beginner', batch: 'Kids Weekend', parent: 'Priya Gupta', phone: '+91 65432 10987', feeStatus: 'Pending' },
-  { id: '5', name: 'Aryan Reddy', age: 18, level: 'Pro', batch: 'Pro Training', parent: 'Self', phone: '+91 54321 09876', feeStatus: 'Paid' },
-];
+const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  BEGINNER: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/30' },
+  INTERMEDIATE: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  ADVANCED: { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'border-purple-500/30' },
+  ELITE: { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/30' },
+  PRO: { bg: 'bg-rose-500/15', text: 'text-rose-400', border: 'border-rose-500/30' }
+};
+
+const FEE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  PAID: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  PENDING: { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/30' },
+  OVERDUE: { bg: 'bg-rose-500/15', text: 'text-rose-400', border: 'border-rose-500/30' }
+};
+
+function formatCurrency(amount?: number) {
+  if (amount === undefined || amount === null) return '₹0';
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(amount);
+}
 
 export default function StudentsPage() {
+  const params = useParams();
+  const orgIdParam = (params?.orgId as string) || '';
   const { getActiveOrganization } = useWorkspaceStore();
-  const org = getActiveOrganization();
+  const activeOrg = getActiveOrganization();
+  const orgUuid = activeOrg?.id || orgIdParam;
+
+  const { isAdmin, isCoach } = useOrgRole();
+  const canManage = isAdmin || isCoach;
+
+  // Data states
+  const [students, setStudents] = useState<AcademyStudent[]>([]);
+  const [batches, setBatches] = useState<AcademyBatch[]>([]);
+  const [summary, setSummary] = useState<AcademySummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState<string>('ALL');
+  const [selectedBatch, setSelectedBatch] = useState<string>('ALL');
+  const [selectedFeeStatus, setSelectedFeeStatus] = useState<string>('ALL');
 
-  if (!org) return null;
+  // Modals
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<AcademyStudent | null>(null);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [actionMenuStudentId, setActionMenuStudentId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const filteredStudents = MOCK_STUDENTS.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.batch.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Form State for Enroll / Edit Student
+  const [studentForm, setStudentForm] = useState<{
+    fullName: string;
+    gender: string;
+    dob: string;
+    age: string;
+    bloodGroup: string;
+    level: string;
+    batchUuid: string;
+    sportType: string;
+    parentName: string;
+    parentPhone: string;
+    parentEmail: string;
+    emergencyContact: string;
+    address: string;
+    medicalNotes: string;
+    monthlyFee: string;
+    feeFrequency: string;
+    feeStatus: string;
+  }>({
+    fullName: '',
+    gender: 'MALE',
+    dob: '',
+    age: '',
+    bloodGroup: '',
+    level: 'BEGINNER',
+    batchUuid: '',
+    sportType: '',
+    parentName: '',
+    parentPhone: '',
+    parentEmail: '',
+    emergencyContact: '',
+    address: '',
+    medicalNotes: '',
+    monthlyFee: '1500',
+    feeFrequency: 'MONTHLY',
+    feeStatus: 'PAID'
+  });
+
+  // Form State for Batch Create
+  const [batchForm, setBatchForm] = useState<{
+    batchName: string;
+    sportType: string;
+    level: string;
+    coachName: string;
+    daysOfWeek: string;
+    startTime: string;
+    endTime: string;
+    maxCapacity: string;
+    monthlyFee: string;
+  }>({
+    batchName: '',
+    sportType: '',
+    level: 'ALL',
+    coachName: '',
+    daysOfWeek: 'MON,WED,FRI',
+    startTime: '06:00',
+    endTime: '07:30',
+    maxCapacity: '20',
+    monthlyFee: '1500'
+  });
+
+  // Fetch all academy data
+  const fetchData = async () => {
+    if (!orgUuid) return;
+    try {
+      setLoading(true);
+      const [studentsRes, batchesRes, summaryRes] = await Promise.allSettled([
+        AcademyStudentService.getStudents(orgUuid),
+        AcademyStudentService.getBatches(orgUuid),
+        AcademyStudentService.getSummary(orgUuid)
+      ]);
+
+      if (studentsRes.status === 'fulfilled') setStudents(studentsRes.value || []);
+      if (batchesRes.status === 'fulfilled') setBatches(batchesRes.value || []);
+      if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value || null);
+    } catch (err) {
+      console.error('Failed to load academy students:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [orgUuid]);
+
+  // Filtered Students
+  const filteredStudents = useMemo(() => {
+    return students.filter(s => {
+      if (selectedLevel !== 'ALL' && s.level !== selectedLevel) return false;
+      if (selectedBatch !== 'ALL' && s.batchUuid !== selectedBatch) return false;
+      if (selectedFeeStatus !== 'ALL' && s.feeStatus !== selectedFeeStatus) return false;
+
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase().trim();
+        const name = (s.fullName || '').toLowerCase();
+        const parent = (s.parentName || '').toLowerCase();
+        const phone = (s.parentPhone || '');
+        const batch = (s.batchName || '').toLowerCase();
+        if (!name.includes(q) && !parent.includes(q) && !phone.includes(q) && !batch.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [students, selectedLevel, selectedBatch, selectedFeeStatus, searchTerm]);
+
+  // Open Enroll Modal
+  const handleOpenEnroll = () => {
+    setEditingStudent(null);
+    setStudentForm({
+      fullName: '',
+      gender: 'MALE',
+      dob: '',
+      age: '',
+      bloodGroup: '',
+      level: 'BEGINNER',
+      batchUuid: batches[0]?.batchUuid || '',
+      sportType: '',
+      parentName: '',
+      parentPhone: '',
+      parentEmail: '',
+      emergencyContact: '',
+      address: '',
+      medicalNotes: '',
+      monthlyFee: '1500',
+      feeFrequency: 'MONTHLY',
+      feeStatus: 'PAID'
+    });
+    setShowEnrollModal(true);
+  };
+
+  // Open Edit Modal
+  const handleOpenEdit = (student: AcademyStudent) => {
+    setEditingStudent(student);
+    setStudentForm({
+      fullName: student.fullName || '',
+      gender: student.gender || 'MALE',
+      dob: student.dob || '',
+      age: student.age ? String(student.age) : '',
+      bloodGroup: student.bloodGroup || '',
+      level: student.level || 'BEGINNER',
+      batchUuid: student.batchUuid || '',
+      sportType: student.sportType || '',
+      parentName: student.parentName || '',
+      parentPhone: student.parentPhone || '',
+      parentEmail: student.parentEmail || '',
+      emergencyContact: student.emergencyContact || '',
+      address: student.address || '',
+      medicalNotes: student.medicalNotes || '',
+      monthlyFee: student.monthlyFee !== undefined ? String(student.monthlyFee) : '1500',
+      feeFrequency: student.feeFrequency || 'MONTHLY',
+      feeStatus: student.feeStatus || 'PAID'
+    });
+    setShowEnrollModal(true);
+    setActionMenuStudentId(null);
+  };
+
+  // Submit Student Enroll or Edit
+  const handleSubmitStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentForm.fullName.trim() || !orgUuid) return;
+
+    try {
+      setSubmitting(true);
+      const selectedB = batches.find(b => b.batchUuid === studentForm.batchUuid);
+
+      if (editingStudent) {
+        // Update
+        const payload: UpdateStudentPayload = {
+          studentUuid: editingStudent.studentUuid,
+          fullName: studentForm.fullName.trim(),
+          gender: studentForm.gender,
+          dob: studentForm.dob || undefined,
+          age: studentForm.age ? parseInt(studentForm.age) : undefined,
+          bloodGroup: studentForm.bloodGroup,
+          level: studentForm.level,
+          batchUuid: studentForm.batchUuid || undefined,
+          batchName: selectedB?.batchName,
+          batchTiming: selectedB ? `${selectedB.startTime} - ${selectedB.endTime}` : undefined,
+          sportType: studentForm.sportType || selectedB?.sportType,
+          parentName: studentForm.parentName,
+          parentPhone: studentForm.parentPhone,
+          parentEmail: studentForm.parentEmail,
+          emergencyContact: studentForm.emergencyContact,
+          address: studentForm.address,
+          medicalNotes: studentForm.medicalNotes,
+          monthlyFee: studentForm.monthlyFee ? parseFloat(studentForm.monthlyFee) : undefined,
+          feeFrequency: studentForm.feeFrequency,
+          feeStatus: studentForm.feeStatus
+        };
+        const updated = await AcademyStudentService.updateStudent(payload);
+        setStudents(prev => prev.map(s => s.studentUuid === updated.studentUuid ? updated : s));
+      } else {
+        // Enroll New
+        const payload: EnrollStudentPayload = {
+          organizationUuid: orgUuid,
+          fullName: studentForm.fullName.trim(),
+          gender: studentForm.gender,
+          dob: studentForm.dob || undefined,
+          age: studentForm.age ? parseInt(studentForm.age) : undefined,
+          bloodGroup: studentForm.bloodGroup,
+          level: studentForm.level,
+          batchUuid: studentForm.batchUuid || undefined,
+          batchName: selectedB?.batchName,
+          batchTiming: selectedB ? `${selectedB.startTime} - ${selectedB.endTime}` : undefined,
+          sportType: studentForm.sportType || selectedB?.sportType,
+          parentName: studentForm.parentName,
+          parentPhone: studentForm.parentPhone,
+          parentEmail: studentForm.parentEmail,
+          emergencyContact: studentForm.emergencyContact,
+          address: studentForm.address,
+          medicalNotes: studentForm.medicalNotes,
+          monthlyFee: studentForm.monthlyFee ? parseFloat(studentForm.monthlyFee) : undefined,
+          feeFrequency: studentForm.feeFrequency,
+          feeStatus: studentForm.feeStatus
+        };
+        const created = await AcademyStudentService.enrollStudent(payload);
+        setStudents(prev => [created, ...prev]);
+      }
+
+      setShowEnrollModal(false);
+      // Refresh summary KPIs
+      AcademyStudentService.getSummary(orgUuid).then(res => setSummary(res));
+    } catch (err) {
+      console.error('Failed to save student:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete Student
+  const handleDeleteStudent = async (studentUuid: string) => {
+    if (!confirm('Are you sure you want to remove this student from the academy roster?')) return;
+    try {
+      await AcademyStudentService.deleteStudent(studentUuid);
+      setStudents(prev => prev.filter(s => s.studentUuid !== studentUuid));
+      setActionMenuStudentId(null);
+      if (orgUuid) AcademyStudentService.getSummary(orgUuid).then(res => setSummary(res));
+    } catch (err) {
+      console.error('Failed to delete student:', err);
+    }
+  };
+
+  // Quick Fee Status Change
+  const handleQuickFeeChange = async (student: AcademyStudent, newFeeStatus: string) => {
+    try {
+      const updated = await AcademyStudentService.updateStudent({
+        studentUuid: student.studentUuid,
+        feeStatus: newFeeStatus
+      });
+      setStudents(prev => prev.map(s => s.studentUuid === updated.studentUuid ? updated : s));
+      if (orgUuid) AcademyStudentService.getSummary(orgUuid).then(res => setSummary(res));
+    } catch (err) {
+      console.error('Failed to update fee status:', err);
+    }
+  };
+
+  // Create Batch Submit
+  const handleCreateBatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!batchForm.batchName.trim() || !orgUuid) return;
+
+    try {
+      setSubmitting(true);
+      const payload: CreateBatchPayload = {
+        organizationUuid: orgUuid,
+        batchName: batchForm.batchName.trim(),
+        sportType: batchForm.sportType,
+        level: batchForm.level,
+        coachName: batchForm.coachName,
+        daysOfWeek: batchForm.daysOfWeek,
+        startTime: batchForm.startTime,
+        endTime: batchForm.endTime,
+        maxCapacity: batchForm.maxCapacity ? parseInt(batchForm.maxCapacity) : 20,
+        monthlyFee: batchForm.monthlyFee ? parseFloat(batchForm.monthlyFee) : 1500
+      };
+
+      const created = await AcademyStudentService.createBatch(payload);
+      setBatches(prev => [created, ...prev]);
+      setBatchForm({
+        batchName: '',
+        sportType: '',
+        level: 'ALL',
+        coachName: '',
+        daysOfWeek: 'MON,WED,FRI',
+        startTime: '06:00',
+        endTime: '07:30',
+        maxCapacity: '20',
+        monthlyFee: '1500'
+      });
+    } catch (err) {
+      console.error('Failed to create batch:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete Batch
+  const handleDeleteBatch = async (batchUuid: string) => {
+    if (!confirm('Are you sure you want to delete this batch?')) return;
+    try {
+      await AcademyStudentService.deleteBatch(batchUuid);
+      setBatches(prev => prev.filter(b => b.batchUuid !== batchUuid));
+    } catch (err) {
+      console.error('Failed to delete batch:', err);
+    }
+  };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Student Roster</h1>
-          <p className="text-foreground/50 font-medium mt-1">Manage athletes, batches, and fee status for {org.name}.</p>
-        </div>
+    <div className="min-h-[calc(100vh-80px)] bg-background pb-28 sm:pb-32">
+      <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-500">
         
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-foreground/10 text-sm font-bold text-foreground hover:bg-foreground/5 transition-colors">
-            <Filter className="w-4 h-4" /> Filter
-          </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20">
-            <Plus className="w-4 h-4" /> Enroll Student
-          </button>
-        </div>
-      </div>
+        {/* ══════════════════════════════════════════════════════════════════════
+            HEADER & ACTION CONTROLS
+           ══════════════════════════════════════════════════════════════════════ */}
+        <div className="bg-surface/90 border border-white/10 p-4 sm:p-7 rounded-2xl sm:rounded-[32px] shadow-2xl backdrop-blur-2xl relative overflow-hidden space-y-3.5 sm:space-y-4">
+          {/* Ambient Glows */}
+          <div className="absolute top-0 right-0 w-60 sm:w-80 h-60 sm:h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-60 sm:w-80 h-60 sm:h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16" />
 
-      {/* Analytics Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-surface border border-foreground/5 p-4 rounded-2xl shadow-sm">
-          <div className="text-foreground/50 text-xs font-bold uppercase tracking-widest mb-1">Total Students</div>
-          <div className="text-2xl font-black text-foreground">142</div>
-        </div>
-        <div className="bg-surface border border-foreground/5 p-4 rounded-2xl shadow-sm">
-          <div className="text-foreground/50 text-xs font-bold uppercase tracking-widest mb-1">Active Batches</div>
-          <div className="text-2xl font-black text-foreground">8</div>
-        </div>
-        <div className="bg-surface border border-foreground/5 p-4 rounded-2xl shadow-sm">
-          <div className="text-green-500/80 text-xs font-bold uppercase tracking-widest mb-1">Fees Collected</div>
-          <div className="text-2xl font-black text-green-500">85%</div>
-        </div>
-        <div className="bg-surface border border-foreground/5 p-4 rounded-2xl shadow-sm">
-          <div className="text-red-500/80 text-xs font-bold uppercase tracking-widest mb-1">Overdue Payments</div>
-          <div className="text-2xl font-black text-red-500">12</div>
-        </div>
-      </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/15 text-primary border border-primary/30 flex items-center justify-center shrink-0 shadow-inner">
+                <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-foreground tracking-tight truncate">
+                    Student Roster
+                  </h1>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                    Academy OS
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-foreground/50 truncate font-medium">
+                  Athlete enrollment, batch assignments, guardian contacts & fee ledger for {activeOrg?.name || 'Academy'}.
+                </p>
+              </div>
+            </div>
 
-      {/* Search Bar */}
-      <div className="bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm flex items-center gap-4">
-        <div className="relative flex-grow">
-          <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
-          <input 
-            type="text" 
-            placeholder="Search students by name or batch..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-background border border-foreground/10 rounded-xl pl-12 pr-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-          />
-        </div>
-      </div>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+              <button
+                onClick={() => setShowBatchModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-xs sm:text-sm font-bold text-foreground transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Layers className="w-3.5 h-3.5 text-primary" />
+                <span>Batches</span>
+              </button>
 
-      {/* Students List */}
-      <div className="bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
-                <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Student</th>
-                <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Level</th>
-                <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Batch</th>
-                <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Guardian Info</th>
-                <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Fee Status</th>
-                <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-foreground/5">
-              {filteredStudents.map((student) => (
-                <tr key={student.id} className="hover:bg-foreground/[0.02] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center text-foreground font-bold shrink-0">
-                        {student.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-bold text-foreground">{student.name}</div>
-                        <div className="text-xs text-foreground/50">Age: {student.age}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <GraduationCap className="w-3.5 h-3.5 text-foreground/40" />
-                      <span className="text-sm font-semibold text-foreground/70">{student.level}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-block px-2.5 py-1 rounded bg-foreground/5 text-xs font-bold text-foreground/70 border border-foreground/10">
-                      {student.batch}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-bold text-foreground/80">{student.parent}</div>
-                    <div className="flex items-center gap-1 mt-0.5 text-xs text-foreground/50">
-                      <Phone className="w-3 h-3" /> {student.phone}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5">
-                      {student.feeStatus === 'Paid' ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <AlertCircle className={`w-4 h-4 ${student.feeStatus === 'Overdue' ? 'text-red-500' : 'text-yellow-500'}`} />
-                      )}
-                      <span className={`text-sm font-black ${
-                        student.feeStatus === 'Paid' ? 'text-green-500' : 
-                        student.feeStatus === 'Overdue' ? 'text-red-500' : 'text-yellow-500'
-                      }`}>
-                        {student.feeStatus}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="px-3 py-1.5 rounded-lg bg-foreground/5 hover:bg-foreground/10 text-xs font-bold text-foreground transition-colors border border-transparent hover:border-foreground/10">
-                        Profile
-                      </button>
-                      <button className="p-2 rounded-lg hover:bg-foreground/10 text-foreground/60 hover:text-foreground transition-colors" title="Options">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              
-              {filteredStudents.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <div className="text-foreground/40 font-medium">No students found.</div>
-                  </td>
-                </tr>
+              {canManage && (
+                <button
+                  onClick={handleOpenEnroll}
+                  className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Enroll Student</span>
+                </button>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            TELEMETRY KPI DECK (2x2 on mobile, 4x1 on desktop)
+           ══════════════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+          {/* Total Students */}
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Total Athletes</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center shrink-0">
+                <Users className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="text-lg sm:text-3xl font-black text-foreground">
+                {summary?.totalStudents ?? students.length}
+              </div>
+              <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
+                {summary?.activeStudents ?? students.length} actively training
+              </div>
+            </div>
+          </div>
+
+          {/* Active Batches */}
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Training Batches</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/25 flex items-center justify-center shrink-0">
+                <Layers className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="text-lg sm:text-3xl font-black text-foreground">
+                {batches.length}
+              </div>
+              <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
+                {batches.reduce((acc, b) => acc + (b.maxCapacity || 20), 0)} total capacity
+              </div>
+            </div>
+          </div>
+
+          {/* Fee Collection Rate */}
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider">Fees Collected</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center justify-center shrink-0">
+                <CreditCard className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="text-lg sm:text-3xl font-black text-emerald-400">
+                {summary?.feeCollectionPercentage ?? (students.length > 0 ? Math.round((students.filter(s => s.feeStatus === 'PAID').length / students.length) * 100) : 100)}%
+              </div>
+              <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
+                {students.filter(s => s.feeStatus === 'PAID').length} paid this cycle
+              </div>
+            </div>
+          </div>
+
+          {/* Overdue Payments */}
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] sm:text-xs font-bold text-rose-400 uppercase tracking-wider">Overdue Fees</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/25 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="text-lg sm:text-3xl font-black text-rose-400">
+                {students.filter(s => s.feeStatus === 'OVERDUE').length}
+              </div>
+              <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
+                {students.filter(s => s.feeStatus === 'PENDING').length} pending invoices
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            SEARCH & FILTER CONTROLS BAR
+           ══════════════════════════════════════════════════════════════════════ */}
+        <div className="bg-surface/90 border border-white/10 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xl backdrop-blur-xl space-y-3">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
+            {/* Search Input */}
+            <div className="relative flex-grow">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
+              <input
+                type="text"
+                placeholder="Search athlete, parent, phone, or batch..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full bg-background border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-foreground/30"
+              />
+            </div>
+
+            {/* Dropdown Filters */}
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              {/* Level Filter */}
+              <select
+                value={selectedLevel}
+                onChange={e => setSelectedLevel(e.target.value)}
+                className="bg-background border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shrink-0 cursor-pointer"
+              >
+                <option value="ALL">All Levels</option>
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+                <option value="ELITE">Elite</option>
+                <option value="PRO">Pro</option>
+              </select>
+
+              {/* Batch Filter */}
+              <select
+                value={selectedBatch}
+                onChange={e => setSelectedBatch(e.target.value)}
+                className="bg-background border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shrink-0 cursor-pointer max-w-[150px] truncate"
+              >
+                <option value="ALL">All Batches</option>
+                {batches.map(b => (
+                  <option key={b.batchUuid} value={b.batchUuid}>
+                    {b.batchName}
+                  </option>
+                ))}
+              </select>
+
+              {/* Fee Status Filter */}
+              <select
+                value={selectedFeeStatus}
+                onChange={e => setSelectedFeeStatus(e.target.value)}
+                className="bg-background border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shrink-0 cursor-pointer"
+              >
+                <option value="ALL">All Fees</option>
+                <option value="PAID">Paid</option>
+                <option value="PENDING">Pending</option>
+                <option value="OVERDUE">Overdue</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            STUDENT ROSTER: DESKTOP TABLE & MOBILE CARDS
+           ══════════════════════════════════════════════════════════════════════ */}
+        <div className="bg-surface/90 border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+          <div className="p-4 sm:p-5 border-b border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              <h3 className="text-sm sm:text-base font-black text-foreground">
+                Enrolled Athletes ({filteredStudents.length})
+              </h3>
+            </div>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-xs sm:text-sm font-semibold text-foreground/50">Loading student roster...</p>
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="py-16 text-center space-y-3 px-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-foreground/40">
+                <GraduationCap className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-black text-foreground">No students found</p>
+              <p className="text-xs text-foreground/50 max-w-sm mx-auto">
+                {searchTerm || selectedLevel !== 'ALL' || selectedBatch !== 'ALL'
+                  ? 'Try adjusting your filters or search criteria.'
+                  : 'Get started by enrolling your first athlete into the academy.'}
+              </p>
+              {canManage && (
+                <button
+                  onClick={handleOpenEnroll}
+                  className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:brightness-110 transition-all cursor-pointer shadow-md"
+                >
+                  Enroll Student
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-white/[0.02] text-[11px] font-black uppercase tracking-wider text-foreground/40">
+                      <th className="px-6 py-3.5">Athlete</th>
+                      <th className="px-6 py-3.5">Skill Level</th>
+                      <th className="px-6 py-3.5">Batch / Timing</th>
+                      <th className="px-6 py-3.5">Guardian Info</th>
+                      <th className="px-6 py-3.5">Monthly Fee</th>
+                      <th className="px-6 py-3.5">Fee Status</th>
+                      <th className="px-6 py-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs sm:text-sm">
+                    {filteredStudents.map(student => {
+                      const levelStyle = LEVEL_COLORS[student.level || 'BEGINNER'] || LEVEL_COLORS.BEGINNER;
+                      const feeStyle = FEE_COLORS[student.feeStatus || 'PENDING'] || FEE_COLORS.PENDING;
+
+                      return (
+                        <tr key={student.studentUuid} className="hover:bg-white/[0.02] transition-colors group">
+                          {/* Athlete Name & Age */}
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/25 flex items-center justify-center font-black text-xs shrink-0 shadow-inner">
+                                {student.fullName.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-extrabold text-foreground">{student.fullName}</div>
+                                <div className="text-[11px] text-foreground/40 font-medium">
+                                  {student.age ? `${student.age} yrs` : 'Athlete'} {student.gender ? `• ${student.gender}` : ''} {student.bloodGroup ? `• ${student.bloodGroup}` : ''}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Skill Level */}
+                          <td className="px-6 py-3.5">
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border ${levelStyle.bg} ${levelStyle.text} ${levelStyle.border}`}>
+                              {student.level || 'Beginner'}
+                            </span>
+                          </td>
+
+                          {/* Batch */}
+                          <td className="px-6 py-3.5">
+                            <div className="font-bold text-foreground text-xs">{student.batchName || 'Unassigned'}</div>
+                            {student.batchTiming && (
+                              <div className="text-[11px] font-mono text-foreground/40 flex items-center gap-1 mt-0.5">
+                                <Clock className="w-3 h-3 text-primary/70" />
+                                {student.batchTiming}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Guardian */}
+                          <td className="px-6 py-3.5">
+                            {student.parentName || student.parentPhone ? (
+                              <div>
+                                <div className="font-semibold text-foreground text-xs">{student.parentName || 'Guardian'}</div>
+                                {student.parentPhone && (
+                                  <a
+                                    href={`tel:${student.parentPhone}`}
+                                    className="text-[11px] font-mono text-primary hover:underline flex items-center gap-1 mt-0.5"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    {student.parentPhone}
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-foreground/30 text-xs">-</span>
+                            )}
+                          </td>
+
+                          {/* Monthly Fee */}
+                          <td className="px-6 py-3.5 font-mono font-bold text-foreground text-xs">
+                            {formatCurrency(student.monthlyFee)}
+                          </td>
+
+                          {/* Fee Status Dropdown / Pill */}
+                          <td className="px-6 py-3.5">
+                            {canManage ? (
+                              <select
+                                value={student.feeStatus || 'PENDING'}
+                                onChange={e => handleQuickFeeChange(student, e.target.value)}
+                                className={`px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border focus:outline-none cursor-pointer ${feeStyle.bg} ${feeStyle.text} ${feeStyle.border}`}
+                              >
+                                <option value="PAID">Paid</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="OVERDUE">Overdue</option>
+                              </select>
+                            ) : (
+                              <span className={`px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border ${feeStyle.bg} ${feeStyle.text} ${feeStyle.border}`}>
+                                {student.feeStatus || 'Pending'}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-6 py-3.5 text-right">
+                            {canManage && (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenEdit(student)}
+                                  title="Edit Student"
+                                  className="p-1.5 rounded-lg bg-surface border border-white/10 hover:bg-white/10 text-foreground/70 transition-all cursor-pointer"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteStudent(student.studentUuid)}
+                                  title="Delete Student"
+                                  className="p-1.5 rounded-lg bg-surface border border-white/10 hover:bg-rose-500/20 text-rose-400 transition-all cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE CARDS VIEW */}
+              <div className="block lg:hidden divide-y divide-white/5">
+                {filteredStudents.map(student => {
+                  const levelStyle = LEVEL_COLORS[student.level || 'BEGINNER'] || LEVEL_COLORS.BEGINNER;
+                  const feeStyle = FEE_COLORS[student.feeStatus || 'PENDING'] || FEE_COLORS.PENDING;
+
+                  return (
+                    <div key={student.studentUuid} className="p-3.5 space-y-2.5">
+                      {/* Top Row: Name, Level & Fee */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/25 flex items-center justify-center font-black text-xs shrink-0 shadow-inner">
+                            {student.fullName.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-extrabold text-foreground text-xs sm:text-sm truncate">
+                              {student.fullName}
+                            </div>
+                            <div className="text-[10px] text-foreground/40 font-medium">
+                              {student.age ? `${student.age} yrs` : 'Athlete'} {student.gender ? `• ${student.gender}` : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${levelStyle.bg} ${levelStyle.text} ${levelStyle.border}`}>
+                            {student.level || 'Beginner'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${feeStyle.bg} ${feeStyle.text} ${feeStyle.border}`}>
+                            {student.feeStatus || 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Middle Row: Batch & Fee */}
+                      <div className="flex items-center justify-between text-xs bg-background/60 p-2 rounded-xl border border-white/5">
+                        <div className="min-w-0">
+                          <span className="font-bold text-foreground block truncate">{student.batchName || 'Unassigned Batch'}</span>
+                          {student.batchTiming && (
+                            <span className="text-[10px] text-foreground/40 font-mono flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5 text-primary" /> {student.batchTiming}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-foreground/40 uppercase block">Fee</span>
+                          <span className="font-mono font-bold text-foreground text-xs">{formatCurrency(student.monthlyFee)}</span>
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: Parent Contact & Actions */}
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        {student.parentPhone ? (
+                          <a
+                            href={`tel:${student.parentPhone}`}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>{student.parentName || 'Call Parent'}</span>
+                          </a>
+                        ) : (
+                          <span className="text-[11px] text-foreground/30">No contact saved</span>
+                        )}
+
+                        {canManage && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenEdit(student)}
+                              className="p-1.5 rounded-lg bg-surface border border-white/10 text-foreground/70"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStudent(student.studentUuid)}
+                              className="p-1.5 rounded-lg bg-surface border border-white/10 text-rose-400"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            ENROLL / EDIT STUDENT MODAL
+           ══════════════════════════════════════════════════════════════════════ */}
+        {showEnrollModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-primary" />
+                  <h3 className="text-base sm:text-lg font-black text-foreground">
+                    {editingStudent ? 'Edit Athlete Profile' : 'Enroll New Student'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowEnrollModal(false)}
+                  className="p-1.5 rounded-xl hover:bg-white/10 text-foreground/50 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitStudent} className="space-y-4 text-xs sm:text-sm">
+                {/* 1. Athlete Information */}
+                <div>
+                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">1. Athlete Details</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Aarav Patel"
+                        value={studentForm.fullName}
+                        onChange={e => setStudentForm({ ...studentForm, fullName: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Gender</label>
+                      <select
+                        value={studentForm.gender}
+                        onChange={e => setStudentForm({ ...studentForm, gender: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Age</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 14"
+                        value={studentForm.age}
+                        onChange={e => setStudentForm({ ...studentForm, age: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Blood Group</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. O+, B+, A+"
+                        value={studentForm.bloodGroup}
+                        onChange={e => setStudentForm({ ...studentForm, bloodGroup: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Skill Level & Batch Assignment */}
+                <div>
+                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">2. Training Level & Batch</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Skill Level</label>
+                      <select
+                        value={studentForm.level}
+                        onChange={e => setStudentForm({ ...studentForm, level: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        <option value="BEGINNER">Beginner</option>
+                        <option value="INTERMEDIATE">Intermediate</option>
+                        <option value="ADVANCED">Advanced</option>
+                        <option value="ELITE">Elite</option>
+                        <option value="PRO">Pro</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Assign Batch</label>
+                      <select
+                        value={studentForm.batchUuid}
+                        onChange={e => setStudentForm({ ...studentForm, batchUuid: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        <option value="">No Batch / Unassigned</option>
+                        {batches.map(b => (
+                          <option key={b.batchUuid} value={b.batchUuid}>
+                            {b.batchName} ({b.startTime || ''} - {b.endTime || ''})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Guardian & Emergency Contact */}
+                <div>
+                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">3. Guardian Contacts</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Parent / Guardian Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Suresh Patel"
+                        value={studentForm.parentName}
+                        onChange={e => setStudentForm({ ...studentForm, parentName: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Parent Phone Number *</label>
+                      <input
+                        type="tel"
+                        placeholder="e.g. +91 98765 43210"
+                        value={studentForm.parentPhone}
+                        onChange={e => setStudentForm({ ...studentForm, parentPhone: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Parent Email</label>
+                      <input
+                        type="email"
+                        placeholder="e.g. parent@gmail.com"
+                        value={studentForm.parentEmail}
+                        onChange={e => setStudentForm({ ...studentForm, parentEmail: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Emergency Contact</label>
+                      <input
+                        type="tel"
+                        placeholder="e.g. +91 91234 56789"
+                        value={studentForm.emergencyContact}
+                        onChange={e => setStudentForm({ ...studentForm, emergencyContact: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Fee Setup */}
+                <div>
+                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">4. Fee & Billing</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Monthly Fee (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="1500"
+                        value={studentForm.monthlyFee}
+                        onChange={e => setStudentForm({ ...studentForm, monthlyFee: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Billing Frequency</label>
+                      <select
+                        value={studentForm.feeFrequency}
+                        onChange={e => setStudentForm({ ...studentForm, feeFrequency: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="QUARTERLY">Quarterly</option>
+                        <option value="ANNUALLY">Annually</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Fee Status</label>
+                      <select
+                        value={studentForm.feeStatus}
+                        onChange={e => setStudentForm({ ...studentForm, feeStatus: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        <option value="PAID">Paid</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="OVERDUE">Overdue</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Buttons */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setShowEnrollModal(false)}
+                    className="px-4 py-2 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-foreground/70 font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-5 py-2 rounded-xl bg-primary text-black font-black hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    <span>{editingStudent ? 'Update Athlete' : 'Enroll Athlete'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            BATCH MANAGEMENT MODAL
+           ══════════════════════════════════════════════════════════════════════ */}
+        {showBatchModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-primary" />
+                  <h3 className="text-base sm:text-lg font-black text-foreground">Academy Batches & Schedules</h3>
+                </div>
+                <button
+                  onClick={() => setShowBatchModal(false)}
+                  className="p-1.5 rounded-xl hover:bg-white/10 text-foreground/50 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Create Batch Form */}
+              {canManage && (
+                <form onSubmit={handleCreateBatch} className="bg-background/60 border border-white/10 p-3.5 sm:p-4 rounded-2xl space-y-3">
+                  <h4 className="text-xs font-black uppercase text-primary tracking-wider">Create New Training Batch</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Batch Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Morning Elite Sparing"
+                        value={batchForm.batchName}
+                        onChange={e => setBatchForm({ ...batchForm, batchName: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Sport</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Badminton"
+                        value={batchForm.sportType}
+                        onChange={e => setBatchForm({ ...batchForm, sportType: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Assigned Coach</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Vikram Singh"
+                        value={batchForm.coachName}
+                        onChange={e => setBatchForm({ ...batchForm, coachName: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Days of Week</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. MON,WED,FRI"
+                        value={batchForm.daysOfWeek}
+                        onChange={e => setBatchForm({ ...batchForm, daysOfWeek: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Start Time</label>
+                      <input
+                        type="time"
+                        value={batchForm.startTime}
+                        onChange={e => setBatchForm({ ...batchForm, startTime: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">End Time</label>
+                      <input
+                        type="time"
+                        value={batchForm.endTime}
+                        onChange={e => setBatchForm({ ...batchForm, endTime: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs hover:brightness-110 transition-all cursor-pointer shadow-md"
+                    >
+                      + Add Batch
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Batches List */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-black uppercase text-foreground/50 tracking-wider">Active Batches ({batches.length})</h4>
+                {batches.length === 0 ? (
+                  <p className="text-xs text-foreground/40 py-4 text-center">No batches configured yet.</p>
+                ) : (
+                  batches.map(batch => (
+                    <div
+                      key={batch.batchUuid}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-background/50 border border-white/5 text-xs"
+                    >
+                      <div>
+                        <div className="font-extrabold text-foreground text-sm">{batch.batchName}</div>
+                        <div className="text-foreground/40 text-[11px] flex items-center gap-2 mt-0.5">
+                          <span className="text-primary font-bold">{batch.daysOfWeek || 'Daily'}</span>
+                          <span>•</span>
+                          <span className="font-mono">{batch.startTime || ''} - {batch.endTime || ''}</span>
+                          {batch.coachName && (
+                            <>
+                              <span>•</span>
+                              <span>Coach {batch.coachName}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/5 border border-white/10 text-foreground/70">
+                          {batch.enrolledCount || 0} / {batch.maxCapacity || 20} Athletes
+                        </span>
+                        {canManage && (
+                          <button
+                            onClick={() => handleDeleteBatch(batch.batchUuid)}
+                            className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
-      
     </div>
   );
 }
