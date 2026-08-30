@@ -11,6 +11,8 @@ public class AcademyBatchResponse {
     private UUID batchUuid;
     private Long organizationId;
     private UUID organizationUuid;
+    private UUID courtUuid;
+    private String courtName;
     private String batchName;
     private String sportType;
     private String level;
@@ -57,6 +59,22 @@ public class AcademyBatchResponse {
 
     public void setOrganizationUuid(UUID organizationUuid) {
         this.organizationUuid = organizationUuid;
+    }
+
+    public UUID getCourtUuid() {
+        return courtUuid;
+    }
+
+    public void setCourtUuid(UUID courtUuid) {
+        this.courtUuid = courtUuid;
+    }
+
+    public String getCourtName() {
+        return courtName;
+    }
+
+    public void setCourtName(String courtName) {
+        this.courtName = courtName;
     }
 
     public String getBatchName() {

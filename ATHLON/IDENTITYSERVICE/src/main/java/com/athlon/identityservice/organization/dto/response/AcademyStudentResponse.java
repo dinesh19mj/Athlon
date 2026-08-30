@@ -21,6 +21,9 @@ public class AcademyStudentResponse {
     private String bloodGroup;
     private String level;
 
+    private UUID courtUuid;
+    private String courtName;
+
     private UUID batchUuid;
     private String batchName;
     private String batchTiming;
@@ -137,6 +140,22 @@ public class AcademyStudentResponse {
 
     public void setLevel(String level) {
         this.level = level;
+    }
+
+    public UUID getCourtUuid() {
+        return courtUuid;
+    }
+
+    public void setCourtUuid(UUID courtUuid) {
+        this.courtUuid = courtUuid;
+    }
+
+    public String getCourtName() {
+        return courtName;
+    }
+
+    public void setCourtName(String courtName) {
+        this.courtName = courtName;
     }
 
     public UUID getBatchUuid() {

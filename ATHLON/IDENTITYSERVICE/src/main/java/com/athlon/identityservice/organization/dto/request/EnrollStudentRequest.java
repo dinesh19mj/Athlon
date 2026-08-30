@@ -23,6 +23,7 @@ public class EnrollStudentRequest {
     private String bloodGroup;
     private String level; // BEGINNER, INTERMEDIATE, ADVANCED, ELITE, PRO
 
+    private UUID courtUuid;
     private UUID batchUuid;
     private String batchName;
     private String batchTiming;
@@ -103,6 +104,14 @@ public class EnrollStudentRequest {
 
     public void setLevel(String level) {
         this.level = level;
+    }
+
+    public UUID getCourtUuid() {
+        return courtUuid;
+    }
+
+    public void setCourtUuid(UUID courtUuid) {
+        this.courtUuid = courtUuid;
     }
 
     public UUID getBatchUuid() {

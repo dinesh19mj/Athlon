@@ -33,6 +33,12 @@ public class AcademyBatch {
     @Column(name = "organization_uuid", nullable = false)
     private UUID organizationUuid;
 
+    @Column(name = "court_uuid")
+    private UUID courtUuid;
+
+    @Column(name = "court_name", length = 150)
+    private String courtName;
+
     @Column(name = "batch_name", nullable = false, length = 100)
     private String batchName;
 
@@ -123,6 +129,22 @@ public class AcademyBatch {
 
     public void setOrganizationUuid(UUID organizationUuid) {
         this.organizationUuid = organizationUuid;
+    }
+
+    public UUID getCourtUuid() {
+        return courtUuid;
+    }
+
+    public void setCourtUuid(UUID courtUuid) {
+        this.courtUuid = courtUuid;
+    }
+
+    public String getCourtName() {
+        return courtName;
+    }
+
+    public void setCourtName(String courtName) {
+        this.courtName = courtName;
     }
 
     public String getBatchName() {

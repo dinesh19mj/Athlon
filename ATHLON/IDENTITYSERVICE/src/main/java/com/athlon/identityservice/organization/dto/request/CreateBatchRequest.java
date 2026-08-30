@@ -15,6 +15,7 @@ public class CreateBatchRequest {
     @NotBlank(message = "Batch name is required")
     private String batchName;
 
+    private UUID courtUuid;
     private String sportType;
     private String level;
     private UUID coachUuid;
@@ -39,6 +40,14 @@ public class CreateBatchRequest {
 
     public void setBatchName(String batchName) {
         this.batchName = batchName;
+    }
+
+    public UUID getCourtUuid() {
+        return courtUuid;
+    }
+
+    public void setCourtUuid(UUID courtUuid) {
+        this.courtUuid = courtUuid;
     }
 
     public String getSportType() {

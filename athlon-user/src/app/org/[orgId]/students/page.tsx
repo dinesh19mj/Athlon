@@ -4,14 +4,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { OrganizationService } from '@/lib/api/organization';
 import {
   AcademyStudentService,
   AcademyStudent,
   AcademyBatch,
+  AcademyCourt,
   AcademySummary,
   EnrollStudentPayload,
   UpdateStudentPayload,
   CreateBatchPayload,
+  CreateCourtPayload,
   StudentLevel,
   FeeStatus
 } from '@/lib/api/academyStudent';
@@ -44,8 +47,47 @@ import {
   Zap,
   Info,
   CalendarDays,
-  User
+  User,
+  Building2,
+  MapPin,
+  Flame,
+  Check
 } from 'lucide-react';
+
+const AVAILABLE_SPORTS = [
+  { name: 'Badminton', icon: '🏸' },
+  { name: 'Cricket', icon: '🏏' },
+  { name: 'Football', icon: '⚽' },
+  { name: 'Tennis', icon: '🎾' },
+  { name: 'Table Tennis', icon: '🏓' },
+  { name: 'Pickleball', icon: '🥒' },
+  { name: 'Basketball', icon: '🏀' },
+  { name: 'Volleyball', icon: '🏐' },
+  { name: 'Squash', icon: '🎾' }
+];
+
+const AVAILABLE_SPORTS_ICONS: Record<string, string> = {
+  Badminton: '🏸',
+  Cricket: '🏏',
+  Football: '⚽',
+  Tennis: '🎾',
+  'Table Tennis': '🏓',
+  Pickleball: '🥒',
+  Basketball: '🏀',
+  Volleyball: '🏐',
+  Squash: '🎾'
+};
+
+const SURFACE_TYPES = [
+  'Synthetic Mat',
+  'Wooden Flooring',
+  'Clay Court',
+  'Hard Court',
+  'Grass Turf',
+  'Artificial Turf',
+  'Rubberized Court',
+  'Concrete'
+];
 
 const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   BEGINNER: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/30' },
@@ -80,15 +122,24 @@ export default function StudentsPage() {
   const { isAdmin, isCoach } = useOrgRole();
   const canManage = isAdmin || isCoach;
 
+  // Academy Sport State
+  const [academySport, setAcademySport] = useState<string>('');
+  const [selectedSportToSave, setSelectedSportToSave] = useState<string>('Badminton');
+  const [isSavingSport, setIsSavingSport] = useState(false);
+  const [showChangeSportModal, setShowChangeSportModal] = useState(false);
+
   // Data states
-  const [students, setStudents] = useState<AcademyStudent[]>([]);
+  const [courts, setCourts] = useState<AcademyCourt[]>([]);
   const [batches, setBatches] = useState<AcademyBatch[]>([]);
+  const [students, setStudents] = useState<AcademyStudent[]>([]);
   const [summary, setSummary] = useState<AcademySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [toastSuccess, setToastSuccess] = useState<string | null>(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCourt, setSelectedCourt] = useState<string>('ALL');
   const [selectedLevel, setSelectedLevel] = useState<string>('ALL');
   const [selectedBatch, setSelectedBatch] = useState<string>('ALL');
   const [selectedFeeStatus, setSelectedFeeStatus] = useState<string>('ALL');
@@ -97,7 +148,7 @@ export default function StudentsPage() {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<AcademyStudent | null>(null);
   const [showBatchModal, setShowBatchModal] = useState(false);
-  const [actionMenuStudentId, setActionMenuStudentId] = useState<string | null>(null);
+  const [showCourtModal, setShowCourtModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Form State for Enroll / Edit Student
@@ -108,8 +159,8 @@ export default function StudentsPage() {
     age: string;
     bloodGroup: string;
     level: string;
+    courtUuid: string;
     batchUuid: string;
-    sportType: string;
     parentName: string;
     parentPhone: string;
     parentEmail: string;
@@ -126,8 +177,8 @@ export default function StudentsPage() {
     age: '',
     bloodGroup: '',
     level: 'BEGINNER',
+    courtUuid: '',
     batchUuid: '',
-    sportType: '',
     parentName: '',
     parentPhone: '',
     parentEmail: '',
@@ -139,10 +190,25 @@ export default function StudentsPage() {
     feeStatus: 'PAID'
   });
 
+  // Form State for Court Create
+  const [courtForm, setCourtForm] = useState<{
+    name: string;
+    surfaceType: string;
+    courtNumber: string;
+    location: string;
+    hourlyRate: string;
+  }>({
+    name: '',
+    surfaceType: 'Synthetic Mat',
+    courtNumber: '',
+    location: '',
+    hourlyRate: '500'
+  });
+
   // Form State for Batch Create
   const [batchForm, setBatchForm] = useState<{
+    courtUuid: string;
     batchName: string;
-    sportType: string;
     level: string;
     coachName: string;
     daysOfWeek: string;
@@ -151,8 +217,8 @@ export default function StudentsPage() {
     maxCapacity: string;
     monthlyFee: string;
   }>({
+    courtUuid: '',
     batchName: '',
-    sportType: '',
     level: 'ALL',
     coachName: '',
     daysOfWeek: 'MON,WED,FRI',
@@ -162,22 +228,33 @@ export default function StudentsPage() {
     monthlyFee: '1500'
   });
 
-  // Fetch all academy data
+  // Fetch all academy data + Org Profile for Sport
   const fetchData = async () => {
     if (!orgUuid) return;
     try {
       setLoading(true);
-      const [studentsRes, batchesRes, summaryRes] = await Promise.allSettled([
-        AcademyStudentService.getStudents(orgUuid),
+      const [profileRes, courtsRes, batchesRes, studentsRes, summaryRes] = await Promise.allSettled([
+        OrganizationService.getProfileByOrgUuid(orgUuid),
+        AcademyStudentService.getCourts(orgUuid),
         AcademyStudentService.getBatches(orgUuid),
+        AcademyStudentService.getStudents(orgUuid),
         AcademyStudentService.getSummary(orgUuid)
       ]);
 
-      if (studentsRes.status === 'fulfilled') setStudents(studentsRes.value || []);
+      if (profileRes.status === 'fulfilled') {
+        const prof = (profileRes.value as any)?.data || profileRes.value;
+        if (prof?.sportsOffered) {
+          setAcademySport(prof.sportsOffered);
+          setSelectedSportToSave(prof.sportsOffered);
+        }
+      }
+
+      if (courtsRes.status === 'fulfilled') setCourts(courtsRes.value || []);
       if (batchesRes.status === 'fulfilled') setBatches(batchesRes.value || []);
+      if (studentsRes.status === 'fulfilled') setStudents(studentsRes.value || []);
       if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value || null);
     } catch (err) {
-      console.error('Failed to load academy students:', err);
+      console.error('Failed to load academy data:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -188,9 +265,34 @@ export default function StudentsPage() {
     fetchData();
   }, [orgUuid]);
 
+  const showToast = (msg: string) => {
+    setToastSuccess(msg);
+    setTimeout(() => setToastSuccess(null), 3500);
+  };
+
+  // Save Academy Sport
+  const handleSaveAcademySport = async (sportName: string) => {
+    if (!orgUuid || !sportName) return;
+    try {
+      setIsSavingSport(true);
+      await OrganizationService.saveProfile({
+        organizationUuid: orgUuid,
+        sportsOffered: sportName
+      });
+      setAcademySport(sportName);
+      setShowChangeSportModal(false);
+      showToast(`Academy sport set to ${sportName}!`);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Failed to save academy sport.');
+    } finally {
+      setIsSavingSport(false);
+    }
+  };
+
   // Filtered Students
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
+      if (selectedCourt !== 'ALL' && s.courtUuid !== selectedCourt) return false;
       if (selectedLevel !== 'ALL' && s.level !== selectedLevel) return false;
       if (selectedBatch !== 'ALL' && s.batchUuid !== selectedBatch) return false;
       if (selectedFeeStatus !== 'ALL' && s.feeStatus !== selectedFeeStatus) return false;
@@ -201,13 +303,14 @@ export default function StudentsPage() {
         const parent = (s.parentName || '').toLowerCase();
         const phone = (s.parentPhone || '');
         const batch = (s.batchName || '').toLowerCase();
-        if (!name.includes(q) && !parent.includes(q) && !phone.includes(q) && !batch.includes(q)) {
+        const court = (s.courtName || '').toLowerCase();
+        if (!name.includes(q) && !parent.includes(q) && !phone.includes(q) && !batch.includes(q) && !court.includes(q)) {
           return false;
         }
       }
       return true;
     });
-  }, [students, selectedLevel, selectedBatch, selectedFeeStatus, searchTerm]);
+  }, [students, selectedCourt, selectedLevel, selectedBatch, selectedFeeStatus, searchTerm]);
 
   // Open Enroll Modal
   const handleOpenEnroll = () => {
@@ -219,8 +322,8 @@ export default function StudentsPage() {
       age: '',
       bloodGroup: '',
       level: 'BEGINNER',
+      courtUuid: courts[0]?.courtUuid || '',
       batchUuid: batches[0]?.batchUuid || '',
-      sportType: '',
       parentName: '',
       parentPhone: '',
       parentEmail: '',
@@ -244,8 +347,8 @@ export default function StudentsPage() {
       age: student.age ? String(student.age) : '',
       bloodGroup: student.bloodGroup || '',
       level: student.level || 'BEGINNER',
+      courtUuid: student.courtUuid || '',
       batchUuid: student.batchUuid || '',
-      sportType: student.sportType || '',
       parentName: student.parentName || '',
       parentPhone: student.parentPhone || '',
       parentEmail: student.parentEmail || '',
@@ -257,7 +360,6 @@ export default function StudentsPage() {
       feeStatus: student.feeStatus || 'PAID'
     });
     setShowEnrollModal(true);
-    setActionMenuStudentId(null);
   };
 
   // Submit Student Enroll or Edit
@@ -268,9 +370,9 @@ export default function StudentsPage() {
     try {
       setSubmitting(true);
       const selectedB = batches.find(b => b.batchUuid === studentForm.batchUuid);
+      const selectedC = courts.find(c => c.courtUuid === (studentForm.courtUuid || selectedB?.courtUuid));
 
       if (editingStudent) {
-        // Update
         const payload: UpdateStudentPayload = {
           studentUuid: editingStudent.studentUuid,
           fullName: studentForm.fullName.trim(),
@@ -279,10 +381,11 @@ export default function StudentsPage() {
           age: studentForm.age ? parseInt(studentForm.age) : undefined,
           bloodGroup: studentForm.bloodGroup,
           level: studentForm.level,
+          courtUuid: selectedC?.courtUuid || selectedB?.courtUuid,
           batchUuid: studentForm.batchUuid || undefined,
           batchName: selectedB?.batchName,
           batchTiming: selectedB ? `${selectedB.startTime} - ${selectedB.endTime}` : undefined,
-          sportType: studentForm.sportType || selectedB?.sportType,
+          sportType: academySport || 'Badminton',
           parentName: studentForm.parentName,
           parentPhone: studentForm.parentPhone,
           parentEmail: studentForm.parentEmail,
@@ -295,8 +398,8 @@ export default function StudentsPage() {
         };
         const updated = await AcademyStudentService.updateStudent(payload);
         setStudents(prev => prev.map(s => s.studentUuid === updated.studentUuid ? updated : s));
+        showToast('Athlete profile updated successfully!');
       } else {
-        // Enroll New
         const payload: EnrollStudentPayload = {
           organizationUuid: orgUuid,
           fullName: studentForm.fullName.trim(),
@@ -305,10 +408,11 @@ export default function StudentsPage() {
           age: studentForm.age ? parseInt(studentForm.age) : undefined,
           bloodGroup: studentForm.bloodGroup,
           level: studentForm.level,
+          courtUuid: selectedC?.courtUuid || selectedB?.courtUuid,
           batchUuid: studentForm.batchUuid || undefined,
           batchName: selectedB?.batchName,
           batchTiming: selectedB ? `${selectedB.startTime} - ${selectedB.endTime}` : undefined,
-          sportType: studentForm.sportType || selectedB?.sportType,
+          sportType: academySport || 'Badminton',
           parentName: studentForm.parentName,
           parentPhone: studentForm.parentPhone,
           parentEmail: studentForm.parentEmail,
@@ -321,10 +425,10 @@ export default function StudentsPage() {
         };
         const created = await AcademyStudentService.enrollStudent(payload);
         setStudents(prev => [created, ...prev]);
+        showToast('Athlete enrolled successfully into academy!');
       }
 
       setShowEnrollModal(false);
-      // Refresh summary KPIs
       AcademyStudentService.getSummary(orgUuid).then(res => setSummary(res));
     } catch (err) {
       console.error('Failed to save student:', err);
@@ -335,11 +439,11 @@ export default function StudentsPage() {
 
   // Delete Student
   const handleDeleteStudent = async (studentUuid: string) => {
-    if (!confirm('Are you sure you want to remove this student from the academy roster?')) return;
+    if (!confirm('Are you sure you want to remove this athlete from the academy roster?')) return;
     try {
       await AcademyStudentService.deleteStudent(studentUuid);
       setStudents(prev => prev.filter(s => s.studentUuid !== studentUuid));
-      setActionMenuStudentId(null);
+      showToast('Athlete removed from roster.');
       if (orgUuid) AcademyStudentService.getSummary(orgUuid).then(res => setSummary(res));
     } catch (err) {
       console.error('Failed to delete student:', err);
@@ -354,9 +458,58 @@ export default function StudentsPage() {
         feeStatus: newFeeStatus
       });
       setStudents(prev => prev.map(s => s.studentUuid === updated.studentUuid ? updated : s));
+      showToast(`Fee marked as ${newFeeStatus}.`);
       if (orgUuid) AcademyStudentService.getSummary(orgUuid).then(res => setSummary(res));
     } catch (err) {
       console.error('Failed to update fee status:', err);
+    }
+  };
+
+  // Create Court Submit
+  const handleCreateCourt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courtForm.name.trim() || !orgUuid) return;
+
+    try {
+      setSubmitting(true);
+      const payload: CreateCourtPayload = {
+        organizationUuid: orgUuid,
+        name: courtForm.name.trim(),
+        sportType: academySport || 'Badminton',
+        surfaceType: courtForm.surfaceType,
+        courtNumber: courtForm.courtNumber,
+        location: courtForm.location,
+        hourlyRate: courtForm.hourlyRate ? parseFloat(courtForm.hourlyRate) : 500
+      };
+
+      const created = await AcademyStudentService.createCourt(payload);
+      if (created) {
+        setCourts(prev => [created, ...prev]);
+        setCourtForm({
+          name: '',
+          surfaceType: 'Synthetic Mat',
+          courtNumber: '',
+          location: '',
+          hourlyRate: '500'
+        });
+        showToast('New court venue added successfully!');
+      }
+    } catch (err) {
+      console.error('Failed to create court:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete Court
+  const handleDeleteCourt = async (courtUuid: string) => {
+    if (!confirm('Are you sure you want to delete this court/venue?')) return;
+    try {
+      await AcademyStudentService.deleteCourt(courtUuid);
+      setCourts(prev => prev.filter(c => c.courtUuid !== courtUuid));
+      showToast('Court removed.');
+    } catch (err) {
+      console.error('Failed to delete court:', err);
     }
   };
 
@@ -369,8 +522,9 @@ export default function StudentsPage() {
       setSubmitting(true);
       const payload: CreateBatchPayload = {
         organizationUuid: orgUuid,
+        courtUuid: batchForm.courtUuid || courts[0]?.courtUuid || undefined,
         batchName: batchForm.batchName.trim(),
-        sportType: batchForm.sportType,
+        sportType: academySport || 'Badminton',
         level: batchForm.level,
         coachName: batchForm.coachName,
         daysOfWeek: batchForm.daysOfWeek,
@@ -383,8 +537,8 @@ export default function StudentsPage() {
       const created = await AcademyStudentService.createBatch(payload);
       setBatches(prev => [created, ...prev]);
       setBatchForm({
+        courtUuid: '',
         batchName: '',
-        sportType: '',
         level: 'ALL',
         coachName: '',
         daysOfWeek: 'MON,WED,FRI',
@@ -393,6 +547,7 @@ export default function StudentsPage() {
         maxCapacity: '20',
         monthlyFee: '1500'
       });
+      showToast('New training batch created!');
     } catch (err) {
       console.error('Failed to create batch:', err);
     } finally {
@@ -406,6 +561,7 @@ export default function StudentsPage() {
     try {
       await AcademyStudentService.deleteBatch(batchUuid);
       setBatches(prev => prev.filter(b => b.batchUuid !== batchUuid));
+      showToast('Batch removed.');
     } catch (err) {
       console.error('Failed to delete batch:', err);
     }
@@ -413,10 +569,67 @@ export default function StudentsPage() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-background pb-28 sm:pb-32">
+      {/* Toast Alert */}
+      {toastSuccess && (
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md animate-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span className="text-xs sm:text-sm font-bold">{toastSuccess}</span>
+        </div>
+      )}
+
       <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-500">
         
         {/* ══════════════════════════════════════════════════════════════════════
-            HEADER & ACTION CONTROLS
+            SPORT CONFIGURATION BANNER (IF NOT SET)
+           ══════════════════════════════════════════════════════════════════════ */}
+        {!academySport && !loading && (
+          <div className="bg-gradient-to-br from-primary/20 via-surface/90 to-surface/90 border-2 border-primary/40 p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary text-black flex items-center justify-center font-black">
+                <Flame className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-foreground">Configure Academy Sport</h3>
+                <p className="text-xs text-foreground/60">
+                  Select the primary sport this academy trains. All courts, batches, and student rosters will be tailored to this discipline.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-2">
+              {AVAILABLE_SPORTS.map(s => (
+                <button
+                  key={s.name}
+                  onClick={() => setSelectedSportToSave(s.name)}
+                  className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                    selectedSportToSave === s.name
+                      ? 'bg-primary text-black border-primary font-black scale-105 shadow-lg shadow-primary/25'
+                      : 'bg-surface/80 border-white/10 hover:border-white/20 text-foreground/70 hover:text-foreground'
+                  }`}
+                >
+                  <span className="text-2xl">{s.icon}</span>
+                  <span className="text-[11px] font-bold truncate">{s.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {canManage && (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => handleSaveAcademySport(selectedSportToSave)}
+                  disabled={isSavingSport}
+                  className="px-6 py-2.5 rounded-xl bg-primary text-black font-black text-xs sm:text-sm hover:brightness-110 transition-all shadow-lg shadow-primary/25 cursor-pointer flex items-center gap-2"
+                >
+                  {isSavingSport && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>Set Academy Sport ({selectedSportToSave})</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            HEADER & TOP ACTION CONTROLS
            ══════════════════════════════════════════════════════════════════════ */}
         <div className="bg-surface/90 border border-white/10 p-4 sm:p-7 rounded-2xl sm:rounded-[32px] shadow-2xl backdrop-blur-2xl relative overflow-hidden space-y-3.5 sm:space-y-4">
           {/* Ambient Glows */}
@@ -433,24 +646,40 @@ export default function StudentsPage() {
                   <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-foreground tracking-tight truncate">
                     Student Roster
                   </h1>
+                  {academySport && (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1">
+                      <span>{AVAILABLE_SPORTS_ICONS[academySport] || '🏆'}</span>
+                      <span>{academySport}</span>
+                    </span>
+                  )}
                   <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
                     Academy OS
                   </span>
                 </div>
                 <p className="text-[11px] sm:text-xs text-foreground/50 truncate font-medium">
-                  Athlete enrollment, batch assignments, guardian contacts & fee ledger for {activeOrg?.name || 'Academy'}.
+                  {courts.length} Courts • {batches.length} Batches • {students.length} Athletes at {activeOrg?.name || 'Academy'}.
                 </p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+            {/* Action Buttons (Courts, Batches, Enroll) */}
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+              {/* Courts Button */}
+              <button
+                onClick={() => setShowCourtModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-xs sm:text-sm font-bold text-foreground transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                <span>Courts ({courts.length})</span>
+              </button>
+
+              {/* Batches Button */}
               <button
                 onClick={() => setShowBatchModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-xs sm:text-sm font-bold text-foreground transition-all cursor-pointer shadow-sm active:scale-95"
               >
-                <Layers className="w-3.5 h-3.5 text-primary" />
-                <span>Batches</span>
+                <Layers className="w-3.5 h-3.5 text-purple-400" />
+                <span>Batches ({batches.length})</span>
               </button>
 
               {canManage && (
@@ -467,13 +696,13 @@ export default function StudentsPage() {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            TELEMETRY KPI DECK (2x2 on mobile, 4x1 on desktop)
+            TELEMETRY KPI DECK (4x1 on desktop, 2x2 on mobile)
            ══════════════════════════════════════════════════════════════════════ */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {/* Total Students */}
           <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Total Athletes</span>
+              <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Athletes</span>
               <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center shrink-0">
                 <Users className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
@@ -483,25 +712,28 @@ export default function StudentsPage() {
                 {summary?.totalStudents ?? students.length}
               </div>
               <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
-                {summary?.activeStudents ?? students.length} actively training
+                {summary?.activeStudents ?? students.length} active roster
               </div>
             </div>
           </div>
 
-          {/* Active Batches */}
-          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+          {/* Courts & Batches */}
+          <div
+            onClick={() => setShowCourtModal(true)}
+            className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 hover:border-blue-500/40 transition-all cursor-pointer shadow-md"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Training Batches</span>
-              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/25 flex items-center justify-center shrink-0">
-                <Layers className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+              <span className="text-[10px] sm:text-xs font-bold text-blue-400 uppercase tracking-wider">Courts & Batches</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center shrink-0">
+                <Building2 className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
             <div className="mt-2">
               <div className="text-lg sm:text-3xl font-black text-foreground">
-                {batches.length}
+                {courts.length} <span className="text-xs font-medium text-foreground/40 font-mono">/ {batches.length} batches</span>
               </div>
               <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
-                {batches.reduce((acc, b) => acc + (b.maxCapacity || 20), 0)} total capacity
+                {batches.reduce((acc, b) => acc + (b.maxCapacity || 20), 0)} max capacity
               </div>
             </div>
           </div>
@@ -509,7 +741,7 @@ export default function StudentsPage() {
           {/* Fee Collection Rate */}
           <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider">Fees Collected</span>
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider">Fee Adherence</span>
               <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center justify-center shrink-0">
                 <CreditCard className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
@@ -524,7 +756,7 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          {/* Overdue Payments */}
+          {/* Overdue Attention */}
           <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-xs font-bold text-rose-400 uppercase tracking-wider">Overdue Fees</span>
@@ -544,7 +776,7 @@ export default function StudentsPage() {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            SEARCH & FILTER CONTROLS BAR
+            SEARCH & MULTI-DIMENSIONAL FILTER CONTROLS BAR
            ══════════════════════════════════════════════════════════════════════ */}
         <div className="bg-surface/90 border border-white/10 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xl backdrop-blur-xl space-y-3">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
@@ -553,15 +785,29 @@ export default function StudentsPage() {
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
               <input
                 type="text"
-                placeholder="Search athlete, parent, phone, or batch..."
+                placeholder="Search athlete, parent, phone, court, or batch..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full bg-background border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-foreground/30"
               />
             </div>
 
-            {/* Dropdown Filters */}
+            {/* Dropdown Filters (Court, Level, Batch, Fee Status) */}
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              {/* Court Filter */}
+              <select
+                value={selectedCourt}
+                onChange={e => setSelectedCourt(e.target.value)}
+                className="bg-background border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shrink-0 cursor-pointer max-w-[140px] truncate"
+              >
+                <option value="ALL">🏟️ All Courts</option>
+                {courts.map(c => (
+                  <option key={c.courtUuid} value={c.courtUuid}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+
               {/* Level Filter */}
               <select
                 value={selectedLevel}
@@ -580,7 +826,7 @@ export default function StudentsPage() {
               <select
                 value={selectedBatch}
                 onChange={e => setSelectedBatch(e.target.value)}
-                className="bg-background border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shrink-0 cursor-pointer max-w-[150px] truncate"
+                className="bg-background border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:border-primary shrink-0 cursor-pointer max-w-[140px] truncate"
               >
                 <option value="ALL">All Batches</option>
                 {batches.map(b => (
@@ -638,7 +884,7 @@ export default function StudentsPage() {
               </div>
               <p className="text-sm font-black text-foreground">No students found</p>
               <p className="text-xs text-foreground/50 max-w-sm mx-auto">
-                {searchTerm || selectedLevel !== 'ALL' || selectedBatch !== 'ALL'
+                {searchTerm || selectedCourt !== 'ALL' || selectedLevel !== 'ALL' || selectedBatch !== 'ALL'
                   ? 'Try adjusting your filters or search criteria.'
                   : 'Get started by enrolling your first athlete into the academy.'}
               </p>
@@ -660,6 +906,7 @@ export default function StudentsPage() {
                     <tr className="border-b border-white/5 bg-white/[0.02] text-[11px] font-black uppercase tracking-wider text-foreground/40">
                       <th className="px-6 py-3.5">Athlete</th>
                       <th className="px-6 py-3.5">Skill Level</th>
+                      <th className="px-6 py-3.5">Court / Venue</th>
                       <th className="px-6 py-3.5">Batch / Timing</th>
                       <th className="px-6 py-3.5">Guardian Info</th>
                       <th className="px-6 py-3.5">Monthly Fee</th>
@@ -696,7 +943,15 @@ export default function StudentsPage() {
                             </span>
                           </td>
 
-                          {/* Batch */}
+                          {/* Court / Venue */}
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center gap-1.5 font-bold text-foreground text-xs">
+                              <Building2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                              <span className="truncate">{student.courtName || 'Main Arena'}</span>
+                            </div>
+                          </td>
+
+                          {/* Batch & Timing */}
                           <td className="px-6 py-3.5">
                             <div className="font-bold text-foreground text-xs">{student.batchName || 'Unassigned'}</div>
                             {student.batchTiming && (
@@ -813,13 +1068,18 @@ export default function StudentsPage() {
                         </div>
                       </div>
 
-                      {/* Middle Row: Batch & Fee */}
+                      {/* Middle Row: Court & Batch Capsule */}
                       <div className="flex items-center justify-between text-xs bg-background/60 p-2 rounded-xl border border-white/5">
-                        <div className="min-w-0">
-                          <span className="font-bold text-foreground block truncate">{student.batchName || 'Unassigned Batch'}</span>
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-1 font-bold text-foreground text-xs truncate">
+                            <Building2 className="w-3 h-3 text-blue-400 shrink-0" />
+                            <span className="truncate">{student.courtName || 'Court 1'}</span>
+                            <span className="text-foreground/30">•</span>
+                            <span className="text-primary truncate">{student.batchName || 'Unassigned'}</span>
+                          </div>
                           {student.batchTiming && (
                             <span className="text-[10px] text-foreground/40 font-mono flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5 text-primary" /> {student.batchTiming}
+                              <Clock className="w-2.5 h-2.5 text-foreground/40" /> {student.batchTiming}
                             </span>
                           )}
                         </div>
@@ -867,6 +1127,310 @@ export default function StudentsPage() {
             </>
           )}
         </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            COURTS / VENUES MODAL
+           ══════════════════════════════════════════════════════════════════════ */}
+        {showCourtModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-blue-400" />
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-foreground">Courts & Training Venues</h3>
+                    <p className="text-[11px] text-foreground/50">Manage academy courts, surface types, and facilities</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCourtModal(false)}
+                  className="p-1.5 rounded-xl hover:bg-white/10 text-foreground/50 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Create Court Form */}
+              {canManage && (
+                <form onSubmit={handleCreateCourt} className="bg-background/60 border border-white/10 p-3.5 sm:p-4 rounded-2xl space-y-3">
+                  <h4 className="text-xs font-black uppercase text-blue-400 tracking-wider">Add Court or Venue</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Court / Venue Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Court 1 - Indoor Arena"
+                        value={courtForm.name}
+                        onChange={e => setCourtForm({ ...courtForm, name: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Surface Type</label>
+                      <select
+                        value={courtForm.surfaceType}
+                        onChange={e => setCourtForm({ ...courtForm, surfaceType: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        {SURFACE_TYPES.map(st => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Court Code / Number</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. C-1"
+                        value={courtForm.courtNumber}
+                        onChange={e => setCourtForm({ ...courtForm, courtNumber: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Location / Wing</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Ground Floor, North Arena"
+                        value={courtForm.location}
+                        onChange={e => setCourtForm({ ...courtForm, location: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="px-4 py-2 rounded-xl bg-blue-500 text-white font-black text-xs hover:bg-blue-600 transition-all cursor-pointer shadow-md flex items-center gap-1.5"
+                    >
+                      {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      <span>+ Add Court</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Courts List */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-black uppercase text-foreground/50 tracking-wider">Available Courts ({courts.length})</h4>
+                {courts.length === 0 ? (
+                  <p className="text-xs text-foreground/40 py-4 text-center">No courts registered yet.</p>
+                ) : (
+                  courts.map(court => (
+                    <div
+                      key={court.courtUuid}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-background/50 border border-white/5 text-xs"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="font-extrabold text-foreground text-sm flex items-center gap-2">
+                          <span>{court.name}</span>
+                          {court.courtNumber && (
+                            <span className="px-1.5 py-0.2 rounded bg-white/10 text-[10px] font-mono text-foreground/70">
+                              {court.courtNumber}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-foreground/40 text-[11px] flex items-center gap-2">
+                          <span className="text-blue-400 font-bold">{court.surfaceType || 'Synthetic'}</span>
+                          {court.location && (
+                            <>
+                              <span>•</span>
+                              <span>{court.location}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                          {court.activeBatchesCount || 0} Batches
+                        </span>
+                        {canManage && (
+                          <button
+                            onClick={() => handleDeleteCourt(court.courtUuid)}
+                            className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            BATCH MANAGEMENT MODAL
+           ══════════════════════════════════════════════════════════════════════ */}
+        {showBatchModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-purple-400" />
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-foreground">Academy Batches & Schedules</h3>
+                    <p className="text-[11px] text-foreground/50">Organize training batches by court venue and timing</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowBatchModal(false)}
+                  className="p-1.5 rounded-xl hover:bg-white/10 text-foreground/50 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Create Batch Form */}
+              {canManage && (
+                <form onSubmit={handleCreateBatch} className="bg-background/60 border border-white/10 p-3.5 sm:p-4 rounded-2xl space-y-3">
+                  <h4 className="text-xs font-black uppercase text-purple-400 tracking-wider">Create New Training Batch</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Batch Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Morning Elite Sparing"
+                        value={batchForm.batchName}
+                        onChange={e => setBatchForm({ ...batchForm, batchName: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Assign Court / Venue</label>
+                      <select
+                        value={batchForm.courtUuid}
+                        onChange={e => setBatchForm({ ...batchForm, courtUuid: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        <option value="">Select Court Venue</option>
+                        {courts.map(c => (
+                          <option key={c.courtUuid} value={c.courtUuid}>
+                            {c.name} ({c.surfaceType || 'Court'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Assigned Coach</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Vikram Singh"
+                        value={batchForm.coachName}
+                        onChange={e => setBatchForm({ ...batchForm, coachName: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Days of Week</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. MON,WED,FRI"
+                        value={batchForm.daysOfWeek}
+                        onChange={e => setBatchForm({ ...batchForm, daysOfWeek: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Start Time</label>
+                      <input
+                        type="time"
+                        value={batchForm.startTime}
+                        onChange={e => setBatchForm({ ...batchForm, startTime: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">End Time</label>
+                      <input
+                        type="time"
+                        value={batchForm.endTime}
+                        onChange={e => setBatchForm({ ...batchForm, endTime: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="px-4 py-2 rounded-xl bg-purple-500 text-white font-black text-xs hover:bg-purple-600 transition-all cursor-pointer shadow-md"
+                    >
+                      + Add Batch
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Batches List */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-black uppercase text-foreground/50 tracking-wider">Active Batches ({batches.length})</h4>
+                {batches.length === 0 ? (
+                  <p className="text-xs text-foreground/40 py-4 text-center">No batches configured yet.</p>
+                ) : (
+                  batches.map(batch => (
+                    <div
+                      key={batch.batchUuid}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-background/50 border border-white/5 text-xs"
+                    >
+                      <div>
+                        <div className="font-extrabold text-foreground text-sm flex items-center gap-2">
+                          <span>{batch.batchName}</span>
+                          {batch.courtName && (
+                            <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold">
+                              🏟️ {batch.courtName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-foreground/40 text-[11px] flex items-center gap-2 mt-0.5">
+                          <span className="text-primary font-bold">{batch.daysOfWeek || 'Daily'}</span>
+                          <span>•</span>
+                          <span className="font-mono">{batch.startTime || ''} - {batch.endTime || ''}</span>
+                          {batch.coachName && (
+                            <>
+                              <span>•</span>
+                              <span>Coach {batch.coachName}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/5 border border-white/10 text-foreground/70">
+                          {batch.enrolledCount || 0} / {batch.maxCapacity || 20} Athletes
+                        </span>
+                        {canManage && (
+                          <button
+                            onClick={() => handleDeleteBatch(batch.batchUuid)}
+                            className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════════════
             ENROLL / EDIT STUDENT MODAL
@@ -943,10 +1507,10 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                {/* 2. Skill Level & Batch Assignment */}
+                {/* 2. Skill Level, Court & Batch */}
                 <div>
-                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">2. Training Level & Batch</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">2. Court Venue & Batch Assignment</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-[11px] font-bold text-foreground/60 block mb-1">Skill Level</label>
                       <select
@@ -959,6 +1523,22 @@ export default function StudentsPage() {
                         <option value="ADVANCED">Advanced</option>
                         <option value="ELITE">Elite</option>
                         <option value="PRO">Pro</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Court / Venue</label>
+                      <select
+                        value={studentForm.courtUuid}
+                        onChange={e => setStudentForm({ ...studentForm, courtUuid: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      >
+                        <option value="">Auto from Batch</option>
+                        {courts.map(c => (
+                          <option key={c.courtUuid} value={c.courtUuid}>
+                            {c.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -1092,155 +1672,6 @@ export default function StudentsPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            BATCH MANAGEMENT MODAL
-           ══════════════════════════════════════════════════════════════════════ */}
-        {showBatchModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-primary" />
-                  <h3 className="text-base sm:text-lg font-black text-foreground">Academy Batches & Schedules</h3>
-                </div>
-                <button
-                  onClick={() => setShowBatchModal(false)}
-                  className="p-1.5 rounded-xl hover:bg-white/10 text-foreground/50 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Create Batch Form */}
-              {canManage && (
-                <form onSubmit={handleCreateBatch} className="bg-background/60 border border-white/10 p-3.5 sm:p-4 rounded-2xl space-y-3">
-                  <h4 className="text-xs font-black uppercase text-primary tracking-wider">Create New Training Batch</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Batch Name *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Morning Elite Sparing"
-                        value={batchForm.batchName}
-                        onChange={e => setBatchForm({ ...batchForm, batchName: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Sport</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Badminton"
-                        value={batchForm.sportType}
-                        onChange={e => setBatchForm({ ...batchForm, sportType: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Assigned Coach</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Vikram Singh"
-                        value={batchForm.coachName}
-                        onChange={e => setBatchForm({ ...batchForm, coachName: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Days of Week</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. MON,WED,FRI"
-                        value={batchForm.daysOfWeek}
-                        onChange={e => setBatchForm({ ...batchForm, daysOfWeek: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Start Time</label>
-                      <input
-                        type="time"
-                        value={batchForm.startTime}
-                        onChange={e => setBatchForm({ ...batchForm, startTime: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">End Time</label>
-                      <input
-                        type="time"
-                        value={batchForm.endTime}
-                        onChange={e => setBatchForm({ ...batchForm, endTime: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs hover:brightness-110 transition-all cursor-pointer shadow-md"
-                    >
-                      + Add Batch
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Batches List */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-black uppercase text-foreground/50 tracking-wider">Active Batches ({batches.length})</h4>
-                {batches.length === 0 ? (
-                  <p className="text-xs text-foreground/40 py-4 text-center">No batches configured yet.</p>
-                ) : (
-                  batches.map(batch => (
-                    <div
-                      key={batch.batchUuid}
-                      className="flex items-center justify-between p-3 rounded-2xl bg-background/50 border border-white/5 text-xs"
-                    >
-                      <div>
-                        <div className="font-extrabold text-foreground text-sm">{batch.batchName}</div>
-                        <div className="text-foreground/40 text-[11px] flex items-center gap-2 mt-0.5">
-                          <span className="text-primary font-bold">{batch.daysOfWeek || 'Daily'}</span>
-                          <span>•</span>
-                          <span className="font-mono">{batch.startTime || ''} - {batch.endTime || ''}</span>
-                          {batch.coachName && (
-                            <>
-                              <span>•</span>
-                              <span>Coach {batch.coachName}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/5 border border-white/10 text-foreground/70">
-                          {batch.enrolledCount || 0} / {batch.maxCapacity || 20} Athletes
-                        </span>
-                        {canManage && (
-                          <button
-                            onClick={() => handleDeleteBatch(batch.batchUuid)}
-                            className="p-1.5 rounded-lg hover:bg-rose-500/20 text-rose-400 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
             </div>
           </div>
         )}

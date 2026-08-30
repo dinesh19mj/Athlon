@@ -4,6 +4,24 @@ export type StudentLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'ELITE' | 
 export type FeeStatus = 'PAID' | 'PENDING' | 'OVERDUE';
 export type StudentStatus = 'ACTIVE' | 'INACTIVE' | 'PAUSED' | 'GRADUATED';
 
+export interface AcademyCourt {
+  courtId?: number;
+  courtUuid: string;
+  organizationId?: number;
+  organizationUuid: string;
+  name: string;
+  sportType?: string;
+  surfaceType?: string;
+  courtNumber?: string;
+  location?: string;
+  hourlyRate?: number;
+  status?: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE' | string;
+  activeBatchesCount?: number;
+  enrolledStudentsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AcademyStudent {
   studentId?: number;
   studentUuid: string;
@@ -17,6 +35,8 @@ export interface AcademyStudent {
   age?: number;
   bloodGroup?: string;
   level?: StudentLevel | string;
+  courtUuid?: string;
+  courtName?: string;
   batchUuid?: string;
   batchName?: string;
   batchTiming?: string;
@@ -42,6 +62,8 @@ export interface AcademyBatch {
   batchUuid: string;
   organizationId?: number;
   organizationUuid: string;
+  courtUuid?: string;
+  courtName?: string;
   batchName: string;
   sportType?: string;
   level?: string;
@@ -70,6 +92,27 @@ export interface AcademySummary {
   studentsByBatch: Record<string, number>;
 }
 
+export interface CreateCourtPayload {
+  organizationUuid: string;
+  name: string;
+  sportType?: string;
+  surfaceType?: string;
+  courtNumber?: string;
+  location?: string;
+  hourlyRate?: number;
+}
+
+export interface UpdateCourtPayload {
+  courtUuid: string;
+  name?: string;
+  sportType?: string;
+  surfaceType?: string;
+  courtNumber?: string;
+  location?: string;
+  hourlyRate?: number;
+  status?: string;
+}
+
 export interface EnrollStudentPayload {
   organizationUuid: string;
   userUuid?: string;
@@ -79,6 +122,7 @@ export interface EnrollStudentPayload {
   age?: number;
   bloodGroup?: string;
   level?: string;
+  courtUuid?: string;
   batchUuid?: string;
   batchName?: string;
   batchTiming?: string;
@@ -104,6 +148,7 @@ export interface UpdateStudentPayload {
   age?: number;
   bloodGroup?: string;
   level?: string;
+  courtUuid?: string;
   batchUuid?: string;
   batchName?: string;
   batchTiming?: string;
@@ -123,6 +168,7 @@ export interface UpdateStudentPayload {
 
 export interface CreateBatchPayload {
   organizationUuid: string;
+  courtUuid?: string;
   batchName: string;
   sportType?: string;
   level?: string;
@@ -137,6 +183,7 @@ export interface CreateBatchPayload {
 
 export interface UpdateBatchPayload {
   batchUuid: string;
+  courtUuid?: string;
   batchName?: string;
   sportType?: string;
   level?: string;
@@ -151,10 +198,39 @@ export interface UpdateBatchPayload {
 }
 
 export const AcademyStudentService = {
+  // COURTS
+  getCourts: async (organizationUuid: string, status?: string): Promise<AcademyCourt[]> => {
+    let url = `/identity/academy/courts/org/${organizationUuid}`;
+    if (status) url += `?status=${status}`;
+    const res = await api.get<{ data: AcademyCourt[] }>(url);
+    return (res as any)?.data || res;
+  },
+
+  getCourtById: async (courtUuid: string): Promise<AcademyCourt> => {
+    const res = await api.get<{ data: AcademyCourt }>(`/identity/academy/courts/${courtUuid}`);
+    return (res as any)?.data || res;
+  },
+
+  createCourt: async (payload: CreateCourtPayload): Promise<AcademyCourt> => {
+    const res = await api.post<{ data: AcademyCourt }>(`/identity/academy/courts/create`, payload);
+    return (res as any)?.data || res;
+  },
+
+  updateCourt: async (payload: UpdateCourtPayload): Promise<AcademyCourt> => {
+    const res = await api.put<{ data: AcademyCourt }>(`/identity/academy/courts/update`, payload);
+    return (res as any)?.data || res;
+  },
+
+  deleteCourt: async (courtUuid: string): Promise<void> => {
+    await api.delete(`/identity/academy/courts/${courtUuid}`);
+  },
+
+  // STUDENTS
   getStudents: async (
     organizationUuid: string,
     params?: {
       level?: string;
+      courtUuid?: string;
       batchUuid?: string;
       feeStatus?: string;
       status?: string;
@@ -164,6 +240,7 @@ export const AcademyStudentService = {
     let url = `/identity/academy/students/org/${organizationUuid}`;
     const query = new URLSearchParams();
     if (params?.level) query.append('level', params.level);
+    if (params?.courtUuid) query.append('courtUuid', params.courtUuid);
     if (params?.batchUuid) query.append('batchUuid', params.batchUuid);
     if (params?.feeStatus) query.append('feeStatus', params.feeStatus);
     if (params?.status) query.append('status', params.status);
@@ -200,6 +277,7 @@ export const AcademyStudentService = {
     return (res as any)?.data || res;
   },
 
+  // BATCHES
   getBatches: async (organizationUuid: string, status?: string): Promise<AcademyBatch[]> => {
     let url = `/identity/academy/batches/org/${organizationUuid}`;
     if (status) url += `?status=${status}`;

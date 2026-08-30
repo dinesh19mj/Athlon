@@ -16,10 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.athlon.identityservice.dto.response.ApiResponse;
 import com.athlon.identityservice.organization.dto.request.CreateBatchRequest;
+import com.athlon.identityservice.organization.dto.request.CreateCourtRequest;
 import com.athlon.identityservice.organization.dto.request.EnrollStudentRequest;
 import com.athlon.identityservice.organization.dto.request.UpdateBatchRequest;
+import com.athlon.identityservice.organization.dto.request.UpdateCourtRequest;
 import com.athlon.identityservice.organization.dto.request.UpdateStudentRequest;
 import com.athlon.identityservice.organization.dto.response.AcademyBatchResponse;
+import com.athlon.identityservice.organization.dto.response.AcademyCourtResponse;
 import com.athlon.identityservice.organization.dto.response.AcademyStudentResponse;
 import com.athlon.identityservice.organization.dto.response.AcademySummaryResponse;
 import com.athlon.identityservice.organization.service.AcademyStudentService;
@@ -37,6 +40,51 @@ public class AcademyStudentController {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
+    // COURT / VENUE ENDPOINTS
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    @GetMapping("/courts/org/{organizationUuid}")
+    public ResponseEntity<ApiResponse<List<AcademyCourtResponse>>> getCourts(
+            @PathVariable("organizationUuid") UUID organizationUuid,
+            @RequestParam(value = "status", required = false) String status) {
+
+        List<AcademyCourtResponse> list = academyStudentService.getCourts(organizationUuid, status);
+        return ResponseEntity.ok(ApiResponse.success("Academy courts retrieved successfully", list));
+    }
+
+    @GetMapping("/courts/{courtUuid}")
+    public ResponseEntity<ApiResponse<AcademyCourtResponse>> getCourt(
+            @PathVariable("courtUuid") UUID courtUuid) {
+
+        AcademyCourtResponse court = academyStudentService.getCourtByUuid(courtUuid);
+        return ResponseEntity.ok(ApiResponse.success("Academy court retrieved successfully", court));
+    }
+
+    @PostMapping("/courts/create")
+    public ResponseEntity<ApiResponse<AcademyCourtResponse>> createCourt(
+            @Valid @RequestBody CreateCourtRequest request) {
+
+        AcademyCourtResponse court = academyStudentService.createCourt(request);
+        return ResponseEntity.ok(ApiResponse.success("Academy court created successfully", court));
+    }
+
+    @PutMapping("/courts/update")
+    public ResponseEntity<ApiResponse<AcademyCourtResponse>> updateCourt(
+            @Valid @RequestBody UpdateCourtRequest request) {
+
+        AcademyCourtResponse court = academyStudentService.updateCourt(request);
+        return ResponseEntity.ok(ApiResponse.success("Academy court updated successfully", court));
+    }
+
+    @DeleteMapping("/courts/{courtUuid}")
+    public ResponseEntity<ApiResponse<Void>> deleteCourt(
+            @PathVariable("courtUuid") UUID courtUuid) {
+
+        academyStudentService.deleteCourt(courtUuid);
+        return ResponseEntity.ok(ApiResponse.success("Academy court deleted successfully", null));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
     // STUDENT ENDPOINTS
     // ─────────────────────────────────────────────────────────────────────────────
 
@@ -44,12 +92,13 @@ public class AcademyStudentController {
     public ResponseEntity<ApiResponse<List<AcademyStudentResponse>>> getStudents(
             @PathVariable("organizationUuid") UUID organizationUuid,
             @RequestParam(value = "level", required = false) String level,
+            @RequestParam(value = "courtUuid", required = false) UUID courtUuid,
             @RequestParam(value = "batchUuid", required = false) UUID batchUuid,
             @RequestParam(value = "feeStatus", required = false) String feeStatus,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "search", required = false) String search) {
 
-        List<AcademyStudentResponse> list = academyStudentService.getStudents(organizationUuid, level, batchUuid, feeStatus, status, search);
+        List<AcademyStudentResponse> list = academyStudentService.getStudents(organizationUuid, level, courtUuid, batchUuid, feeStatus, status, search);
         return ResponseEntity.ok(ApiResponse.success("Academy students retrieved successfully", list));
     }
 

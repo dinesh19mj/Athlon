@@ -57,6 +57,12 @@ public class AcademyStudent {
     @Column(name = "skill_level", length = 50)
     private String level; // BEGINNER, INTERMEDIATE, ADVANCED, ELITE, PRO
 
+    @Column(name = "court_uuid")
+    private UUID courtUuid;
+
+    @Column(name = "court_name", length = 150)
+    private String courtName;
+
     @Column(name = "batch_uuid")
     private UUID batchUuid;
 
@@ -232,6 +238,22 @@ public class AcademyStudent {
 
     public void setLevel(String level) {
         this.level = level;
+    }
+
+    public UUID getCourtUuid() {
+        return courtUuid;
+    }
+
+    public void setCourtUuid(UUID courtUuid) {
+        this.courtUuid = courtUuid;
+    }
+
+    public String getCourtName() {
+        return courtName;
+    }
+
+    public void setCourtName(String courtName) {
+        this.courtName = courtName;
     }
 
     public UUID getBatchUuid() {
