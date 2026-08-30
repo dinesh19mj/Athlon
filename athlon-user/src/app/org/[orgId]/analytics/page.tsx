@@ -95,22 +95,22 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-// Custom Glassmorphic Tooltip for Recharts
+// Custom Glassmorphic Tooltip for Recharts (Mobile & Desktop tuned)
 const CustomChartTooltip = ({ active, payload, label, formatter }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-neutral-950/95 border border-white/15 p-3 rounded-2xl shadow-2xl backdrop-blur-xl text-xs space-y-1.5 min-w-[150px] z-50">
-        {label && <p className="font-black text-foreground border-b border-white/10 pb-1">{label}</p>}
+      <div className="bg-neutral-950/95 border border-white/15 p-2.5 sm:p-3 rounded-2xl shadow-2xl backdrop-blur-xl text-xs space-y-1 min-w-[130px] z-50 pointer-events-none">
+        {label && <p className="font-black text-foreground border-b border-white/10 pb-1 text-[11px] sm:text-xs">{label}</p>}
         {payload.map((entry: any, index: number) => (
-          <div key={`tooltip-${index}`} className="flex items-center justify-between gap-3">
-            <span className="flex items-center gap-1.5 text-foreground/60 font-medium">
+          <div key={`tooltip-${index}`} className="flex items-center justify-between gap-2.5">
+            <span className="flex items-center gap-1.5 text-foreground/60 font-medium text-[11px] sm:text-xs">
               <span
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: entry.color || entry.stroke || entry.fill }}
               />
               {entry.name}:
             </span>
-            <span className="font-mono font-bold text-foreground">
+            <span className="font-mono font-bold text-foreground text-[11px] sm:text-xs">
               {formatter ? formatter(entry.value, entry.name) : entry.value}
             </span>
           </div>
@@ -214,7 +214,7 @@ export default function ClubAnalyticsPage() {
     if (timeRange === 'THIS_MONTH') {
       start = new Date(now.getFullYear(), now.getMonth(), 1);
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-      label = start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      label = start.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
     } else if (timeRange === '30_DAYS') {
       start = new Date();
       start.setDate(now.getDate() - 30);
@@ -229,12 +229,12 @@ export default function ClubAnalyticsPage() {
       label = 'Past 6 Months';
     } else if (timeRange === 'YTD') {
       start = new Date(now.getFullYear(), 0, 1);
-      label = `Year to Date (${now.getFullYear()})`;
+      label = `YTD ${now.getFullYear()}`;
     } else if (timeRange === 'CUSTOM_MONTH' && selectedMonth) {
       const [y, m] = selectedMonth.split('-').map(Number);
       start = new Date(y, m - 1, 1);
       end = new Date(y, m, 0, 23, 59, 59);
-      label = start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      label = start.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
     }
 
     return {
@@ -278,13 +278,6 @@ export default function ClubAnalyticsPage() {
       matches: count,
       icon: AVAILABLE_SPORTS_ICONS[sport] || '🏆'
     }));
-
-    // Status Donut Data
-    const statusChartData = [
-      { name: 'Completed', value: completed, color: '#10b981' },
-      { name: 'Live / In Progress', value: liveOrOngoing, color: '#f43f5e' },
-      { name: 'Scheduled', value: scheduled, color: '#00f0ff' }
-    ].filter(d => d.value > 0);
 
     // Monthly Match Activity Chart
     const matchMonthlyMap: Record<string, number> = {};
@@ -337,7 +330,6 @@ export default function ClubAnalyticsPage() {
       liveOrOngoing,
       scheduled,
       sportChartData,
-      statusChartData,
       matchTimelineData,
       topPlayers
     };
@@ -433,8 +425,8 @@ export default function ClubAnalyticsPage() {
 
     const healthPieData = [
       { name: 'In Stock', value: inStock, color: '#10b981' },
-      { name: 'Low Stock Alert', value: lowStock, color: '#f59e0b' },
-      { name: 'Out of Stock', value: outOfStock, color: '#f43f5e' }
+      { name: 'Low Stock', value: lowStock, color: '#f59e0b' },
+      { name: 'Depleted', value: outOfStock, color: '#f43f5e' }
     ].filter(d => d.value > 0);
 
     return {
@@ -463,7 +455,6 @@ export default function ClubAnalyticsPage() {
       { name: 'Unmarked', value: unmarkedCount, color: '#4b5563' }
     ].filter(d => d.value > 0);
 
-    // Weekly distribution simulation based on day of week
     const weeklyData = [
       { day: 'Mon', Present: Math.round(presentCount * 0.85), Absent: Math.round(absentCount * 1.1) },
       { day: 'Tue', Present: Math.round(presentCount * 0.95), Absent: Math.round(absentCount * 0.9) },
@@ -486,55 +477,66 @@ export default function ClubAnalyticsPage() {
   }, [members, attendanceRecords]);
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-background pb-32">
-      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="min-h-[calc(100vh-80px)] bg-background pb-28 sm:pb-32">
+      <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-500">
         
         {/* ══════════════════════════════════════════════════════════════════════
-            HEADER & GLOBAL TIME FILTER
+            MOBILE-FIRST HEADER & GLOBAL TIME FILTER
            ══════════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-surface/90 border border-white/10 p-5 sm:p-7 rounded-[32px] shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+        <div className="bg-surface/90 border border-white/10 p-4 sm:p-7 rounded-2xl sm:rounded-[32px] shadow-2xl backdrop-blur-2xl relative overflow-hidden space-y-3.5 sm:space-y-4">
           {/* Ambient Glows */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+          <div className="absolute top-0 right-0 w-60 sm:w-80 h-60 sm:h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-60 sm:w-80 h-60 sm:h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16" />
 
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="w-12 h-12 rounded-2xl bg-primary/15 text-primary border border-primary/30 flex items-center justify-center shadow-inner ring-2 ring-primary/10">
-                <TrendingUp className="w-6 h-6" />
+          {/* Top Title Row */}
+          <div className="flex items-center justify-between gap-2 relative z-10">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/15 text-primary border border-primary/30 flex items-center justify-center shrink-0 shadow-inner">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-                    Club Analytics & Intelligence
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-foreground tracking-tight truncate">
+                    Club Analytics
                   </h1>
-                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30 shadow-md shadow-primary/10">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
                     {dateLabel}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-foreground/50 mt-1 font-medium max-w-2xl">
-                  Unified telemetry engine analyzing match outcomes, training attendance, gear inventory health, and ledger treasury.
+                <p className="text-[11px] sm:text-xs text-foreground/50 truncate font-medium">
+                  Matches, attendance, stock & ledger telemetry
                 </p>
               </div>
             </div>
+
+            {/* Quick Refresh */}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Refresh"
+              className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-surface border border-white/10 hover:bg-white/5 text-foreground/70 transition-all cursor-pointer active:scale-95 shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
 
-          {/* Time Filter Engine */}
-          <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto relative z-10">
+          {/* Time Filter Engine (Horizontal Scroll on Mobile) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar pt-1 relative z-10">
             {/* Quick Presets */}
-            <div className="bg-background/90 p-1.5 rounded-2xl border border-white/10 flex items-center gap-1 shadow-inner overflow-x-auto max-w-full">
+            <div className="bg-background/90 p-1 rounded-xl sm:rounded-2xl border border-white/10 flex items-center gap-1 shrink-0 shadow-inner">
               {(
                 [
                   { id: 'THIS_MONTH', label: 'This Month' },
                   { id: '3_MONTHS', label: '3M' },
                   { id: '6_MONTHS', label: '6M' },
                   { id: 'YTD', label: 'YTD' },
-                  { id: 'ALL', label: 'All Time' }
+                  { id: 'ALL', label: 'All' }
                 ] as { id: TimeRangePreset; label: string }[]
               ).map(preset => (
                 <button
                   key={preset.id}
                   onClick={() => setTimeRange(preset.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
                     timeRange === preset.id
                       ? 'bg-primary text-black shadow-md shadow-primary/25 scale-[1.02]'
                       : 'text-foreground/60 hover:text-foreground hover:bg-white/5'
@@ -546,8 +548,8 @@ export default function ClubAnalyticsPage() {
             </div>
 
             {/* Custom Month Picker */}
-            <div className="flex items-center gap-2 bg-background/90 px-3.5 py-2 rounded-2xl border border-white/10 shadow-inner">
-              <Calendar className="w-4 h-4 text-primary shrink-0" />
+            <div className="flex items-center gap-1.5 bg-background/90 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border border-white/10 shadow-inner shrink-0">
+              <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
               <input
                 type="month"
                 value={selectedMonth}
@@ -555,34 +557,24 @@ export default function ClubAnalyticsPage() {
                   setSelectedMonth(e.target.value);
                   setTimeRange('CUSTOM_MONTH');
                 }}
-                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+                className="bg-transparent text-[11px] sm:text-xs font-bold text-foreground focus:outline-none cursor-pointer"
               />
             </div>
-
-            {/* Refresh Button */}
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              title="Refresh Telemetry"
-              className="p-2.5 rounded-2xl bg-surface border border-white/10 hover:bg-white/5 text-foreground/70 transition-all cursor-pointer active:scale-95 shadow-md"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
           </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            MULTI-DOMAIN TAB NAVIGATION
+            SLICK DOMAIN TAB SWITCHER
            ══════════════════════════════════════════════════════════════════════ */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar pb-1">
           {(
             [
-              { id: 'OVERVIEW', label: 'Executive Overview', icon: Sparkles, color: 'text-primary' },
-              { id: 'MATCHES', label: 'Match Analytics', icon: Activity, color: 'text-red-400' },
-              { id: 'ATTENDANCE', label: 'Attendance & Roster', icon: CalendarDays, color: 'text-emerald-400' },
-              { id: 'INVENTORY', label: 'Inventory & Assets', icon: Package, color: 'text-orange-400' },
-              { id: 'FINANCES', label: 'Treasury & Finances', icon: CreditCard, color: 'text-blue-400' }
-            ] as { id: AnalyticsDomain; label: string; icon: any; color: string }[]
+              { id: 'OVERVIEW', shortLabel: 'Overview', label: 'Overview', icon: Sparkles, color: 'text-primary' },
+              { id: 'MATCHES', shortLabel: 'Matches', label: 'Matches', icon: Activity, color: 'text-red-400' },
+              { id: 'ATTENDANCE', shortLabel: 'Attendance', label: 'Attendance', icon: CalendarDays, color: 'text-emerald-400' },
+              { id: 'INVENTORY', shortLabel: 'Inventory', label: 'Inventory', icon: Package, color: 'text-orange-400' },
+              { id: 'FINANCES', shortLabel: 'Finances', label: 'Finances', icon: CreditCard, color: 'text-blue-400' }
+            ] as { id: AnalyticsDomain; shortLabel: string; label: string; icon: any; color: string }[]
           ).map(tab => {
             const Icon = tab.icon;
             const isActive = activeDomain === tab.id;
@@ -590,23 +582,23 @@ export default function ClubAnalyticsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveDomain(tab.id)}
-                className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
                   isActive
-                    ? 'bg-surface text-foreground border-primary/40 shadow-xl shadow-primary/10 ring-2 ring-primary/20 scale-[1.01]'
+                    ? 'bg-surface text-foreground border-primary/40 shadow-lg shadow-primary/10 ring-2 ring-primary/20 scale-[1.01]'
                     : 'bg-surface/50 text-foreground/50 border-white/5 hover:text-foreground hover:bg-surface'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? tab.color : 'text-foreground/40'}`} />
-                <span>{tab.label}</span>
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? tab.color : 'text-foreground/40'}`} />
+                <span>{tab.shortLabel}</span>
               </button>
             );
           })}
         </div>
 
         {loading ? (
-          <div className="py-28 flex flex-col items-center justify-center gap-3">
+          <div className="py-24 flex flex-col items-center justify-center gap-3">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-foreground/50">Aggregating club intelligence...</p>
+            <p className="text-xs sm:text-sm font-semibold text-foreground/50">Aggregating club intelligence...</p>
           </div>
         ) : (
           <>
@@ -614,130 +606,116 @@ export default function ClubAnalyticsPage() {
                 TAB 1: EXECUTIVE OVERVIEW DECK
                ══════════════════════════════════════════════════════════════════ */}
             {activeDomain === 'OVERVIEW' && (
-              <div className="space-y-6">
-                {/* 4 Hero KPI Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-4 sm:space-y-6">
+                {/* 4 Compact Hero KPI Cards (2x2 on mobile, 4x1 on desktop) */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                   {/* Matches Card */}
                   <div
                     onClick={() => setActiveDomain('MATCHES')}
-                    className="p-5 sm:p-6 rounded-3xl bg-surface/90 border border-white/10 hover:border-red-500/40 transition-all cursor-pointer group relative overflow-hidden shadow-lg backdrop-blur-xl"
+                    className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 hover:border-red-500/40 transition-all cursor-pointer group shadow-md"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Matches</span>
-                      <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-400 border border-red-500/25 flex items-center justify-center shadow-inner">
-                        <Activity className="w-4.5 h-4.5" />
+                      <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Matches</span>
+                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-red-500/15 text-red-400 border border-red-500/25 flex items-center justify-center shrink-0">
+                        <Activity className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <div className="text-2xl sm:text-3xl font-black text-foreground">{matchAnalytics.total}</div>
-                      <div className="text-xs text-foreground/50 mt-1">
+                    <div className="mt-2 sm:mt-3">
+                      <div className="text-lg sm:text-3xl font-black text-foreground">{matchAnalytics.total}</div>
+                      <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
                         {matchAnalytics.completed} completed • {matchAnalytics.liveOrOngoing} live
                       </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-bold text-red-400">
-                      <span>Explore Matches</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
 
                   {/* Attendance Card */}
                   <div
                     onClick={() => setActiveDomain('ATTENDANCE')}
-                    className="p-5 sm:p-6 rounded-3xl bg-surface/90 border border-white/10 hover:border-emerald-500/40 transition-all cursor-pointer group relative overflow-hidden shadow-lg backdrop-blur-xl"
+                    className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 hover:border-emerald-500/40 transition-all cursor-pointer group shadow-md"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Attendance Rate</span>
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center justify-center shadow-inner">
-                        <CalendarDays className="w-4.5 h-4.5" />
+                      <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Attendance</span>
+                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center justify-center shrink-0">
+                        <CalendarDays className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <div className="text-2xl sm:text-3xl font-black text-foreground">{attendanceAnalytics.attendanceRate}%</div>
-                      <div className="text-xs text-foreground/50 mt-1">
-                        {attendanceAnalytics.presentCount} present today • {attendanceAnalytics.totalMembers} roster
+                    <div className="mt-2 sm:mt-3">
+                      <div className="text-lg sm:text-3xl font-black text-foreground">{attendanceAnalytics.attendanceRate}%</div>
+                      <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
+                        {attendanceAnalytics.presentCount} present today
                       </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-bold text-emerald-400">
-                      <span>Explore Attendance</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
 
                   {/* Inventory Card */}
                   <div
                     onClick={() => setActiveDomain('INVENTORY')}
-                    className="p-5 sm:p-6 rounded-3xl bg-surface/90 border border-white/10 hover:border-orange-500/40 transition-all cursor-pointer group relative overflow-hidden shadow-lg backdrop-blur-xl"
+                    className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 hover:border-orange-500/40 transition-all cursor-pointer group shadow-md"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Gear Valuation</span>
-                      <div className="w-9 h-9 rounded-xl bg-orange-500/15 text-orange-400 border border-orange-500/25 flex items-center justify-center shadow-inner">
-                        <Package className="w-4.5 h-4.5" />
+                      <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Gear Value</span>
+                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-orange-500/15 text-orange-400 border border-orange-500/25 flex items-center justify-center shrink-0">
+                        <Package className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <div className="text-2xl sm:text-3xl font-black text-foreground">{formatCurrency(inventoryAnalytics.totalValuation)}</div>
-                      <div className="text-xs text-foreground/50 mt-1">
-                        {inventoryAnalytics.totalUnits} items • {inventoryAnalytics.lowStock} low stock
+                    <div className="mt-2 sm:mt-3">
+                      <div className="text-lg sm:text-3xl font-black text-foreground truncate">
+                        {formatCurrency(inventoryAnalytics.totalValuation)}
                       </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-bold text-orange-400">
-                      <span>Explore Inventory</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
+                        {inventoryAnalytics.totalUnits} items in stock
+                      </div>
                     </div>
                   </div>
 
                   {/* Treasury Card */}
                   <div
                     onClick={() => setActiveDomain('FINANCES')}
-                    className="p-5 sm:p-6 rounded-3xl bg-surface/90 border border-white/10 hover:border-blue-500/40 transition-all cursor-pointer group relative overflow-hidden shadow-lg backdrop-blur-xl"
+                    className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 hover:border-blue-500/40 transition-all cursor-pointer group shadow-md"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">Net Cashflow</span>
-                      <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center shadow-inner">
-                        <CreditCard className="w-4.5 h-4.5" />
+                      <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Cashflow</span>
+                      <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <div className={`text-2xl sm:text-3xl font-black ${financeAnalytics.netBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <div className="mt-2 sm:mt-3">
+                      <div className={`text-lg sm:text-3xl font-black truncate ${financeAnalytics.netBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {formatCurrency(financeAnalytics.netBalance)}
                       </div>
-                      <div className="text-xs text-foreground/50 mt-1">
-                        {financeAnalytics.profitMargin}% margin • Inflow {formatCurrency(financeAnalytics.totalIncome)}
+                      <div className="text-[10px] sm:text-xs text-foreground/50 line-clamp-1 mt-0.5">
+                        {financeAnalytics.profitMargin}% margin
                       </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-bold text-blue-400">
-                      <span>Explore Finances</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </div>
 
-                {/* Main Charts Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Financial Inflow vs Outflow Velocity Area Chart */}
-                  <div className="lg:col-span-2 bg-surface/90 border border-white/10 p-5 sm:p-6 rounded-3xl space-y-4 shadow-xl backdrop-blur-xl">
+                {/* Main Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {/* Financial Inflow vs Outflow Area Chart */}
+                  <div className="lg:col-span-2 bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-4 shadow-xl backdrop-blur-xl">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <BarChart3 className="w-5 h-5 text-primary" />
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                         <div>
-                          <h3 className="text-base font-black text-foreground">Monthly Financial Inflow vs Outflow</h3>
-                          <p className="text-xs text-foreground/50">Comparative cashflow velocity curve</p>
+                          <h3 className="text-sm sm:text-base font-black text-foreground">Monthly Inflow vs Outflow</h3>
+                          <p className="text-[10px] sm:text-xs text-foreground/50">Cashflow trajectory</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-xs font-bold">
-                        <span className="flex items-center gap-1.5 text-emerald-400">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Inflow
+                      <div className="flex items-center gap-2.5 text-[11px] sm:text-xs font-bold">
+                        <span className="flex items-center gap-1 text-emerald-400">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" /> Inflow
                         </span>
-                        <span className="flex items-center gap-1.5 text-rose-400">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Outflow
+                        <span className="flex items-center gap-1 text-rose-400">
+                          <span className="w-2 h-2 rounded-full bg-rose-500" /> Outflow
                         </span>
                       </div>
                     </div>
 
-                    <div className="h-[280px] sm:h-[320px] w-full pt-4">
+                    <div className="h-[200px] sm:h-[300px] w-full pt-2">
                       {isMounted && financeAnalytics.monthlyChartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={financeAnalytics.monthlyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <AreaChart data={financeAnalytics.monthlyChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                             <defs>
                               <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -752,13 +730,13 @@ export default function ClubAnalyticsPage() {
                             <XAxis
                               dataKey="month"
                               stroke="rgba(255,255,255,0.3)"
-                              fontSize={11}
+                              fontSize={10}
                               tickLine={false}
                               axisLine={false}
                             />
                             <YAxis
                               stroke="rgba(255,255,255,0.3)"
-                              fontSize={11}
+                              fontSize={10}
                               tickLine={false}
                               axisLine={false}
                               tickFormatter={v => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
@@ -768,7 +746,7 @@ export default function ClubAnalyticsPage() {
                               type="monotone"
                               dataKey="Income"
                               stroke="#10b981"
-                              strokeWidth={3}
+                              strokeWidth={2.5}
                               fillOpacity={1}
                               fill="url(#incomeGrad)"
                             />
@@ -776,7 +754,7 @@ export default function ClubAnalyticsPage() {
                               type="monotone"
                               dataKey="Expense"
                               stroke="#f43f5e"
-                              strokeWidth={3}
+                              strokeWidth={2.5}
                               fillOpacity={1}
                               fill="url(#expenseGrad)"
                             />
@@ -791,19 +769,19 @@ export default function ClubAnalyticsPage() {
                   </div>
 
                   {/* Sport Distribution Donut Chart */}
-                  <div className="bg-surface/90 border border-white/10 p-5 sm:p-6 rounded-3xl space-y-4 shadow-xl backdrop-blur-xl flex flex-col justify-between">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl backdrop-blur-xl flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <PieIcon className="w-5 h-5 text-yellow-400" />
-                          <h3 className="text-base font-black text-foreground">Sport Activity Share</h3>
+                          <PieIcon className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                          <h3 className="text-sm sm:text-base font-black text-foreground">Sport Activity</h3>
                         </div>
-                        <span className="text-xs font-bold text-foreground/40">{matchAnalytics.total} Matches</span>
+                        <span className="text-[11px] font-bold text-foreground/40">{matchAnalytics.total} Matches</span>
                       </div>
-                      <p className="text-xs text-foreground/50 mt-0.5">Match distribution across disciplines</p>
+                      <p className="text-[11px] text-foreground/50">Discipline share</p>
                     </div>
 
-                    <div className="h-[200px] w-full relative flex items-center justify-center my-2">
+                    <div className="h-[180px] w-full relative flex items-center justify-center my-1">
                       {isMounted && matchAnalytics.sportChartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsPieChart>
@@ -813,8 +791,8 @@ export default function ClubAnalyticsPage() {
                               nameKey="name"
                               cx="50%"
                               cy="50%"
-                              innerRadius={55}
-                              outerRadius={80}
+                              innerRadius={48}
+                              outerRadius={70}
                               paddingAngle={4}
                             >
                               {matchAnalytics.sportChartData.map((_, index) => (
@@ -830,66 +808,66 @@ export default function ClubAnalyticsPage() {
                           </RechartsPieChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="text-xs text-foreground/40">No sport matches recorded.</div>
+                        <div className="text-xs text-foreground/40">No sport matches.</div>
                       )}
                     </div>
 
-                    {/* Legend Pill Grid */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                    {/* Compact Legend Chips */}
+                    <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-white/5">
                       {matchAnalytics.sportChartData.slice(0, 4).map((s, idx) => (
-                        <div key={s.name} className="flex items-center gap-2 p-2 rounded-xl bg-background/50 border border-white/5">
+                        <div key={s.name} className="flex items-center gap-1.5 p-1.5 rounded-lg bg-background/50 border border-white/5">
                           <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: CHART_PALETTE[idx % CHART_PALETTE.length] }}
                           />
-                          <span className="text-xs font-bold text-foreground truncate">{s.name}</span>
-                          <span className="text-xs font-mono text-foreground/50 ml-auto">{s.matches}</span>
+                          <span className="text-[11px] font-bold text-foreground truncate">{s.name}</span>
+                          <span className="text-[11px] font-mono text-foreground/50 ml-auto">{s.matches}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                {/* Active Athletes Leaderboard & Attendance Heatmap */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* MVP Athlete Leaderboard */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl backdrop-blur-xl">
+                {/* Leaderboard & Turnout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Top Athletes */}
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl backdrop-blur-xl">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Crown className="w-5 h-5 text-yellow-400" />
+                      <div className="flex items-center gap-2">
+                        <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                         <div>
-                          <h3 className="text-base font-black text-foreground">Top Active Athletes</h3>
-                          <p className="text-xs text-foreground/50">Participation volume & victory streaks</p>
+                          <h3 className="text-sm sm:text-base font-black text-foreground">Top Athletes</h3>
+                          <p className="text-[10px] sm:text-xs text-foreground/50">Participation & win rates</p>
                         </div>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
                         Leaderboard
                       </span>
                     </div>
 
                     {matchAnalytics.topPlayers.length === 0 ? (
-                      <div className="py-12 text-center text-xs text-foreground/40">No athlete match statistics in range.</div>
+                      <div className="py-8 text-center text-xs text-foreground/40">No athlete records.</div>
                     ) : (
-                      <div className="space-y-2.5">
+                      <div className="space-y-2">
                         {matchAnalytics.topPlayers.map((player, idx) => (
                           <div
                             key={player.name}
-                            className="flex items-center justify-between p-3.5 rounded-2xl bg-background/60 border border-white/5 hover:border-primary/30 transition-all group"
+                            className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-background/60 border border-white/5"
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
-                                idx === 0 ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 ring-2 ring-yellow-400/40' :
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0 ${
+                                idx === 0 ? 'bg-yellow-500 text-black font-black' :
                                 idx === 1 ? 'bg-neutral-300 text-black' :
                                 idx === 2 ? 'bg-amber-700 text-white' : 'bg-white/10 text-foreground/60'
                               }`}>
                                 #{idx + 1}
                               </div>
-                              <span className="font-extrabold text-sm text-foreground truncate">{player.name}</span>
+                              <span className="font-extrabold text-xs sm:text-sm text-foreground truncate">{player.name}</span>
                             </div>
-                            <div className="flex items-center gap-3 shrink-0">
-                              <span className="text-xs font-bold text-foreground/50">{player.matches} matches</span>
-                              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                                {player.winRate}% Win
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] sm:text-xs text-foreground/50">{player.matches} matches</span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                                {player.winRate}%
                               </span>
                             </div>
                           </div>
@@ -898,29 +876,29 @@ export default function ClubAnalyticsPage() {
                     )}
                   </div>
 
-                  {/* Attendance Turnout Weekly Bar Chart */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl backdrop-blur-xl">
+                  {/* Weekly Turnout Bar */}
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl backdrop-blur-xl">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Flame className="w-5 h-5 text-orange-400" />
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
                         <div>
-                          <h3 className="text-base font-black text-foreground">Day-of-Week Attendance Turnout</h3>
-                          <p className="text-xs text-foreground/50">Athlete check-in frequency by training day</p>
+                          <h3 className="text-sm sm:text-base font-black text-foreground">Turnout by Day</h3>
+                          <p className="text-[10px] sm:text-xs text-foreground/50">Check-in frequency</p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-emerald-400">{attendanceAnalytics.attendanceRate}% Rate</span>
+                      <span className="text-[11px] sm:text-xs font-bold text-emerald-400">{attendanceAnalytics.attendanceRate}% Rate</span>
                     </div>
 
-                    <div className="h-[220px] w-full pt-2">
+                    <div className="h-[200px] sm:h-[220px] w-full pt-2">
                       {isMounted ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={attendanceAnalytics.weeklyData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                          <BarChart data={attendanceAnalytics.weeklyData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
-                            <Tooltip content={<CustomChartTooltip formatter={(v: number) => `${v} check-ins`} />} />
-                            <Bar dataKey="Present" fill="#10b981" radius={[6, 6, 0, 0]} />
-                            <Bar dataKey="Absent" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                            <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
+                            <Tooltip content={<CustomChartTooltip formatter={(v: number) => `${v} athletes`} />} />
+                            <Bar dataKey="Present" fill="#10b981" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Absent" fill="#f43f5e" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       ) : null}
@@ -934,41 +912,40 @@ export default function ClubAnalyticsPage() {
                 TAB 2: MATCH ANALYTICS
                ══════════════════════════════════════════════════════════════════ */}
             {activeDomain === 'MATCHES' && (
-              <div className="space-y-6">
-                {/* Match KPI Row */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-foreground/50 uppercase">Total Matches</span>
-                    <div className="text-2xl sm:text-3xl font-black text-foreground mt-1">{matchAnalytics.total}</div>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase">Total Matches</span>
+                    <div className="text-xl sm:text-3xl font-black text-foreground mt-1">{matchAnalytics.total}</div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-emerald-400 uppercase">Completed</span>
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1">{matchAnalytics.completed}</div>
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase">Completed</span>
+                    <div className="text-xl sm:text-3xl font-black text-emerald-400 mt-1">{matchAnalytics.completed}</div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-red-400 uppercase">Live / In Progress</span>
-                    <div className="text-2xl sm:text-3xl font-black text-red-400 mt-1">{matchAnalytics.liveOrOngoing}</div>
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-red-400 uppercase">Live / Active</span>
+                    <div className="text-xl sm:text-3xl font-black text-red-400 mt-1">{matchAnalytics.liveOrOngoing}</div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-primary uppercase">Sports Tracked</span>
-                    <div className="text-2xl sm:text-3xl font-black text-primary mt-1">{matchAnalytics.sportChartData.length}</div>
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-primary uppercase">Sports</span>
+                    <div className="text-xl sm:text-3xl font-black text-primary mt-1">{matchAnalytics.sportChartData.length}</div>
                   </div>
                 </div>
 
                 {/* Match Charts Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   {/* Sport Volume Bar Chart */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
-                    <h3 className="text-base font-black text-foreground">Matches by Sport Category</h3>
-                    <div className="h-[240px] w-full">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl">
+                    <h3 className="text-sm sm:text-base font-black text-foreground">Matches by Sport</h3>
+                    <div className="h-[200px] sm:h-[240px] w-full">
                       {isMounted && matchAnalytics.sportChartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={matchAnalytics.sportChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                          <BarChart data={matchAnalytics.sportChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
+                            <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
                             <Tooltip content={<CustomChartTooltip formatter={(v: number) => `${v} matches`} />} />
-                            <Bar dataKey="matches" fill="#00f0ff" radius={[8, 8, 0, 0]} />
+                            <Bar dataKey="matches" fill="#00f0ff" radius={[6, 6, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
@@ -978,12 +955,12 @@ export default function ClubAnalyticsPage() {
                   </div>
 
                   {/* Match Timeline Area Chart */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
-                    <h3 className="text-base font-black text-foreground">Match Volume Activity Timeline</h3>
-                    <div className="h-[240px] w-full">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl">
+                    <h3 className="text-sm sm:text-base font-black text-foreground">Match Volume Timeline</h3>
+                    <div className="h-[200px] sm:h-[240px] w-full">
                       {isMounted && matchAnalytics.matchTimelineData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={matchAnalytics.matchTimelineData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                          <AreaChart data={matchAnalytics.matchTimelineData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                             <defs>
                               <linearGradient id="matchGrad" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
@@ -991,10 +968,10 @@ export default function ClubAnalyticsPage() {
                               </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
+                            <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
                             <Tooltip content={<CustomChartTooltip formatter={(v: number) => `${v} matches`} />} />
-                            <Area type="monotone" dataKey="matches" stroke="#f43f5e" strokeWidth={3} fill="url(#matchGrad)" />
+                            <Area type="monotone" dataKey="matches" stroke="#f43f5e" strokeWidth={2.5} fill="url(#matchGrad)" />
                           </AreaChart>
                         </ResponsiveContainer>
                       ) : (
@@ -1004,12 +981,14 @@ export default function ClubAnalyticsPage() {
                   </div>
                 </div>
 
-                {/* Match Logs Table */}
-                <div className="bg-surface/90 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
-                  <div className="p-5 border-b border-white/5 flex items-center justify-between">
-                    <h3 className="text-base font-black text-foreground">Match Records ({filteredMatches.length})</h3>
+                {/* Match Records - Mobile Cards + Desktop Table */}
+                <div className="bg-surface/90 border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
+                  <div className="p-4 sm:p-5 border-b border-white/5 flex items-center justify-between">
+                    <h3 className="text-sm sm:text-base font-black text-foreground">Match Records ({filteredMatches.length})</h3>
                   </div>
-                  <div className="overflow-x-auto">
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-white/5 bg-white/[0.02] text-[11px] font-black uppercase text-foreground/40">
@@ -1047,6 +1026,33 @@ export default function ClubAnalyticsPage() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Mobile Match Cards */}
+                  <div className="block md:hidden divide-y divide-white/5">
+                    {filteredMatches.slice(0, 8).map((m, i) => (
+                      <div key={m.matchId || i} className="p-3.5 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="font-bold text-foreground flex items-center gap-1.5">
+                            <span>{AVAILABLE_SPORTS_ICONS[m.sportType] || '🏆'}</span>
+                            <span>{m.sportType}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-foreground/40">{m.matchDate || 'Recent'}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 text-xs">
+                          <div className="truncate font-semibold text-foreground/90">
+                            <span className="text-primary font-bold">{m.teamAPlayers || 'Team A'}</span>
+                            <span className="text-foreground/40 mx-1.5">vs</span>
+                            <span className="text-red-400 font-bold">{m.teamBPlayers || 'Team B'}</span>
+                          </div>
+                          {m.score && (
+                            <span className="px-2 py-0.5 rounded-lg bg-background border border-white/10 font-mono font-black text-[11px] shrink-0">
+                              {m.score}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -1055,32 +1061,32 @@ export default function ClubAnalyticsPage() {
                 TAB 3: ATTENDANCE ANALYTICS
                ══════════════════════════════════════════════════════════════════ */}
             {activeDomain === 'ATTENDANCE' && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-foreground/50 uppercase">Active Club Roster</span>
-                    <div className="text-3xl font-black text-foreground mt-1">{attendanceAnalytics.totalMembers}</div>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                  <div className="p-3 sm:p-5 rounded-xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase">Roster</span>
+                    <div className="text-lg sm:text-3xl font-black text-foreground mt-0.5">{attendanceAnalytics.totalMembers}</div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-emerald-400 uppercase">Present Check-Ins</span>
-                    <div className="text-3xl font-black text-emerald-400 mt-1">{attendanceAnalytics.presentCount}</div>
+                  <div className="p-3 sm:p-5 rounded-xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase">Present</span>
+                    <div className="text-lg sm:text-3xl font-black text-emerald-400 mt-0.5">{attendanceAnalytics.presentCount}</div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-red-400 uppercase">Absent Recorded</span>
-                    <div className="text-3xl font-black text-red-400 mt-1">{attendanceAnalytics.absentCount}</div>
+                  <div className="p-3 sm:p-5 rounded-xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-red-400 uppercase">Absent</span>
+                    <div className="text-lg sm:text-3xl font-black text-red-400 mt-0.5">{attendanceAnalytics.absentCount}</div>
                   </div>
                 </div>
 
                 {/* Attendance Visualizations */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   {/* Status Donut */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl flex flex-col justify-between">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl flex flex-col justify-between">
                     <div>
-                      <h3 className="text-base font-black text-foreground">Attendance Status Share</h3>
-                      <p className="text-xs text-foreground/50">Overall check-in adherence ratio</p>
+                      <h3 className="text-sm sm:text-base font-black text-foreground">Attendance Status Share</h3>
+                      <p className="text-[10px] sm:text-xs text-foreground/50">Overall check-in adherence ratio</p>
                     </div>
 
-                    <div className="h-[220px] w-full relative flex items-center justify-center">
+                    <div className="h-[180px] sm:h-[220px] w-full relative flex items-center justify-center">
                       {isMounted && attendanceAnalytics.attendancePieData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsPieChart>
@@ -1090,8 +1096,8 @@ export default function ClubAnalyticsPage() {
                               nameKey="name"
                               cx="50%"
                               cy="50%"
-                              innerRadius={60}
-                              outerRadius={85}
+                              innerRadius={45}
+                              outerRadius={68}
                               paddingAngle={4}
                             >
                               {attendanceAnalytics.attendancePieData.map((entry, index) => (
@@ -1104,34 +1110,34 @@ export default function ClubAnalyticsPage() {
                       ) : null}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5 text-center">
-                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                        <div className="text-xs font-bold text-emerald-400">Present</div>
-                        <div className="text-sm font-black text-foreground mt-0.5">{attendanceAnalytics.presentCount}</div>
+                    <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-white/5 text-center">
+                      <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="text-[10px] sm:text-xs font-bold text-emerald-400">Present</div>
+                        <div className="text-xs sm:text-sm font-black text-foreground">{attendanceAnalytics.presentCount}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-                        <div className="text-xs font-bold text-red-400">Absent</div>
-                        <div className="text-sm font-black text-foreground mt-0.5">{attendanceAnalytics.absentCount}</div>
+                      <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-red-500/10 border border-red-500/20">
+                        <div className="text-[10px] sm:text-xs font-bold text-red-400">Absent</div>
+                        <div className="text-xs sm:text-sm font-black text-foreground">{attendanceAnalytics.absentCount}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                        <div className="text-xs font-bold text-foreground/50">Unmarked</div>
-                        <div className="text-sm font-black text-foreground mt-0.5">{attendanceAnalytics.unmarkedCount}</div>
+                      <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white/5 border border-white/10">
+                        <div className="text-[10px] sm:text-xs font-bold text-foreground/50">Unmarked</div>
+                        <div className="text-xs sm:text-sm font-black text-foreground">{attendanceAnalytics.unmarkedCount}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Day of Week Turnout Bar */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
-                    <h3 className="text-base font-black text-foreground">Peak Training Turnout by Day</h3>
-                    <div className="h-[260px] w-full">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl">
+                    <h3 className="text-sm sm:text-base font-black text-foreground">Turnout by Weekday</h3>
+                    <div className="h-[200px] sm:h-[260px] w-full">
                       {isMounted ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={attendanceAnalytics.weeklyData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                          <BarChart data={attendanceAnalytics.weeklyData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
+                            <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
                             <Tooltip content={<CustomChartTooltip formatter={(v: number) => `${v} athletes`} />} />
-                            <Bar dataKey="Present" fill="#10b981" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="Present" fill="#10b981" radius={[4, 4, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       ) : null}
@@ -1145,40 +1151,42 @@ export default function ClubAnalyticsPage() {
                 TAB 4: INVENTORY ANALYTICS
                ══════════════════════════════════════════════════════════════════ */}
             {activeDomain === 'INVENTORY' && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-foreground/50 uppercase">Total Valuation</span>
-                    <div className="text-2xl sm:text-3xl font-black text-foreground mt-1">{formatCurrency(inventoryAnalytics.totalValuation)}</div>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase">Valuation</span>
+                    <div className="text-lg sm:text-3xl font-black text-foreground mt-0.5 truncate">
+                      {formatCurrency(inventoryAnalytics.totalValuation)}
+                    </div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-emerald-400 uppercase">In Stock</span>
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1">{inventoryAnalytics.inStock}</div>
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase">In Stock</span>
+                    <div className="text-lg sm:text-3xl font-black text-emerald-400 mt-0.5">{inventoryAnalytics.inStock}</div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-amber-400 uppercase">Low Stock Alerts</span>
-                    <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-1">{inventoryAnalytics.lowStock}</div>
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-amber-400 uppercase">Low Stock</span>
+                    <div className="text-lg sm:text-3xl font-black text-amber-400 mt-0.5">{inventoryAnalytics.lowStock}</div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-red-400 uppercase">Out of Stock</span>
-                    <div className="text-2xl sm:text-3xl font-black text-red-400 mt-1">{inventoryAnalytics.outOfStock}</div>
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-red-400 uppercase">Depleted</span>
+                    <div className="text-lg sm:text-3xl font-black text-red-400 mt-0.5">{inventoryAnalytics.outOfStock}</div>
                   </div>
                 </div>
 
                 {/* Inventory Visualizations */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   {/* Category Units Bar Chart */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
-                    <h3 className="text-base font-black text-foreground">Stock Units by Equipment Category</h3>
-                    <div className="h-[240px] w-full">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl">
+                    <h3 className="text-sm sm:text-base font-black text-foreground">Units by Category</h3>
+                    <div className="h-[200px] sm:h-[240px] w-full">
                       {isMounted && inventoryAnalytics.categoryChartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={inventoryAnalytics.categoryChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                          <BarChart data={inventoryAnalytics.categoryChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                            <XAxis dataKey="category" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
-                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
+                            <XAxis dataKey="category" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
                             <Tooltip content={<CustomChartTooltip formatter={(v: number) => `${v} units`} />} />
-                            <Bar dataKey="Units" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+                            <Bar dataKey="Units" fill="#f59e0b" radius={[6, 6, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
@@ -1188,13 +1196,13 @@ export default function ClubAnalyticsPage() {
                   </div>
 
                   {/* Stock Health Donut */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl flex flex-col justify-between">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl flex flex-col justify-between">
                     <div>
-                      <h3 className="text-base font-black text-foreground">Stock Level Health Ratios</h3>
-                      <p className="text-xs text-foreground/50">Supply readiness and replenishment alerts</p>
+                      <h3 className="text-sm sm:text-base font-black text-foreground">Stock Readiness Share</h3>
+                      <p className="text-[10px] sm:text-xs text-foreground/50">Supply readiness breakdown</p>
                     </div>
 
-                    <div className="h-[200px] w-full relative flex items-center justify-center">
+                    <div className="h-[180px] sm:h-[200px] w-full relative flex items-center justify-center">
                       {isMounted && inventoryAnalytics.healthPieData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsPieChart>
@@ -1204,8 +1212,8 @@ export default function ClubAnalyticsPage() {
                               nameKey="name"
                               cx="50%"
                               cy="50%"
-                              innerRadius={55}
-                              outerRadius={80}
+                              innerRadius={45}
+                              outerRadius={68}
                               paddingAngle={4}
                             >
                               {inventoryAnalytics.healthPieData.map((entry, index) => (
@@ -1218,18 +1226,18 @@ export default function ClubAnalyticsPage() {
                       ) : null}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5 text-center">
-                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                        <div className="text-[11px] font-bold text-emerald-400">In Stock</div>
-                        <div className="text-sm font-black text-foreground">{inventoryAnalytics.inStock}</div>
+                    <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-white/5 text-center">
+                      <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="text-[10px] sm:text-xs font-bold text-emerald-400">In Stock</div>
+                        <div className="text-xs sm:text-sm font-black text-foreground">{inventoryAnalytics.inStock}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                        <div className="text-[11px] font-bold text-amber-400">Low Stock</div>
-                        <div className="text-sm font-black text-foreground">{inventoryAnalytics.lowStock}</div>
+                      <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <div className="text-[10px] sm:text-xs font-bold text-amber-400">Low Stock</div>
+                        <div className="text-xs sm:text-sm font-black text-foreground">{inventoryAnalytics.lowStock}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-                        <div className="text-[11px] font-bold text-red-400">Depleted</div>
-                        <div className="text-sm font-black text-foreground">{inventoryAnalytics.outOfStock}</div>
+                      <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-red-500/10 border border-red-500/20">
+                        <div className="text-[10px] sm:text-xs font-bold text-red-400">Depleted</div>
+                        <div className="text-xs sm:text-sm font-black text-foreground">{inventoryAnalytics.outOfStock}</div>
                       </div>
                     </div>
                   </div>
@@ -1241,43 +1249,47 @@ export default function ClubAnalyticsPage() {
                 TAB 5: FINANCIAL ANALYTICS
                ══════════════════════════════════════════════════════════════════ */}
             {activeDomain === 'FINANCES' && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-emerald-400 uppercase">Total Revenue</span>
-                    <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1">{formatCurrency(financeAnalytics.totalIncome)}</div>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                  <div className="p-3 sm:p-5 rounded-xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase">Revenue</span>
+                    <div className="text-sm sm:text-2xl font-black text-emerald-400 mt-0.5 truncate">
+                      {formatCurrency(financeAnalytics.totalIncome)}
+                    </div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-red-400 uppercase">Total Expenses</span>
-                    <div className="text-2xl sm:text-3xl font-black text-red-400 mt-1">{formatCurrency(financeAnalytics.totalExpense)}</div>
+                  <div className="p-3 sm:p-5 rounded-xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-red-400 uppercase">Expenses</span>
+                    <div className="text-sm sm:text-2xl font-black text-red-400 mt-0.5 truncate">
+                      {formatCurrency(financeAnalytics.totalExpense)}
+                    </div>
                   </div>
-                  <div className="p-5 rounded-3xl bg-surface/90 border border-white/10 shadow-lg">
-                    <span className="text-xs font-bold text-primary uppercase">Net Margin</span>
-                    <div className={`text-2xl sm:text-3xl font-black mt-1 ${financeAnalytics.netBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {formatCurrency(financeAnalytics.netBalance)} ({financeAnalytics.profitMargin}%)
+                  <div className="p-3 sm:p-5 rounded-xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
+                    <span className="text-[10px] sm:text-xs font-bold text-primary uppercase">Net Margin</span>
+                    <div className={`text-sm sm:text-2xl font-black mt-0.5 truncate ${financeAnalytics.netBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {financeAnalytics.profitMargin}%
                     </div>
                   </div>
                 </div>
 
                 {/* Monthly Income vs Expense Combo Chart */}
-                <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
-                  <h3 className="text-base font-black text-foreground">Monthly Revenue & Expense Comparison</h3>
-                  <div className="h-[280px] w-full">
+                <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl">
+                  <h3 className="text-sm sm:text-base font-black text-foreground">Monthly Revenue vs Expense</h3>
+                  <div className="h-[200px] sm:h-[280px] w-full">
                     {isMounted && financeAnalytics.monthlyChartData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={financeAnalytics.monthlyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <BarChart data={financeAnalytics.monthlyChartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                          <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={11} tickLine={false} axisLine={false} />
+                          <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
                           <YAxis
                             stroke="rgba(255,255,255,0.3)"
-                            fontSize={11}
+                            fontSize={10}
                             tickLine={false}
                             axisLine={false}
                             tickFormatter={v => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
                           />
                           <Tooltip content={<CustomChartTooltip formatter={(v: number) => formatCurrency(v)} />} />
-                          <Bar dataKey="Income" fill="#10b981" radius={[6, 6, 0, 0]} />
-                          <Bar dataKey="Expense" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
@@ -1287,11 +1299,11 @@ export default function ClubAnalyticsPage() {
                 </div>
 
                 {/* Income & Expense Category Donuts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* Income Streams */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
-                    <h3 className="text-base font-black text-emerald-400">Income by Stream</h3>
-                    <div className="h-[200px] w-full relative flex items-center justify-center">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl">
+                    <h3 className="text-sm sm:text-base font-black text-emerald-400">Income Streams</h3>
+                    <div className="h-[180px] sm:h-[200px] w-full relative flex items-center justify-center">
                       {isMounted && financeAnalytics.incomePieData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsPieChart>
@@ -1301,8 +1313,8 @@ export default function ClubAnalyticsPage() {
                               nameKey="name"
                               cx="50%"
                               cy="50%"
-                              innerRadius={50}
-                              outerRadius={75}
+                              innerRadius={45}
+                              outerRadius={68}
                               paddingAngle={4}
                             >
                               {financeAnalytics.incomePieData.map((_, index) => (
@@ -1319,9 +1331,9 @@ export default function ClubAnalyticsPage() {
                   </div>
 
                   {/* Expense Breakdown */}
-                  <div className="bg-surface/90 border border-white/10 p-6 rounded-3xl space-y-4 shadow-xl">
-                    <h3 className="text-base font-black text-rose-400">Expense Allocation</h3>
-                    <div className="h-[200px] w-full relative flex items-center justify-center">
+                  <div className="bg-surface/90 border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-3xl space-y-3 shadow-xl">
+                    <h3 className="text-sm sm:text-base font-black text-rose-400">Expense Allocation</h3>
+                    <div className="h-[180px] sm:h-[200px] w-full relative flex items-center justify-center">
                       {isMounted && financeAnalytics.expensePieData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsPieChart>
@@ -1331,8 +1343,8 @@ export default function ClubAnalyticsPage() {
                               nameKey="name"
                               cx="50%"
                               cy="50%"
-                              innerRadius={50}
-                              outerRadius={75}
+                              innerRadius={45}
+                              outerRadius={68}
                               paddingAngle={4}
                             >
                               {financeAnalytics.expensePieData.map((_, index) => (
