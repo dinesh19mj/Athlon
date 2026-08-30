@@ -252,6 +252,22 @@ export default function OrganizationDashboard() {
         color: 'text-orange-400',
         bg: 'bg-orange-500/10',
       });
+      actions.push({
+        id: `/org/${org.id}/finances`,
+        label: 'Finances',
+        description: 'Treasury & transactions',
+        icon: CreditCard,
+        color: 'text-emerald-400',
+        bg: 'bg-emerald-500/10',
+      });
+      actions.push({
+        id: `/org/${org.id}/analytics`,
+        label: 'Analytics',
+        description: 'Matches, attendance, stock & ledger',
+        icon: TrendingUp,
+        color: 'text-cyan-400',
+        bg: 'bg-cyan-500/10',
+      });
     }
 
     if (org.type === 'ORGANIZER' || org.type === 'ASSOCIATION') {

@@ -24,6 +24,7 @@ import {
   PanelLeftOpen,
   Shield,
   ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -147,7 +148,10 @@ export default function OrganizationLayout({ children }: { children: React.React
         ...base,
         { name: 'Members', href: `/org/${orgId}/members`, icon: Users },
         { name: 'Matches', href: `/org/${orgId}/matches`, icon: Activity },
+        { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays },
+        { name: 'Inventory', href: `/org/${orgId}/inventory`, icon: Grid },
         { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
+        { name: 'Analytics', href: `/org/${orgId}/analytics`, icon: TrendingUp },
       ];
     }
     return base;
