@@ -137,7 +137,7 @@ export default function AttendancePage() {
   };
 
   // Single member status change with optimistic update & instant persistence
-  const handleStatusChange = async (memberUuid: string, newStatus: 'PRESENT' | 'ABSENT' | 'LEAVE') => {
+  const handleStatusChange = async (memberUuid: string, newStatus: 'PRESENT' | 'ABSENT') => {
     const isSelfRecord = myAttendanceRecord?.organizationMemberUuid === memberUuid;
 
     // Optimistic UI update
@@ -157,8 +157,6 @@ export default function AttendancePage() {
         setToastSuccess(
           newStatus === 'PRESENT'
             ? 'Checked in as Present!'
-            : newStatus === 'LEAVE'
-            ? 'Marked as on Leave.'
             : 'Marked as Absent.'
         );
       } else {
@@ -220,7 +218,7 @@ export default function AttendancePage() {
           .filter(m => m.status !== 'UNMARKED')
           .map(m => ({
             organizationMemberUuid: m.organizationMemberUuid,
-            status: m.status as 'PRESENT' | 'ABSENT' | 'LEAVE',
+            status: m.status as 'PRESENT' | 'ABSENT',
             notes: m.notes
           }))
       });
@@ -243,7 +241,6 @@ export default function AttendancePage() {
 
   const presentCount = attendanceList.filter(m => m.status === 'PRESENT').length;
   const absentCount = attendanceList.filter(m => m.status === 'ABSENT').length;
-  const leaveCount = attendanceList.filter(m => m.status === 'LEAVE').length;
   const unmarkedCount = attendanceList.filter(m => m.status === 'UNMARKED').length;
   const totalCount = attendanceList.length;
   const attendanceRate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
@@ -370,7 +367,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Attendance Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         {/* Total Members */}
         <div className="p-4 rounded-2xl bg-surface border border-foreground/5 space-y-1 shadow-sm">
           <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">Total Roster</div>
@@ -392,14 +389,8 @@ export default function AttendancePage() {
           <div className="text-2xl font-black text-red-400">{absentCount}</div>
         </div>
 
-        {/* Leave */}
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-1 shadow-sm">
-          <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">On Leave</div>
-          <div className="text-2xl font-black text-amber-400">{leaveCount}</div>
-        </div>
-
         {/* Unmarked */}
-        <div className="p-4 rounded-2xl bg-foreground/5 border border-foreground/10 space-y-1 shadow-sm col-span-2 md:col-span-1">
+        <div className="p-4 rounded-2xl bg-foreground/5 border border-foreground/10 space-y-1 shadow-sm">
           <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">Unmarked</div>
           <div className="text-2xl font-black text-foreground/60">{unmarkedCount}</div>
         </div>
@@ -453,50 +444,35 @@ export default function AttendancePage() {
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-md shadow-emerald-500/10'
                   : myAttendanceRecord.status === 'ABSENT'
                   ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                  : myAttendanceRecord.status === 'LEAVE'
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
                   : 'bg-foreground/5 text-foreground/50 border border-foreground/10'
               }`}>
-                {myAttendanceRecord.status === 'PRESENT' ? <Check className="w-4 h-4" /> : myAttendanceRecord.status === 'ABSENT' ? <X className="w-4 h-4" /> : myAttendanceRecord.status === 'LEAVE' ? <Clock className="w-4 h-4" /> : null}
+                {myAttendanceRecord.status === 'PRESENT' ? <Check className="w-4 h-4" /> : myAttendanceRecord.status === 'ABSENT' ? <X className="w-4 h-4" /> : null}
                 {myAttendanceRecord.status || 'UNMARKED'}
               </span>
             </div>
           </div>
 
-          {/* 3 Large 1-Tap Action Buttons */}
-          <div className="grid grid-cols-3 gap-2.5 pt-2 relative z-10">
+          {/* 2 Large 1-Tap Action Buttons */}
+          <div className="grid grid-cols-2 gap-3 pt-2 relative z-10">
             <button
               type="button"
               onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'PRESENT')}
-              className={`py-3.5 px-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
+              className={`py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
                 myAttendanceRecord.status === 'PRESENT'
-                  ? 'bg-emerald-500 text-black shadow-emerald-500/30 ring-2 ring-emerald-400/50 scale-[1.02]'
+                  ? 'bg-emerald-500 text-black shadow-emerald-500/30 ring-2 ring-emerald-400/50 scale-[1.01]'
                   : 'bg-surface border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
               }`}
             >
               <Check className="w-4 h-4 shrink-0" />
-              <span>Present</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'LEAVE')}
-              className={`py-3.5 px-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
-                myAttendanceRecord.status === 'LEAVE'
-                  ? 'bg-amber-500 text-black shadow-amber-500/30 ring-2 ring-amber-400/50 scale-[1.02]'
-                  : 'bg-surface border border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
-              }`}
-            >
-              <Clock className="w-4 h-4 shrink-0" />
-              <span>On Leave</span>
+              <span>Present (Check In)</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'ABSENT')}
-              className={`py-3.5 px-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
+              className={`py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
                 myAttendanceRecord.status === 'ABSENT'
-                  ? 'bg-red-500 text-white shadow-red-500/30 ring-2 ring-red-400/50 scale-[1.02]'
+                  ? 'bg-red-500 text-white shadow-red-500/30 ring-2 ring-red-400/50 scale-[1.01]'
                   : 'bg-surface border border-red-500/30 text-red-400 hover:bg-red-500/10'
               }`}
             >
@@ -543,7 +519,6 @@ export default function AttendancePage() {
                   {filteredMembers.map((member) => {
                     const isPresent = member.status === 'PRESENT';
                     const isAbsent = member.status === 'ABSENT';
-                    const isLeave = member.status === 'LEAVE';
                     const isSelf = isMemberSelf(member);
                     const canModify = canTakeAttendance || isSelf;
 
@@ -589,7 +564,7 @@ export default function AttendancePage() {
                         {/* Status Toggle Buttons or Read-Only Indicator */}
                         <td className="px-6 py-4">
                           {canModify ? (
-                            <div className="flex items-center justify-center gap-1 bg-background p-1 rounded-2xl border max-w-xs mx-auto shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+                            <div className="flex items-center justify-center gap-1.5 bg-background p-1 rounded-2xl border max-w-xs mx-auto shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
                               {/* PRESENT */}
                               <button
                                 type="button"
@@ -615,19 +590,6 @@ export default function AttendancePage() {
                               >
                                 <X className="w-3.5 h-3.5" /> Absent
                               </button>
-
-                              {/* LEAVE */}
-                              <button
-                                type="button"
-                                onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                  isLeave
-                                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25 scale-[1.02]'
-                                    : 'text-foreground/50 hover:text-amber-400 hover:bg-amber-500/10'
-                                }`}
-                              >
-                                <Clock className="w-3.5 h-3.5" /> Leave
-                              </button>
                             </div>
                           ) : (
                             <div className="flex justify-center">
@@ -636,11 +598,9 @@ export default function AttendancePage() {
                                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                                   : isAbsent
                                   ? 'bg-red-500/15 text-red-400 border border-red-500/25'
-                                  : isLeave
-                                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
                                   : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
                               }`}>
-                                {isPresent ? <Check className="w-3.5 h-3.5" /> : isAbsent ? <X className="w-3.5 h-3.5" /> : isLeave ? <Clock className="w-3.5 h-3.5" /> : null}
+                                {isPresent ? <Check className="w-3.5 h-3.5" /> : isAbsent ? <X className="w-3.5 h-3.5" /> : null}
                                 {member.status || 'UNMARKED'}
                               </span>
                             </div>
@@ -665,7 +625,6 @@ export default function AttendancePage() {
               {filteredMembers.map((member) => {
                 const isPresent = member.status === 'PRESENT';
                 const isAbsent = member.status === 'ABSENT';
-                const isLeave = member.status === 'LEAVE';
                 const isSelf = isMemberSelf(member);
                 const canModify = canTakeAttendance || isSelf;
 
@@ -707,7 +666,7 @@ export default function AttendancePage() {
 
                     {/* Segmented Status Toggle Bar */}
                     {canModify ? (
-                      <div className="grid grid-cols-3 gap-1.5 bg-background p-1.5 rounded-2xl border shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <div className="grid grid-cols-2 gap-1.5 bg-background p-1.5 rounded-2xl border shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
@@ -731,18 +690,6 @@ export default function AttendancePage() {
                         >
                           <X className="w-3.5 h-3.5" /> Absent
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                            isLeave
-                              ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25'
-                              : 'text-foreground/50 hover:bg-amber-500/10'
-                          }`}
-                        >
-                          <Clock className="w-3.5 h-3.5" /> Leave
-                        </button>
                       </div>
                     ) : (
                       <div className="pt-1 flex items-center justify-between">
@@ -752,8 +699,6 @@ export default function AttendancePage() {
                             ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                             : isAbsent
                             ? 'bg-red-500/15 text-red-400 border border-red-500/25'
-                            : isLeave
-                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
                             : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
                         }`}>
                           {member.status || 'UNMARKED'}
