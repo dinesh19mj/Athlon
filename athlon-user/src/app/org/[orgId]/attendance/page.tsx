@@ -239,6 +239,11 @@ export default function AttendancePage() {
     (m.phone || '').includes(searchTerm)
   );
 
+  // If user is a member with their top check-in card active, exclude self from lower roster to avoid duplicates
+  const displayRoster = !canTakeAttendance && myAttendanceRecord
+    ? filteredMembers.filter(m => !isMemberSelf(m))
+    : filteredMembers;
+
   const presentCount = attendanceList.filter(m => m.status === 'PRESENT').length;
   const absentCount = attendanceList.filter(m => m.status === 'ABSENT').length;
   const unmarkedCount = attendanceList.filter(m => m.status === 'UNMARKED').length;
@@ -519,15 +524,19 @@ export default function AttendancePage() {
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-sm font-semibold text-foreground/50">Loading club attendance...</p>
           </div>
-        ) : totalCount === 0 ? (
-          <div className="py-20 px-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
-              <Users className="w-8 h-8" />
+        ) : displayRoster.length === 0 ? (
+          <div className="py-16 px-6 text-center space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
+              <Users className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-foreground">No Club Members Found</h3>
-              <p className="text-sm text-foreground/50 max-w-md mx-auto mt-1">
-                Please add athletes in the <strong>Members</strong> tab first to track their daily attendance.
+              <h3 className="text-base font-bold text-foreground">
+                {!canTakeAttendance && myAttendanceRecord ? 'No Other Club Members' : 'No Club Members Found'}
+              </h3>
+              <p className="text-xs text-foreground/50 max-w-sm mx-auto mt-1">
+                {!canTakeAttendance && myAttendanceRecord
+                  ? 'Your attendance check-in is ready above. Other athletes will appear here once they join.'
+                  : 'Please add athletes in the Members tab first to track their daily attendance.'}
               </p>
             </div>
           </div>
@@ -545,18 +554,17 @@ export default function AttendancePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-foreground/5">
-                  {filteredMembers.map((member) => {
+                  {displayRoster.map((member) => {
                     const isPresent = member.status === 'PRESENT';
                     const isAbsent = member.status === 'ABSENT';
-                    const isSelf = isMemberSelf(member);
-                    const canModify = canTakeAttendance || isSelf;
+                    const canModify = canTakeAttendance;
 
                     return (
-                      <tr key={member.organizationMemberUuid} className={`hover:bg-foreground/[0.02] transition-colors group ${isSelf ? 'bg-primary/[0.03]' : ''}`}>
+                      <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
                         {/* Member Name + Photo */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-xl bg-foreground/10 border overflow-hidden flex items-center justify-center shrink-0 shadow-inner ${isSelf ? 'border-primary ring-2 ring-primary/20' : 'border-foreground/10'}`}>
+                            <div className="w-9 h-9 rounded-xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
                               {member.photo ? (
                                 <img
                                   src={UserService.getPhotoUrl(member.photo)}
@@ -570,13 +578,8 @@ export default function AttendancePage() {
                               )}
                             </div>
                             <div>
-                              <div className="font-extrabold text-sm text-foreground flex items-center gap-1.5">
-                                <span>{member.fullName}</span>
-                                {isSelf && (
-                                  <span className="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider bg-primary text-black">
-                                    You
-                                  </span>
-                                )}
+                              <div className="font-extrabold text-sm text-foreground">
+                                {member.fullName}
                               </div>
                               <div className="text-[11px] font-mono text-foreground/40">{member.phone ? `+91 ${member.phone}` : 'No phone'}</div>
                             </div>
@@ -648,18 +651,17 @@ export default function AttendancePage() {
 
             {/* Mobile Roster Cards */}
             <div className="block md:hidden divide-y divide-foreground/5">
-              {filteredMembers.map((member) => {
+              {displayRoster.map((member) => {
                 const isPresent = member.status === 'PRESENT';
                 const isAbsent = member.status === 'ABSENT';
-                const isSelf = isMemberSelf(member);
-                const canModify = canTakeAttendance || isSelf;
+                const canModify = canTakeAttendance;
 
                 return (
-                  <div key={member.organizationMemberUuid} className={`p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors ${isSelf ? 'bg-primary/[0.04]' : ''}`}>
+                  <div key={member.organizationMemberUuid} className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors">
                     {/* Athlete Header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl bg-foreground/10 border overflow-hidden flex items-center justify-center shrink-0 shadow-inner ${isSelf ? 'border-primary ring-2 ring-primary/20' : 'border-foreground/10'}`}>
+                        <div className="w-10 h-10 rounded-xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
                           {member.photo ? (
                             <img
                               src={UserService.getPhotoUrl(member.photo)}
@@ -673,13 +675,8 @@ export default function AttendancePage() {
                           )}
                         </div>
                         <div>
-                          <div className="font-extrabold text-sm text-foreground flex items-center gap-1.5">
-                            <span>{member.fullName}</span>
-                            {isSelf && (
-                              <span className="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider bg-primary text-black">
-                                You
-                              </span>
-                            )}
+                          <div className="font-extrabold text-sm text-foreground">
+                            {member.fullName}
                           </div>
                           <div className="text-[11px] font-mono text-foreground/40">{member.phone ? `+91 ${member.phone}` : 'No phone'}</div>
                         </div>
