@@ -143,8 +143,8 @@ export default function HomeRoleHeader({
         <button
           onClick={() => handleRoleClick('PLAYER')}
           className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 rounded-full border transition-all duration-200 active:scale-95 cursor-pointer ${isPlayerActive
-              ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
-              : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
+            ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
+            : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
             }`}
           style={{
             backgroundColor: isPlayerActive ? 'var(--athlon-surface)' : 'rgba(255, 255, 255, 0.03)',
@@ -182,8 +182,8 @@ export default function HomeRoleHeader({
               key={org.id}
               onClick={() => handleRoleClick(org.id)}
               className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 rounded-full border transition-all duration-200 active:scale-95 cursor-pointer max-w-[200px] ${isOrgActive
-                  ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
-                  : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
+                ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
+                : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
                 }`}
               style={{
                 backgroundColor: isOrgActive ? 'var(--athlon-surface)' : 'rgba(255, 255, 255, 0.03)',
@@ -219,7 +219,7 @@ export default function HomeRoleHeader({
           className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full border border-dashed border-white/20 hover:border-primary/50 text-white/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 active:scale-95 text-xs font-bold cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-          <span>Add Hub</span>
+          <span>Add Org</span>
         </button>
       </div>
     </div>

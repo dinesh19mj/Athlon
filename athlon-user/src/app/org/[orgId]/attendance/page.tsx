@@ -25,6 +25,7 @@ import {
   Lock
 } from 'lucide-react';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { useAuthStore } from '@/lib/store/useAuthStore';
 
 // Helper to get local date formatted as YYYY-MM-DD (avoiding UTC timezone shift)
 const getLocalDateString = (d: Date = new Date()): string => {
@@ -37,7 +38,8 @@ const getLocalDateString = (d: Date = new Date()): string => {
 export default function AttendancePage() {
   const params = useParams();
   const orgIdParam = (params?.orgId as string) || '';
-  const { getActiveOrganization } = useWorkspaceStore();
+  const { getActiveOrganization, personalProfile } = useWorkspaceStore();
+  const { userUuid: authUserUuid, userId: authUserId } = useAuthStore();
   const org = getActiveOrganization();
 
   const orgUuid = org?.id || orgIdParam;
@@ -53,6 +55,16 @@ export default function AttendancePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [toastSuccess, setToastSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const isMemberSelf = (member: ClubMemberAttendance) => {
+    if (authUserUuid && member.userUuid && member.userUuid.toLowerCase() === authUserUuid.toLowerCase()) return true;
+    if (authUserId && member.userId && String(member.userId) === String(authUserId)) return true;
+    if (personalProfile?.id && member.userUuid && member.userUuid.toLowerCase() === personalProfile.id.toLowerCase()) return true;
+    if (personalProfile?.name && member.fullName && member.fullName.trim().toLowerCase() === personalProfile.name.trim().toLowerCase()) return true;
+    return false;
+  };
+
+  const myAttendanceRecord = attendanceList.find(isMemberSelf);
 
   useEffect(() => {
     if (orgUuid) {
@@ -126,6 +138,8 @@ export default function AttendancePage() {
 
   // Single member status change with optimistic update & instant persistence
   const handleStatusChange = async (memberUuid: string, newStatus: 'PRESENT' | 'ABSENT' | 'LEAVE') => {
+    const isSelfRecord = myAttendanceRecord?.organizationMemberUuid === memberUuid;
+
     // Optimistic UI update
     setAttendanceList(prev =>
       prev.map(m => (m.organizationMemberUuid === memberUuid ? { ...m, status: newStatus } : m))
@@ -139,6 +153,19 @@ export default function AttendancePage() {
         status: newStatus
       });
 
+      if (isSelfRecord) {
+        setToastSuccess(
+          newStatus === 'PRESENT'
+            ? 'Checked in as Present!'
+            : newStatus === 'LEAVE'
+            ? 'Marked as on Leave.'
+            : 'Marked as Absent.'
+        );
+      } else {
+        setToastSuccess('Attendance updated successfully.');
+      }
+      setTimeout(() => setToastSuccess(null), 3000);
+
       // Reload summary in background
       ClubAttendanceService.getSummary(orgUuid, selectedDate)
         .then(res => {
@@ -149,6 +176,7 @@ export default function AttendancePage() {
     } catch (err: any) {
       console.error('Failed to update attendance:', err);
       setToastSuccess('Failed to save status update.');
+      setTimeout(() => setToastSuccess(null), 3000);
     }
   };
 
@@ -261,8 +289,8 @@ export default function AttendancePage() {
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Sheet
             </button>
           ) : (
-            <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/60">
-              <Lock className="w-3.5 h-3.5" /> Member View (Read-Only)
+            <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/70">
+              <User className="w-3.5 h-3.5 text-primary" /> Member Mode
             </span>
           )}
         </div>
@@ -319,21 +347,25 @@ export default function AttendancePage() {
             Today
           </button>
 
-          <button
-            onClick={() => handleBulkMark('PRESENT')}
-            disabled={saving || totalCount === 0}
-            className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all disabled:opacity-40"
-          >
-            Mark All Present
-          </button>
+          {canTakeAttendance && (
+            <>
+              <button
+                onClick={() => handleBulkMark('PRESENT')}
+                disabled={saving || totalCount === 0}
+                className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all disabled:opacity-40"
+              >
+                Mark All Present
+              </button>
 
-          <button
-            onClick={() => handleBulkMark('ABSENT')}
-            disabled={saving || totalCount === 0}
-            className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-40"
-          >
-            Mark All Absent
-          </button>
+              <button
+                onClick={() => handleBulkMark('ABSENT')}
+                disabled={saving || totalCount === 0}
+                className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-40"
+              >
+                Mark All Absent
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -373,6 +405,108 @@ export default function AttendancePage() {
         </div>
       </div>
 
+      {/* Prominent My Attendance Check-In Banner (For Club Members / Athletes) */}
+      {myAttendanceRecord && (
+        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-neutral-900 via-neutral-900/95 to-neutral-950 border border-primary/30 p-5 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4 animate-in fade-in duration-300">
+          {/* Ambient Glows */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-13 h-13 rounded-2xl bg-foreground/10 border-2 border-primary/40 overflow-hidden flex items-center justify-center shrink-0 shadow-inner ring-2 ring-primary/20">
+                {myAttendanceRecord.photo ? (
+                  <img
+                    src={UserService.getPhotoUrl(myAttendanceRecord.photo)}
+                    alt={myAttendanceRecord.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-lg font-black text-primary">
+                    {myAttendanceRecord.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-black text-foreground truncate">
+                    {myAttendanceRecord.fullName}
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary text-black shadow-md shadow-primary/25">
+                    👑 You
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-foreground/5 border border-foreground/10 text-foreground/70">
+                    {myAttendanceRecord.role || role || 'Member'}
+                  </span>
+                </div>
+                <p className="text-xs text-foreground/50 mt-0.5">
+                  {selectedDate === getLocalDateString() ? "Today's Attendance Check-in" : `Attendance for ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}`}
+                </p>
+              </div>
+            </div>
+
+            {/* Current Status Badge */}
+            <div className="flex items-center gap-2.5 self-start sm:self-auto bg-background/50 border border-foreground/10 px-3.5 py-2 rounded-2xl">
+              <span className="text-xs font-bold text-foreground/40">Status:</span>
+              <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${
+                myAttendanceRecord.status === 'PRESENT'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-md shadow-emerald-500/10'
+                  : myAttendanceRecord.status === 'ABSENT'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                  : myAttendanceRecord.status === 'LEAVE'
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                  : 'bg-foreground/5 text-foreground/50 border border-foreground/10'
+              }`}>
+                {myAttendanceRecord.status === 'PRESENT' ? <Check className="w-4 h-4" /> : myAttendanceRecord.status === 'ABSENT' ? <X className="w-4 h-4" /> : myAttendanceRecord.status === 'LEAVE' ? <Clock className="w-4 h-4" /> : null}
+                {myAttendanceRecord.status || 'UNMARKED'}
+              </span>
+            </div>
+          </div>
+
+          {/* 3 Large 1-Tap Action Buttons */}
+          <div className="grid grid-cols-3 gap-2.5 pt-2 relative z-10">
+            <button
+              type="button"
+              onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'PRESENT')}
+              className={`py-3.5 px-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
+                myAttendanceRecord.status === 'PRESENT'
+                  ? 'bg-emerald-500 text-black shadow-emerald-500/30 ring-2 ring-emerald-400/50 scale-[1.02]'
+                  : 'bg-surface border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+              }`}
+            >
+              <Check className="w-4 h-4 shrink-0" />
+              <span>Present</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'LEAVE')}
+              className={`py-3.5 px-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
+                myAttendanceRecord.status === 'LEAVE'
+                  ? 'bg-amber-500 text-black shadow-amber-500/30 ring-2 ring-amber-400/50 scale-[1.02]'
+                  : 'bg-surface border border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
+              }`}
+            >
+              <Clock className="w-4 h-4 shrink-0" />
+              <span>On Leave</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'ABSENT')}
+              className={`py-3.5 px-3 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer ${
+                myAttendanceRecord.status === 'ABSENT'
+                  ? 'bg-red-500 text-white shadow-red-500/30 ring-2 ring-red-400/50 scale-[1.02]'
+                  : 'bg-surface border border-red-500/30 text-red-400 hover:bg-red-500/10'
+              }`}
+            >
+              <X className="w-4 h-4 shrink-0" />
+              <span>Absent</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Member Attendance Roster Container */}
       <div className="bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
         {loading ? (
@@ -410,13 +544,15 @@ export default function AttendancePage() {
                     const isPresent = member.status === 'PRESENT';
                     const isAbsent = member.status === 'ABSENT';
                     const isLeave = member.status === 'LEAVE';
+                    const isSelf = isMemberSelf(member);
+                    const canModify = canTakeAttendance || isSelf;
 
                     return (
-                      <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
+                      <tr key={member.organizationMemberUuid} className={`hover:bg-foreground/[0.02] transition-colors group ${isSelf ? 'bg-primary/[0.03]' : ''}`}>
                         {/* Member Name + Photo */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                            <div className={`w-9 h-9 rounded-xl bg-foreground/10 border overflow-hidden flex items-center justify-center shrink-0 shadow-inner ${isSelf ? 'border-primary ring-2 ring-primary/20' : 'border-foreground/10'}`}>
                               {member.photo ? (
                                 <img
                                   src={UserService.getPhotoUrl(member.photo)}
@@ -430,7 +566,14 @@ export default function AttendancePage() {
                               )}
                             </div>
                             <div>
-                              <div className="font-extrabold text-sm text-foreground">{member.fullName}</div>
+                              <div className="font-extrabold text-sm text-foreground flex items-center gap-1.5">
+                                <span>{member.fullName}</span>
+                                {isSelf && (
+                                  <span className="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider bg-primary text-black">
+                                    You
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[11px] font-mono text-foreground/40">{member.phone ? `+91 ${member.phone}` : 'No phone'}</div>
                             </div>
                           </div>
@@ -445,13 +588,13 @@ export default function AttendancePage() {
 
                         {/* Status Toggle Buttons or Read-Only Indicator */}
                         <td className="px-6 py-4">
-                          {canTakeAttendance ? (
+                          {canModify ? (
                             <div className="flex items-center justify-center gap-1 bg-background p-1 rounded-2xl border max-w-xs mx-auto shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
                               {/* PRESENT */}
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                   isPresent
                                     ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 scale-[1.02]'
                                     : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
@@ -464,7 +607,7 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                   isAbsent
                                     ? 'bg-red-500 text-white shadow-md shadow-red-500/25 scale-[1.02]'
                                     : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
@@ -477,7 +620,7 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                   isLeave
                                     ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25 scale-[1.02]'
                                     : 'text-foreground/50 hover:text-amber-400 hover:bg-amber-500/10'
@@ -523,13 +666,15 @@ export default function AttendancePage() {
                 const isPresent = member.status === 'PRESENT';
                 const isAbsent = member.status === 'ABSENT';
                 const isLeave = member.status === 'LEAVE';
+                const isSelf = isMemberSelf(member);
+                const canModify = canTakeAttendance || isSelf;
 
                 return (
-                  <div key={member.organizationMemberUuid} className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors">
+                  <div key={member.organizationMemberUuid} className={`p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors ${isSelf ? 'bg-primary/[0.04]' : ''}`}>
                     {/* Athlete Header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                        <div className={`w-10 h-10 rounded-xl bg-foreground/10 border overflow-hidden flex items-center justify-center shrink-0 shadow-inner ${isSelf ? 'border-primary ring-2 ring-primary/20' : 'border-foreground/10'}`}>
                           {member.photo ? (
                             <img
                               src={UserService.getPhotoUrl(member.photo)}
@@ -543,7 +688,14 @@ export default function AttendancePage() {
                           )}
                         </div>
                         <div>
-                          <div className="font-extrabold text-sm text-foreground">{member.fullName}</div>
+                          <div className="font-extrabold text-sm text-foreground flex items-center gap-1.5">
+                            <span>{member.fullName}</span>
+                            {isSelf && (
+                              <span className="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider bg-primary text-black">
+                                You
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[11px] font-mono text-foreground/40">{member.phone ? `+91 ${member.phone}` : 'No phone'}</div>
                         </div>
                       </div>
@@ -554,12 +706,12 @@ export default function AttendancePage() {
                     </div>
 
                     {/* Segmented Status Toggle Bar */}
-                    {canTakeAttendance ? (
+                    {canModify ? (
                       <div className="grid grid-cols-3 gap-1.5 bg-background p-1.5 rounded-2xl border shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                             isPresent
                               ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25'
                               : 'text-foreground/50 hover:bg-emerald-500/10'
@@ -571,7 +723,7 @@ export default function AttendancePage() {
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                             isAbsent
                               ? 'bg-red-500 text-white shadow-md shadow-red-500/25'
                               : 'text-foreground/50 hover:bg-red-500/10'
@@ -583,7 +735,7 @@ export default function AttendancePage() {
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'LEAVE')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                             isLeave
                               ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25'
                               : 'text-foreground/50 hover:bg-amber-500/10'

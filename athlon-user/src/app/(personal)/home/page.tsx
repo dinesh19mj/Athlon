@@ -122,7 +122,7 @@ export default function PersonalHomePage() {
   useEffect(() => {
     TournamentService.getAll()
       .then((res) => setPublicTournaments(res.data.filter((t: Tournament) => t.visibility === 'PUBLIC')))
-      .catch(() => {});
+      .catch(() => { });
 
     // Public Championships with auto-polling
     const loadPublicChampionships = () => {
@@ -131,7 +131,7 @@ export default function PersonalHomePage() {
           const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
           setPublicChampionships(list);
         })
-        .catch(() => {});
+        .catch(() => { });
     };
 
     loadPublicChampionships();
@@ -153,7 +153,7 @@ export default function PersonalHomePage() {
             );
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     return () => clearInterval(champInterval);
@@ -176,13 +176,13 @@ export default function PersonalHomePage() {
               const timeA = a.scheduledTime
                 ? new Date(a.scheduledTime).getTime()
                 : a.matchDate
-                ? new Date(a.matchDate).getTime()
-                : Infinity;
+                  ? new Date(a.matchDate).getTime()
+                  : Infinity;
               const timeB = b.scheduledTime
                 ? new Date(b.scheduledTime).getTime()
                 : b.matchDate
-                ? new Date(b.matchDate).getTime()
-                : Infinity;
+                  ? new Date(b.matchDate).getTime()
+                  : Infinity;
               if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
               return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
             });
@@ -204,7 +204,7 @@ export default function PersonalHomePage() {
             );
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     // Fetch Umpiring Assignments
@@ -230,13 +230,13 @@ export default function PersonalHomePage() {
               const timeA = a.scheduledTime
                 ? new Date(a.scheduledTime).getTime()
                 : a.matchDate
-                ? new Date(a.matchDate).getTime()
-                : Infinity;
+                  ? new Date(a.matchDate).getTime()
+                  : Infinity;
               const timeB = b.scheduledTime
                 ? new Date(b.scheduledTime).getTime()
                 : b.matchDate
-                ? new Date(b.matchDate).getTime()
-                : Infinity;
+                  ? new Date(b.matchDate).getTime()
+                  : Infinity;
               if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
               return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
             });
@@ -258,13 +258,13 @@ export default function PersonalHomePage() {
             setPlayerStats(res.data);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     const fetchScores = () => {
       ScoreService.getLive()
         .then((res: any) => res?.data && setLiveScores(res.data))
-        .catch(() => {});
+        .catch(() => { });
 
       ScoreService.getAll()
         .then((res: any) => {
@@ -285,7 +285,7 @@ export default function PersonalHomePage() {
             setFinishedScores(finished);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     };
 
     fetchScores();
@@ -446,11 +446,11 @@ export default function PersonalHomePage() {
                   <div className="flex items-center gap-2">
                     <Building className="w-4 h-4 text-primary" />
                     <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
-                      My Clubs &amp; Workspaces
+                      Membership
                     </h2>
                   </div>
                   <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
-                    {organizations.length} {organizations.length === 1 ? 'Hub' : 'Hubs'}
+                    {organizations.length} {organizations.length === 1 ? 'Org' : 'Orgs'}
                   </span>
                 </div>
 
@@ -486,8 +486,8 @@ export default function PersonalHomePage() {
                                     orgItem.type === 'CLUB'
                                       ? 'members'
                                       : orgItem.type === 'ACADEMY'
-                                      ? 'students'
-                                      : 'tournaments'
+                                        ? 'students'
+                                        : 'tournaments'
                                   }
                                   size={22}
                                   active={true}
@@ -497,15 +497,14 @@ export default function PersonalHomePage() {
 
                             {/* Role Badge */}
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                                isAdmin
-                                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                                  : isCoach
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${isAdmin
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                : isCoach
                                   ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                                   : isStudent
-                                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                  : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              }`}
+                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                }`}
                             >
                               {isAdmin ? '👑 Admin' : isCoach ? '🧢 Coach' : isStudent ? '🎓 Student' : '👤 Member'}
                             </span>
@@ -516,12 +515,12 @@ export default function PersonalHomePage() {
                               {orgItem.name}
                             </h4>
                             <span className="text-[9.5px] font-semibold text-foreground/40 uppercase tracking-wider block mt-0.5">
-                              {orgItem.type} Workspace
+                              {orgItem.type}
                             </span>
                           </div>
 
                           <div className="pt-2 border-t border-foreground/5 flex items-center justify-between text-[10px] font-extrabold text-primary">
-                            <span>Open Hub</span>
+                            <span>Open</span>
                             <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                           </div>
                         </button>
@@ -585,18 +584,16 @@ export default function PersonalHomePage() {
                                     <div className="flex-1 min-w-0 space-y-1.5">
                                       <div className="flex items-center gap-2 mb-2">
                                         <div
-                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
-                                            isServing === 'A'
-                                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                                              : 'bg-white/5 text-white/40 border border-white/10'
-                                          }`}
+                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'A'
+                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                            : 'bg-white/5 text-white/40 border border-white/10'
+                                            }`}
                                         >
                                           {isServing === 'A' ? <Zap className="w-3.5 h-3.5" /> : 'A'}
                                         </div>
                                         <span
-                                          className={`text-2xl font-black tabular-nums ${
-                                            Number(scoreA) > Number(scoreB) ? 'text-emerald-400' : 'text-white/90'
-                                          }`}
+                                          className={`text-2xl font-black tabular-nums ${Number(scoreA) > Number(scoreB) ? 'text-emerald-400' : 'text-white/90'
+                                            }`}
                                         >
                                           {scoreA}
                                         </span>
@@ -623,15 +620,14 @@ export default function PersonalHomePage() {
                                           {games.map((_: any, idx: number) => (
                                             <div
                                               key={idx}
-                                              className={`w-1.5 h-1.5 rounded-full ${
-                                                idx === gi
-                                                  ? 'bg-red-400'
-                                                  : games[idx]?.winner === 'A'
+                                              className={`w-1.5 h-1.5 rounded-full ${idx === gi
+                                                ? 'bg-red-400'
+                                                : games[idx]?.winner === 'A'
                                                   ? 'bg-emerald-400/80'
                                                   : games[idx]?.winner === 'B'
-                                                  ? 'bg-amber-400/80'
-                                                  : 'bg-white/15'
-                                              }`}
+                                                    ? 'bg-amber-400/80'
+                                                    : 'bg-white/15'
+                                                }`}
                                             />
                                           ))}
                                         </div>
@@ -640,18 +636,16 @@ export default function PersonalHomePage() {
                                     <div className="flex-1 min-w-0 space-y-1.5 text-right">
                                       <div className="flex items-center justify-end gap-2 mb-2">
                                         <span
-                                          className={`text-2xl font-black tabular-nums ${
-                                            Number(scoreB) > Number(scoreA) ? 'text-amber-400' : 'text-white/90'
-                                          }`}
+                                          className={`text-2xl font-black tabular-nums ${Number(scoreB) > Number(scoreA) ? 'text-amber-400' : 'text-white/90'
+                                            }`}
                                         >
                                           {scoreB}
                                         </span>
                                         <div
-                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${
-                                            isServing === 'B'
-                                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                                              : 'bg-white/5 text-white/40 border border-white/10'
-                                          }`}
+                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'B'
+                                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                            : 'bg-white/5 text-white/40 border border-white/10'
+                                            }`}
                                         >
                                           {isServing === 'B' ? <Zap className="w-3.5 h-3.5" /> : 'B'}
                                         </div>
@@ -778,17 +772,15 @@ export default function PersonalHomePage() {
                                     {teamAName.charAt(0)}
                                   </div>
                                   <span
-                                    className={`text-xs truncate ${
-                                      winner === 'A' ? 'font-black text-foreground' : 'font-medium text-foreground/70'
-                                    }`}
+                                    className={`text-xs truncate ${winner === 'A' ? 'font-black text-foreground' : 'font-medium text-foreground/70'
+                                      }`}
                                   >
                                     {teamAName}
                                   </span>
                                 </div>
                                 <span
-                                  className={`text-xs font-black font-mono tabular-nums ${
-                                    winner === 'A' ? 'text-emerald-400 font-black' : 'text-foreground/60'
-                                  }`}
+                                  className={`text-xs font-black font-mono tabular-nums ${winner === 'A' ? 'text-emerald-400 font-black' : 'text-foreground/60'
+                                    }`}
                                 >
                                   {setsWonA}
                                 </span>
@@ -803,17 +795,15 @@ export default function PersonalHomePage() {
                                     {teamBName.charAt(0)}
                                   </div>
                                   <span
-                                    className={`text-xs truncate ${
-                                      winner === 'B' ? 'font-black text-foreground' : 'font-medium text-foreground/70'
-                                    }`}
+                                    className={`text-xs truncate ${winner === 'B' ? 'font-black text-foreground' : 'font-medium text-foreground/70'
+                                      }`}
                                   >
                                     {teamBName}
                                   </span>
                                 </div>
                                 <span
-                                  className={`text-xs font-black font-mono tabular-nums ${
-                                    winner === 'B' ? 'text-emerald-400 font-black' : 'text-foreground/60'
-                                  }`}
+                                  className={`text-xs font-black font-mono tabular-nums ${winner === 'B' ? 'text-emerald-400 font-black' : 'text-foreground/60'
+                                    }`}
                                 >
                                   {setsWonB}
                                 </span>
@@ -1015,20 +1005,20 @@ export default function PersonalHomePage() {
                     const statusBadgeText = bothApproved
                       ? 'Lineups Approved'
                       : hasSubmitted
-                      ? 'Lineup Submitted'
-                      : 'Pending Lineup';
+                        ? 'Lineup Submitted'
+                        : 'Pending Lineup';
 
                     const statusBadgeClass = bothApproved
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       : hasSubmitted
-                      ? 'bg-primary/20 text-primary border border-primary/30'
-                      : 'bg-orange-500/20 text-orange-500 border border-orange-500/30';
+                        ? 'bg-primary/20 text-primary border border-primary/30'
+                        : 'bg-orange-500/20 text-orange-500 border border-orange-500/30';
 
                     const cardBgClass = bothApproved
                       ? 'bg-emerald-500/5 border-emerald-500/20'
                       : hasSubmitted
-                      ? 'bg-primary/5 border-primary/20'
-                      : 'bg-orange-500/5 border-orange-500/25';
+                        ? 'bg-primary/5 border-primary/20'
+                        : 'bg-orange-500/5 border-orange-500/25';
 
                     const dateStr = match.scheduledTime || match.matchDate;
                     let formattedDate = 'Date TBA';
@@ -1058,9 +1048,8 @@ export default function PersonalHomePage() {
                               </span>
                             </div>
                             <AlertCircle
-                              className={`w-4 h-4 shrink-0 ${
-                                bothApproved ? 'text-emerald-400' : hasSubmitted ? 'text-primary' : 'text-orange-500'
-                              }`}
+                              className={`w-4 h-4 shrink-0 ${bothApproved ? 'text-emerald-400' : hasSubmitted ? 'text-primary' : 'text-orange-500'
+                                }`}
                             />
                           </div>
 
@@ -1085,13 +1074,12 @@ export default function PersonalHomePage() {
 
                           <button
                             onClick={() => router.push(`/home/team-events/${match.uuid}/lineup`)}
-                            className={`mt-auto w-full py-2.5 text-xs font-black uppercase tracking-widest rounded-xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 ${
-                              bothApproved
-                                ? 'bg-emerald-500 hover:bg-emerald-600 text-black'
-                                : hasSubmitted
+                            className={`mt-auto w-full py-2.5 text-xs font-black uppercase tracking-widest rounded-xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 ${bothApproved
+                              ? 'bg-emerald-500 hover:bg-emerald-600 text-black'
+                              : hasSubmitted
                                 ? 'bg-primary hover:bg-primary-hover text-black'
                                 : 'bg-orange-500 hover:bg-orange-600 text-white'
-                            }`}
+                              }`}
                           >
                             {hasSubmitted ? (
                               <>
@@ -1146,11 +1134,10 @@ export default function PersonalHomePage() {
                               </div>
                             </div>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${
-                                match.status === 'LIVE' || match.status === 'IN_PROGRESS'
-                                  ? 'bg-red-500/10 text-red-400 border-red-500/20 animate-pulse'
-                                  : 'bg-primary/10 text-primary border-primary/20'
-                              }`}
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${match.status === 'LIVE' || match.status === 'IN_PROGRESS'
+                                ? 'bg-red-500/10 text-red-400 border-red-500/20 animate-pulse'
+                                : 'bg-primary/10 text-primary border-primary/20'
+                                }`}
                             >
                               {match.status === 'LIVE' || match.status === 'IN_PROGRESS' ? '● LIVE' : match.status}
                             </span>
@@ -1261,13 +1248,12 @@ export default function PersonalHomePage() {
                               </div>
 
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${
-                                  isLive
-                                    ? 'bg-red-500/15 text-red-400 border-red-500/30 animate-pulse'
-                                    : isCompleted
+                                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${isLive
+                                  ? 'bg-red-500/15 text-red-400 border-red-500/30 animate-pulse'
+                                  : isCompleted
                                     ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                                     : 'bg-red-500/10 text-red-400 border-red-500/20'
-                                }`}
+                                  }`}
                               >
                                 {isLive ? '● LIVE' : isCompleted ? 'Completed' : 'Assigned'}
                               </span>
@@ -1367,8 +1353,8 @@ export default function PersonalHomePage() {
                                     const courtNameStr = match.courtName
                                       ? encodeURIComponent(match.courtName)
                                       : match.courtId
-                                      ? encodeURIComponent(`Court ${match.courtId}`)
-                                      : '';
+                                        ? encodeURIComponent(`Court ${match.courtId}`)
+                                        : '';
 
                                     router.push(
                                       `/match-setup?matchId=${match.uuid}&sport=${sport}&teamA=${teamAStr}&teamB=${teamBStr}&teamAName=${teamANameStr}&teamBName=${teamBNameStr}&tournamentName=${tournamentNameStr}&courtName=${courtNameStr}&fromUmpire=true`
