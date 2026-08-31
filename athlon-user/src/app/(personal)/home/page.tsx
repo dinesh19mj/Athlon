@@ -55,8 +55,9 @@ import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
-const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments' | 'rankings' | 'matches' | 'registered'; desc: string }[] = [
+const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments' | 'academies' | 'rankings' | 'matches' | 'registered'; desc: string }[] = [
   { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, icon3d: 'tournaments', desc: 'Events & Brackets' },
+  { id: '/academies', label: 'Academies', icon: GraduationCap, icon3d: 'academies', desc: 'Training & Batches' },
   { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, icon3d: 'rankings', desc: 'Global ELO Standings' },
   { id: '/home/matches', label: 'Matches', icon: Activity, icon3d: 'matches', desc: 'Schedule & Scores' },
   { id: '/home/registered', label: 'Registered', icon: ClipboardList, icon3d: 'registered', desc: 'My Entries' },
@@ -95,6 +96,7 @@ export default function PersonalHomePage() {
 
   const [publicTournaments, setPublicTournaments] = useState<Tournament[]>([]);
   const [publicChampionships, setPublicChampionships] = useState<TeamChampionship[]>([]);
+  const [publicAcademies, setPublicAcademies] = useState<any[]>([]);
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [finishedScores, setFinishedScores] = useState<LiveScore[]>([]);
   const [userMatches, setUserMatches] = useState<any[]>([]);
@@ -107,6 +109,7 @@ export default function PersonalHomePage() {
   const liveScrollRef = useRef<HTMLDivElement>(null);
   const champsScrollRef = useRef<HTMLDivElement>(null);
   const tournsScrollRef = useRef<HTMLDivElement>(null);
+  const academiesScrollRef = useRef<HTMLDivElement>(null);
   const resultsScrollRef = useRef<HTMLDivElement>(null);
   const schedScrollRef = useRef<HTMLDivElement>(null);
   const lineupsScrollRef = useRef<HTMLDivElement>(null);
@@ -122,6 +125,14 @@ export default function PersonalHomePage() {
   useEffect(() => {
     TournamentService.getAll()
       .then((res) => setPublicTournaments(res.data.filter((t: Tournament) => t.visibility === 'PUBLIC')))
+      .catch(() => { });
+
+    // Public Academies
+    OrganizationService.getAll()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.data || [];
+        setPublicAcademies(list.filter((o: any) => o.type === 'ACADEMY'));
+      })
       .catch(() => { });
 
     // Public Championships with auto-polling
@@ -530,6 +541,72 @@ export default function PersonalHomePage() {
                 </div>
               </div>
             )}
+
+            {/* Featured Sports Academies & Coaching Centers */}
+            <div className="px-6 pb-4 pt-1 overflow-hidden">
+              <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                    Training Academies
+                  </h2>
+                </div>
+                <Link href="/academies" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                  <span>Explore</span>
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              <div className="flex items-stretch gap-3.5 overflow-x-auto pb-2 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                {publicAcademies.length > 0 ? (
+                  publicAcademies.map((acad: any) => (
+                    <div key={acad.uuid || acad.id} className="snap-start shrink-0 w-[240px]">
+                      <div
+                        className="rounded-2xl border border-white/10 p-3 bg-surface/90 hover:border-primary/40 transition-all flex flex-col justify-between h-full space-y-2.5 shadow-md"
+                        style={{ borderColor: 'var(--athlon-border)' }}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                            {acad.logo ? (
+                              <img src={acad.logo} alt={acad.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Athlon3DIcon type="academies" size={24} active={true} />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-black text-foreground truncate">{acad.name}</h4>
+                            <span className="text-[10px] text-primary font-bold block mt-0.5">
+                              {acad.profile?.sportsOffered || 'Badminton'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                          <span className="text-[10px] text-foreground/40">{acad.profile?.city || 'Training Center'}</span>
+                          <Link
+                            href="/academies"
+                            className="px-2.5 py-1 rounded-lg bg-primary text-black font-black text-[10px] hover:brightness-110 transition-all"
+                          >
+                            Enroll
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="snap-start shrink-0 w-[240px]">
+                    <Link
+                      href="/academies"
+                      className="block p-3.5 rounded-2xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-1.5"
+                    >
+                      <GraduationCap className="w-6 h-6 text-primary mx-auto" />
+                      <div className="text-xs font-bold text-foreground">Find Sports Academies</div>
+                      <p className="text-[10px] text-foreground/40">Browse batches and enroll in coaching</p>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Live Scores */}
             {liveScores.length > 0 && (
@@ -1455,7 +1532,7 @@ export default function PersonalHomePage() {
             </div>
 
             {/* Quick Action Navigation Strip */}
-            <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6 pt-6 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
               {quickActions.map((action) => (
                 <Link
                   key={action.id}
@@ -1837,6 +1914,100 @@ export default function PersonalHomePage() {
               </div>
             </section>
           )}
+
+          {/* ── SECTION 4.5: 🎓 FEATURED SPORTS ACADEMIES & TRAINING CENTERS ── */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <GraduationCap className="w-5 h-5 text-primary" />
+                <div>
+                  <h2 className="text-base font-black text-foreground">Featured Sports Academies & Training Centers</h2>
+                  <p className="text-xs text-foreground/50">Certified coaching batches, multi-court venues, and professional training</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link href="/academies" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                  Explore All Academies →
+                </Link>
+                <button
+                  onClick={() => scrollContainer(academiesScrollRef, 'left')}
+                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scrollContainer(academiesScrollRef, 'right')}
+                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div
+              ref={academiesScrollRef}
+              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+            >
+              {publicAcademies.length > 0 ? (
+                publicAcademies.map((acad: any) => (
+                  <div key={acad.uuid || acad.id} className="snap-start shrink-0 w-[340px]">
+                    <div
+                      className="rounded-3xl border border-white/10 p-4 bg-surface/80 hover:border-primary/40 transition-all flex flex-col justify-between h-full space-y-3 shadow-lg group backdrop-blur-md"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                          {acad.logo ? (
+                            <img src={acad.logo} alt={acad.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Athlon3DIcon type="academies" size={30} active={true} />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">
+                            {acad.name}
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 border border-primary/20 text-primary inline-block mt-1">
+                            {acad.profile?.sportsOffered || 'Badminton'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-foreground/60 line-clamp-2">
+                        {acad.description || 'Professional training academy with dedicated courts, certified coaches, and flexible morning/evening batches.'}
+                      </p>
+
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                        <span className="text-[11px] text-foreground/40 font-medium">
+                          {acad.profile?.city || 'Training Facility'}
+                        </span>
+                        <Link
+                          href="/academies"
+                          className="px-3.5 py-1.5 rounded-xl bg-primary text-black font-black text-xs hover:brightness-110 transition-all shadow-md shadow-primary/20"
+                        >
+                          Enroll Now
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="snap-start shrink-0 w-[340px]">
+                  <Link
+                    href="/academies"
+                    className="block p-6 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-2"
+                  >
+                    <GraduationCap className="w-8 h-8 text-primary mx-auto" />
+                    <div className="text-sm font-bold text-foreground">Explore Sports Academies</div>
+                    <p className="text-xs text-foreground/40">Find certified coaching batches &amp; training centers</p>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* ── SECTION 5: 📅 MY SCHEDULE & UMPIRING (HORIZONTAL SCROLL) ── */}
           {(userMatches.length > 0 || umpireMatches.length > 0) && (

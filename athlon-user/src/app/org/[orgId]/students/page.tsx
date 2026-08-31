@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { OrganizationService } from '@/lib/api/organization';
+import { UserService, UserResponse } from '@/lib/api/user';
 import {
   AcademyStudentService,
   AcademyStudent,
@@ -15,8 +16,6 @@ import {
   UpdateStudentPayload,
   CreateBatchPayload,
   CreateCourtPayload,
-  StudentLevel,
-  FeeStatus
 } from '@/lib/api/academyStudent';
 import {
   Search,
@@ -51,7 +50,8 @@ import {
   Building2,
   MapPin,
   Flame,
-  Check
+  Check,
+  UserPlus
 } from 'lucide-react';
 
 const AVAILABLE_SPORTS = [
@@ -126,7 +126,6 @@ export default function StudentsPage() {
   const [academySport, setAcademySport] = useState<string>('');
   const [selectedSportToSave, setSelectedSportToSave] = useState<string>('Badminton');
   const [isSavingSport, setIsSavingSport] = useState(false);
-  const [showChangeSportModal, setShowChangeSportModal] = useState(false);
 
   // Data states
   const [courts, setCourts] = useState<AcademyCourt[]>([]);
@@ -150,6 +149,13 @@ export default function StudentsPage() {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showCourtModal, setShowCourtModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Smart Phone Lookup State in Enrollment Modal
+  const [phoneQuery, setPhoneQuery] = useState('');
+  const [verifyingPhone, setVerifyingPhone] = useState(false);
+  const [verifiedUser, setVerifiedUser] = useState<UserResponse | null>(null);
+  const [phoneLookupDone, setPhoneLookupDone] = useState(false);
+  const [accountRole, setAccountRole] = useState<'STUDENT' | 'PARENT' | 'GUARDIAN'>('STUDENT');
 
   // Form State for Enroll / Edit Student
   const [studentForm, setStudentForm] = useState<{
@@ -280,12 +286,92 @@ export default function StudentsPage() {
         sportsOffered: sportName
       });
       setAcademySport(sportName);
-      setShowChangeSportModal(false);
       showToast(`Academy sport set to ${sportName}!`);
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Failed to save academy sport.');
     } finally {
       setIsSavingSport(false);
+    }
+  };
+
+  // Phone Lookup Function
+  const handleVerifyPhone = async (phoneToVerify: string) => {
+    const cleanPhone = phoneToVerify.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10) return;
+
+    try {
+      setVerifyingPhone(true);
+      setPhoneLookupDone(false);
+      const res = await UserService.getUserByPhone(cleanPhone);
+      const user = (res as any)?.data || res;
+
+      if (user && user.uuid) {
+        setVerifiedUser(user);
+        const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Athlon Athlete';
+        // Auto-fill student form based on account role
+        if (accountRole === 'STUDENT') {
+          setStudentForm(prev => ({
+            ...prev,
+            fullName: name,
+            parentPhone: user.phone || cleanPhone,
+            parentEmail: user.email || prev.parentEmail
+          }));
+        } else {
+          setStudentForm(prev => ({
+            ...prev,
+            parentName: name,
+            parentPhone: user.phone || cleanPhone,
+            parentEmail: user.email || prev.parentEmail
+          }));
+        }
+      } else {
+        setVerifiedUser(null);
+        setStudentForm(prev => ({
+          ...prev,
+          parentPhone: cleanPhone
+        }));
+      }
+    } catch (err) {
+      setVerifiedUser(null);
+      setStudentForm(prev => ({
+        ...prev,
+        parentPhone: cleanPhone
+      }));
+    } finally {
+      setVerifyingPhone(false);
+      setPhoneLookupDone(true);
+    }
+  };
+
+  const handlePhoneInputChange = (val: string) => {
+    setPhoneQuery(val);
+    const clean = val.replace(/[^0-9]/g, '');
+    if (clean.length === 10) {
+      handleVerifyPhone(clean);
+    } else {
+      setVerifiedUser(null);
+      setPhoneLookupDone(false);
+    }
+  };
+
+  // Handle Account Role switch (Student vs Parent vs Guardian)
+  const handleRoleChange = (newRole: 'STUDENT' | 'PARENT' | 'GUARDIAN') => {
+    setAccountRole(newRole);
+    if (verifiedUser) {
+      const name = `${verifiedUser.firstName || ''} ${verifiedUser.lastName || ''}`.trim();
+      if (newRole === 'STUDENT') {
+        setStudentForm(prev => ({
+          ...prev,
+          fullName: name,
+          parentName: prev.parentName === name ? '' : prev.parentName
+        }));
+      } else {
+        setStudentForm(prev => ({
+          ...prev,
+          parentName: name,
+          fullName: prev.fullName === name ? '' : prev.fullName
+        }));
+      }
     }
   };
 
@@ -315,6 +401,10 @@ export default function StudentsPage() {
   // Open Enroll Modal
   const handleOpenEnroll = () => {
     setEditingStudent(null);
+    setPhoneQuery('');
+    setVerifiedUser(null);
+    setPhoneLookupDone(false);
+    setAccountRole('STUDENT');
     setStudentForm({
       fullName: '',
       gender: 'MALE',
@@ -340,6 +430,9 @@ export default function StudentsPage() {
   // Open Edit Modal
   const handleOpenEdit = (student: AcademyStudent) => {
     setEditingStudent(student);
+    setPhoneQuery(student.parentPhone || '');
+    setVerifiedUser(null);
+    setPhoneLookupDone(true);
     setStudentForm({
       fullName: student.fullName || '',
       gender: student.gender || 'MALE',
@@ -387,7 +480,7 @@ export default function StudentsPage() {
           batchTiming: selectedB ? `${selectedB.startTime} - ${selectedB.endTime}` : undefined,
           sportType: academySport || 'Badminton',
           parentName: studentForm.parentName,
-          parentPhone: studentForm.parentPhone,
+          parentPhone: studentForm.parentPhone || phoneQuery,
           parentEmail: studentForm.parentEmail,
           emergencyContact: studentForm.emergencyContact,
           address: studentForm.address,
@@ -402,6 +495,7 @@ export default function StudentsPage() {
       } else {
         const payload: EnrollStudentPayload = {
           organizationUuid: orgUuid,
+          userUuid: verifiedUser?.uuid,
           fullName: studentForm.fullName.trim(),
           gender: studentForm.gender,
           dob: studentForm.dob || undefined,
@@ -414,7 +508,7 @@ export default function StudentsPage() {
           batchTiming: selectedB ? `${selectedB.startTime} - ${selectedB.endTime}` : undefined,
           sportType: academySport || 'Badminton',
           parentName: studentForm.parentName,
-          parentPhone: studentForm.parentPhone,
+          parentPhone: studentForm.parentPhone || phoneQuery,
           parentEmail: studentForm.parentEmail,
           emergencyContact: studentForm.emergencyContact,
           address: studentForm.address,
@@ -632,7 +726,6 @@ export default function StudentsPage() {
             HEADER & TOP ACTION CONTROLS
            ══════════════════════════════════════════════════════════════════════ */}
         <div className="bg-surface/90 border border-white/10 p-4 sm:p-7 rounded-2xl sm:rounded-[32px] shadow-2xl backdrop-blur-2xl relative overflow-hidden space-y-3.5 sm:space-y-4">
-          {/* Ambient Glows */}
           <div className="absolute top-0 right-0 w-60 sm:w-80 h-60 sm:h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
           <div className="absolute bottom-0 left-0 w-60 sm:w-80 h-60 sm:h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16" />
 
@@ -664,7 +757,6 @@ export default function StudentsPage() {
 
             {/* Action Buttons (Courts, Batches, Enroll) */}
             <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
-              {/* Courts Button */}
               <button
                 onClick={() => setShowCourtModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-xs sm:text-sm font-bold text-foreground transition-all cursor-pointer shadow-sm active:scale-95"
@@ -673,7 +765,6 @@ export default function StudentsPage() {
                 <span>Courts ({courts.length})</span>
               </button>
 
-              {/* Batches Button */}
               <button
                 onClick={() => setShowBatchModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-xs sm:text-sm font-bold text-foreground transition-all cursor-pointer shadow-sm active:scale-95"
@@ -687,7 +778,7 @@ export default function StudentsPage() {
                   onClick={handleOpenEnroll}
                   className="flex items-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer active:scale-95"
                 >
-                  <Plus className="w-4 h-4" />
+                  <UserPlus className="w-4 h-4" />
                   <span>Enroll Student</span>
                 </button>
               )}
@@ -696,10 +787,9 @@ export default function StudentsPage() {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            TELEMETRY KPI DECK (4x1 on desktop, 2x2 on mobile)
+            TELEMETRY KPI DECK
            ══════════════════════════════════════════════════════════════════════ */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-          {/* Total Students */}
           <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-xs font-bold text-foreground/50 uppercase tracking-wider">Athletes</span>
@@ -717,7 +807,6 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          {/* Courts & Batches */}
           <div
             onClick={() => setShowCourtModal(true)}
             className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 hover:border-blue-500/40 transition-all cursor-pointer shadow-md"
@@ -738,7 +827,6 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          {/* Fee Collection Rate */}
           <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider">Fee Adherence</span>
@@ -756,7 +844,6 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          {/* Overdue Attention */}
           <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface/90 border border-white/10 shadow-md">
             <div className="flex items-center justify-between">
               <span className="text-[10px] sm:text-xs font-bold text-rose-400 uppercase tracking-wider">Overdue Fees</span>
@@ -780,7 +867,6 @@ export default function StudentsPage() {
            ══════════════════════════════════════════════════════════════════════ */}
         <div className="bg-surface/90 border border-white/10 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xl backdrop-blur-xl space-y-3">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
-            {/* Search Input */}
             <div className="relative flex-grow">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
               <input
@@ -792,9 +878,7 @@ export default function StudentsPage() {
               />
             </div>
 
-            {/* Dropdown Filters (Court, Level, Batch, Fee Status) */}
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
-              {/* Court Filter */}
               <select
                 value={selectedCourt}
                 onChange={e => setSelectedCourt(e.target.value)}
@@ -808,7 +892,6 @@ export default function StudentsPage() {
                 ))}
               </select>
 
-              {/* Level Filter */}
               <select
                 value={selectedLevel}
                 onChange={e => setSelectedLevel(e.target.value)}
@@ -822,7 +905,6 @@ export default function StudentsPage() {
                 <option value="PRO">Pro</option>
               </select>
 
-              {/* Batch Filter */}
               <select
                 value={selectedBatch}
                 onChange={e => setSelectedBatch(e.target.value)}
@@ -836,7 +918,6 @@ export default function StudentsPage() {
                 ))}
               </select>
 
-              {/* Fee Status Filter */}
               <select
                 value={selectedFeeStatus}
                 onChange={e => setSelectedFeeStatus(e.target.value)}
@@ -891,9 +972,10 @@ export default function StudentsPage() {
               {canManage && (
                 <button
                   onClick={handleOpenEnroll}
-                  className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:brightness-110 transition-all cursor-pointer shadow-md"
+                  className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:brightness-110 transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5"
                 >
-                  Enroll Student
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Enroll Student</span>
                 </button>
               )}
             </div>
@@ -908,7 +990,7 @@ export default function StudentsPage() {
                       <th className="px-6 py-3.5">Skill Level</th>
                       <th className="px-6 py-3.5">Court / Venue</th>
                       <th className="px-6 py-3.5">Batch / Timing</th>
-                      <th className="px-6 py-3.5">Guardian Info</th>
+                      <th className="px-6 py-3.5">Contact & Account</th>
                       <th className="px-6 py-3.5">Monthly Fee</th>
                       <th className="px-6 py-3.5">Fee Status</th>
                       <th className="px-6 py-3.5 text-right">Actions</th>
@@ -928,9 +1010,16 @@ export default function StudentsPage() {
                                 {student.fullName.slice(0, 2).toUpperCase()}
                               </div>
                               <div>
-                                <div className="font-extrabold text-foreground">{student.fullName}</div>
+                                <div className="font-extrabold text-foreground flex items-center gap-1.5">
+                                  <span>{student.fullName}</span>
+                                  {student.userUuid && (
+                                    <span title="Linked to Athlon Account" className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px]">
+                                      ✓
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="text-[11px] text-foreground/40 font-medium">
-                                  {student.age ? `${student.age} yrs` : 'Athlete'} {student.gender ? `• ${student.gender}` : ''} {student.bloodGroup ? `• ${student.bloodGroup}` : ''}
+                                  {student.age ? `${student.age} yrs` : 'Athlete'} {student.gender ? `• ${student.gender}` : ''}
                                 </div>
                               </div>
                             </div>
@@ -962,11 +1051,11 @@ export default function StudentsPage() {
                             )}
                           </td>
 
-                          {/* Guardian */}
+                          {/* Contact Info */}
                           <td className="px-6 py-3.5">
                             {student.parentName || student.parentPhone ? (
                               <div>
-                                <div className="font-semibold text-foreground text-xs">{student.parentName || 'Guardian'}</div>
+                                <div className="font-semibold text-foreground text-xs">{student.parentName || 'Parent/Guardian'}</div>
                                 {student.parentPhone && (
                                   <a
                                     href={`tel:${student.parentPhone}`}
@@ -1042,15 +1131,17 @@ export default function StudentsPage() {
 
                   return (
                     <div key={student.studentUuid} className="p-3.5 space-y-2.5">
-                      {/* Top Row: Name, Level & Fee */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/25 flex items-center justify-center font-black text-xs shrink-0 shadow-inner">
                             {student.fullName.slice(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-extrabold text-foreground text-xs sm:text-sm truncate">
-                              {student.fullName}
+                            <div className="font-extrabold text-foreground text-xs sm:text-sm truncate flex items-center gap-1.5">
+                              <span>{student.fullName}</span>
+                              {student.userUuid && (
+                                <span className="text-emerald-400 text-[10px] font-bold">✓ Athlon</span>
+                              )}
                             </div>
                             <div className="text-[10px] text-foreground/40 font-medium">
                               {student.age ? `${student.age} yrs` : 'Athlete'} {student.gender ? `• ${student.gender}` : ''}
@@ -1068,7 +1159,6 @@ export default function StudentsPage() {
                         </div>
                       </div>
 
-                      {/* Middle Row: Court & Batch Capsule */}
                       <div className="flex items-center justify-between text-xs bg-background/60 p-2 rounded-xl border border-white/5">
                         <div className="min-w-0 space-y-0.5">
                           <div className="flex items-center gap-1 font-bold text-foreground text-xs truncate">
@@ -1089,7 +1179,6 @@ export default function StudentsPage() {
                         </div>
                       </div>
 
-                      {/* Bottom Row: Parent Contact & Actions */}
                       <div className="flex items-center justify-between gap-2 pt-0.5">
                         {student.parentPhone ? (
                           <a
@@ -1097,7 +1186,7 @@ export default function StudentsPage() {
                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[11px] font-bold"
                           >
                             <Phone className="w-3 h-3" />
-                            <span>{student.parentName || 'Call Parent'}</span>
+                            <span>{student.parentName || 'Call Contact'}</span>
                           </a>
                         ) : (
                           <span className="text-[11px] text-foreground/30">No contact saved</span>
@@ -1127,6 +1216,300 @@ export default function StudentsPage() {
             </>
           )}
         </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            SMART PHONE-VERIFIED ENROLL / EDIT STUDENT MODAL
+           ══════════════════════════════════════════════════════════════════════ */}
+        {showEnrollModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-primary/15 text-primary border border-primary/30 flex items-center justify-center font-bold">
+                    <UserPlus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-foreground">
+                      {editingStudent ? 'Edit Athlete Profile' : 'Enroll Academy Student'}
+                    </h3>
+                    <p className="text-[11px] text-foreground/50">
+                      {editingStudent ? 'Update roster & batch details' : 'Phone verification & streamlined onboarding'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowEnrollModal(false)}
+                  className="p-1.5 rounded-xl hover:bg-white/10 text-foreground/50 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Step 1: Smart Phone Lookup (Only for new enrollment) */}
+              {!editingStudent && (
+                <div className="bg-background/60 border border-white/10 p-3 sm:p-4 rounded-2xl space-y-3">
+                  <label className="text-xs font-black uppercase text-primary tracking-wider flex items-center justify-between">
+                    <span>1. Athlete / Guardian Phone Number</span>
+                    {verifyingPhone && (
+                      <span className="text-[10px] text-primary flex items-center gap-1 font-semibold normal-case">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Verifying...
+                      </span>
+                    )}
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-grow">
+                      <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+                      <input
+                        type="tel"
+                        maxLength={10}
+                        placeholder="Enter 10-digit mobile number"
+                        value={phoneQuery}
+                        onChange={e => handlePhoneInputChange(e.target.value)}
+                        className="w-full bg-background border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleVerifyPhone(phoneQuery)}
+                      disabled={phoneQuery.replace(/[^0-9]/g, '').length < 10 || verifyingPhone}
+                      className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-foreground transition-all disabled:opacity-40 cursor-pointer shrink-0"
+                    >
+                      Verify
+                    </button>
+                  </div>
+
+                  {/* Case A: User Found on Athlon */}
+                  {verifiedUser && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl space-y-2 animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center shrink-0">
+                            {verifiedUser.firstName ? verifiedUser.firstName[0].toUpperCase() : 'U'}
+                          </div>
+                          <div>
+                            <div className="text-xs font-black text-foreground flex items-center gap-1.5">
+                              <span>{verifiedUser.firstName} {verifiedUser.lastName || ''}</span>
+                              <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-[10px] font-bold text-emerald-400">
+                                Verified Athlon User
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-foreground/50">{verifiedUser.phone || phoneQuery}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Account Manager Selector */}
+                      <div className="pt-1.5 border-t border-emerald-500/20">
+                        <label className="text-[10px] font-bold text-foreground/60 block mb-1">
+                          Who does this phone number belong to?
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5 text-xs">
+                          {(['STUDENT', 'PARENT', 'GUARDIAN'] as const).map(role => (
+                            <button
+                              key={role}
+                              type="button"
+                              onClick={() => handleRoleChange(role)}
+                              className={`py-1.5 px-2 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                                accountRole === role
+                                  ? 'bg-emerald-500 text-black shadow-sm font-black'
+                                  : 'bg-background/80 text-foreground/70 border border-white/10 hover:bg-white/5'
+                              }`}
+                            >
+                              {role === 'STUDENT' ? '👤 Student' : role === 'PARENT' ? '👨‍👩‍👧 Parent' : '🛡️ Guardian'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Case B: Phone Not Registered */}
+                  {phoneLookupDone && !verifiedUser && phoneQuery.length >= 10 && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl flex items-start gap-2 text-xs text-amber-300 animate-in fade-in">
+                      <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                      <div>
+                        <span className="font-bold">Not registered on Athlon yet.</span>
+                        <p className="text-[11px] text-amber-300/80 mt-0.5">
+                          You can still enroll this athlete into the academy roster using basic details below.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Streamlined Onboarding Form */}
+              <form onSubmit={handleSubmitStudent} className="space-y-3.5 text-xs">
+                
+                {/* Athlete Details */}
+                <div className="space-y-2.5">
+                  <h4 className="text-xs font-black uppercase text-foreground/50 tracking-wider">
+                    {!editingStudent ? '2. Athlete Information' : 'Athlete Details'}
+                  </h4>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-foreground/60 block mb-1">Athlete Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Aarav Patel"
+                      value={studentForm.fullName}
+                      onChange={e => setStudentForm({ ...studentForm, fullName: e.target.value })}
+                      className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs sm:text-sm font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Gender</label>
+                      <select
+                        value={studentForm.gender}
+                        onChange={e => setStudentForm({ ...studentForm, gender: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
+                      >
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Age (Years)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 14"
+                        value={studentForm.age}
+                        onChange={e => setStudentForm({ ...studentForm, age: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Parent / Contact Name (If account holder is Parent/Guardian) */}
+                  {accountRole !== 'STUDENT' && (
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Parent / Guardian Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Suresh Patel"
+                        value={studentForm.parentName}
+                        onChange={e => setStudentForm({ ...studentForm, parentName: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Court, Batch & Skill Level */}
+                <div className="space-y-2.5 pt-2 border-t border-white/10">
+                  <h4 className="text-xs font-black uppercase text-foreground/50 tracking-wider">
+                    Training Venue & Batch
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Skill Level</label>
+                      <select
+                        value={studentForm.level}
+                        onChange={e => setStudentForm({ ...studentForm, level: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
+                      >
+                        <option value="BEGINNER">Beginner</option>
+                        <option value="INTERMEDIATE">Intermediate</option>
+                        <option value="ADVANCED">Advanced</option>
+                        <option value="ELITE">Elite</option>
+                        <option value="PRO">Pro</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Court / Venue</label>
+                      <select
+                        value={studentForm.courtUuid}
+                        onChange={e => setStudentForm({ ...studentForm, courtUuid: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer truncate"
+                      >
+                        <option value="">Auto from Batch</option>
+                        {courts.map(c => (
+                          <option key={c.courtUuid} value={c.courtUuid}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Training Batch</label>
+                      <select
+                        value={studentForm.batchUuid}
+                        onChange={e => setStudentForm({ ...studentForm, batchUuid: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer truncate"
+                      >
+                        <option value="">No Batch / Open</option>
+                        {batches.map(b => (
+                          <option key={b.batchUuid} value={b.batchUuid}>
+                            {b.batchName} ({b.startTime || ''} - {b.endTime || ''})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fee & Invoicing */}
+                <div className="space-y-2.5 pt-2 border-t border-white/10">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Monthly Fee (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="1500"
+                        value={studentForm.monthlyFee}
+                        onChange={e => setStudentForm({ ...studentForm, monthlyFee: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none focus:border-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Initial Fee Status</label>
+                      <select
+                        value={studentForm.feeStatus}
+                        onChange={e => setStudentForm({ ...studentForm, feeStatus: e.target.value })}
+                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
+                      >
+                        <option value="PAID">Paid</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="OVERDUE">Overdue</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setShowEnrollModal(false)}
+                    className="px-4 py-2 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-foreground/70 font-bold transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || !studentForm.fullName.trim()}
+                    className="px-5 py-2 rounded-xl bg-primary text-black font-black hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    <span>{editingStudent ? 'Update Profile' : 'Enroll Student'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════════════
             COURTS / VENUES MODAL
@@ -1428,250 +1811,6 @@ export default function StudentsPage() {
                   ))
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════
-            ENROLL / EDIT STUDENT MODAL
-           ══════════════════════════════════════════════════════════════════════ */}
-        {showEnrollModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-primary" />
-                  <h3 className="text-base sm:text-lg font-black text-foreground">
-                    {editingStudent ? 'Edit Athlete Profile' : 'Enroll New Student'}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowEnrollModal(false)}
-                  className="p-1.5 rounded-xl hover:bg-white/10 text-foreground/50 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmitStudent} className="space-y-4 text-xs sm:text-sm">
-                {/* 1. Athlete Information */}
-                <div>
-                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">1. Athlete Details</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Full Name *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Aarav Patel"
-                        value={studentForm.fullName}
-                        onChange={e => setStudentForm({ ...studentForm, fullName: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Gender</label>
-                      <select
-                        value={studentForm.gender}
-                        onChange={e => setStudentForm({ ...studentForm, gender: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      >
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Age</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 14"
-                        value={studentForm.age}
-                        onChange={e => setStudentForm({ ...studentForm, age: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Blood Group</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. O+, B+, A+"
-                        value={studentForm.bloodGroup}
-                        onChange={e => setStudentForm({ ...studentForm, bloodGroup: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. Skill Level, Court & Batch */}
-                <div>
-                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">2. Court Venue & Batch Assignment</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Skill Level</label>
-                      <select
-                        value={studentForm.level}
-                        onChange={e => setStudentForm({ ...studentForm, level: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      >
-                        <option value="BEGINNER">Beginner</option>
-                        <option value="INTERMEDIATE">Intermediate</option>
-                        <option value="ADVANCED">Advanced</option>
-                        <option value="ELITE">Elite</option>
-                        <option value="PRO">Pro</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Court / Venue</label>
-                      <select
-                        value={studentForm.courtUuid}
-                        onChange={e => setStudentForm({ ...studentForm, courtUuid: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      >
-                        <option value="">Auto from Batch</option>
-                        {courts.map(c => (
-                          <option key={c.courtUuid} value={c.courtUuid}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Assign Batch</label>
-                      <select
-                        value={studentForm.batchUuid}
-                        onChange={e => setStudentForm({ ...studentForm, batchUuid: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      >
-                        <option value="">No Batch / Unassigned</option>
-                        {batches.map(b => (
-                          <option key={b.batchUuid} value={b.batchUuid}>
-                            {b.batchName} ({b.startTime || ''} - {b.endTime || ''})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Guardian & Emergency Contact */}
-                <div>
-                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">3. Guardian Contacts</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Parent / Guardian Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Suresh Patel"
-                        value={studentForm.parentName}
-                        onChange={e => setStudentForm({ ...studentForm, parentName: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Parent Phone Number *</label>
-                      <input
-                        type="tel"
-                        placeholder="e.g. +91 98765 43210"
-                        value={studentForm.parentPhone}
-                        onChange={e => setStudentForm({ ...studentForm, parentPhone: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Parent Email</label>
-                      <input
-                        type="email"
-                        placeholder="e.g. parent@gmail.com"
-                        value={studentForm.parentEmail}
-                        onChange={e => setStudentForm({ ...studentForm, parentEmail: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Emergency Contact</label>
-                      <input
-                        type="tel"
-                        placeholder="e.g. +91 91234 56789"
-                        value={studentForm.emergencyContact}
-                        onChange={e => setStudentForm({ ...studentForm, emergencyContact: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Fee Setup */}
-                <div>
-                  <h4 className="text-xs font-black uppercase text-primary tracking-wider mb-2">4. Fee & Billing</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Monthly Fee (₹)</label>
-                      <input
-                        type="number"
-                        placeholder="1500"
-                        value={studentForm.monthlyFee}
-                        onChange={e => setStudentForm({ ...studentForm, monthlyFee: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Billing Frequency</label>
-                      <select
-                        value={studentForm.feeFrequency}
-                        onChange={e => setStudentForm({ ...studentForm, feeFrequency: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      >
-                        <option value="MONTHLY">Monthly</option>
-                        <option value="QUARTERLY">Quarterly</option>
-                        <option value="ANNUALLY">Annually</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-foreground/60 block mb-1">Fee Status</label>
-                      <select
-                        value={studentForm.feeStatus}
-                        onChange={e => setStudentForm({ ...studentForm, feeStatus: e.target.value })}
-                        className="w-full bg-background border border-white/10 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary"
-                      >
-                        <option value="PAID">Paid</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="OVERDUE">Overdue</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Buttons */}
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setShowEnrollModal(false)}
-                    className="px-4 py-2 rounded-xl bg-surface border border-white/10 hover:bg-white/5 text-foreground/70 font-bold transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="px-5 py-2 rounded-xl bg-primary text-black font-black hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    <span>{editingStudent ? 'Update Athlete' : 'Enroll Athlete'}</span>
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
         )}
