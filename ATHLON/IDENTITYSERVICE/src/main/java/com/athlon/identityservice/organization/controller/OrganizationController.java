@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.athlon.identityservice.dto.response.ApiResponse;
+import com.athlon.identityservice.util.DocumentUtil;
 import com.athlon.identityservice.organization.dto.request.CreateOrganizationRequest;
 import com.athlon.identityservice.organization.dto.request.SaveOrganizationProfileRequest;
 import com.athlon.identityservice.organization.dto.request.UpdateOrganizationRequest;
 import com.athlon.identityservice.organization.dto.response.OrganizationProfileResponse;
 import com.athlon.identityservice.organization.dto.response.OrganizationResponse;
 import com.athlon.identityservice.organization.service.OrganizationService;
-import com.athlon.identityservice.util.DocumentUtil;
 
 import jakarta.validation.Valid;
 
@@ -41,12 +41,36 @@ public class OrganizationController {
         this.documentUtil = documentUtil;
     }
 
+    private Long parseUserId(String userIdHeader) {
+        if (userIdHeader == null || userIdHeader.trim().isEmpty() || "undefined".equalsIgnoreCase(userIdHeader) || "null".equalsIgnoreCase(userIdHeader)) {
+            return 1L;
+        }
+        try {
+            return Long.parseLong(userIdHeader.trim());
+        } catch (Exception e) {
+            return 1L;
+        }
+    }
+
+    private UUID parseUserUuid(String userUuidHeader) {
+        if (userUuidHeader == null || userUuidHeader.trim().isEmpty() || "undefined".equalsIgnoreCase(userUuidHeader) || "null".equalsIgnoreCase(userUuidHeader)) {
+            return UUID.fromString("00000000-0000-0000-0000-000000000000");
+        }
+        try {
+            return UUID.fromString(userUuidHeader.trim());
+        } catch (Exception e) {
+            return UUID.fromString("00000000-0000-0000-0000-000000000000");
+        }
+    }
+
     @PostMapping("/createOrganization")
     public ResponseEntity<ApiResponse<OrganizationResponse>> createOrganization(
             @Valid @RequestBody CreateOrganizationRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId,
-            @RequestHeader(value = "X-User-Uuid", defaultValue = "00000000-0000-0000-0000-000000000000") UUID userUuid) {
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @RequestHeader(value = "X-User-Uuid", required = false) String userUuidHeader) {
         
+        Long userId = parseUserId(userIdHeader);
+        UUID userUuid = parseUserUuid(userUuidHeader);
         OrganizationResponse response = organizationService.createOrganization(request, userId, userUuid);
         return ResponseEntity.ok(ApiResponse.success("Organization created successfully", response));
     }
@@ -54,8 +78,9 @@ public class OrganizationController {
     @PostMapping("/updateOrganization")
     public ResponseEntity<ApiResponse<OrganizationResponse>> updateOrganization(
             @Valid @RequestBody UpdateOrganizationRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
         
+        Long userId = parseUserId(userIdHeader);
         OrganizationResponse response = organizationService.updateOrganization(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Organization updated successfully", response));
     }
@@ -63,8 +88,9 @@ public class OrganizationController {
     @PostMapping("/saveProfile")
     public ResponseEntity<ApiResponse<OrganizationProfileResponse>> saveOrganizationProfile(
             @Valid @RequestBody SaveOrganizationProfileRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
         
+        Long userId = parseUserId(userIdHeader);
         OrganizationProfileResponse response = organizationService.saveOrganizationProfile(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Organization profile saved successfully", response));
     }
@@ -74,8 +100,9 @@ public class OrganizationController {
             @ModelAttribute SaveOrganizationProfileRequest request,
             @RequestParam(value = "logoFile", required = false) MultipartFile logoFile,
             @RequestParam(value = "bannerFile", required = false) MultipartFile bannerFile,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) throws IOException {
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) throws IOException {
         
+        Long userId = parseUserId(userIdHeader);
         OrganizationProfileResponse response = organizationService.saveOrganizationProfileWithMultipart(
                 request, logoFile, bannerFile, userId);
         return ResponseEntity.ok(ApiResponse.success("Organization profile and media saved successfully", response));
@@ -107,8 +134,9 @@ public class OrganizationController {
     @PostMapping("/deleteOrganization/{uuid}")
     public ResponseEntity<ApiResponse<Void>> deleteOrganization(
             @PathVariable UUID uuid,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
         
+        Long userId = parseUserId(userIdHeader);
         organizationService.deleteOrganization(uuid, userId);
         return ResponseEntity.ok(ApiResponse.success("Organization deleted successfully", null));
     }
@@ -150,7 +178,8 @@ public class OrganizationController {
     public ResponseEntity<ApiResponse<com.athlon.identityservice.organization.dto.response.OrganizationMemberResponse>> addMemberByPhone(
             @PathVariable("orgUuid") UUID orgUuid,
             @Valid @RequestBody com.athlon.identityservice.organization.dto.request.AddMemberRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+        Long currentUserId = parseUserId(userIdHeader);
         var response = organizationService.addMemberByPhone(orgUuid, request, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Member added to organization successfully", response));
     }
@@ -159,7 +188,8 @@ public class OrganizationController {
     public ResponseEntity<ApiResponse<Void>> removeMember(
             @PathVariable("orgUuid") UUID orgUuid,
             @PathVariable("memberUuid") UUID memberUuid,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+        Long currentUserId = parseUserId(userIdHeader);
         organizationService.removeMember(orgUuid, memberUuid, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Member removed from organization successfully", null));
     }

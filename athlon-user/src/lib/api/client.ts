@@ -44,11 +44,17 @@ export const fetchClient = async <T>(
   }
   
   if (userId) {
-    headers['X-User-Id'] = String(userId);
+    const sId = String(userId).trim();
+    if (/^\d+$/.test(sId)) {
+      headers['X-User-Id'] = sId;
+    }
   }
 
   if (userUuid) {
-    headers['X-User-Uuid'] = String(userUuid);
+    const sUuid = String(userUuid).trim();
+    if (sUuid !== 'null' && sUuid !== 'undefined' && sUuid.length > 0) {
+      headers['X-User-Uuid'] = sUuid;
+    }
   }
 
   try {

@@ -163,8 +163,16 @@ public class OrganizationService {
 
         profile = organizationProfileRepository.save(profile);
 
+        boolean orgModified = false;
         if (request.getName() != null && !request.getName().trim().isEmpty() && !request.getName().equals(organization.getName())) {
             organization.setName(request.getName().trim());
+            orgModified = true;
+        }
+        if (request.getDescription() != null && !request.getDescription().equals(organization.getDescription())) {
+            organization.setDescription(request.getDescription());
+            orgModified = true;
+        }
+        if (orgModified) {
             organization.setUpdatedBy(currentUserId);
             organizationRepository.save(organization);
         }
@@ -231,8 +239,16 @@ public class OrganizationService {
 
         profile = organizationProfileRepository.save(profile);
 
+        boolean orgModified = false;
         if (request.getName() != null && !request.getName().trim().isEmpty() && !request.getName().equals(organization.getName())) {
             organization.setName(request.getName().trim());
+            orgModified = true;
+        }
+        if (request.getDescription() != null && !request.getDescription().equals(organization.getDescription())) {
+            organization.setDescription(request.getDescription());
+            orgModified = true;
+        }
+        if (orgModified) {
             organization.setUpdatedBy(currentUserId);
             organizationRepository.save(organization);
         }
