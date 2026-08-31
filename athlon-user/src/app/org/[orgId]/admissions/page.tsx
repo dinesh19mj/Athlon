@@ -424,7 +424,7 @@ export default function OrganizationAdmissionsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5 pb-28 px-2 sm:px-4">
+    <div className="max-w-6xl mx-auto space-y-5 pt-6 sm:pt-8 md:pt-10 pb-28 px-2 sm:px-4">
       {/* ══════════════════════════════════════════════════════════════════════
           COMPACT CLEAN HEADER
          ══════════════════════════════════════════════════════════════════════ */}
