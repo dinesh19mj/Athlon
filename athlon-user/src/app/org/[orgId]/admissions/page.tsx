@@ -42,11 +42,11 @@ interface CoachingTier {
 
 interface AcademyVenueCourt {
   id: string;
-  venueName: string; // e.g. "Apex Badminton Arena - Main Campus"
-  location: string; // e.g. "Indiranagar Campus, Bangalore"
-  surfaceType: string; // e.g. "Synthetic BWF Mat", "Wooden Flooring", "Artificial Turf"
-  courtsCount: number; // e.g. 4
-  courtIdentifiers: string; // e.g. "Courts 1, 2, 3 & 4"
+  venueName: string;
+  location: string;
+  surfaceType: string;
+  courtsCount: number;
+  courtIdentifiers: string;
   status: 'ACTIVE' | 'MAINTENANCE';
 }
 
@@ -54,10 +54,10 @@ interface CoachingBatch {
   id: string;
   name: string;
   ageGroup: string;
-  days: string; // e.g. "Mon, Wed, Fri"
-  timing: string; // e.g. "06:30 AM - 07:30 AM"
+  days: string;
+  timing: string;
   coachName: string;
-  venueCourtId: string; // references AcademyVenueCourt or text description
+  venueCourtId: string;
   maxCapacity: number;
   enrolledCount: number;
 }
@@ -413,10 +413,10 @@ export default function OrganizationAdmissionsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center animate-pulse">
-          <Sparkles className="w-5 h-5 text-emerald-400" />
+        <div className="w-10 h-10 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center animate-pulse">
+          <Sparkles className="w-5 h-5 text-primary" />
         </div>
-        <p className="text-zinc-400 font-medium text-xs tracking-wider uppercase">
+        <p className="text-text-muted font-medium text-xs tracking-wider uppercase">
           Loading Admissions Studio...
         </p>
       </div>
@@ -426,27 +426,27 @@ export default function OrganizationAdmissionsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-5 pt-6 sm:pt-8 md:pt-10 pb-28 px-2 sm:px-4">
       {/* ══════════════════════════════════════════════════════════════════════
-          COMPACT CLEAN HEADER
+          COMPACT CLEAN HEADER (THEMED)
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex items-center justify-between gap-3 bg-zinc-900/70 p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-zinc-800/80 backdrop-blur-xl shadow-xl">
+      <div className="flex items-center justify-between gap-3 bg-card/80 p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-border backdrop-blur-xl shadow-xl">
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href={`/org/${orgId}/profile`}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 flex items-center justify-center border border-zinc-700/80 transition flex-shrink-0 active:scale-95"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-surface hover:bg-surface-hover text-foreground flex items-center justify-center border border-border transition flex-shrink-0 active:scale-95 shadow-sm"
             title="Back to Profile"
           >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
           </Link>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight truncate">
+              <h1 className="text-lg sm:text-xl font-extrabold text-foreground tracking-tight truncate">
                 Admissions & Coaching
               </h1>
-              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
                 Academy Studio
               </span>
             </div>
-            <p className="text-xs text-zinc-400 truncate">
+            <p className="text-xs text-text-secondary truncate">
               Manage plans, venues & courts, and student batches
             </p>
           </div>
@@ -456,7 +456,7 @@ export default function OrganizationAdmissionsPage() {
           type="button"
           onClick={handleSaveAll}
           disabled={saving}
-          className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-zinc-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50 flex-shrink-0"
+          className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground font-bold text-xs shadow-lg shadow-primary/20 transition active:scale-95 disabled:opacity-50 flex-shrink-0"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Admissions
@@ -465,8 +465,8 @@ export default function OrganizationAdmissionsPage() {
 
       {/* Success Banner */}
       {successMsg && (
-        <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+        <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs font-semibold animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-primary" />
           <span>{successMsg}</span>
         </div>
       )}
@@ -488,8 +488,8 @@ export default function OrganizationAdmissionsPage() {
               onClick={() => setSelectedSport(sport)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex-shrink-0 active:scale-95 ${
                 isSelected
-                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20'
-                  : 'bg-zinc-900/80 text-zinc-400 border-zinc-800/80 hover:border-zinc-700 hover:text-zinc-200'
+                  ? 'bg-primary/20 text-primary border-primary/50 shadow-md ring-1 ring-primary/20'
+                  : 'bg-card text-text-secondary border-border hover:border-border-strong hover:text-foreground'
               }`}
             >
               <span className="text-sm">{icon}</span>
@@ -497,12 +497,12 @@ export default function OrganizationAdmissionsPage() {
               <span
                 className={`w-2 h-2 rounded-full ${
                   status === 'OPEN'
-                    ? 'bg-emerald-400 animate-pulse'
+                    ? 'bg-primary animate-pulse'
                     : status === 'FEW_LEFT'
                     ? 'bg-amber-400'
                     : status === 'WAITLIST'
                     ? 'bg-blue-400'
-                    : 'bg-zinc-600'
+                    : 'bg-text-disabled'
                 }`}
               />
             </button>
@@ -511,44 +511,44 @@ export default function OrganizationAdmissionsPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SUMMARY METRICS STRIP
+          SUMMARY METRICS STRIP (THEMED)
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Fee Plans</div>
-          <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
-            {tiersList.length} <span className="text-xs font-medium text-zinc-400">Plans</span>
+        <div className="bg-card/80 p-3 sm:p-4 rounded-2xl border border-border flex flex-col justify-center shadow-sm">
+          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Fee Plans</div>
+          <div className="text-base sm:text-lg font-extrabold text-foreground mt-0.5">
+            {tiersList.length} <span className="text-xs font-medium text-text-secondary">Plans</span>
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Venues & Courts</div>
-          <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
-            {totalVenuesCount} <span className="text-xs font-medium text-zinc-400">Venues</span> ({totalCourtsAcrossVenues} Courts)
+        <div className="bg-card/80 p-3 sm:p-4 rounded-2xl border border-border flex flex-col justify-center shadow-sm">
+          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Venues & Courts</div>
+          <div className="text-base sm:text-lg font-extrabold text-foreground mt-0.5">
+            {totalVenuesCount} <span className="text-xs font-medium text-text-secondary">Venues</span> ({totalCourtsAcrossVenues} Courts)
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Batches</div>
-          <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
-            {batchesList.length} <span className="text-xs font-medium text-zinc-400">Batches</span>
+        <div className="bg-card/80 p-3 sm:p-4 rounded-2xl border border-border flex flex-col justify-center shadow-sm">
+          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Batches</div>
+          <div className="text-base sm:text-lg font-extrabold text-foreground mt-0.5">
+            {batchesList.length} <span className="text-xs font-medium text-text-secondary">Batches</span>
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Enrolled</div>
-          <div className="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5">
-            {totalEnrolled} <span className="text-xs font-medium text-zinc-500">/ {totalCapacity} seats</span>
+        <div className="bg-card/80 p-3 sm:p-4 rounded-2xl border border-border flex flex-col justify-center shadow-sm">
+          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Enrolled</div>
+          <div className="text-base sm:text-lg font-extrabold text-primary mt-0.5">
+            {totalEnrolled} <span className="text-xs font-medium text-text-muted">/ {totalCapacity} seats</span>
           </div>
         </div>
       </div>
 
       {/* Mobile Sub-Tab Segmenter (For focused editing on phones) */}
-      <div className="sm:hidden flex p-1 rounded-xl bg-zinc-900/80 border border-zinc-800 gap-1 text-xs overflow-x-auto scrollbar-none">
+      <div className="sm:hidden flex p-1 rounded-xl bg-card border border-border gap-1 text-xs overflow-x-auto scrollbar-none">
         <button
           onClick={() => setMobileTab('all')}
           className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
-            mobileTab === 'all' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
+            mobileTab === 'all' ? 'bg-primary/20 text-primary border border-primary/30' : 'text-text-secondary'
           }`}
         >
           All
@@ -556,7 +556,7 @@ export default function OrganizationAdmissionsPage() {
         <button
           onClick={() => setMobileTab('tiers')}
           className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
-            mobileTab === 'tiers' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
+            mobileTab === 'tiers' ? 'bg-primary/20 text-primary border border-primary/30' : 'text-text-secondary'
           }`}
         >
           Plans ({tiersList.length})
@@ -564,7 +564,7 @@ export default function OrganizationAdmissionsPage() {
         <button
           onClick={() => setMobileTab('venues')}
           className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
-            mobileTab === 'venues' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
+            mobileTab === 'venues' ? 'bg-primary/20 text-primary border border-primary/30' : 'text-text-secondary'
           }`}
         >
           Venues ({venuesList.length})
@@ -572,7 +572,7 @@ export default function OrganizationAdmissionsPage() {
         <button
           onClick={() => setMobileTab('batches')}
           className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
-            mobileTab === 'batches' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
+            mobileTab === 'batches' ? 'bg-primary/20 text-primary border border-primary/30' : 'text-text-secondary'
           }`}
         >
           Batches ({batchesList.length})
@@ -580,7 +580,7 @@ export default function OrganizationAdmissionsPage() {
         <button
           onClick={() => setMobileTab('intake')}
           className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
-            mobileTab === 'intake' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
+            mobileTab === 'intake' ? 'bg-primary/20 text-primary border border-primary/30' : 'text-text-secondary'
           }`}
         >
           Intake
@@ -588,13 +588,13 @@ export default function OrganizationAdmissionsPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SECTION 1: INTAKE & LEAD COACH
+          SECTION 1: INTAKE & LEAD COACH (THEMED)
          ══════════════════════════════════════════════════════════════════════ */}
       {(mobileTab === 'all' || mobileTab === 'intake') && (
-        <div className="bg-zinc-900/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-zinc-800/80 space-y-4 shadow-xl animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div className="bg-card/80 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border space-y-4 shadow-xl animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" />
               {selectedSport} Intake & Coach
             </h2>
 
@@ -607,7 +607,7 @@ export default function OrganizationAdmissionsPage() {
                   admissionStatus: e.target.value,
                 }))
               }
-              className="px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
+              className="px-2.5 py-1 bg-surface border border-border rounded-xl text-xs font-bold text-primary focus:outline-none focus:border-primary"
             >
               <option value="OPEN">🟢 Open</option>
               <option value="FEW_LEFT">🟡 Few Seats</option>
@@ -618,7 +618,7 @@ export default function OrganizationAdmissionsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
                 Program Title
               </label>
               <input
@@ -631,12 +631,12 @@ export default function OrganizationAdmissionsPage() {
                   }))
                 }
                 placeholder="e.g. Annual Badminton Academy Batch 2026-27"
-                className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2 bg-surface border border-border rounded-xl text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
                 Head Coach
               </label>
               <input
@@ -649,7 +649,7 @@ export default function OrganizationAdmissionsPage() {
                   }))
                 }
                 placeholder="e.g. Coach Rajesh Kumar (BWF Level 2)"
-                className="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2 bg-surface border border-border rounded-xl text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -657,23 +657,23 @@ export default function OrganizationAdmissionsPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SECTION 2: COACHING FEE PLANS
+          SECTION 2: COACHING FEE PLANS (THEMED)
          ══════════════════════════════════════════════════════════════════════ */}
       {(mobileTab === 'all' || mobileTab === 'tiers') && (
-        <div className="bg-zinc-900/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-zinc-800/80 space-y-4 shadow-xl animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="bg-card/80 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border space-y-4 shadow-xl animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-400" />
+              <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-primary" />
                 Coaching Fee Plans ({tiersList.length})
               </h2>
             </div>
             <button
               type="button"
               onClick={handleAddTier}
-              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-bold border border-zinc-700 transition active:scale-95"
+              className="flex items-center gap-1 px-3 py-1.5 bg-surface hover:bg-surface-hover text-foreground rounded-xl text-xs font-bold border border-border transition active:scale-95"
             >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              <Plus className="w-3.5 h-3.5 text-primary" />
               Add Plan
             </button>
           </div>
@@ -682,14 +682,14 @@ export default function OrganizationAdmissionsPage() {
             {tiersList.map((tier) => (
               <div
                 key={tier.id}
-                className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3.5 shadow-md flex flex-col justify-between"
+                className="bg-surface border border-border rounded-2xl p-4 space-y-3.5 shadow-md flex flex-col justify-between"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <select
                       value={tier.level}
                       onChange={(e: any) => handleUpdateTier(tier.id, 'level', e.target.value)}
-                      className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 focus:outline-none"
+                      className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20 focus:outline-none"
                     >
                       <option value="Beginner">Beginner</option>
                       <option value="Intermediate">Intermediate</option>
@@ -701,7 +701,7 @@ export default function OrganizationAdmissionsPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveTier(tier.id)}
-                        className="text-zinc-500 hover:text-rose-400 p-1 transition"
+                        className="text-text-muted hover:text-rose-400 p-1 transition"
                         title="Delete Plan"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -710,19 +710,19 @@ export default function OrganizationAdmissionsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                    <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                       Plan Name
                     </label>
                     <input
                       type="text"
                       value={tier.name}
                       onChange={(e) => handleUpdateTier(tier.id, 'name', e.target.value)}
-                      className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                    <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                       Schedule & Frequency
                     </label>
                     <input
@@ -730,13 +730,13 @@ export default function OrganizationAdmissionsPage() {
                       value={tier.frequency}
                       onChange={(e) => handleUpdateTier(tier.id, 'frequency', e.target.value)}
                       placeholder="e.g. 5 Days / Week"
-                      className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Monthly (₹)
                       </label>
                       <input
@@ -745,11 +745,11 @@ export default function OrganizationAdmissionsPage() {
                         onChange={(e) =>
                           handleUpdateTier(tier.id, 'monthlyFee', Number(e.target.value))
                         }
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-extrabold text-emerald-400 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-extrabold text-primary focus:outline-none focus:border-primary"
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Quarterly (₹)
                       </label>
                       <input
@@ -763,13 +763,13 @@ export default function OrganizationAdmissionsPage() {
                           )
                         }
                         placeholder="Optional"
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                    <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                       Focus & Syllabus
                     </label>
                     <textarea
@@ -777,7 +777,7 @@ export default function OrganizationAdmissionsPage() {
                       value={tier.description}
                       onChange={(e) => handleUpdateTier(tier.id, 'description', e.target.value)}
                       placeholder="Focus areas, drills, and match prep..."
-                      className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-emerald-500 resize-none leading-relaxed"
+                      className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary resize-none leading-relaxed"
                     />
                   </div>
                 </div>
@@ -788,23 +788,23 @@ export default function OrganizationAdmissionsPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SECTION 3: TRAINING VENUES & COURTS (MULTI-CAMPUS)
+          SECTION 3: TRAINING VENUES & COURTS (THEMED)
          ══════════════════════════════════════════════════════════════════════ */}
       {(mobileTab === 'all' || mobileTab === 'venues') && (
-        <div className="bg-zinc-900/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-zinc-800/80 space-y-4 shadow-xl animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="bg-card/80 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border space-y-4 shadow-xl animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-emerald-400" />
+              <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" />
                 Training Venues & Courts ({venuesList.length})
               </h2>
             </div>
             <button
               type="button"
               onClick={handleAddVenue}
-              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-bold border border-zinc-700 transition active:scale-95"
+              className="flex items-center gap-1 px-3 py-1.5 bg-surface hover:bg-surface-hover text-foreground rounded-xl text-xs font-bold border border-border transition active:scale-95"
             >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              <Plus className="w-3.5 h-3.5 text-primary" />
               Add Venue
             </button>
           </div>
@@ -813,13 +813,13 @@ export default function OrganizationAdmissionsPage() {
             {venuesList.map((venue) => (
               <div
                 key={venue.id}
-                className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3.5 shadow-md flex flex-col justify-between"
+                className="bg-surface border border-border rounded-2xl p-4 space-y-3.5 shadow-md flex flex-col justify-between"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                      <span className="w-2 h-2 rounded-full bg-primary" />
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
                         Venue #{venue.id.slice(-2)}
                       </span>
                     </div>
@@ -828,7 +828,7 @@ export default function OrganizationAdmissionsPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveVenue(venue.id)}
-                        className="text-zinc-500 hover:text-rose-400 p-1 transition"
+                        className="text-text-muted hover:text-rose-400 p-1 transition"
                         title="Delete Venue"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -837,7 +837,7 @@ export default function OrganizationAdmissionsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                    <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                       Venue / Arena Name
                     </label>
                     <input
@@ -845,29 +845,29 @@ export default function OrganizationAdmissionsPage() {
                       value={venue.venueName}
                       onChange={(e) => handleUpdateVenue(venue.id, 'venueName', e.target.value)}
                       placeholder="e.g. ABC Badminton Arena, Main Campus"
-                      className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                    <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                       Campus Location / Address
                     </label>
                     <div className="relative">
-                      <MapPin className="absolute left-2.5 top-2 w-3.5 h-3.5 text-zinc-500" />
+                      <MapPin className="absolute left-2.5 top-2 w-3.5 h-3.5 text-text-muted" />
                       <input
                         type="text"
                         value={venue.location}
                         onChange={(e) => handleUpdateVenue(venue.id, 'location', e.target.value)}
                         placeholder="e.g. Indiranagar, 100ft Road, Bangalore"
-                        className="w-full pl-8 pr-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Surface / Mat Type
                       </label>
                       <input
@@ -875,12 +875,12 @@ export default function OrganizationAdmissionsPage() {
                         value={venue.surfaceType}
                         onChange={(e) => handleUpdateVenue(venue.id, 'surfaceType', e.target.value)}
                         placeholder="e.g. Synthetic BWF Mat"
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Total Courts / Units
                       </label>
                       <input
@@ -890,13 +890,13 @@ export default function OrganizationAdmissionsPage() {
                           handleUpdateVenue(venue.id, 'courtsCount', Number(e.target.value))
                         }
                         placeholder="4"
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-primary focus:outline-none focus:border-primary"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                    <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                       Court Identifiers / Range
                     </label>
                     <input
@@ -906,7 +906,7 @@ export default function OrganizationAdmissionsPage() {
                         handleUpdateVenue(venue.id, 'courtIdentifiers', e.target.value)
                       }
                       placeholder="e.g. Courts 1, 2, 3 & 4"
-                      className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                     />
                   </div>
                 </div>
@@ -917,23 +917,23 @@ export default function OrganizationAdmissionsPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SECTION 4: STUDENT BATCHES
+          SECTION 4: STUDENT BATCHES (THEMED)
          ══════════════════════════════════════════════════════════════════════ */}
       {(mobileTab === 'all' || mobileTab === 'batches') && (
-        <div className="bg-zinc-900/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-zinc-800/80 space-y-4 shadow-xl animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="bg-card/80 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border space-y-4 shadow-xl animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-400" />
+              <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
                 Student Batches ({batchesList.length})
               </h2>
             </div>
             <button
               type="button"
               onClick={handleAddBatch}
-              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-bold border border-zinc-700 transition active:scale-95"
+              className="flex items-center gap-1 px-3 py-1.5 bg-surface hover:bg-surface-hover text-foreground rounded-xl text-xs font-bold border border-border transition active:scale-95"
             >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              <Plus className="w-3.5 h-3.5 text-primary" />
               Add Batch
             </button>
           </div>
@@ -948,23 +948,23 @@ export default function OrganizationAdmissionsPage() {
               return (
                 <div
                   key={batch.id}
-                  className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-md"
+                  className="bg-surface border border-border rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-md"
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 flex-1">
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Batch Name
                       </label>
                       <input
                         type="text"
                         value={batch.name}
                         onChange={(e) => handleUpdateBatch(batch.id, 'name', e.target.value)}
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-semibold text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-semibold text-foreground focus:outline-none focus:border-primary"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Age Category
                       </label>
                       <input
@@ -972,12 +972,12 @@ export default function OrganizationAdmissionsPage() {
                         value={batch.ageGroup}
                         onChange={(e) => handleUpdateBatch(batch.id, 'ageGroup', e.target.value)}
                         placeholder="e.g. Under 14"
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Daily Timing
                       </label>
                       <input
@@ -985,12 +985,12 @@ export default function OrganizationAdmissionsPage() {
                         value={batch.timing}
                         onChange={(e) => handleUpdateBatch(batch.id, 'timing', e.target.value)}
                         placeholder="06:30 AM - 07:30 AM"
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] font-bold text-text-muted uppercase mb-1">
                         Allocated Venue & Court
                       </label>
                       {venuesList.length > 0 ? (
@@ -999,7 +999,7 @@ export default function OrganizationAdmissionsPage() {
                           onChange={(e) =>
                             handleUpdateBatch(batch.id, 'venueCourtId', e.target.value)
                           }
-                          className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 truncate"
+                          className="w-full px-2.5 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary truncate"
                         >
                           {venuesList.map((v) => (
                             <option key={v.id} value={`${v.venueName} (${v.courtIdentifiers})`}>
@@ -1015,36 +1015,36 @@ export default function OrganizationAdmissionsPage() {
                             handleUpdateBatch(batch.id, 'venueCourtId', e.target.value)
                           }
                           placeholder="e.g. Courts 1 & 2"
-                          className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                          className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-text-secondary focus:outline-none focus:border-primary"
                         />
                       )}
                     </div>
                   </div>
 
                   {/* Capacity Progress & Actions */}
-                  <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2.5 md:pt-0 md:pl-4">
+                  <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 md:border-l border-border pt-2.5 md:pt-0 md:pl-4">
                     <div className="text-left md:text-right min-w-[90px]">
                       <div className="flex items-center md:justify-end gap-1 text-xs">
-                        <span className="font-extrabold text-emerald-400">{batch.enrolledCount}</span>
-                        <span className="text-zinc-600">/</span>
+                        <span className="font-extrabold text-primary">{batch.enrolledCount}</span>
+                        <span className="text-text-muted">/</span>
                         <input
                           type="number"
                           value={batch.maxCapacity}
                           onChange={(e) =>
                             handleUpdateBatch(batch.id, 'maxCapacity', Number(e.target.value))
                           }
-                          className="w-11 px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-center text-xs text-zinc-300"
+                          className="w-11 px-1.5 py-0.5 bg-background border border-border rounded text-center text-xs text-text-secondary"
                         />
-                        <span className="text-[10px] text-zinc-500">seats</span>
+                        <span className="text-[10px] text-text-muted">seats</span>
                       </div>
-                      <div className="w-24 h-1.5 bg-zinc-800 rounded-full mt-1.5 overflow-hidden md:ml-auto">
+                      <div className="w-24 h-1.5 bg-background rounded-full mt-1.5 overflow-hidden md:ml-auto border border-border-subtle">
                         <div
                           className={`h-full rounded-full ${
                             fillPercentage >= 90
                               ? 'bg-rose-500'
                               : fillPercentage >= 70
                               ? 'bg-amber-500'
-                              : 'bg-emerald-500'
+                              : 'bg-primary'
                           }`}
                           style={{ width: `${fillPercentage}%` }}
                         />
@@ -1055,7 +1055,7 @@ export default function OrganizationAdmissionsPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveBatch(batch.id)}
-                        className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 rounded-lg transition"
+                        className="p-1.5 text-text-muted hover:text-rose-400 hover:bg-surface-hover rounded-lg transition"
                         title="Delete Batch"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1070,12 +1070,12 @@ export default function OrganizationAdmissionsPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MOBILE FLOATING SAVE ACTION DOCK
+          MOBILE FLOATING SAVE ACTION DOCK (THEMED)
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="sm:hidden fixed bottom-0 inset-x-0 p-3 bg-zinc-950/90 border-t border-zinc-800 backdrop-blur-xl z-40 flex items-center gap-3">
+      <div className="sm:hidden fixed bottom-0 inset-x-0 p-3 bg-card/95 border-t border-border backdrop-blur-xl z-40 flex items-center gap-3 shadow-2xl">
         <Link
           href={`/org/${orgId}/profile`}
-          className="px-4 py-3 rounded-xl bg-zinc-900 text-zinc-300 text-xs font-bold border border-zinc-700 active:scale-95 transition"
+          className="px-4 py-3 rounded-xl bg-surface text-foreground text-xs font-bold border border-border active:scale-95 transition"
         >
           Profile
         </Link>
@@ -1083,7 +1083,7 @@ export default function OrganizationAdmissionsPage() {
           type="button"
           onClick={handleSaveAll}
           disabled={saving}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 active:scale-95 text-zinc-950 text-xs font-extrabold shadow-lg shadow-emerald-500/25 disabled:opacity-50 transition"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary hover:bg-primary-hover active:scale-95 text-primary-foreground text-xs font-extrabold shadow-lg shadow-primary/25 disabled:opacity-50 transition"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Admissions

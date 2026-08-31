@@ -291,39 +291,39 @@ export default function OrganizationProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="relative">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center animate-pulse">
-            <Building2 className="w-6 h-6 text-emerald-400" />
+          <div className="w-12 h-12 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center animate-pulse">
+            <Building2 className="w-6 h-6 text-primary" />
           </div>
-          <Loader2 className="w-12 h-12 animate-spin text-emerald-400 absolute inset-0 opacity-70" />
+          <Loader2 className="w-12 h-12 animate-spin text-primary absolute inset-0 opacity-70" />
         </div>
-        <p className="text-zinc-400 font-medium text-xs tracking-wider uppercase">Loading Academy Profile Studio...</p>
+        <p className="text-text-muted font-medium text-xs tracking-wider uppercase">Loading Academy Profile Studio...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-28 px-2 sm:px-4">
+    <div className="max-w-7xl mx-auto space-y-6 pt-6 sm:pt-8 md:pt-10 pb-28 px-2 sm:px-4">
       {/* ══════════════════════════════════════════════════════════════════════
           HERO BANNER & PROFILE IDENTITY POD
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="relative rounded-3xl overflow-hidden border border-zinc-800/80 bg-zinc-950 shadow-2xl">
+      <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-2xl">
         {/* Cover Photo Backdrop */}
-        <div className="relative w-full h-48 sm:h-64 md:h-72 bg-zinc-900 group">
+        <div className="relative w-full h-48 sm:h-64 md:h-72 bg-surface group">
           <img
             src={coverUrl}
             alt="Academy Banner"
             className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-black/30" />
-          <div className="absolute inset-0 bg-emerald-950/20 backdrop-blur-[1px]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-black/40" />
+          <div className="absolute inset-0 bg-primary/5 backdrop-blur-[1px]" />
 
           {/* Cover Action Button */}
           <button
             type="button"
             onClick={() => coverInputRef.current?.click()}
-            className="absolute top-4 right-4 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/60 hover:bg-black/80 text-white text-xs font-semibold backdrop-blur-md border border-white/15 transition-all shadow-lg hover:scale-105 active:scale-95"
+            className="absolute top-4 right-4 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/60 hover:bg-black/80 text-foreground text-xs font-semibold backdrop-blur-md border border-white/15 transition-all shadow-lg hover:scale-105 active:scale-95"
           >
-            <Camera className="w-4 h-4 text-emerald-400" />
+            <Camera className="w-4 h-4 text-primary" />
             <span className="hidden sm:inline">Change Cover Photo</span>
             <span className="sm:hidden">Cover</span>
           </button>
@@ -337,13 +337,9 @@ export default function OrganizationProfilePage() {
 
           {/* Floating Top Stats / Status Badges */}
           <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2">
-            {/* <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              VERIFIED {type}
-            </span> */}
             {city && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/50 text-zinc-300 text-xs font-medium border border-white/10 backdrop-blur-md">
-                <MapPin className="w-3 h-3 text-emerald-400" />
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 text-text-secondary text-xs font-medium border border-white/10 backdrop-blur-md">
+                <MapPin className="w-3 h-3 text-primary" />
                 {city}, {state || country}
               </span>
             )}
@@ -356,20 +352,20 @@ export default function OrganizationProfilePage() {
             {/* Avatar & Title */}
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
               <div className="relative group/avatar">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-zinc-900 border-4 border-zinc-950 p-0.5 overflow-hidden shadow-2xl ring-2 ring-emerald-500/30 flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-950">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-surface border-4 border-background p-0.5 overflow-hidden shadow-2xl ring-2 ring-primary/30 flex items-center justify-center bg-gradient-to-br from-surface to-background">
                   {logoUrl ? (
                     <img src={logoUrl} alt="Logo" className="w-full h-full object-cover rounded-xl sm:rounded-2xl" />
                   ) : (
-                    <Building2 className="w-10 h-10 text-emerald-400" />
+                    <Building2 className="w-10 h-10 text-primary" />
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute inset-1 rounded-2xl bg-black/70 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center text-[11px] font-semibold text-white transition-opacity duration-200 backdrop-blur-sm"
+                  className="absolute inset-1 rounded-2xl bg-black/75 opacity-0 group-hover/avatar:opacity-100 flex flex-col items-center justify-center text-[11px] font-semibold text-white transition-opacity duration-200 backdrop-blur-sm"
                   title="Upload Logo"
                 >
-                  <Camera className="w-5 h-5 mb-0.5 text-emerald-400" />
+                  <Camera className="w-5 h-5 mb-0.5 text-primary" />
                   Edit Logo
                 </button>
                 <input
@@ -383,18 +379,18 @@ export default function OrganizationProfilePage() {
 
               <div className="space-y-1">
                 <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                     {name || 'Academy Profile'}
                   </h1>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
                     {type}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-400 max-w-xl line-clamp-1">
+                <p className="text-xs sm:text-sm text-text-secondary max-w-xl line-clamp-1">
                   {bio || 'Set your academy tagline, coaching ethos, and public sports facilities.'}
                 </p>
-                <div className="flex items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-zinc-400">
-                  <span className="flex items-center gap-1 font-medium text-emerald-400/90">
+                <div className="flex items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-text-muted">
+                  <span className="flex items-center gap-1 font-medium text-primary">
                     <Calendar className="w-3.5 h-3.5" />
                     Est. {establishedYear || '2020'}
                   </span>
@@ -411,16 +407,16 @@ export default function OrganizationProfilePage() {
               <button
                 type="button"
                 onClick={() => setShowPreviewModal(true)}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-semibold border border-zinc-700/80 transition-all hover:border-zinc-600 shadow-md active:scale-95"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface hover:bg-surface-hover text-foreground text-xs font-semibold border border-border transition-all shadow-md active:scale-95"
               >
-                <Eye className="w-4 h-4 text-emerald-400" />
+                <Eye className="w-4 h-4 text-primary" />
                 Live Preview
               </button>
               <button
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 active:scale-95 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-hover active:scale-95 text-primary-foreground font-bold text-xs transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save Changes
@@ -430,28 +426,28 @@ export default function OrganizationProfilePage() {
         </div>
 
         {/* Profile Strength Quick Bar */}
-        <div className="border-t border-zinc-850/80 bg-zinc-900/40 px-5 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="border-t border-border bg-surface/50 px-5 sm:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-1.5 font-semibold text-zinc-300">
-              <Flame className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center gap-1.5 font-semibold text-foreground">
+              <Flame className="w-4 h-4 text-primary" />
               <span>Profile Completeness:</span>
-              <span className="text-emerald-400 font-bold">{profileHealth.score}%</span>
+              <span className="text-primary font-bold">{profileHealth.score}%</span>
             </div>
-            <div className="flex-1 sm:w-32 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="flex-1 sm:w-32 h-1.5 bg-surface-hover rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
+                className="h-full bg-primary rounded-full transition-all duration-500"
                 style={{ width: `${profileHealth.score}%` }}
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-zinc-400 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-3 text-[11px] text-text-secondary overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
             {profileHealth.checks.slice(0, 4).map((c) => (
               <span key={c.name} className="flex items-center gap-1 flex-shrink-0">
                 {c.passed ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                 ) : (
-                  <span className="w-3.5 h-3.5 rounded-full border border-zinc-700 flex items-center justify-center text-[9px] text-zinc-500">
+                  <span className="w-3.5 h-3.5 rounded-full border border-border flex items-center justify-center text-[9px] text-text-muted">
                     !
                   </span>
                 )}
@@ -464,14 +460,14 @@ export default function OrganizationProfilePage() {
 
       {/* Notifications */}
       {successMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold animate-in fade-in slide-in-from-top-2 shadow-lg shadow-emerald-500/5">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-400" />
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary/10 border border-primary/30 text-primary text-xs font-semibold animate-in fade-in slide-in-from-top-2 shadow-lg shadow-primary/5">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-primary" />
           <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
-          <Info className="w-5 h-5 flex-shrink-0 text-rose-400" />
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-error/10 border border-error/30 text-error text-xs font-semibold animate-in fade-in slide-in-from-top-2">
+          <Info className="w-5 h-5 flex-shrink-0 text-error" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -479,19 +475,18 @@ export default function OrganizationProfilePage() {
       {/* ══════════════════════════════════════════════════════════════════════
           DEDICATED ADMISSIONS & COACHING CALLOUT CARD
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-zinc-900/90 to-zinc-900/50 border border-emerald-500/30 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 group">
-        <div className="absolute top-0 right-0 w-80 h-full bg-emerald-500/5 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-card/90 border border-primary/30 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 group">
+        <div className="absolute top-0 right-0 w-80 h-full bg-primary/5 blur-3xl pointer-events-none" />
 
         <div className="flex items-start sm:items-center gap-4 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/40 text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/10 group-hover:scale-105 transition-transform">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/30 text-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/10 group-hover:scale-105 transition-transform">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white tracking-tight">Coaching & Admissions</h3>
-
+              <h3 className="text-base font-bold text-foreground tracking-tight">Coaching & Admissions</h3>
             </div>
-            <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
+            <p className="text-xs text-text-secondary mt-1 max-w-xl leading-relaxed">
               Configure sports-wise admissions, coaching fee plans, allocated courts, and student batch capacity.
             </p>
           </div>
@@ -499,7 +494,7 @@ export default function OrganizationProfilePage() {
 
         <Link
           href={`/org/${orgId}/admissions`}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-md shadow-emerald-500/20 flex-shrink-0 group/btn"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold transition-all shadow-md shadow-primary/20 flex-shrink-0 group/btn"
         >
           Manage Coaching Batches
           <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
@@ -509,12 +504,12 @@ export default function OrganizationProfilePage() {
       {/* ══════════════════════════════════════════════════════════════════════
           SEGMENTED TAB NAVIGATION
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex p-1.5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-xl gap-1.5 shadow-inner">
+      <div className="flex p-1.5 rounded-2xl bg-card/80 border border-border backdrop-blur-xl gap-1.5 shadow-inner">
         <button
           onClick={() => setActiveTab('general')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'general'
-            ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
-            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+            ? 'bg-primary/15 text-primary border border-primary/30 shadow-md'
+            : 'text-text-secondary hover:text-foreground hover:bg-surface'
             }`}
         >
           <Building2 className="w-4 h-4" />
@@ -524,8 +519,8 @@ export default function OrganizationProfilePage() {
         <button
           onClick={() => setActiveTab('location')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'location'
-            ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
-            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+            ? 'bg-primary/15 text-primary border border-primary/30 shadow-md'
+            : 'text-text-secondary hover:text-foreground hover:bg-surface'
             }`}
         >
           <MapPin className="w-4 h-4" />
@@ -535,8 +530,8 @@ export default function OrganizationProfilePage() {
         <button
           onClick={() => setActiveTab('sports')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'sports'
-            ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
-            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+            ? 'bg-primary/15 text-primary border border-primary/30 shadow-md'
+            : 'text-text-secondary hover:text-foreground hover:bg-surface'
             }`}
         >
           <Dumbbell className="w-4 h-4" />
@@ -553,65 +548,64 @@ export default function OrganizationProfilePage() {
           {/* TAB 1: General Information */}
           {activeTab === 'general' && (
             <div className="space-y-6 animate-in fade-in">
-              <div className="bg-zinc-900/60 p-6 sm:p-7 rounded-3xl border border-zinc-800/80 backdrop-blur-xl space-y-6 shadow-xl">
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+              <div className="bg-card/80 p-6 sm:p-7 rounded-3xl border border-border backdrop-blur-xl space-y-6 shadow-xl">
+                <div className="flex items-center justify-between border-b border-border pb-4">
                   <div>
-                    <h2 className="text-base font-bold text-white flex items-center gap-2">
-                      <Award className="w-4 h-4 text-emerald-400" />
+                    <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                      <Award className="w-4 h-4 text-primary" />
                       Academy Profile
                     </h2>
-
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                     Step 1 of 3
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Organization / Academy Name *
                     </label>
                     <div className="relative">
-                      <Building2 className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <Building2 className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Apex Smash Badminton Academy"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Organization Type (Restricted)
                     </label>
-                    <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-950/60 border border-zinc-800/80 rounded-xl text-zinc-400 text-sm cursor-not-allowed">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-surface border border-border rounded-xl text-text-muted text-sm cursor-not-allowed">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="text-base flex-shrink-0">
                           {type === 'ACADEMY' ? '🏸' : type === 'CLUB' ? '🏆' : type === 'ASSOCIATION' ? '🏛️' : type === 'COURT' ? '🏟️' : '🎯'}
                         </span>
-                        <span className="font-bold text-zinc-200 uppercase tracking-wide text-xs">
+                        <span className="font-bold text-foreground uppercase tracking-wide text-xs">
                           {type}
                         </span>
-                        <span className="text-zinc-500 text-xs truncate hidden sm:inline">
+                        <span className="text-text-muted text-xs truncate hidden sm:inline">
                           • {type === 'ACADEMY' ? 'Sports Academy (Coaching & Training)' : type === 'CLUB' ? 'Sports Club' : type === 'ASSOCIATION' ? 'Sports Association' : type === 'COURT' ? 'Court Venue' : 'Tournament Organizer'}
                         </span>
                       </div>
-                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-800/90 text-zinc-400 border border-zinc-700/50 flex-shrink-0">
-                        <Lock className="w-3 h-3 text-zinc-400" />
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-surface-hover text-text-secondary border border-border flex-shrink-0">
+                        <Lock className="w-3 h-3 text-text-muted" />
                         LOCKED
                       </span>
                     </div>
-                    <p className="text-[10px] text-zinc-500 mt-1">
+                    <p className="text-[10px] text-text-muted mt-1">
                       Institutional classification is fixed upon organization registration.
                     </p>
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Tagline / Bio
                     </label>
                     <input
@@ -619,45 +613,45 @@ export default function OrganizationProfilePage() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="e.g. Nurturing state & national badminton champions since 2018"
-                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                      className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Established Year
                     </label>
                     <div className="relative">
-                      <Calendar className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <Calendar className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="number"
                         value={establishedYear}
                         onChange={(e) => setEstablishedYear(e.target.value ? parseInt(e.target.value) : '')}
                         placeholder="2020"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Reg. / Affiliation ID
                     </label>
                     <div className="relative">
-                      <FileCheck className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <FileCheck className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="text"
                         value={registrationNumber}
                         onChange={(e) => setRegistrationNumber(e.target.value)}
                         placeholder="e.g. BAI/AFF/2022"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                     About Academy & Coaching Philosophy (Full Story)
                   </label>
                   <textarea
@@ -665,7 +659,7 @@ export default function OrganizationProfilePage() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe your training ethos, certified coaches, batch structures, athlete milestones, and fitness regimen..."
-                    className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition resize-none leading-relaxed"
+                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition resize-none leading-relaxed"
                   />
                 </div>
               </div>
@@ -675,42 +669,42 @@ export default function OrganizationProfilePage() {
           {/* TAB 2: Location & Contacts */}
           {activeTab === 'location' && (
             <div className="space-y-6 animate-in fade-in">
-              <div className="bg-zinc-900/60 p-6 sm:p-7 rounded-3xl border border-zinc-800/80 backdrop-blur-xl space-y-6 shadow-xl">
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+              <div className="bg-card/80 p-6 sm:p-7 rounded-3xl border border-border backdrop-blur-xl space-y-6 shadow-xl">
+                <div className="flex items-center justify-between border-b border-border pb-4">
                   <div>
-                    <h2 className="text-base font-bold text-white flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-emerald-400" />
+                    <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" />
                       Campus Location & Geo Coordinates
                     </h2>
-                    <p className="text-xs text-zinc-400 mt-0.5">
+                    <p className="text-xs text-text-secondary mt-0.5">
                       Ensures accurate Google Maps navigation for parents and players
                     </p>
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                     Step 2 of 3
                   </span>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Street Address / Campus Landmark *
                     </label>
                     <div className="relative">
-                      <MapPinned className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <MapPinned className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="text"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         placeholder="e.g. Survey No. 42, Sport Avenue, Near Metro Pillar 128"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                      <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                         City / Town *
                       </label>
                       <input
@@ -718,11 +712,11 @@ export default function OrganizationProfilePage() {
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         placeholder="e.g. Bangalore"
-                        className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                      <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                         State
                       </label>
                       <input
@@ -730,11 +724,11 @@ export default function OrganizationProfilePage() {
                         value={state}
                         onChange={(e) => setState(e.target.value)}
                         placeholder="e.g. Karnataka"
-                        className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                      <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                         PIN Code
                       </label>
                       <input
@@ -742,11 +736,11 @@ export default function OrganizationProfilePage() {
                         value={postalCode}
                         onChange={(e) => setPostalCode(e.target.value)}
                         placeholder="560102"
-                        className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                      <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                         Country
                       </label>
                       <input
@@ -754,7 +748,7 @@ export default function OrganizationProfilePage() {
                         value={country}
                         onChange={(e) => setCountry(e.target.value)}
                         placeholder="India"
-                        className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
@@ -762,78 +756,78 @@ export default function OrganizationProfilePage() {
               </div>
 
               {/* Direct Communications */}
-              <div className="bg-zinc-900/60 p-6 sm:p-7 rounded-3xl border border-zinc-800/80 backdrop-blur-xl space-y-6 shadow-xl">
-                <div className="border-b border-zinc-800/80 pb-4">
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-emerald-400" />
+              <div className="bg-card/80 p-6 sm:p-7 rounded-3xl border border-border backdrop-blur-xl space-y-6 shadow-xl">
+                <div className="border-b border-border pb-4">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-primary" />
                     Direct Contact Channels & Socials
                   </h2>
-                  <p className="text-xs text-zinc-400 mt-0.5">
+                  <p className="text-xs text-text-secondary mt-0.5">
                     Parent inquiries, phone bookings, and social community links
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Official Phone / WhatsApp *
                     </label>
                     <div className="relative">
-                      <Phone className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <Phone className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="text"
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
                         placeholder="+91 98765 43210"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Inquiries Email
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <Mail className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="email"
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
                         placeholder="contact@apexbadminton.com"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Official Website
                     </label>
                     <div className="relative">
-                      <Globe className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <Globe className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="text"
                         value={website}
                         onChange={(e) => setWebsite(e.target.value)}
                         placeholder="https://apexbadminton.com"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Instagram / Social Handle
                     </label>
                     <div className="relative">
-                      <Share2 className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                      <Share2 className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                       <input
                         type="text"
                         value={instagram}
                         onChange={(e) => setInstagram(e.target.value)}
                         placeholder="@apex_academy_official"
-                        className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
                   </div>
@@ -846,18 +840,18 @@ export default function OrganizationProfilePage() {
           {activeTab === 'sports' && (
             <div className="space-y-6 animate-in fade-in">
               {/* Sports Picker */}
-              <div className="bg-zinc-900/60 p-6 sm:p-7 rounded-3xl border border-zinc-800/80 backdrop-blur-xl space-y-5 shadow-xl">
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+              <div className="bg-card/80 p-6 sm:p-7 rounded-3xl border border-border backdrop-blur-xl space-y-5 shadow-xl">
+                <div className="flex items-center justify-between border-b border-border pb-4">
                   <div>
-                    <h2 className="text-base font-bold text-white flex items-center gap-2">
-                      <Dumbbell className="w-4 h-4 text-emerald-400" />
+                    <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                      <Dumbbell className="w-4 h-4 text-primary" />
                       Sports Disciplines Offered ({selectedSports.length})
                     </h2>
-                    <p className="text-xs text-zinc-400 mt-0.5">
+                    <p className="text-xs text-text-secondary mt-0.5">
                       Select all sports your academy trains for. Athletes search by these tags.
                     </p>
                   </div>
-                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                     Step 3 of 3
                   </span>
                 </div>
@@ -871,13 +865,13 @@ export default function OrganizationProfilePage() {
                         type="button"
                         onClick={() => handleSportToggle(item.name)}
                         className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-semibold transition-all border text-left ${isSelected
-                          ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-500/10 scale-[1.02]'
-                          : 'bg-zinc-950/80 text-zinc-400 border-zinc-800/80 hover:border-zinc-700 hover:text-zinc-200'
+                          ? 'bg-primary/20 text-primary border-primary/50 shadow-md shadow-primary/10 scale-[1.02]'
+                          : 'bg-surface text-text-secondary border-border hover:border-border-strong hover:text-foreground'
                           }`}
                       >
                         <span className="text-base">{item.icon}</span>
                         <span className="truncate flex-1">{item.name}</span>
-                        {isSelected && <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
+                        {isSelected && <Check className="w-4 h-4 text-primary flex-shrink-0" />}
                       </button>
                     );
                   })}
@@ -890,11 +884,11 @@ export default function OrganizationProfilePage() {
                     value={customSportInput}
                     onChange={(e) => setCustomSportInput(e.target.value)}
                     placeholder="Add custom sport / martial art..."
-                    className="flex-1 px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-zinc-100 focus:outline-none focus:border-emerald-500 transition"
+                    className="flex-1 px-4 py-2 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-primary transition"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold rounded-xl transition"
+                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold rounded-xl transition"
                   >
                     Add Sport
                   </button>
@@ -902,35 +896,35 @@ export default function OrganizationProfilePage() {
               </div>
 
               {/* Amenities & Infrastructure */}
-              <div className="bg-zinc-900/60 p-6 sm:p-7 rounded-3xl border border-zinc-800/80 backdrop-blur-xl space-y-6 shadow-xl">
+              <div className="bg-card/80 p-6 sm:p-7 rounded-3xl border border-border backdrop-blur-xl space-y-6 shadow-xl">
                 <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-emerald-400" />
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" />
                     Infrastructure & Premium Amenities
                   </h2>
-                  <p className="text-xs text-zinc-400 mt-0.5">
+                  <p className="text-xs text-text-secondary mt-0.5">
                     Highlight facility specifications to inspire trust in players and parents
                   </p>
                 </div>
 
                 <div className="max-w-xs">
-                  <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                     Total Active Courts / Arena Units
                   </label>
                   <div className="relative">
-                    <Layers className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+                    <Layers className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
                     <input
                       type="number"
                       value={totalCourts}
                       onChange={(e) => setTotalCourts(e.target.value ? parseInt(e.target.value) : '')}
                       placeholder="4"
-                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-3">
+                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                     Select All Available Campus Amenities ({amenities.length} Active)
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -943,18 +937,18 @@ export default function OrganizationProfilePage() {
                           type="button"
                           onClick={() => handleAmenityToggle(item.name)}
                           className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-semibold transition-all border text-left ${hasAmenity
-                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
-                            : 'bg-zinc-950/70 text-zinc-400 border-zinc-800/80 hover:border-zinc-700 hover:text-zinc-200'
+                            ? 'bg-primary/15 text-primary border-primary/40 shadow-sm shadow-primary/10'
+                            : 'bg-surface text-text-secondary border-border hover:border-border-strong hover:text-foreground'
                             }`}
                         >
                           <div
-                            className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${hasAmenity ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-900 text-zinc-500'
+                            className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${hasAmenity ? 'bg-primary text-primary-foreground' : 'bg-surface-hover text-text-muted'
                               }`}
                           >
                             <IconComponent className="w-4 h-4" />
                           </div>
                           <span className="truncate flex-1">{item.name}</span>
-                          {hasAmenity && <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />}
+                          {hasAmenity && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
                         </button>
                       );
                     })}
@@ -968,41 +962,41 @@ export default function OrganizationProfilePage() {
         {/* Right Column: Live Card Inspector & Quick Shortcuts (Desktop Sticky) */}
         <div className="lg:col-span-4 space-y-6">
           {/* Live Preview Card Simulator */}
-          <div className="bg-zinc-900/60 p-5 rounded-3xl border border-zinc-800/80 backdrop-blur-xl shadow-xl space-y-4 sticky top-6">
-            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+          <div className="bg-card/80 p-5 rounded-3xl border border-border backdrop-blur-xl shadow-xl space-y-4 sticky top-6">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
                 <Compass className="w-3.5 h-3.5" />
                 Live Marketplace Card
               </span>
-              <span className="text-[10px] text-zinc-400">Real-time sync</span>
+              <span className="text-[10px] text-text-muted">Real-time sync</span>
             </div>
 
             {/* Simulated Marketplace Card */}
-            <div className="rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 group shadow-2xl">
-              <div className="relative h-36 bg-zinc-900 overflow-hidden">
+            <div className="rounded-2xl overflow-hidden border border-border bg-surface group shadow-2xl">
+              <div className="relative h-36 bg-surface-hover overflow-hidden">
                 <img src={coverUrl} alt="Card Preview" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-black/40" />
+                <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-black/40" />
 
                 <div className="absolute top-2.5 right-2.5">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500 text-zinc-950 shadow-md">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground shadow-md">
                     {type}
                   </span>
                 </div>
 
                 <div className="absolute bottom-2.5 left-3 flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-emerald-500/50 overflow-hidden shadow-lg flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-surface border border-primary/50 overflow-hidden shadow-lg flex items-center justify-center">
                     {logoUrl ? (
                       <img src={logoUrl} alt="Mini Logo" className="w-full h-full object-cover" />
                     ) : (
-                      <Building2 className="w-5 h-5 text-emerald-400" />
+                      <Building2 className="w-5 h-5 text-primary" />
                     )}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white leading-tight line-clamp-1">
+                    <h4 className="text-sm font-bold text-foreground leading-tight line-clamp-1">
                       {name || 'Academy Title'}
                     </h4>
-                    <p className="text-[11px] text-zinc-300 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-emerald-400" />
+                    <p className="text-[11px] text-text-secondary flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-primary" />
                       {city ? `${city}, ${state || country}` : 'City, Location'}
                     </p>
                   </div>
@@ -1010,32 +1004,32 @@ export default function OrganizationProfilePage() {
               </div>
 
               <div className="p-4 space-y-3">
-                {bio && <p className="text-xs text-zinc-400 italic line-clamp-2">&ldquo;{bio}&rdquo;</p>}
+                {bio && <p className="text-xs text-text-secondary italic line-clamp-2">&ldquo;{bio}&rdquo;</p>}
 
                 <div>
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1.5">
                     Sports Trained
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {selectedSports.slice(0, 4).map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[10px] font-semibold"
+                        className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold"
                       >
                         {s}
                       </span>
                     ))}
                     {selectedSports.length > 4 && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400 text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded-md bg-surface-hover text-text-muted text-[10px]">
                         +{selectedSports.length - 4} more
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t border-zinc-850 pt-3 flex items-center justify-between text-xs">
-                  <span className="text-zinc-400">{totalCourts || 4} Arena Courts</span>
-                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <div className="border-t border-border pt-3 flex items-center justify-between text-xs">
+                  <span className="text-text-secondary">{totalCourts || 4} Arena Courts</span>
+                  <span className="text-primary font-bold flex items-center gap-1">
                     Admissions Open <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
@@ -1048,7 +1042,7 @@ export default function OrganizationProfilePage() {
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 active:scale-95 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary hover:bg-primary-hover active:scale-95 text-primary-foreground font-bold text-xs transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Publish Changes Now
@@ -1057,9 +1051,9 @@ export default function OrganizationProfilePage() {
               <button
                 type="button"
                 onClick={() => setShowPreviewModal(true)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-700 transition"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-surface hover:bg-surface-hover text-foreground text-xs font-semibold border border-border transition"
               >
-                <Eye className="w-4 h-4 text-emerald-400" />
+                <Eye className="w-4 h-4 text-primary" />
                 Full Screen Modal Preview
               </button>
             </div>
@@ -1070,20 +1064,20 @@ export default function OrganizationProfilePage() {
       {/* ══════════════════════════════════════════════════════════════════════
           MOBILE FLOATING SAVE DOCK
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 p-3 bg-zinc-950/90 border-t border-zinc-800 backdrop-blur-xl z-40 flex items-center gap-3">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 p-3 bg-background/95 border-t border-border backdrop-blur-xl z-40 flex items-center gap-3">
         <button
           type="button"
           onClick={() => setShowPreviewModal(true)}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-900 text-zinc-200 text-xs font-bold border border-zinc-700 active:scale-95 transition"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-surface text-foreground text-xs font-bold border border-border active:scale-95 transition"
         >
-          <Eye className="w-4 h-4 text-emerald-400" />
+          <Eye className="w-4 h-4 text-primary" />
           Preview
         </button>
         <button
           type="button"
           onClick={handleSaveProfile}
           disabled={saving}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500 active:scale-95 text-zinc-950 text-xs font-bold shadow-lg shadow-emerald-500/25 disabled:opacity-50 transition"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary active:scale-95 text-primary-foreground text-xs font-bold shadow-lg shadow-primary/25 disabled:opacity-50 transition"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Profile
@@ -1095,60 +1089,60 @@ export default function OrganizationProfilePage() {
          ══════════════════════════════════════════════════════════════════════ */}
       {showPreviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/80">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Eye className="w-4 h-4 text-emerald-400" />
+          <div className="relative w-full max-w-2xl bg-card border border-border rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between p-4 border-b border-border bg-card/80">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Eye className="w-4 h-4 text-primary" />
                 Athlete Marketplace Live Listing Preview
               </h3>
               <button
                 type="button"
                 onClick={() => setShowPreviewModal(false)}
-                className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                className="p-1.5 rounded-xl text-text-muted hover:text-foreground hover:bg-surface-hover transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-              <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden border border-zinc-800 shadow-xl">
+              <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden border border-border shadow-xl">
                 <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
                 <div className="absolute top-3 right-3">
-                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-500 text-zinc-950 shadow-lg">
+                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-primary text-primary-foreground shadow-lg">
                     {type}
                   </span>
                 </div>
 
                 <div className="absolute bottom-4 left-4 flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-zinc-900 border-2 border-emerald-500/60 overflow-hidden flex items-center justify-center shadow-xl">
+                  <div className="w-14 h-14 rounded-2xl bg-surface border-2 border-primary/60 overflow-hidden flex items-center justify-center shadow-xl">
                     {logoUrl ? (
                       <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
                     ) : (
-                      <Building2 className="w-7 h-7 text-emerald-400" />
+                      <Building2 className="w-7 h-7 text-primary" />
                     )}
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-white">{name || 'Academy Name'}</h4>
-                    <p className="text-xs text-zinc-300 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                    <h4 className="text-lg font-bold text-foreground">{name || 'Academy Name'}</h4>
+                    <p className="text-xs text-text-secondary flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-primary" />
                       {city ? `${city}, ${state || country}` : 'Location Not Set'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {bio && <p className="text-xs sm:text-sm text-zinc-300 italic">&ldquo;{bio}&rdquo;</p>}
+              {bio && <p className="text-xs sm:text-sm text-text-secondary italic">&ldquo;{bio}&rdquo;</p>}
 
               <div className="space-y-2">
-                <h5 className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider">
+                <h5 className="text-[11px] font-extrabold text-text-muted uppercase tracking-wider">
                   Sports Offered ({selectedSports.length})
                 </h5>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedSports.map((s) => (
                     <span
                       key={s}
-                      className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 text-xs font-semibold"
+                      className="px-3 py-1 rounded-lg bg-primary/10 text-primary border border-primary/25 text-xs font-semibold"
                     >
                       {s}
                     </span>
@@ -1157,14 +1151,14 @@ export default function OrganizationProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <h5 className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider">
+                <h5 className="text-[11px] font-extrabold text-text-muted uppercase tracking-wider">
                   Facilities & Amenities
                 </h5>
                 <div className="flex flex-wrap gap-1.5">
                   {amenities.map((a) => (
                     <span
                       key={a}
-                      className="px-3 py-1 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700/60 text-xs font-medium"
+                      className="px-3 py-1 rounded-lg bg-surface text-foreground border border-border text-xs font-medium"
                     >
                       {a}
                     </span>
@@ -1173,9 +1167,9 @@ export default function OrganizationProfilePage() {
               </div>
 
               {description && (
-                <div className="space-y-1.5 border-t border-zinc-800 pt-3">
-                  <h5 className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider">About Us</h5>
-                  <p className="text-xs text-zinc-400 leading-relaxed">{description}</p>
+                <div className="space-y-1.5 border-t border-border pt-3">
+                  <h5 className="text-[11px] font-extrabold text-text-muted uppercase tracking-wider">About Us</h5>
+                  <p className="text-xs text-text-secondary leading-relaxed">{description}</p>
                 </div>
               )}
             </div>
