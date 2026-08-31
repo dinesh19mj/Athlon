@@ -272,12 +272,11 @@ export default function OrganizationProfilePage() {
       if (activeOrg) {
         updateOrganization(activeOrg.id, {
           name,
-          type,
           logo: logoUrl,
         });
       }
 
-      setSuccessMsg('Organization profile and type updated successfully!');
+      setSuccessMsg('Academy profile published successfully!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       console.error('Failed to save organization profile:', err);
@@ -591,51 +590,30 @@ export default function OrganizationProfilePage() {
                     </div>
                   </div>
 
-                  <div className="sm:col-span-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider">
-                        Organization Type * (Editable)
-                      </label>
-                      <span className="text-[10px] text-emerald-400 font-semibold">
-                        Select workspace structure
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
+                      Organization Type (Restricted)
+                    </label>
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-950/60 border border-zinc-800/80 rounded-xl text-zinc-400 text-sm cursor-not-allowed">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-base flex-shrink-0">
+                          {type === 'ACADEMY' ? '🏸' : type === 'CLUB' ? '🏆' : type === 'ASSOCIATION' ? '🏛️' : type === 'COURT' ? '🏟️' : '🎯'}
+                        </span>
+                        <span className="font-bold text-zinc-200 uppercase tracking-wide text-xs">
+                          {type}
+                        </span>
+                        <span className="text-zinc-500 text-xs truncate hidden sm:inline">
+                          • {type === 'ACADEMY' ? 'Sports Academy (Coaching & Training)' : type === 'CLUB' ? 'Sports Club' : type === 'ASSOCIATION' ? 'Sports Association' : type === 'COURT' ? 'Court Venue' : 'Tournament Organizer'}
+                        </span>
+                      </div>
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-800/90 text-zinc-400 border border-zinc-700/50 flex-shrink-0">
+                        <Lock className="w-3 h-3 text-zinc-400" />
+                        LOCKED
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-                      {[
-                        { id: 'ACADEMY', label: 'Academy', desc: 'Coaching & Admissions', icon: '🏸' },
-                        { id: 'CLUB', label: 'Club', desc: 'Members & Matches', icon: '🏆' },
-                        { id: 'ASSOCIATION', label: 'Association', desc: 'Districts & Affiliations', icon: '🏛️' },
-                        { id: 'COURT', label: 'Court Venue', desc: 'Arenas & Court Bookings', icon: '🏟️' },
-                        { id: 'ORGANIZER', label: 'Organizer', desc: 'Tournaments & Leagues', icon: '🎯' },
-                      ].map((t) => {
-                        const isSelected = type === t.id;
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => setType(t.id as any)}
-                            className={`p-3 rounded-2xl text-left transition-all border flex flex-col justify-between gap-1 relative ${
-                              isSelected
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30'
-                                : 'bg-zinc-950/80 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-200'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <span className="text-lg">{t.icon}</span>
-                              {isSelected && (
-                                <span className="w-4 h-4 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center text-[10px] font-black">
-                                  ✓
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-xs font-bold text-white leading-tight">{t.label}</div>
-                              <div className="text-[10px] text-zinc-400 leading-tight truncate mt-0.5">{t.desc}</div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <p className="text-[10px] text-zinc-500 mt-1">
+                      Institutional classification is fixed upon organization registration.
+                    </p>
                   </div>
 
                   <div className="sm:col-span-2">
