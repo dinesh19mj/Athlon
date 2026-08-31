@@ -58,7 +58,7 @@ import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments' | 'academies' | 'rankings' | 'matches' | 'registered'; desc: string }[] = [
   { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, icon3d: 'tournaments', desc: 'Events & Brackets' },
   { id: '/academies', label: 'Academies', icon: GraduationCap, icon3d: 'academies', desc: 'Training & Batches' },
-  { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, icon3d: 'rankings', desc: 'Global ELO Standings' },
+  // { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, icon3d: 'rankings', desc: 'Global ELO Standings' }, // Commented out for now
   { id: '/home/matches', label: 'Matches', icon: Activity, icon3d: 'matches', desc: 'Schedule & Scores' },
   { id: '/home/registered', label: 'Registered', icon: ClipboardList, icon3d: 'registered', desc: 'My Entries' },
 ];

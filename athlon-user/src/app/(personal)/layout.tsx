@@ -85,7 +85,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
     {
       title: 'Athlete Hub',
       items: [
-        { name: 'Rankings', href: '/home/rankings', icon: TrendingUp, badge: null },
+        // { name: 'Rankings', href: '/home/rankings', icon: TrendingUp, badge: null }, // Commented out for now
         { name: 'My Matches', href: '/home/matches', icon: Layers, badge: null },
         { name: 'Alerts', href: '/home/notifications', icon: Bell, badge: null },
         { name: 'My Profile', href: '/profile', icon: User, badge: null },
