@@ -169,6 +169,12 @@ public class OrganizationService {
             organizationRepository.save(organization);
         }
 
+        if (request.getType() != null && !request.getType().trim().isEmpty() && !request.getType().equals(organization.getType())) {
+            organization.setType(request.getType().trim());
+            organization.setUpdatedBy(currentUserId);
+            organizationRepository.save(organization);
+        }
+
         return mapToProfileResponse(organization, profile);
     }
 
@@ -233,6 +239,12 @@ public class OrganizationService {
 
         if (request.getName() != null && !request.getName().trim().isEmpty() && !request.getName().equals(organization.getName())) {
             organization.setName(request.getName().trim());
+            organization.setUpdatedBy(currentUserId);
+            organizationRepository.save(organization);
+        }
+
+        if (request.getType() != null && !request.getType().trim().isEmpty() && !request.getType().equals(organization.getType())) {
+            organization.setType(request.getType().trim());
             organization.setUpdatedBy(currentUserId);
             organizationRepository.save(organization);
         }

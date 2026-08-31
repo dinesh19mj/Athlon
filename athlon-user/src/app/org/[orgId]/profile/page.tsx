@@ -272,11 +272,12 @@ export default function OrganizationProfilePage() {
       if (activeOrg) {
         updateOrganization(activeOrg.id, {
           name,
+          type,
           logo: logoUrl,
         });
       }
 
-      setSuccessMsg('Academy profile published successfully!');
+      setSuccessMsg('Organization profile and type updated successfully!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       console.error('Failed to save organization profile:', err);
@@ -590,21 +591,51 @@ export default function OrganizationProfilePage() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
-                      Organization Type
-                    </label>
-                    <select
-                      value={type}
-                      onChange={(e: any) => setType(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
-                    >
-                      <option value="ACADEMY">Sports Academy (Coaching & Training)</option>
-                      <option value="CLUB">Sports Club & Community</option>
-                      <option value="ASSOCIATION">Sports Association / Federation</option>
-                      <option value="COURT">Dedicated Court & Arena Venue</option>
-                      <option value="ORGANIZER">Tournament Organizer</option>
-                    </select>
+                  <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-[11px] font-bold text-zinc-300 uppercase tracking-wider">
+                        Organization Type * (Editable)
+                      </label>
+                      <span className="text-[10px] text-emerald-400 font-semibold">
+                        Select workspace structure
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                      {[
+                        { id: 'ACADEMY', label: 'Academy', desc: 'Coaching & Admissions', icon: '🏸' },
+                        { id: 'CLUB', label: 'Club', desc: 'Members & Matches', icon: '🏆' },
+                        { id: 'ASSOCIATION', label: 'Association', desc: 'Districts & Affiliations', icon: '🏛️' },
+                        { id: 'COURT', label: 'Court Venue', desc: 'Arenas & Court Bookings', icon: '🏟️' },
+                        { id: 'ORGANIZER', label: 'Organizer', desc: 'Tournaments & Leagues', icon: '🎯' },
+                      ].map((t) => {
+                        const isSelected = type === t.id;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setType(t.id as any)}
+                            className={`p-3 rounded-2xl text-left transition-all border flex flex-col justify-between gap-1 relative ${
+                              isSelected
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30'
+                                : 'bg-zinc-950/80 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-lg">{t.icon}</span>
+                              {isSelected && (
+                                <span className="w-4 h-4 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center text-[10px] font-black">
+                                  ✓
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-white leading-tight">{t.label}</div>
+                              <div className="text-[10px] text-zinc-400 leading-tight truncate mt-0.5">{t.desc}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="sm:col-span-2">
