@@ -473,7 +473,7 @@ export default function OrganizationProfilePage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          DEDICATED ADMISSIONS & COACHING CALLOUT CARD
+          DEDICATED COACHING & BATCHES CALLOUT CARD
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-card/90 border border-primary/30 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 group">
         <div className="absolute top-0 right-0 w-80 h-full bg-primary/5 blur-3xl pointer-events-none" />
@@ -484,10 +484,10 @@ export default function OrganizationProfilePage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-foreground tracking-tight">Coaching & Admissions</h3>
+              <h3 className="text-base font-bold text-foreground tracking-tight">Coaching & Batches</h3>
             </div>
             <p className="text-xs text-text-secondary mt-1 max-w-xl leading-relaxed">
-              Configure sports-wise admissions, coaching fee plans, allocated courts, and student batch capacity.
+              Configure training venues & courts, student batches, and coaching fee plans.
             </p>
           </div>
         </div>
@@ -496,7 +496,7 @@ export default function OrganizationProfilePage() {
           href={`/org/${orgId}/admissions`}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold transition-all shadow-md shadow-primary/20 flex-shrink-0 group/btn"
         >
-          Manage Coaching Batches
+          Manage Coaching & Batches
           <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
         </Link>
       </div>

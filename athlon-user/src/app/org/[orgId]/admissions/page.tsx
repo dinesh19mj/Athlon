@@ -390,7 +390,7 @@ export default function OrganizationAdmissionsPage() {
     setSuccessMsg('');
     try {
       await new Promise((res) => setTimeout(res, 500));
-      setSuccessMsg(`Admissions & coaching for ${selectedSport} saved successfully!`);
+      setSuccessMsg(`Coaching & batches for ${selectedSport} saved successfully!`);
       setTimeout(() => setSuccessMsg(''), 4000);
     } finally {
       setSaving(false);
@@ -417,7 +417,7 @@ export default function OrganizationAdmissionsPage() {
           <Sparkles className="w-5 h-5 text-primary" />
         </div>
         <p className="text-text-muted font-medium text-xs tracking-wider uppercase">
-          Loading Admissions Studio...
+          Loading Coaching & Batches Studio...
         </p>
       </div>
     );
@@ -440,14 +440,14 @@ export default function OrganizationAdmissionsPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-lg sm:text-xl font-extrabold text-foreground tracking-tight truncate">
-                Admissions & Coaching
+                Coaching & Batches
               </h1>
               <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
-                Academy Studio
+                Training Studio
               </span>
             </div>
             <p className="text-xs text-text-secondary truncate">
-              Manage plans, venues & courts, and student batches
+              Manage venues & courts, student batches, and coaching fee plans
             </p>
           </div>
         </div>
@@ -459,7 +459,7 @@ export default function OrganizationAdmissionsPage() {
           className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground font-bold text-xs shadow-lg shadow-primary/20 transition active:scale-95 disabled:opacity-50 flex-shrink-0"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Admissions
+          Save Changes
         </button>
       </div>
 
@@ -1086,7 +1086,7 @@ export default function OrganizationAdmissionsPage() {
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary hover:bg-primary-hover active:scale-95 text-primary-foreground text-xs font-extrabold shadow-lg shadow-primary/25 disabled:opacity-50 transition"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Admissions
+          Save Changes
         </button>
       </div>
     </div>
