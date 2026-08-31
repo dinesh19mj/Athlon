@@ -162,27 +162,27 @@ export default function OrgProfilePage() {
         const p: OrganizationProfile = (res as any)?.data || (res as any);
 
         if (p) {
-          if (p.name) setName(p.name);
+          setName(p.name || '');
           if (p.type) setType(p.type as any);
-          if (p.bio) setBio(p.bio);
-          if (p.description) setDescription(p.description);
-          if (p.establishedYear) setEstablishedYear(p.establishedYear);
-          if (p.registrationNumber) setRegistrationNumber(p.registrationNumber);
-          if (p.isPublic !== undefined) setIsPublic(p.isPublic);
+          setBio(p.bio || '');
+          setDescription(p.description || '');
+          setEstablishedYear(p.establishedYear ?? 2020);
+          setRegistrationNumber(p.registrationNumber || '');
+          setIsPublic(p.isPublic ?? 1);
 
-          if (p.contactEmail) setContactEmail(p.contactEmail);
-          if (p.contactPhone) setContactPhone(p.contactPhone);
-          if (p.address) setAddress(p.address);
-          if (p.city) setCity(p.city);
-          if (p.district) setDistrict(p.district);
-          if (p.state) setStateName(p.state);
-          if (p.postalCode) setPostalCode(p.postalCode);
-          if (p.country) setCountry(p.country);
-          if (p.website) setWebsite(p.website);
+          setContactEmail(p.contactEmail || '');
+          setContactPhone(p.contactPhone || '');
+          setAddress(p.address || '');
+          setCity(p.city || '');
+          setDistrict(p.district || '');
+          setStateName(p.state || '');
+          setPostalCode(p.postalCode || '');
+          setCountry(p.country || 'India');
+          setWebsite(p.website || '');
 
-          if (p.socialInstagram) setSocialInstagram(p.socialInstagram);
-          if (p.socialFacebook) setSocialFacebook(p.socialFacebook);
-          if (p.socialYoutube) setSocialYoutube(p.socialYoutube);
+          setSocialInstagram(p.socialInstagram || '');
+          setSocialFacebook(p.socialFacebook || '');
+          setSocialYoutube(p.socialYoutube || '');
 
           if (p.logo) {
             setLogoUrl(p.logo);
@@ -209,8 +209,8 @@ export default function OrgProfilePage() {
               .filter(Boolean);
             if (lvls.length > 0) setAcademyLevels(lvls);
           }
-          if (p.monthlyFeeMin !== undefined) setMonthlyFeeMin(p.monthlyFeeMin);
-          if (p.monthlyFeeMax !== undefined) setMonthlyFeeMax(p.monthlyFeeMax);
+          setMonthlyFeeMin(p.monthlyFeeMin ?? 2000);
+          setMonthlyFeeMax(p.monthlyFeeMax ?? 4500);
           if (p.operatingDays) {
             const days = p.operatingDays
               .split(',')
@@ -218,12 +218,12 @@ export default function OrgProfilePage() {
               .filter(Boolean);
             if (days.length > 0) setSelectedOperatingDays(days);
           }
-          if (p.openingTime) setOpeningTime(p.openingTime);
-          if (p.closingTime) setClosingTime(p.closingTime);
+          setOpeningTime(p.openingTime || '06:00 AM');
+          setClosingTime(p.closingTime || '09:30 PM');
 
-          if (p.totalCourts !== undefined) setTotalCourts(p.totalCourts);
-          if (p.surfaceType) setSurfaceType(p.surfaceType);
-          if (p.pricePerHour !== undefined) setPricePerHour(p.pricePerHour);
+          setTotalCourts(p.totalCourts ?? 4);
+          setSurfaceType(p.surfaceType || 'Synthetic BWF Mats');
+          setPricePerHour(p.pricePerHour ?? 400);
           if (p.amenities) {
             const am = p.amenities
               .split(',')
@@ -498,7 +498,7 @@ export default function OrgProfilePage() {
                 {isPublic === 1 ? (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Public on Marketplace
+                    Public
                   </span>
                 ) : (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
@@ -562,11 +562,10 @@ export default function OrgProfilePage() {
         <div className="flex border-b border-white/10 overflow-x-auto hide-scrollbar gap-2 sm:gap-4">
           <button
             onClick={() => setActiveTab('general')}
-            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'general'
+            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'general'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-foreground/50 hover:text-foreground'
-            }`}
+              }`}
           >
             <Building2 className="w-4 h-4" />
             <span>1. General Information</span>
@@ -574,11 +573,10 @@ export default function OrgProfilePage() {
 
           <button
             onClick={() => setActiveTab('location')}
-            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'location'
+            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'location'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-foreground/50 hover:text-foreground'
-            }`}
+              }`}
           >
             <MapPin className="w-4 h-4" />
             <span>2. Location & Contacts</span>
@@ -586,11 +584,10 @@ export default function OrgProfilePage() {
 
           <button
             onClick={() => setActiveTab('sports')}
-            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'sports'
+            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'sports'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-foreground/50 hover:text-foreground'
-            }`}
+              }`}
           >
             <Dumbbell className="w-4 h-4" />
             <span>3. Sports & Activities</span>
@@ -598,11 +595,10 @@ export default function OrgProfilePage() {
 
           <button
             onClick={() => setActiveTab('facility')}
-            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'facility'
+            className={`pb-3 px-3 text-xs font-black flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${activeTab === 'facility'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-foreground/50 hover:text-foreground'
-            }`}
+              }`}
           >
             <Sparkles className="w-4 h-4" />
             <span>4. {type === 'ACADEMY' ? 'Coaching & Admissions' : 'Courts & Facilities'}</span>
@@ -677,14 +673,12 @@ export default function OrgProfilePage() {
                 <button
                   type="button"
                   onClick={() => setIsPublic((prev) => (prev === 1 ? 0 : 1))}
-                  className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${
-                    isPublic === 1 ? 'bg-primary' : 'bg-white/10'
-                  }`}
+                  className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${isPublic === 1 ? 'bg-primary' : 'bg-white/10'
+                    }`}
                 >
                   <div
-                    className={`w-5 h-5 rounded-full bg-black shadow-md transition-transform ${
-                      isPublic === 1 ? 'translate-x-6' : 'translate-x-0'
-                    }`}
+                    className={`w-5 h-5 rounded-full bg-black shadow-md transition-transform ${isPublic === 1 ? 'translate-x-6' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -896,11 +890,10 @@ export default function OrgProfilePage() {
                     key={sport}
                     type="button"
                     onClick={() => toggleSport(sport)}
-                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
-                      isSelected
+                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${isSelected
                         ? 'bg-primary text-black border-primary font-black shadow-md shadow-primary/20 scale-105'
                         : 'bg-white/[0.04] text-foreground/70 border-white/10 hover:border-white/20 hover:text-foreground'
-                    }`}
+                      }`}
                   >
                     {isSelected && <Check className="w-3.5 h-3.5" />}
                     <span>{sport}</span>
@@ -957,9 +950,8 @@ export default function OrgProfilePage() {
                           key={st.id}
                           type="button"
                           onClick={() => setAdmissionStatus(st.id)}
-                          className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all ${
-                            admissionStatus === st.id ? `${st.color} font-black ring-1 ring-primary` : 'border-white/10 bg-white/[0.02] text-foreground/60'
-                          }`}
+                          className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all ${admissionStatus === st.id ? `${st.color} font-black ring-1 ring-primary` : 'border-white/10 bg-white/[0.02] text-foreground/60'
+                            }`}
                         >
                           {st.label}
                         </button>
@@ -1002,11 +994,10 @@ export default function OrgProfilePage() {
                             key={lvl}
                             type="button"
                             onClick={() => toggleLevel(lvl)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                              isSelected
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${isSelected
                                 ? 'bg-primary/20 text-primary border-primary/40 font-black'
                                 : 'bg-white/[0.04] text-foreground/50 border-white/10'
-                            }`}
+                              }`}
                           >
                             {lvl}
                           </button>
@@ -1033,11 +1024,10 @@ export default function OrgProfilePage() {
                             key={day}
                             type="button"
                             onClick={() => toggleDay(day)}
-                            className={`w-10 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center border ${
-                              isSelected
+                            className={`w-10 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center border ${isSelected
                                 ? 'bg-primary text-black font-black border-primary shadow-md shadow-primary/20'
                                 : 'bg-white/[0.04] text-foreground/60 border-white/10'
-                            }`}
+                              }`}
                           >
                             {day}
                           </button>
@@ -1126,11 +1116,10 @@ export default function OrgProfilePage() {
                         key={amenity}
                         type="button"
                         onClick={() => toggleAmenity(amenity)}
-                        className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all flex items-center justify-between ${
-                          isSelected
+                        className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all flex items-center justify-between ${isSelected
                             ? 'bg-primary/15 text-primary border-primary/40 font-black shadow-sm'
                             : 'bg-white/[0.02] text-foreground/60 border-white/10 hover:border-white/20'
-                        }`}
+                          }`}
                       >
                         <span className="truncate">{amenity}</span>
                         {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
