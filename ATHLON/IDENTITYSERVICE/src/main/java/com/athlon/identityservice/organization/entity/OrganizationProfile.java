@@ -96,6 +96,39 @@ public class OrganizationProfile {
     @Column(name = "amenities", columnDefinition = "TEXT")
     private String amenities;
 
+    @Column(name = "bio", columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(name = "established_year")
+    private Integer establishedYear;
+
+    @Column(name = "registration_number", length = 100)
+    private String registrationNumber;
+
+    @Column(name = "monthly_fee_min")
+    private Double monthlyFeeMin;
+
+    @Column(name = "monthly_fee_max")
+    private Double monthlyFeeMax;
+
+    @Column(name = "operating_days", length = 100)
+    private String operatingDays;
+
+    @Column(name = "social_instagram", length = 255)
+    private String socialInstagram;
+
+    @Column(name = "social_facebook", length = 255)
+    private String socialFacebook;
+
+    @Column(name = "social_youtube", length = 255)
+    private String socialYoutube;
+
+    @Column(name = "rating")
+    private Double rating = 4.9;
+
+    @Column(name = "reviews_count")
+    private Integer reviewsCount = 50;
+
     @Column(name = "isactive")
     private Integer isActive = 1;
 
@@ -334,6 +367,94 @@ public class OrganizationProfile {
 
     public void setAmenities(String amenities) {
         this.amenities = amenities;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public Integer getEstablishedYear() {
+        return establishedYear;
+    }
+
+    public void setEstablishedYear(Integer establishedYear) {
+        this.establishedYear = establishedYear;
+    }
+
+    public String getRegistrationNumber() {
+        return registrationNumber;
+    }
+
+    public void setRegistrationNumber(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public Double getMonthlyFeeMin() {
+        return monthlyFeeMin;
+    }
+
+    public void setMonthlyFeeMin(Double monthlyFeeMin) {
+        this.monthlyFeeMin = monthlyFeeMin;
+    }
+
+    public Double getMonthlyFeeMax() {
+        return monthlyFeeMax;
+    }
+
+    public void setMonthlyFeeMax(Double monthlyFeeMax) {
+        this.monthlyFeeMax = monthlyFeeMax;
+    }
+
+    public String getOperatingDays() {
+        return operatingDays;
+    }
+
+    public void setOperatingDays(String operatingDays) {
+        this.operatingDays = operatingDays;
+    }
+
+    public String getSocialInstagram() {
+        return socialInstagram;
+    }
+
+    public void setSocialInstagram(String socialInstagram) {
+        this.socialInstagram = socialInstagram;
+    }
+
+    public String getSocialFacebook() {
+        return socialFacebook;
+    }
+
+    public void setSocialFacebook(String socialFacebook) {
+        this.socialFacebook = socialFacebook;
+    }
+
+    public String getSocialYoutube() {
+        return socialYoutube;
+    }
+
+    public void setSocialYoutube(String socialYoutube) {
+        this.socialYoutube = socialYoutube;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
+
+    public Integer getReviewsCount() {
+        return reviewsCount;
+    }
+
+    public void setReviewsCount(Integer reviewsCount) {
+        this.reviewsCount = reviewsCount;
     }
 
     public Integer getIsActive() {

@@ -28,6 +28,17 @@ export interface OrganizationProfile {
   closingTime?: string;
   pricePerHour?: number;
   amenities?: string;
+  bio?: string;
+  establishedYear?: number;
+  registrationNumber?: string;
+  monthlyFeeMin?: number;
+  monthlyFeeMax?: number;
+  operatingDays?: string;
+  socialInstagram?: string;
+  socialFacebook?: string;
+  socialYoutube?: string;
+  rating?: number;
+  reviewsCount?: number;
   updatedAt?: string;
 }
 

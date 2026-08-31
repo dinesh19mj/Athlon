@@ -175,26 +175,36 @@ export default function AcademiesPage() {
         if (liveOrgs.length > 0) {
           const mapped: AcademyListing[] = liveOrgs.map((org: any, idx: number) => {
             const prof = org.profile;
+            const sports = prof?.sportsOffered ? prof.sportsOffered.split(',').map((s: string) => s.trim()) : ['Badminton'];
+            const amenitiesList = prof?.amenities ? prof.amenities.split(',').map((a: string) => a.trim()).slice(0, 2) : [];
+            const feeString = prof?.monthlyFeeMin 
+              ? `₹${prof.monthlyFeeMin.toLocaleString()}${prof?.monthlyFeeMax ? ` - ₹${prof.monthlyFeeMax.toLocaleString()}` : ''}/mo`
+              : (prof?.pricePerHour ? `₹${prof.pricePerHour}/hr` : '₹2,000/mo');
+
             return {
               id: org.uuid || org.id || `org-${idx}`,
               uuid: org.uuid,
               name: org.name,
-              sportType: prof?.sportsOffered || 'Badminton',
-              rating: '4.9',
-              reviews: '40+',
+              sportType: sports[0] || 'Badminton',
+              rating: prof?.rating ? prof.rating.toFixed(1) : '4.9',
+              reviews: prof?.reviewsCount ? `${prof.reviewsCount}+` : '50+',
               distance: prof?.city ? `${prof.city}` : 'Bangalore',
               location: prof?.address || prof?.city || 'Athlon Academy Center',
-              price: '₹1,500/mo',
-              courts: prof?.courtsCount || 4,
-              tags: [prof?.sportsOffered || 'Badminton', 'Certified Coaches', 'Coaching Batches'],
-              image: org.banner
-                ? OrganizationService.getBannerUrl(org.banner)
-                : org.logo
-                  ? OrganizationService.getLogoUrl(org.logo)
+              price: feeString,
+              courts: prof?.totalCourts || 4,
+              tags: [
+                ...sports.slice(0, 2),
+                prof?.surfaceType || 'BWF Synthetic Mats',
+                ...amenitiesList,
+              ],
+              image: prof?.banner
+                ? OrganizationService.getBannerUrl(prof.banner)
+                : prof?.logo
+                  ? OrganizationService.getLogoUrl(prof.logo)
                   : DEFAULT_ACADEMIES[idx % DEFAULT_ACADEMIES.length].image,
               featured: idx === 0,
-              openTiming: '6:00 AM - 10:00 PM',
-              phone: prof?.phone || '+91 98765 43210',
+              openTiming: prof?.openingTime && prof?.closingTime ? `${prof.openingTime} - ${prof.closingTime}` : '6:00 AM - 10:00 PM',
+              phone: prof?.contactPhone || '+91 98765 43210',
               isLiveOrg: true,
             };
           });

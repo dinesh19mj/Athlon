@@ -30,8 +30,18 @@ public class OrganizationProfileResponse {
     private String surfaceType;
     private String openingTime;
     private String closingTime;
-    private Double pricePerHour;
     private String amenities;
+    private String bio;
+    private Integer establishedYear;
+    private String registrationNumber;
+    private Double monthlyFeeMin;
+    private Double monthlyFeeMax;
+    private String operatingDays;
+    private String socialInstagram;
+    private String socialFacebook;
+    private String socialYoutube;
+    private Double rating;
+    private Integer reviewsCount;
     private LocalDateTime updatedAt;
 
     public OrganizationProfileResponse() {
@@ -251,6 +261,94 @@ public class OrganizationProfileResponse {
 
     public void setAmenities(String amenities) {
         this.amenities = amenities;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public Integer getEstablishedYear() {
+        return establishedYear;
+    }
+
+    public void setEstablishedYear(Integer establishedYear) {
+        this.establishedYear = establishedYear;
+    }
+
+    public String getRegistrationNumber() {
+        return registrationNumber;
+    }
+
+    public void setRegistrationNumber(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public Double getMonthlyFeeMin() {
+        return monthlyFeeMin;
+    }
+
+    public void setMonthlyFeeMin(Double monthlyFeeMin) {
+        this.monthlyFeeMin = monthlyFeeMin;
+    }
+
+    public Double getMonthlyFeeMax() {
+        return monthlyFeeMax;
+    }
+
+    public void setMonthlyFeeMax(Double monthlyFeeMax) {
+        this.monthlyFeeMax = monthlyFeeMax;
+    }
+
+    public String getOperatingDays() {
+        return operatingDays;
+    }
+
+    public void setOperatingDays(String operatingDays) {
+        this.operatingDays = operatingDays;
+    }
+
+    public String getSocialInstagram() {
+        return socialInstagram;
+    }
+
+    public void setSocialInstagram(String socialInstagram) {
+        this.socialInstagram = socialInstagram;
+    }
+
+    public String getSocialFacebook() {
+        return socialFacebook;
+    }
+
+    public void setSocialFacebook(String socialFacebook) {
+        this.socialFacebook = socialFacebook;
+    }
+
+    public String getSocialYoutube() {
+        return socialYoutube;
+    }
+
+    public void setSocialYoutube(String socialYoutube) {
+        this.socialYoutube = socialYoutube;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
+
+    public Integer getReviewsCount() {
+        return reviewsCount;
+    }
+
+    public void setReviewsCount(Integer reviewsCount) {
+        this.reviewsCount = reviewsCount;
     }
 
     public LocalDateTime getUpdatedAt() {

@@ -148,6 +148,17 @@ public class OrganizationService {
         profile.setClosingTime(request.getClosingTime());
         profile.setPricePerHour(request.getPricePerHour());
         profile.setAmenities(request.getAmenities());
+        profile.setBio(request.getBio());
+        profile.setEstablishedYear(request.getEstablishedYear());
+        profile.setRegistrationNumber(request.getRegistrationNumber());
+        profile.setMonthlyFeeMin(request.getMonthlyFeeMin());
+        profile.setMonthlyFeeMax(request.getMonthlyFeeMax());
+        profile.setOperatingDays(request.getOperatingDays());
+        profile.setSocialInstagram(request.getSocialInstagram());
+        profile.setSocialFacebook(request.getSocialFacebook());
+        profile.setSocialYoutube(request.getSocialYoutube());
+        if (request.getRating() != null) profile.setRating(request.getRating());
+        if (request.getReviewsCount() != null) profile.setReviewsCount(request.getReviewsCount());
         profile.setUpdatedBy(currentUserId);
 
         profile = organizationProfileRepository.save(profile);
@@ -205,6 +216,17 @@ public class OrganizationService {
         profile.setClosingTime(request.getClosingTime());
         profile.setPricePerHour(request.getPricePerHour());
         profile.setAmenities(request.getAmenities());
+        profile.setBio(request.getBio());
+        profile.setEstablishedYear(request.getEstablishedYear());
+        profile.setRegistrationNumber(request.getRegistrationNumber());
+        profile.setMonthlyFeeMin(request.getMonthlyFeeMin());
+        profile.setMonthlyFeeMax(request.getMonthlyFeeMax());
+        profile.setOperatingDays(request.getOperatingDays());
+        profile.setSocialInstagram(request.getSocialInstagram());
+        profile.setSocialFacebook(request.getSocialFacebook());
+        profile.setSocialYoutube(request.getSocialYoutube());
+        if (request.getRating() != null) profile.setRating(request.getRating());
+        if (request.getReviewsCount() != null) profile.setReviewsCount(request.getReviewsCount());
         profile.setUpdatedBy(currentUserId);
 
         profile = organizationProfileRepository.save(profile);
@@ -484,6 +506,17 @@ public class OrganizationService {
         resp.setClosingTime(p.getClosingTime());
         resp.setPricePerHour(p.getPricePerHour());
         resp.setAmenities(p.getAmenities());
+        resp.setBio(p.getBio());
+        resp.setEstablishedYear(p.getEstablishedYear());
+        resp.setRegistrationNumber(p.getRegistrationNumber());
+        resp.setMonthlyFeeMin(p.getMonthlyFeeMin());
+        resp.setMonthlyFeeMax(p.getMonthlyFeeMax());
+        resp.setOperatingDays(p.getOperatingDays());
+        resp.setSocialInstagram(p.getSocialInstagram());
+        resp.setSocialFacebook(p.getSocialFacebook());
+        resp.setSocialYoutube(p.getSocialYoutube());
+        resp.setRating(p.getRating() != null ? p.getRating() : 4.9);
+        resp.setReviewsCount(p.getReviewsCount() != null ? p.getReviewsCount() : 50);
         resp.setUpdatedAt(p.getUpdatedAt());
         return resp;
     }

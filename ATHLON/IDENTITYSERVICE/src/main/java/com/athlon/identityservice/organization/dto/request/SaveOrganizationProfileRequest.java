@@ -73,6 +73,33 @@ public class SaveOrganizationProfileRequest {
 
     private String amenities;
 
+    private String bio;
+
+    private Integer establishedYear;
+
+    @Size(max = 100, message = "Registration number must not exceed 100 characters")
+    private String registrationNumber;
+
+    private Double monthlyFeeMin;
+
+    private Double monthlyFeeMax;
+
+    @Size(max = 100, message = "Operating days must not exceed 100 characters")
+    private String operatingDays;
+
+    @Size(max = 255, message = "Instagram link must not exceed 255 characters")
+    private String socialInstagram;
+
+    @Size(max = 255, message = "Facebook link must not exceed 255 characters")
+    private String socialFacebook;
+
+    @Size(max = 255, message = "YouTube link must not exceed 255 characters")
+    private String socialYoutube;
+
+    private Double rating;
+
+    private Integer reviewsCount;
+
     public SaveOrganizationProfileRequest() {
     }
 
@@ -274,5 +301,93 @@ public class SaveOrganizationProfileRequest {
 
     public void setAmenities(String amenities) {
         this.amenities = amenities;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public Integer getEstablishedYear() {
+        return establishedYear;
+    }
+
+    public void setEstablishedYear(Integer establishedYear) {
+        this.establishedYear = establishedYear;
+    }
+
+    public String getRegistrationNumber() {
+        return registrationNumber;
+    }
+
+    public void setRegistrationNumber(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public Double getMonthlyFeeMin() {
+        return monthlyFeeMin;
+    }
+
+    public void setMonthlyFeeMin(Double monthlyFeeMin) {
+        this.monthlyFeeMin = monthlyFeeMin;
+    }
+
+    public Double getMonthlyFeeMax() {
+        return monthlyFeeMax;
+    }
+
+    public void setMonthlyFeeMax(Double monthlyFeeMax) {
+        this.monthlyFeeMax = monthlyFeeMax;
+    }
+
+    public String getOperatingDays() {
+        return operatingDays;
+    }
+
+    public void setOperatingDays(String operatingDays) {
+        this.operatingDays = operatingDays;
+    }
+
+    public String getSocialInstagram() {
+        return socialInstagram;
+    }
+
+    public void setSocialInstagram(String socialInstagram) {
+        this.socialInstagram = socialInstagram;
+    }
+
+    public String getSocialFacebook() {
+        return socialFacebook;
+    }
+
+    public void setSocialFacebook(String socialFacebook) {
+        this.socialFacebook = socialFacebook;
+    }
+
+    public String getSocialYoutube() {
+        return socialYoutube;
+    }
+
+    public void setSocialYoutube(String socialYoutube) {
+        this.socialYoutube = socialYoutube;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
+
+    public Integer getReviewsCount() {
+        return reviewsCount;
+    }
+
+    public void setReviewsCount(Integer reviewsCount) {
+        this.reviewsCount = reviewsCount;
     }
 }

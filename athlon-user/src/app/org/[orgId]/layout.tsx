@@ -176,6 +176,12 @@ export default function OrganizationLayout({ children }: { children: React.React
         isLive: item.name === 'Live Stream',
       })),
     },
+    {
+      title: 'Settings',
+      items: [
+        { name: 'Org Profile', href: `/org/${orgId}/profile`, icon: Building, badge: null, isLive: false },
+      ],
+    },
   ];
 
   return (
@@ -348,9 +354,12 @@ export default function OrganizationLayout({ children }: { children: React.React
           }}
         >
           {!isSidebarCollapsed && (
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <Link
+              href={`/org/${orgId}/profile`}
+              className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity group"
+            >
               <div
-                className="w-9 h-9 rounded-xl overflow-hidden border bg-black/40 flex items-center justify-center shrink-0"
+                className="w-9 h-9 rounded-xl overflow-hidden border bg-black/40 flex items-center justify-center shrink-0 group-hover:border-primary/50 transition-colors"
                 style={{ borderColor: 'var(--athlon-border)' }}
               >
                 {activeOrg.logo ? (
@@ -360,10 +369,10 @@ export default function OrganizationLayout({ children }: { children: React.React
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-black text-foreground truncate">{activeOrg.name}</div>
-                <div className="text-[10px] font-mono text-primary truncate">{activeOrg.type} Portal</div>
+                <div className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">{activeOrg.name}</div>
+                <div className="text-[10px] font-mono text-primary truncate">{activeOrg.type} Profile →</div>
               </div>
-            </div>
+            </Link>
           )}
 
           <button
@@ -486,17 +495,17 @@ export default function OrganizationLayout({ children }: { children: React.React
 
         {/* Profile */}
         <Link
-          href="/profile"
+          href={`/org/${orgId}/profile`}
           className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-            pathname === '/profile' ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+            pathname === `/org/${orgId}/profile` ? 'opacity-100' : 'opacity-80 hover:opacity-100'
           }`}
         >
-          <Athlon3DIcon type="profile" size={32} active={pathname === '/profile'} />
+          <Athlon3DIcon type="profile" size={32} active={pathname === `/org/${orgId}/profile`} />
           <span
             className={`text-[9.5px] font-bold leading-tight ${
-              pathname === '/profile' ? 'text-primary' : ''
+              pathname === `/org/${orgId}/profile` ? 'text-primary' : ''
             }`}
-            style={{ color: pathname === '/profile' ? undefined : 'var(--athlon-text-muted)' }}
+            style={{ color: pathname === `/org/${orgId}/profile` ? undefined : 'var(--athlon-text-muted)' }}
           >
             Profile
           </span>

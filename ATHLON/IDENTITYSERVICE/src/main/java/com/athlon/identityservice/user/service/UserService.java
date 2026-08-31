@@ -36,11 +36,11 @@ public class UserService {
     private final SportsProfileRepository sportsProfileRepository;
     private final FileStorageUtil fileStorageUtil;
     private final WebClient webClient;
-    
-    @Value("${athlo.gateway.url:http://localhost:5050}")
+
+    @Value("${athlo.gateway.url}")
     private String gatewayPath;
 
-    @Value("${athlon.user.photo.upload.directory:C:\\Users\\neoni\\Desktop\\Athlon\\User}")
+    @Value("${athlon.user.photo.upload.directory}")
     private String userPhotoUploadDir;
 
     public UserService(
@@ -74,10 +74,9 @@ public class UserService {
                 request.getFirstName(),
                 request.getLastName(),
                 request.getPhone(),
-                currentUserId
-        );
+                currentUserId);
         userProfileRepository.save(profile);
-        
+
         // Sync credential with AUTHSERVICE
         try {
             var credentialRequest = new HashMap<String, Object>();
@@ -85,9 +84,9 @@ public class UserService {
             credentialRequest.put("email", request.getEmail());
             credentialRequest.put("phone", request.getPhone());
             credentialRequest.put("password", request.getPassword());
-            
+
             webClient.post()
-            		.uri(gatewayPath + "/api/auth/internal/credentials")
+                    .uri(gatewayPath + "/api/auth/internal/credentials")
                     .bodyValue(credentialRequest)
                     .retrieve()
                     .bodyToMono(Void.class)
@@ -103,9 +102,10 @@ public class UserService {
     public UserResponse updateUser(UpdateUserRequest request, Long currentUserId) {
         User user = userRepository.findByUserUuid(request.getUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with UUID: " + request.getUuid()));
-                
+
         UserProfile profile = userProfileRepository.findByUserId(user.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("UserProfile not found for User UUID: " + request.getUuid()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "UserProfile not found for User UUID: " + request.getUuid()));
 
         profile.setFirstName(request.getFirstName());
         if (request.getLastName() != null) {
@@ -127,7 +127,7 @@ public class UserService {
             profile.setPhoto(request.getPhoto());
         }
         profile.setUpdatedBy(currentUserId);
-        
+
         userProfileRepository.save(profile);
 
         var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
@@ -195,7 +195,7 @@ public class UserService {
     public void deleteUser(UUID uuid, Long currentUserId) {
         User user = userRepository.findByUserUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with UUID: " + uuid));
-        
+
         user.setIsActive(0);
         user.setUpdatedBy(currentUserId);
         userRepository.save(user);
@@ -211,7 +211,7 @@ public class UserService {
     public UserResponse getUserByUuid(UUID uuid) {
         User user = userRepository.findByUserUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with UUID: " + uuid));
-                
+
         UserProfile profile = userProfileRepository.findByUserId(user.getUserId()).orElse(null);
         var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
 
@@ -230,10 +230,12 @@ public class UserService {
 
         UserProfile profile = userProfileRepository.findAll().stream()
                 .filter(p -> {
-                    if (p.getPhone() == null) return false;
+                    if (p.getPhone() == null)
+                        return false;
                     String pClean = p.getPhone().replaceAll("[^0-9]", "");
                     if (cleaned.length() >= 10 && pClean.length() >= 10) {
-                        return pClean.endsWith(cleaned.substring(cleaned.length() - 10)) || cleaned.endsWith(pClean.substring(pClean.length() - 10));
+                        return pClean.endsWith(cleaned.substring(cleaned.length() - 10))
+                                || cleaned.endsWith(pClean.substring(pClean.length() - 10));
                     }
                     return pClean.equals(cleaned);
                 })
@@ -251,12 +253,13 @@ public class UserService {
         var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
         return mapToResponse(user, profile, sportsProfiles);
     }
-    
+
     @Transactional(readOnly = true)
     public List<UserResponse> searchUsers(UserSearchRequest request) {
-        // Simplified search for demonstration. A full implementation might use CriteriaBuilder or QueryDSL
+        // Simplified search for demonstration. A full implementation might use
+        // CriteriaBuilder or QueryDSL
         List<User> users = userRepository.findAll();
-        
+
         return users.stream().map(user -> {
             UserProfile profile = userProfileRepository.findByUserId(user.getUserId()).orElse(null);
             var sportsProfiles = sportsProfileRepository.findByUserId(user.getUserId());
@@ -269,7 +272,7 @@ public class UserService {
         response.setUuid(user.getUserUuid());
         response.setEmail(user.getEmail());
         response.setIsActive(1);
-        
+
         if (profile != null) {
             response.setFirstName(profile.getFirstName());
             response.setLastName(profile.getLastName());
@@ -300,8 +303,7 @@ public class UserService {
                         long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
                                 sp.getSportName(),
                                 sp.getEloRating() != null ? sp.getEloRating() : 0,
-                                sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
-                        );
+                                sp.getMatchesWon() != null ? sp.getMatchesWon() : 0);
                         spr.setGlobalRank((int) (higherPlayers + 1));
                     } catch (Exception e) {
                         spr.setGlobalRank(null);
@@ -361,8 +363,7 @@ public class UserService {
                 long higherPlayers = sportsProfileRepository.countHigherRankedPlayers(
                         sp.getSportName(),
                         sp.getEloRating() != null ? sp.getEloRating() : 0,
-                        sp.getMatchesWon() != null ? sp.getMatchesWon() : 0
-                );
+                        sp.getMatchesWon() != null ? sp.getMatchesWon() : 0);
                 spr.setGlobalRank((int) (higherPlayers + 1));
             } catch (Exception e) {
                 spr.setGlobalRank(null);
@@ -382,11 +383,14 @@ public class UserService {
         User user = userRepository.findByUserUuid(request.getUserUuid())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with UUID: " + request.getUserUuid()));
 
-        if (sportsProfileRepository.findByUserUuidAndSportName(request.getUserUuid(), request.getSportName()).isPresent()) {
-            throw new DuplicateResourceException("Sports Profile already exists for this sport: " + request.getSportName());
+        if (sportsProfileRepository.findByUserUuidAndSportName(request.getUserUuid(), request.getSportName())
+                .isPresent()) {
+            throw new DuplicateResourceException(
+                    "Sports Profile already exists for this sport: " + request.getSportName());
         }
 
-        SportsProfile profile = new SportsProfile(user.getUserId(), user.getUserUuid(), request.getSportName(), request.getCategory());
+        SportsProfile profile = new SportsProfile(user.getUserId(), user.getUserUuid(), request.getSportName(),
+                request.getCategory());
         profile.setCurrentRanking(request.getCurrentRanking());
         profile.setCareerHighlights(request.getCareerHighlights());
         profile.setEloRating(0);
@@ -396,9 +400,9 @@ public class UserService {
         profile.setMatchesLost(0);
         profile.setWinRate(0.0);
         profile.setCurrentStreak(0);
-        
+
         profile = sportsProfileRepository.save(profile);
-        
+
         SportsProfileResponse response = new SportsProfileResponse();
         response.setUuid(profile.getSportsProfileUuid());
         response.setSportName(profile.getSportName());
@@ -415,7 +419,7 @@ public class UserService {
         response.setVerificationStatus(profile.getVerificationStatus());
         response.setCareerHighlights(profile.getCareerHighlights());
         response.setActive(profile.isActive());
-        
+
         return response;
     }
 
@@ -423,19 +427,25 @@ public class UserService {
     public void recordMatchResult(com.athlon.identityservice.user.dto.request.RecordMatchResultRequest request) {
         String sport = request.getSportName() != null ? request.getSportName() : "Badminton";
 
-        SportsProfile winnerProfile = sportsProfileRepository.findByUserUuidAndSportName(request.getWinnerUserUuid(), sport)
+        SportsProfile winnerProfile = sportsProfileRepository
+                .findByUserUuidAndSportName(request.getWinnerUserUuid(), sport)
                 .orElseGet(() -> {
                     var userOpt = userRepository.findByUserUuid(request.getWinnerUserUuid());
-                    if (userOpt.isEmpty()) return null;
-                    SportsProfile sp = new SportsProfile(userOpt.get().getUserId(), request.getWinnerUserUuid(), sport, "Open");
+                    if (userOpt.isEmpty())
+                        return null;
+                    SportsProfile sp = new SportsProfile(userOpt.get().getUserId(), request.getWinnerUserUuid(), sport,
+                            "Open");
                     return sportsProfileRepository.save(sp);
                 });
 
-        SportsProfile loserProfile = sportsProfileRepository.findByUserUuidAndSportName(request.getLoserUserUuid(), sport)
+        SportsProfile loserProfile = sportsProfileRepository
+                .findByUserUuidAndSportName(request.getLoserUserUuid(), sport)
                 .orElseGet(() -> {
                     var userOpt = userRepository.findByUserUuid(request.getLoserUserUuid());
-                    if (userOpt.isEmpty()) return null;
-                    SportsProfile sp = new SportsProfile(userOpt.get().getUserId(), request.getLoserUserUuid(), sport, "Open");
+                    if (userOpt.isEmpty())
+                        return null;
+                    SportsProfile sp = new SportsProfile(userOpt.get().getUserId(), request.getLoserUserUuid(), sport,
+                            "Open");
                     return sportsProfileRepository.save(sp);
                 });
 
@@ -448,17 +458,19 @@ public class UserService {
 
         // Calculate expected probability for winner
         double expectedWinner = 1.0 / (1.0 + Math.pow(10.0, (rLoser - rWinner) / 400.0));
-        
+
         // Standard K-factor = 32
         int delta = (int) Math.round(32 * (1.0 - expectedWinner));
         delta = Math.max(1, delta); // Minimum 1 point change
 
         // Update Winner
         winnerProfile.setEloRating(rWinner + delta);
-        winnerProfile.setTotalMatches((winnerProfile.getTotalMatches() != null ? winnerProfile.getTotalMatches() : 0) + 1);
+        winnerProfile
+                .setTotalMatches((winnerProfile.getTotalMatches() != null ? winnerProfile.getTotalMatches() : 0) + 1);
         winnerProfile.setMatchesWon((winnerProfile.getMatchesWon() != null ? winnerProfile.getMatchesWon() : 0) + 1);
-        int currentWinStreak = winnerProfile.getCurrentStreak() != null && winnerProfile.getCurrentStreak() > 0 
-                ? winnerProfile.getCurrentStreak() + 1 : 1;
+        int currentWinStreak = winnerProfile.getCurrentStreak() != null && winnerProfile.getCurrentStreak() > 0
+                ? winnerProfile.getCurrentStreak() + 1
+                : 1;
         winnerProfile.setCurrentStreak(currentWinStreak);
         double winWinRate = ((double) winnerProfile.getMatchesWon() / winnerProfile.getTotalMatches()) * 100.0;
         winnerProfile.setWinRate(Math.round(winWinRate * 10.0) / 10.0);
@@ -468,8 +480,9 @@ public class UserService {
         loserProfile.setEloRating(Math.max(100, rLoser - delta));
         loserProfile.setTotalMatches((loserProfile.getTotalMatches() != null ? loserProfile.getTotalMatches() : 0) + 1);
         loserProfile.setMatchesLost((loserProfile.getMatchesLost() != null ? loserProfile.getMatchesLost() : 0) + 1);
-        int currentLossStreak = loserProfile.getCurrentStreak() != null && loserProfile.getCurrentStreak() < 0 
-                ? loserProfile.getCurrentStreak() - 1 : -1;
+        int currentLossStreak = loserProfile.getCurrentStreak() != null && loserProfile.getCurrentStreak() < 0
+                ? loserProfile.getCurrentStreak() - 1
+                : -1;
         loserProfile.setCurrentStreak(currentLossStreak);
         double lossWinRate = ((double) loserProfile.getMatchesWon() / loserProfile.getTotalMatches()) * 100.0;
         loserProfile.setWinRate(Math.round(lossWinRate * 10.0) / 10.0);
