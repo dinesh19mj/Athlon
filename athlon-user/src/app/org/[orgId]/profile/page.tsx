@@ -120,33 +120,91 @@ export default function OrgProfilePage() {
 
   // Sports & Disciplines
   const [selectedSports, setSelectedSports] = useState<string[]>(['Badminton']);
+  const [selectedFacilitySport, setSelectedFacilitySport] = useState<string>('Badminton');
   const [customSportInput, setCustomSportInput] = useState('');
 
-  // Type Specific: Academy
-  const [admissionStatus, setAdmissionStatus] = useState('OPEN');
-  const [academyLevels, setAcademyLevels] = useState<string[]>(['Beginner', 'Intermediate', 'Advanced']);
-  const [monthlyFeeMin, setMonthlyFeeMin] = useState<number | ''>(2000);
-  const [monthlyFeeMax, setMonthlyFeeMax] = useState<number | ''>(4500);
-  const [selectedOperatingDays, setSelectedOperatingDays] = useState<string[]>([
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-  ]);
-  const [openingTime, setOpeningTime] = useState('06:00 AM');
-  const [closingTime, setClosingTime] = useState('09:30 PM');
+  // Per-Sport Coaching Configurations
+  interface SportConfig {
+    admissionStatus: string;
+    monthlyFeeMin: number | '';
+    monthlyFeeMax: number | '';
+    academyLevels: string[];
+    totalCourts: number | '';
+    surfaceType: string;
+    operatingDays: string[];
+    openingTime: string;
+    closingTime: string;
+  }
 
-  // Type Specific: Club / Court / Venue
-  const [totalCourts, setTotalCourts] = useState<number | ''>(4);
-  const [surfaceType, setSurfaceType] = useState('Synthetic BWF Mats');
-  const [pricePerHour, setPricePerHour] = useState<number | ''>(400);
+  const defaultSportConfig = (sportName: string): SportConfig => {
+    let surface = 'Synthetic BWF Mats';
+    let courts: number = 4;
+    let minFee = 2000;
+    let maxFee = 4500;
+
+    if (sportName.toLowerCase().includes('cricket')) {
+      surface = 'Turf Nets & Bowling Machines';
+      courts = 3;
+      minFee = 3000;
+      maxFee = 6000;
+    } else if (sportName.toLowerCase().includes('swim')) {
+      surface = 'Olympic 50m Swimming Pool';
+      courts = 1;
+      minFee = 2500;
+      maxFee = 5000;
+    } else if (sportName.toLowerCase().includes('tennis')) {
+      surface = 'Clay / Synthetic Hard Court';
+      courts = 2;
+      minFee = 3000;
+      maxFee = 5500;
+    } else if (sportName.toLowerCase().includes('football')) {
+      surface = 'FIFA Standard AstroTurf';
+      courts = 1;
+      minFee = 2500;
+      maxFee = 4500;
+    }
+
+    return {
+      admissionStatus: 'OPEN',
+      monthlyFeeMin: minFee,
+      monthlyFeeMax: maxFee,
+      academyLevels: ['Beginner', 'Intermediate', 'Advanced'],
+      totalCourts: courts,
+      surfaceType: surface,
+      operatingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      openingTime: '06:00 AM',
+      closingTime: '09:30 PM',
+    };
+  };
+
+  const [sportConfigs, setSportConfigs] = useState<Record<string, SportConfig>>({
+    Badminton: defaultSportConfig('Badminton'),
+  });
+
+  const getActiveSportConfig = (): SportConfig => {
+    const currentSport = selectedFacilitySport || selectedSports[0] || 'Badminton';
+    return sportConfigs[currentSport] || defaultSportConfig(currentSport);
+  };
+
+  const updateActiveSportConfig = (updates: Partial<SportConfig>) => {
+    const currentSport = selectedFacilitySport || selectedSports[0] || 'Badminton';
+    setSportConfigs((prev) => ({
+      ...prev,
+      [currentSport]: {
+        ...(prev[currentSport] || defaultSportConfig(currentSport)),
+        ...updates,
+      },
+    }));
+  };
+
+  // Facility-wide Amenities Checklist
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
     'Wooden Flooring',
     'Air Conditioned',
     'Dedicated Parking',
     'Showers & Changing Rooms',
+    'Locker Facility',
+    'Drinking Water Dispenser',
   ]);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -193,37 +251,41 @@ export default function OrgProfilePage() {
             setBannerPreview(OrganizationService.getBannerUrl(p.banner));
           }
 
+          let loadedSports = ['Badminton'];
           if (p.sportsOffered) {
             const sports = p.sportsOffered
               .split(',')
               .map((s) => s.trim())
               .filter(Boolean);
-            if (sports.length > 0) setSelectedSports(sports);
+            if (sports.length > 0) {
+              loadedSports = sports;
+              setSelectedSports(sports);
+              setSelectedFacilitySport(sports[0]);
+            }
           }
 
-          if (p.admissionStatus) setAdmissionStatus(p.admissionStatus);
-          if (p.academyLevels) {
-            const lvls = p.academyLevels
-              .split(',')
-              .map((l) => l.trim())
-              .filter(Boolean);
-            if (lvls.length > 0) setAcademyLevels(lvls);
-          }
-          setMonthlyFeeMin(p.monthlyFeeMin ?? 2000);
-          setMonthlyFeeMax(p.monthlyFeeMax ?? 4500);
-          if (p.operatingDays) {
-            const days = p.operatingDays
-              .split(',')
-              .map((d) => d.trim())
-              .filter(Boolean);
-            if (days.length > 0) setSelectedOperatingDays(days);
-          }
-          setOpeningTime(p.openingTime || '06:00 AM');
-          setClosingTime(p.closingTime || '09:30 PM');
+          // Initialize sport configs from loaded profile
+          const initialConfigs: Record<string, SportConfig> = {};
+          loadedSports.forEach((sport) => {
+            const def = defaultSportConfig(sport);
+            initialConfigs[sport] = {
+              admissionStatus: p.admissionStatus || def.admissionStatus,
+              academyLevels: p.academyLevels
+                ? p.academyLevels.split(',').map((l) => l.trim()).filter(Boolean)
+                : def.academyLevels,
+              monthlyFeeMin: p.monthlyFeeMin ?? def.monthlyFeeMin,
+              monthlyFeeMax: p.monthlyFeeMax ?? def.monthlyFeeMax,
+              operatingDays: p.operatingDays
+                ? p.operatingDays.split(',').map((d) => d.trim()).filter(Boolean)
+                : def.operatingDays,
+              openingTime: p.openingTime || def.openingTime,
+              closingTime: p.closingTime || def.closingTime,
+              totalCourts: p.totalCourts ?? def.totalCourts,
+              surfaceType: p.surfaceType || def.surfaceType,
+            };
+          });
+          setSportConfigs(initialConfigs);
 
-          setTotalCourts(p.totalCourts ?? 4);
-          setSurfaceType(p.surfaceType || 'Synthetic BWF Mats');
-          setPricePerHour(p.pricePerHour ?? 400);
           if (p.amenities) {
             const am = p.amenities
               .split(',')
@@ -264,14 +326,20 @@ export default function OrgProfilePage() {
 
   // Sport selection toggle
   const toggleSport = (sport: string) => {
-    setSelectedSports((prev) =>
-      prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport]
-    );
+    setSelectedSports((prev) => {
+      const next = prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport];
+      if (next.length > 0 && !next.includes(selectedFacilitySport)) {
+        setSelectedFacilitySport(next[0]);
+      }
+      return next;
+    });
   };
 
   const addCustomSport = () => {
     if (customSportInput.trim() && !selectedSports.includes(customSportInput.trim())) {
-      setSelectedSports((prev) => [...prev, customSportInput.trim()]);
+      const newSport = customSportInput.trim();
+      setSelectedSports((prev) => [...prev, newSport]);
+      setSelectedFacilitySport(newSport);
       setCustomSportInput('');
     }
   };
@@ -283,20 +351,6 @@ export default function OrgProfilePage() {
     );
   };
 
-  // Day toggle
-  const toggleDay = (day: string) => {
-    setSelectedOperatingDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  };
-
-  // Level toggle
-  const toggleLevel = (lvl: string) => {
-    setAcademyLevels((prev) =>
-      prev.includes(lvl) ? prev.filter((l) => l !== lvl) : [...prev, lvl]
-    );
-  };
-
   // Save Profile Handler
   const handleSave = async () => {
     setSaving(true);
@@ -304,6 +358,8 @@ export default function OrgProfilePage() {
     setSuccessMsg('');
 
     try {
+      const primaryConfig = getActiveSportConfig();
+
       if (logoFile || bannerFile) {
         // Use Multipart FormData
         const formData = new FormData();
@@ -331,17 +387,16 @@ export default function OrgProfilePage() {
         formData.append('socialYoutube', socialYoutube);
 
         formData.append('sportsOffered', selectedSports.join(', '));
-        formData.append('admissionStatus', admissionStatus);
-        formData.append('academyLevels', academyLevels.join(', '));
-        if (monthlyFeeMin) formData.append('monthlyFeeMin', monthlyFeeMin.toString());
-        if (monthlyFeeMax) formData.append('monthlyFeeMax', monthlyFeeMax.toString());
-        formData.append('operatingDays', selectedOperatingDays.join(', '));
-        formData.append('openingTime', openingTime);
-        formData.append('closingTime', closingTime);
+        formData.append('admissionStatus', primaryConfig.admissionStatus);
+        formData.append('academyLevels', primaryConfig.academyLevels.join(', '));
+        if (primaryConfig.monthlyFeeMin) formData.append('monthlyFeeMin', primaryConfig.monthlyFeeMin.toString());
+        if (primaryConfig.monthlyFeeMax) formData.append('monthlyFeeMax', primaryConfig.monthlyFeeMax.toString());
+        formData.append('operatingDays', primaryConfig.operatingDays.join(', '));
+        formData.append('openingTime', primaryConfig.openingTime);
+        formData.append('closingTime', primaryConfig.closingTime);
 
-        if (totalCourts) formData.append('totalCourts', totalCourts.toString());
-        formData.append('surfaceType', surfaceType);
-        if (pricePerHour) formData.append('pricePerHour', pricePerHour.toString());
+        if (primaryConfig.totalCourts) formData.append('totalCourts', primaryConfig.totalCourts.toString());
+        formData.append('surfaceType', primaryConfig.surfaceType);
         formData.append('amenities', selectedAmenities.join(', '));
 
         if (logoFile) formData.append('logoFile', logoFile);
@@ -377,16 +432,15 @@ export default function OrgProfilePage() {
           logo: logoUrl || undefined,
           banner: bannerUrl || undefined,
           sportsOffered: selectedSports.join(', '),
-          admissionStatus,
-          academyLevels: academyLevels.join(', '),
-          monthlyFeeMin: monthlyFeeMin ? Number(monthlyFeeMin) : undefined,
-          monthlyFeeMax: monthlyFeeMax ? Number(monthlyFeeMax) : undefined,
-          operatingDays: selectedOperatingDays.join(', '),
-          openingTime,
-          closingTime,
-          totalCourts: totalCourts ? Number(totalCourts) : undefined,
-          surfaceType,
-          pricePerHour: pricePerHour ? Number(pricePerHour) : undefined,
+          admissionStatus: primaryConfig.admissionStatus,
+          academyLevels: primaryConfig.academyLevels.join(', '),
+          monthlyFeeMin: primaryConfig.monthlyFeeMin ? Number(primaryConfig.monthlyFeeMin) : undefined,
+          monthlyFeeMax: primaryConfig.monthlyFeeMax ? Number(primaryConfig.monthlyFeeMax) : undefined,
+          operatingDays: primaryConfig.operatingDays.join(', '),
+          openingTime: primaryConfig.openingTime,
+          closingTime: primaryConfig.closingTime,
+          totalCourts: primaryConfig.totalCourts ? Number(primaryConfig.totalCourts) : undefined,
+          surfaceType: primaryConfig.surfaceType,
           amenities: selectedAmenities.join(', '),
         };
 
@@ -927,208 +981,278 @@ export default function OrgProfilePage() {
         {/* Tab 4: Specialty & Facility Configuration */}
         {activeTab === 'facility' && (
           <div className="mt-6 space-y-6 animate-in fade-in duration-200">
-            {/* For ACADEMY: Admissions, Fees & Batches */}
-            {type === 'ACADEMY' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Admission Status & Fees */}
-                <div className="p-6 rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm space-y-4">
-                  <h2 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    <span>Admission & Coaching Fees</span>
-                  </h2>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground/70">Current Admission Status</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { id: 'OPEN', label: 'Admissions Open', color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' },
-                        { id: 'FEW_LEFT', label: 'Few Spots Left', color: 'text-yellow-400 border-yellow-500/40 bg-yellow-500/10' },
-                        { id: 'WAITLIST', label: 'Waitlist Only', color: 'text-blue-400 border-blue-500/40 bg-blue-500/10' },
-                        { id: 'CLOSED', label: 'Admissions Closed', color: 'text-red-400 border-red-500/40 bg-red-500/10' },
-                      ].map((st) => (
-                        <button
-                          key={st.id}
-                          type="button"
-                          onClick={() => setAdmissionStatus(st.id)}
-                          className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all ${admissionStatus === st.id ? `${st.color} font-black ring-1 ring-primary` : 'border-white/10 bg-white/[0.02] text-foreground/60'
-                            }`}
-                        >
-                          {st.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/70">Min Monthly Fee (₹)</label>
-                      <input
-                        type="number"
-                        value={monthlyFeeMin}
-                        onChange={(e) => setMonthlyFeeMin(e.target.value ? Number(e.target.value) : '')}
-                        placeholder="e.g. 2000"
-                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/70">Max Monthly Fee (₹)</label>
-                      <input
-                        type="number"
-                        value={monthlyFeeMax}
-                        onChange={(e) => setMonthlyFeeMax(e.target.value ? Number(e.target.value) : '')}
-                        placeholder="e.g. 5000"
-                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Coaching Levels */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground/70">Coaching Levels Supported</label>
-                    <div className="flex flex-wrap gap-2">
-                      {['Beginner', 'Intermediate', 'Advanced', 'Elite Pro', 'Summer Camp'].map((lvl) => {
-                        const isSelected = academyLevels.includes(lvl);
-                        return (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => toggleLevel(lvl)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${isSelected
-                                ? 'bg-primary/20 text-primary border-primary/40 font-black'
-                                : 'bg-white/[0.04] text-foreground/50 border-white/10'
-                              }`}
-                          >
-                            {lvl}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Timings & Days */}
-                <div className="p-6 rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm space-y-4">
-                  <h2 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>Operating Hours & Active Days</span>
-                  </h2>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-foreground/70">Days Open</label>
-                    <div className="flex gap-2">
-                      {DAYS_OF_WEEK.map((day) => {
-                        const isSelected = selectedOperatingDays.includes(day);
-                        return (
-                          <button
-                            key={day}
-                            type="button"
-                            onClick={() => toggleDay(day)}
-                            className={`w-10 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center border ${isSelected
-                                ? 'bg-primary text-black font-black border-primary shadow-md shadow-primary/20'
-                                : 'bg-white/[0.04] text-foreground/60 border-white/10'
-                              }`}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/70">Opening Time</label>
-                      <input
-                        type="text"
-                        value={openingTime}
-                        onChange={(e) => setOpeningTime(e.target.value)}
-                        placeholder="06:00 AM"
-                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-foreground/70">Closing Time</label>
-                      <input
-                        type="text"
-                        value={closingTime}
-                        onChange={(e) => setClosingTime(e.target.value)}
-                        placeholder="10:00 PM"
-                        className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
-                      />
-                    </div>
-                  </div>
-                </div>
+            {/* Multi-Sport Selector Bar */}
+            <div className="p-4 rounded-2xl border border-white/10 bg-surface/40 backdrop-blur-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground/70 uppercase tracking-wider">
+                  Configure Coaching Per Sport ({selectedSports.length} Selected)
+                </span>
+                <span className="text-[11px] text-primary font-medium">
+                  Switch sport tab to edit its specific fees, schedule & training courts
+                </span>
               </div>
-            )}
-
-            {/* Courts, Surface & Amenities Checklist (For all org types) */}
-            <div className="p-6 rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm space-y-6">
-              <h2 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
-                <Layers className="w-4 h-4" />
-                <span>Court Specifications & Premium Amenities</span>
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground/70">Total Courts / Pitches</label>
-                  <input
-                    type="number"
-                    value={totalCourts}
-                    onChange={(e) => setTotalCourts(e.target.value ? Number(e.target.value) : '')}
-                    placeholder="e.g. 6"
-                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground/70">Court Surface Type</label>
-                  <input
-                    type="text"
-                    value={surfaceType}
-                    onChange={(e) => setSurfaceType(e.target.value)}
-                    placeholder="e.g. Wooden + Synthetic BWF Mats"
-                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-foreground/70">Hourly Booking Rate (₹/hr)</label>
-                  <input
-                    type="number"
-                    value={pricePerHour}
-                    onChange={(e) => setPricePerHour(e.target.value ? Number(e.target.value) : '')}
-                    placeholder="e.g. 450"
-                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
-                  />
-                </div>
-              </div>
-
-              {/* Amenities Grid */}
-              <div className="space-y-2 pt-2 border-t border-white/5">
-                <label className="text-xs font-bold text-foreground/70">Available Amenities & Features</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                  {AVAILABLE_AMENITIES.map((amenity) => {
-                    const isSelected = selectedAmenities.includes(amenity);
-                    return (
-                      <button
-                        key={amenity}
-                        type="button"
-                        onClick={() => toggleAmenity(amenity)}
-                        className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all flex items-center justify-between ${isSelected
-                            ? 'bg-primary/15 text-primary border-primary/40 font-black shadow-sm'
-                            : 'bg-white/[0.02] text-foreground/60 border-white/10 hover:border-white/20'
-                          }`}
-                      >
-                        <span className="truncate">{amenity}</span>
-                        {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                {selectedSports.map((sport) => {
+                  const isSelected = (selectedFacilitySport || selectedSports[0]) === sport;
+                  const cfg = sportConfigs[sport] || defaultSportConfig(sport);
+                  return (
+                    <button
+                      key={sport}
+                      type="button"
+                      onClick={() => setSelectedFacilitySport(sport)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border whitespace-nowrap ${
+                        isSelected
+                          ? 'bg-primary text-black border-primary font-black shadow-md shadow-primary/20 scale-105'
+                          : 'bg-white/[0.04] text-foreground/70 border-white/10 hover:border-white/20 hover:text-foreground'
+                      }`}
+                    >
+                      <span>{sport}</span>
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          cfg.admissionStatus === 'OPEN'
+                            ? 'bg-emerald-400'
+                            : cfg.admissionStatus === 'FEW_LEFT'
+                            ? 'bg-yellow-400'
+                            : cfg.admissionStatus === 'WAITLIST'
+                            ? 'bg-blue-400'
+                            : 'bg-red-400'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {/* For ACADEMY: Per-Sport Coaching Configuration */}
+            {(() => {
+              const currentSport = selectedFacilitySport || selectedSports[0] || 'Badminton';
+              const currentConfig = getActiveSportConfig();
+
+              return (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 1. Admission Status & Coaching Fees for Current Sport */}
+                    <div className="p-6 rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          <span>{currentSport} Admissions & Coaching Fees</span>
+                        </h2>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/10 text-primary border border-primary/20">
+                          {currentSport}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground/70">Admission Status for {currentSport}</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 'OPEN', label: 'Admissions Open', color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' },
+                            { id: 'FEW_LEFT', label: 'Few Spots Left', color: 'text-yellow-400 border-yellow-500/40 bg-yellow-500/10' },
+                            { id: 'WAITLIST', label: 'Waitlist Only', color: 'text-blue-400 border-blue-500/40 bg-blue-500/10' },
+                            { id: 'CLOSED', label: 'Admissions Closed', color: 'text-red-400 border-red-500/40 bg-red-500/10' },
+                          ].map((st) => (
+                            <button
+                              key={st.id}
+                              type="button"
+                              onClick={() => updateActiveSportConfig({ admissionStatus: st.id })}
+                              className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all ${
+                                currentConfig.admissionStatus === st.id
+                                  ? `${st.color} font-black ring-1 ring-primary`
+                                  : 'border-white/10 bg-white/[0.02] text-foreground/60'
+                              }`}
+                            >
+                              {st.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-foreground/70">Min Monthly Fee (₹)</label>
+                          <input
+                            type="number"
+                            value={currentConfig.monthlyFeeMin ?? ''}
+                            onChange={(e) => updateActiveSportConfig({ monthlyFeeMin: e.target.value ? Number(e.target.value) : '' })}
+                            placeholder="e.g. 2000"
+                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-foreground/70">Max Monthly Fee (₹)</label>
+                          <input
+                            type="number"
+                            value={currentConfig.monthlyFeeMax ?? ''}
+                            onChange={(e) => updateActiveSportConfig({ monthlyFeeMax: e.target.value ? Number(e.target.value) : '' })}
+                            placeholder="e.g. 5000"
+                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Coaching Levels */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground/70">Coaching Levels ({currentSport})</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Beginner', 'Intermediate', 'Advanced', 'Elite Pro', 'Summer Camp', 'Weekend Batch'].map((lvl) => {
+                            const isSelected = currentConfig.academyLevels.includes(lvl);
+                            return (
+                              <button
+                                key={lvl}
+                                type="button"
+                                onClick={() => {
+                                  const updated = isSelected
+                                    ? currentConfig.academyLevels.filter((l) => l !== lvl)
+                                    : [...currentConfig.academyLevels, lvl];
+                                  updateActiveSportConfig({ academyLevels: updated });
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                  isSelected
+                                    ? 'bg-primary/20 text-primary border-primary/40 font-black'
+                                    : 'bg-white/[0.04] text-foreground/50 border-white/10'
+                                }`}
+                              >
+                                {lvl}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Court Specifications & Timings for Current Sport */}
+                    <div className="p-6 rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>{currentSport} Training Courts & Hours</span>
+                        </h2>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/10 text-primary border border-primary/20">
+                          {currentSport}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-foreground/70">Dedicated Courts / Nets</label>
+                          <input
+                            type="number"
+                            value={currentConfig.totalCourts ?? ''}
+                            onChange={(e) => updateActiveSportConfig({ totalCourts: e.target.value ? Number(e.target.value) : '' })}
+                            placeholder="e.g. 6"
+                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-foreground/70">Court Surface Type</label>
+                          <input
+                            type="text"
+                            value={currentConfig.surfaceType || ''}
+                            onChange={(e) => updateActiveSportConfig({ surfaceType: e.target.value })}
+                            placeholder="e.g. Synthetic BWF Mats"
+                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-foreground/70">Active Coaching Days ({currentSport})</label>
+                        <div className="flex gap-2">
+                          {DAYS_OF_WEEK.map((day) => {
+                            const isSelected = currentConfig.operatingDays.includes(day);
+                            return (
+                              <button
+                                key={day}
+                                type="button"
+                                onClick={() => {
+                                  const updated = isSelected
+                                    ? currentConfig.operatingDays.filter((d) => d !== day)
+                                    : [...currentConfig.operatingDays, day];
+                                  updateActiveSportConfig({ operatingDays: updated });
+                                }}
+                                className={`w-10 h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center border ${
+                                  isSelected
+                                    ? 'bg-primary text-black font-black border-primary shadow-md shadow-primary/20'
+                                    : 'bg-white/[0.04] text-foreground/60 border-white/10'
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-foreground/70">Session Starts At</label>
+                          <input
+                            type="text"
+                            value={currentConfig.openingTime || ''}
+                            onChange={(e) => updateActiveSportConfig({ openingTime: e.target.value })}
+                            placeholder="06:00 AM"
+                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-foreground/70">Session Ends At</label>
+                          <input
+                            type="text"
+                            value={currentConfig.closingTime || ''}
+                            onChange={(e) => updateActiveSportConfig({ closingTime: e.target.value })}
+                            placeholder="09:30 PM"
+                            className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-background/60 text-xs font-semibold text-foreground focus:outline-none focus:border-primary/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Academy-wide Facilities & Amenities Checklist */}
+                  <div className="p-6 rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm space-y-4">
+                    <div>
+                      <h2 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                        <Layers className="w-4 h-4" />
+                        <span>Academy Infrastructure & Amenities</span>
+                      </h2>
+                      <p className="text-xs text-foreground/50 mt-1">
+                        Select facility amenities available to enrolled students and visiting parents.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-2">
+                      {AVAILABLE_AMENITIES.map((amenity) => {
+                        const isSelected = selectedAmenities.includes(amenity);
+                        return (
+                          <button
+                            key={amenity}
+                            type="button"
+                            onClick={() => {
+                              setSelectedAmenities((prev) =>
+                                prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]
+                              );
+                            }}
+                            className={`p-3 rounded-2xl border text-xs font-bold text-left transition-all flex items-center justify-between ${
+                              isSelected
+                                ? 'bg-primary/15 text-primary border-primary/40 font-black shadow-sm'
+                                : 'bg-white/[0.02] text-foreground/60 border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            <span className="truncate">{amenity}</span>
+                            {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -1174,11 +1298,18 @@ export default function OrgProfilePage() {
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-primary text-black uppercase shadow-md">
                       {type}
                     </span>
-                    {admissionStatus === 'OPEN' && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-md">
-                        Admissions Open
-                      </span>
-                    )}
+                    {(() => {
+                      const prevCfg = getActiveSportConfig();
+                      return prevCfg.admissionStatus === 'OPEN' ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-md">
+                          Admissions Open
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500 text-black shadow-md">
+                          {prevCfg.admissionStatus}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-black text-amber-400 border border-white/10">
@@ -1233,8 +1364,15 @@ export default function OrgProfilePage() {
                     <div>
                       <div className="text-[10px] text-foreground/50 font-bold">Coaching Fee</div>
                       <div className="text-xs font-black text-primary">
-                        {monthlyFeeMin ? `₹${monthlyFeeMin.toLocaleString()}` : '₹2,000'}
-                        {monthlyFeeMax ? ` - ₹${monthlyFeeMax.toLocaleString()}` : ''}
+                        {(() => {
+                          const prevCfg = getActiveSportConfig();
+                          return (
+                            <>
+                              {prevCfg.monthlyFeeMin ? `₹${prevCfg.monthlyFeeMin.toLocaleString()}` : '₹2,000'}
+                              {prevCfg.monthlyFeeMax ? ` - ₹${prevCfg.monthlyFeeMax.toLocaleString()}` : ''}
+                            </>
+                          );
+                        })()}
                         <span className="text-[10px] text-foreground/50 font-normal">/mo</span>
                       </div>
                     </div>
