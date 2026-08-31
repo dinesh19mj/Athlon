@@ -30,6 +30,7 @@ public class OrganizationProfileResponse {
     private String surfaceType;
     private String openingTime;
     private String closingTime;
+    private Double pricePerHour;
     private String amenities;
     private String bio;
     private Integer establishedYear;
