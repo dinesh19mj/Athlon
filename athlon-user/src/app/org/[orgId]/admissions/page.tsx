@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Sparkles,
-  Award,
   Users,
   Calendar,
   Clock,
@@ -20,9 +19,9 @@ import {
   ShieldCheck,
   Dumbbell,
   Layers,
+  MapPin,
+  Building2,
   ChevronRight,
-  UserCheck,
-  Flame,
   User,
   Check,
   Sliders,
@@ -41,14 +40,24 @@ interface CoachingTier {
   description: string;
 }
 
+interface AcademyVenueCourt {
+  id: string;
+  venueName: string; // e.g. "Apex Badminton Arena - Main Campus"
+  location: string; // e.g. "Indiranagar Campus, Bangalore"
+  surfaceType: string; // e.g. "Synthetic BWF Mat", "Wooden Flooring", "Artificial Turf"
+  courtsCount: number; // e.g. 4
+  courtIdentifiers: string; // e.g. "Courts 1, 2, 3 & 4"
+  status: 'ACTIVE' | 'MAINTENANCE';
+}
+
 interface CoachingBatch {
   id: string;
   name: string;
   ageGroup: string;
-  days: string[];
-  timing: string;
+  days: string; // e.g. "Mon, Wed, Fri"
+  timing: string; // e.g. "06:30 AM - 07:30 AM"
   coachName: string;
-  allocatedCourts: string;
+  venueCourtId: string; // references AcademyVenueCourt or text description
   maxCapacity: number;
   enrolledCount: number;
 }
@@ -59,6 +68,7 @@ interface SportAdmissionsConfig {
   seasonName: string;
   headCoach: string;
   tiers: CoachingTier[];
+  venues: AcademyVenueCourt[];
   batches: CoachingBatch[];
 }
 
@@ -118,15 +128,35 @@ const INITIAL_CONFIGS: Record<string, SportAdmissionsConfig> = {
         description: 'State and national circuit training with match strategy.',
       },
     ],
+    venues: [
+      {
+        id: 'v1',
+        venueName: 'Apex Badminton Arena - Main Campus',
+        location: 'Indiranagar Campus, 100ft Road',
+        surfaceType: 'Synthetic BWF Mat',
+        courtsCount: 4,
+        courtIdentifiers: 'Courts 1, 2, 3 & 4',
+        status: 'ACTIVE',
+      },
+      {
+        id: 'v2',
+        venueName: 'Apex Smash Hub - Branch 2',
+        location: 'HSR Layout, Sector 4',
+        surfaceType: 'Wooden Flooring',
+        courtsCount: 3,
+        courtIdentifiers: 'Courts A, B & C',
+        status: 'ACTIVE',
+      },
+    ],
     batches: [
       {
         id: 'b1',
         name: 'Morning Juniors',
         ageGroup: 'Under 14 (Ages 8-13)',
-        days: ['Mon', 'Wed', 'Fri'],
+        days: 'Mon, Wed, Fri',
         timing: '06:30 AM - 07:30 AM',
         coachName: 'Coach Suresh',
-        allocatedCourts: 'Courts 1 & 2',
+        venueCourtId: 'Apex Badminton Arena - Main Campus (Courts 1 & 2)',
         maxCapacity: 16,
         enrolledCount: 12,
       },
@@ -134,10 +164,10 @@ const INITIAL_CONFIGS: Record<string, SportAdmissionsConfig> = {
         id: 'b2',
         name: 'Evening Squad',
         ageGroup: 'Under 19 & State Prep',
-        days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        days: 'Mon - Fri',
         timing: '04:30 PM - 06:30 PM',
         coachName: 'Coach Rajesh Kumar',
-        allocatedCourts: 'Courts 1, 2 & 3',
+        venueCourtId: 'Apex Badminton Arena - Main Campus (Courts 1, 2 & 3)',
         maxCapacity: 14,
         enrolledCount: 13,
       },
@@ -145,10 +175,10 @@ const INITIAL_CONFIGS: Record<string, SportAdmissionsConfig> = {
         id: 'b3',
         name: 'Weekend Adults',
         ageGroup: 'Adults (18+)',
-        days: ['Sat', 'Sun'],
+        days: 'Sat, Sun',
         timing: '07:00 AM - 09:00 AM',
         coachName: 'Coach Suresh',
-        allocatedCourts: 'Courts 3 & 4',
+        venueCourtId: 'Apex Smash Hub - Branch 2 (Courts A & B)',
         maxCapacity: 12,
         enrolledCount: 8,
       },
@@ -171,8 +201,8 @@ export default function OrganizationAdmissionsPage() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Mobile View Section Filter ('all' | 'tiers' | 'batches' | 'intake')
-  const [mobileTab, setMobileTab] = useState<'all' | 'tiers' | 'batches' | 'intake'>('all');
+  // Mobile View Section Filter ('all' | 'tiers' | 'venues' | 'batches' | 'intake')
+  const [mobileTab, setMobileTab] = useState<'all' | 'tiers' | 'venues' | 'batches' | 'intake'>('all');
 
   // Load sports from org profile if exists
   useEffect(() => {
@@ -206,7 +236,7 @@ export default function OrganizationAdmissionsPage() {
     tiers: [
       {
         id: '1',
-        name: 'Regular Training',
+        name: 'Regular Training Plan',
         level: 'All Levels',
         frequency: '3 Days / Week',
         monthlyFee: 3000,
@@ -214,15 +244,26 @@ export default function OrganizationAdmissionsPage() {
         description: `Standard structured coaching program for ${selectedSport}.`,
       },
     ],
+    venues: [
+      {
+        id: 'v1',
+        venueName: `${selectedSport} Center - Main Campus`,
+        location: 'Main Training Campus',
+        surfaceType: 'Standard Surface',
+        courtsCount: 2,
+        courtIdentifiers: 'Court 1 & 2',
+        status: 'ACTIVE',
+      },
+    ],
     batches: [
       {
         id: 'b1',
         name: 'Morning Batch',
         ageGroup: 'All Ages',
-        days: ['Mon', 'Wed', 'Fri'],
+        days: 'Mon, Wed, Fri',
         timing: '06:00 AM - 07:30 AM',
         coachName: 'Lead Coach',
-        allocatedCourts: 'Court 1',
+        venueCourtId: `${selectedSport} Center - Main Campus (Court 1)`,
         maxCapacity: 15,
         enrolledCount: 6,
       },
@@ -239,6 +280,7 @@ export default function OrganizationAdmissionsPage() {
     });
   };
 
+  // --- Dynamic Fee Plan Handlers ---
   const handleAddTier = () => {
     const newTier: CoachingTier = {
       id: Date.now().toString(),
@@ -246,7 +288,7 @@ export default function OrganizationAdmissionsPage() {
       level: 'Intermediate',
       frequency: '3 Days / Week',
       monthlyFee: 3000,
-      description: 'Comprehensive coaching schedule focusing on skill enhancement.',
+      description: 'Comprehensive skill development program.',
     };
     updateCurrentConfig((prev) => ({
       ...prev,
@@ -268,15 +310,50 @@ export default function OrganizationAdmissionsPage() {
     }));
   };
 
+  // --- Dynamic Venue & Court Handlers ---
+  const handleAddVenue = () => {
+    const newVenue: AcademyVenueCourt = {
+      id: Date.now().toString(),
+      venueName: 'New Training Venue / Campus',
+      location: 'Campus Address / Area',
+      surfaceType: 'Synthetic BWF Mat',
+      courtsCount: 2,
+      courtIdentifiers: 'Court 1 & 2',
+      status: 'ACTIVE',
+    };
+    updateCurrentConfig((prev) => ({
+      ...prev,
+      venues: [...prev.venues, newVenue],
+    }));
+  };
+
+  const handleRemoveVenue = (venueId: string) => {
+    updateCurrentConfig((prev) => ({
+      ...prev,
+      venues: prev.venues.filter((v) => v.id !== venueId),
+    }));
+  };
+
+  const handleUpdateVenue = (venueId: string, field: keyof AcademyVenueCourt, value: any) => {
+    updateCurrentConfig((prev) => ({
+      ...prev,
+      venues: prev.venues.map((v) => (v.id === venueId ? { ...v, [field]: value } : v)),
+    }));
+  };
+
+  // --- Dynamic Student Batch Handlers ---
   const handleAddBatch = () => {
+    const defaultVenueName =
+      currentConfig.venues.length > 0 ? currentConfig.venues[0].venueName : 'Main Campus';
+
     const newBatch: CoachingBatch = {
       id: Date.now().toString(),
       name: 'New Batch',
       ageGroup: 'All Ages',
-      days: ['Tue', 'Thu', 'Sat'],
+      days: 'Mon, Wed, Fri',
       timing: '05:30 PM - 07:00 PM',
       coachName: currentConfig.headCoach || 'Lead Coach',
-      allocatedCourts: 'Court 1',
+      venueCourtId: defaultVenueName,
       maxCapacity: 15,
       enrolledCount: 0,
     };
@@ -305,7 +382,7 @@ export default function OrganizationAdmissionsPage() {
     setSuccessMsg('');
     try {
       await new Promise((res) => setTimeout(res, 500));
-      setSuccessMsg(`Admissions for ${selectedSport} saved!`);
+      setSuccessMsg(`Admissions & coaching for ${selectedSport} saved successfully!`);
       setTimeout(() => setSuccessMsg(''), 4000);
     } finally {
       setSaving(false);
@@ -313,6 +390,11 @@ export default function OrganizationAdmissionsPage() {
   };
 
   // Quick summary counts
+  const totalVenuesCount = currentConfig.venues.length;
+  const totalCourtsAcrossVenues = currentConfig.venues.reduce(
+    (sum, v) => sum + (v.courtsCount || 0),
+    0
+  );
   const totalCapacity = currentConfig.batches.reduce((sum, b) => sum + (b.maxCapacity || 0), 0);
   const totalEnrolled = currentConfig.batches.reduce((sum, b) => sum + (b.enrolledCount || 0), 0);
 
@@ -322,7 +404,9 @@ export default function OrganizationAdmissionsPage() {
         <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center animate-pulse">
           <Sparkles className="w-5 h-5 text-emerald-400" />
         </div>
-        <p className="text-zinc-400 font-medium text-xs tracking-wider uppercase">Loading Admissions Hub...</p>
+        <p className="text-zinc-400 font-medium text-xs tracking-wider uppercase">
+          Loading Admissions Studio...
+        </p>
       </div>
     );
   }
@@ -347,11 +431,11 @@ export default function OrganizationAdmissionsPage() {
                 Admissions & Coaching
               </h1>
               <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Academy Hub
+                Academy Studio
               </span>
             </div>
             <p className="text-xs text-zinc-400 truncate">
-              Manage plans, fee structures, and student batches
+              Manage plans, venues & courts, and student batches
             </p>
           </div>
         </div>
@@ -360,7 +444,7 @@ export default function OrganizationAdmissionsPage() {
           type="button"
           onClick={handleSaveAll}
           disabled={saving}
-          className="hidden sm:inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-zinc-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50 flex-shrink-0"
+          className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-zinc-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50 flex-shrink-0"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Admissions
@@ -414,35 +498,44 @@ export default function OrganizationAdmissionsPage() {
         })}
       </div>
 
-      {/* Quick Summary Strip for Selected Sport */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 text-center sm:text-left flex flex-col justify-center">
+      {/* ══════════════════════════════════════════════════════════════════════
+          SUMMARY METRICS STRIP
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Fee Plans</div>
-          <div className="text-base sm:text-xl font-extrabold text-white mt-0.5">
-            {currentConfig.tiers.length} <span className="text-xs font-medium text-zinc-400">Tiers</span>
+          <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
+            {currentConfig.tiers.length} <span className="text-xs font-medium text-zinc-400">Plans</span>
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 text-center sm:text-left flex flex-col justify-center">
+        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
+          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Venues & Courts</div>
+          <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
+            {totalVenuesCount} <span className="text-xs font-medium text-zinc-400">Venues</span> ({totalCourtsAcrossVenues} Courts)
+          </div>
+        </div>
+
+        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Batches</div>
-          <div className="text-base sm:text-xl font-extrabold text-white mt-0.5">
-            {currentConfig.batches.length} <span className="text-xs font-medium text-zinc-400">Slots</span>
+          <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
+            {currentConfig.batches.length} <span className="text-xs font-medium text-zinc-400">Batches</span>
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 text-center sm:text-left flex flex-col justify-center">
+        <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Enrolled</div>
-          <div className="text-base sm:text-xl font-extrabold text-emerald-400 mt-0.5">
-            {totalEnrolled} <span className="text-xs font-medium text-zinc-500">/ {totalCapacity}</span>
+          <div className="text-base sm:text-lg font-extrabold text-emerald-400 mt-0.5">
+            {totalEnrolled} <span className="text-xs font-medium text-zinc-500">/ {totalCapacity} seats</span>
           </div>
         </div>
       </div>
 
-      {/* Mobile Sub-Tab Segmenter (Visible on mobile for focus) */}
-      <div className="sm:hidden flex p-1 rounded-xl bg-zinc-900/80 border border-zinc-800 gap-1 text-xs">
+      {/* Mobile Sub-Tab Segmenter (For focused editing on phones) */}
+      <div className="sm:hidden flex p-1 rounded-xl bg-zinc-900/80 border border-zinc-800 gap-1 text-xs overflow-x-auto scrollbar-none">
         <button
           onClick={() => setMobileTab('all')}
-          className={`flex-1 py-1.5 rounded-lg font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
             mobileTab === 'all' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
           }`}
         >
@@ -450,15 +543,23 @@ export default function OrganizationAdmissionsPage() {
         </button>
         <button
           onClick={() => setMobileTab('tiers')}
-          className={`flex-1 py-1.5 rounded-lg font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
             mobileTab === 'tiers' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
           }`}
         >
           Plans ({currentConfig.tiers.length})
         </button>
         <button
+          onClick={() => setMobileTab('venues')}
+          className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
+            mobileTab === 'venues' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
+          }`}
+        >
+          Venues ({currentConfig.venues.length})
+        </button>
+        <button
           onClick={() => setMobileTab('batches')}
-          className={`flex-1 py-1.5 rounded-lg font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
             mobileTab === 'batches' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
           }`}
         >
@@ -466,7 +567,7 @@ export default function OrganizationAdmissionsPage() {
         </button>
         <button
           onClick={() => setMobileTab('intake')}
-          className={`flex-1 py-1.5 rounded-lg font-bold transition ${
+          className={`px-3 py-1.5 rounded-lg font-bold transition flex-shrink-0 ${
             mobileTab === 'intake' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
           }`}
         >
@@ -475,7 +576,7 @@ export default function OrganizationAdmissionsPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SECTION 1: INTAKE & HEAD COACH
+          SECTION 1: INTAKE & LEAD COACH
          ══════════════════════════════════════════════════════════════════════ */}
       {(mobileTab === 'all' || mobileTab === 'intake') && (
         <div className="bg-zinc-900/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-zinc-800/80 space-y-4 shadow-xl animate-in fade-in">
@@ -675,7 +776,136 @@ export default function OrganizationAdmissionsPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          SECTION 3: STUDENT BATCHES & COURT ALLOCATION
+          SECTION 3: TRAINING VENUES & COURTS (MULTI-CAMPUS)
+         ══════════════════════════════════════════════════════════════════════ */}
+      {(mobileTab === 'all' || mobileTab === 'venues') && (
+        <div className="bg-zinc-900/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-zinc-800/80 space-y-4 shadow-xl animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                Training Venues & Courts ({currentConfig.venues.length})
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddVenue}
+              className="flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-bold border border-zinc-700 transition active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              Add Venue
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {currentConfig.venues.map((venue) => (
+              <div
+                key={venue.id}
+                className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3.5 shadow-md flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                        Venue #{venue.id.slice(-2)}
+                      </span>
+                    </div>
+
+                    {currentConfig.venues.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVenue(venue.id)}
+                        className="text-zinc-500 hover:text-rose-400 p-1 transition"
+                        title="Delete Venue"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      Venue / Arena Name
+                    </label>
+                    <input
+                      type="text"
+                      value={venue.venueName}
+                      onChange={(e) => handleUpdateVenue(venue.id, 'venueName', e.target.value)}
+                      placeholder="e.g. ABC Badminton Arena, Main Campus"
+                      className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      Campus Location / Address
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-2.5 top-2 w-3.5 h-3.5 text-zinc-500" />
+                      <input
+                        type="text"
+                        value={venue.location}
+                        onChange={(e) => handleUpdateVenue(venue.id, 'location', e.target.value)}
+                        placeholder="e.g. Indiranagar, 100ft Road, Bangalore"
+                        className="w-full pl-8 pr-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                        Surface / Mat Type
+                      </label>
+                      <input
+                        type="text"
+                        value={venue.surfaceType}
+                        onChange={(e) => handleUpdateVenue(venue.id, 'surfaceType', e.target.value)}
+                        placeholder="e.g. Synthetic BWF Mat"
+                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                        Total Courts / Units
+                      </label>
+                      <input
+                        type="number"
+                        value={venue.courtsCount}
+                        onChange={(e) =>
+                          handleUpdateVenue(venue.id, 'courtsCount', Number(e.target.value))
+                        }
+                        placeholder="4"
+                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
+                      Court Identifiers / Range
+                    </label>
+                    <input
+                      type="text"
+                      value={venue.courtIdentifiers}
+                      onChange={(e) =>
+                        handleUpdateVenue(venue.id, 'courtIdentifiers', e.target.value)
+                      }
+                      placeholder="e.g. Courts 1, 2, 3 & 4"
+                      className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          SECTION 4: STUDENT BATCHES
          ══════════════════════════════════════════════════════════════════════ */}
       {(mobileTab === 'all' || mobileTab === 'batches') && (
         <div className="bg-zinc-900/60 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-zinc-800/80 space-y-4 shadow-xl animate-in fade-in">
@@ -683,7 +913,7 @@ export default function OrganizationAdmissionsPage() {
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-400" />
-                Student Batches & Courts ({currentConfig.batches.length})
+                Student Batches ({currentConfig.batches.length})
               </h2>
             </div>
             <button
@@ -749,17 +979,33 @@ export default function OrganizationAdmissionsPage() {
 
                     <div>
                       <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
-                        Assigned Courts
+                        Allocated Venue & Court
                       </label>
-                      <input
-                        type="text"
-                        value={batch.allocatedCourts}
-                        onChange={(e) =>
-                          handleUpdateBatch(batch.id, 'allocatedCourts', e.target.value)
-                        }
-                        placeholder="e.g. Courts 1 & 2"
-                        className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
-                      />
+                      {currentConfig.venues.length > 0 ? (
+                        <select
+                          value={batch.venueCourtId}
+                          onChange={(e) =>
+                            handleUpdateBatch(batch.id, 'venueCourtId', e.target.value)
+                          }
+                          className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 truncate"
+                        >
+                          {currentConfig.venues.map((v) => (
+                            <option key={v.id} value={`${v.venueName} (${v.courtIdentifiers})`}>
+                              {v.venueName} ({v.courtIdentifiers})
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={batch.venueCourtId}
+                          onChange={(e) =>
+                            handleUpdateBatch(batch.id, 'venueCourtId', e.target.value)
+                          }
+                          placeholder="e.g. Courts 1 & 2"
+                          className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
+                        />
+                      )}
                     </div>
                   </div>
 
