@@ -272,11 +272,12 @@ export default function OrganizationProfilePage() {
       if (activeOrg) {
         updateOrganization(activeOrg.id, {
           name,
+          type,
           logo: logoUrl,
         });
       }
 
-      setSuccessMsg('Academy profile published successfully!');
+      setSuccessMsg('Organization profile and type updated successfully!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       console.error('Failed to save organization profile:', err);
@@ -336,10 +337,10 @@ export default function OrganizationProfilePage() {
 
           {/* Floating Top Stats / Status Badges */}
           <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40 backdrop-blur-md">
+            {/* <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40 backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               VERIFIED {type}
-            </span>
+            </span> */}
             {city && (
               <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/50 text-zinc-300 text-xs font-medium border border-white/10 backdrop-blur-md">
                 <MapPin className="w-3 h-3 text-emerald-400" />
@@ -487,13 +488,11 @@ export default function OrganizationProfilePage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white tracking-tight">Coaching & Admissions Studio</h3>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-400 text-zinc-950 uppercase tracking-wider">
-                Dedicated Hub
-              </span>
+              <h3 className="text-base font-bold text-white tracking-tight">Coaching & Admissions</h3>
+
             </div>
             <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">
-              Configure sports-wise admission intakes, monthly/quarterly coaching fee plans, allocated courts, and student batch capacity.
+              Configure sports-wise admissions, coaching fee plans, allocated courts, and student batch capacity.
             </p>
           </div>
         </div>
@@ -513,38 +512,35 @@ export default function OrganizationProfilePage() {
       <div className="flex p-1.5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-xl gap-1.5 shadow-inner">
         <button
           onClick={() => setActiveTab('general')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'general'
-              ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'general'
+            ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
+            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+            }`}
         >
           <Building2 className="w-4 h-4" />
-          <span>1. Identity & Vision</span>
+          <span>Identity</span>
         </button>
 
         <button
           onClick={() => setActiveTab('location')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'location'
-              ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'location'
+            ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
+            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+            }`}
         >
           <MapPin className="w-4 h-4" />
-          <span>2. Campus & Contacts</span>
+          <span>Location</span>
         </button>
 
         <button
           onClick={() => setActiveTab('sports')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'sports'
-              ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'sports'
+            ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/40 shadow-md'
+            : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+            }`}
         >
           <Dumbbell className="w-4 h-4" />
-          <span>3. Sports & Infrastructure</span>
+          <span>Sports</span>
         </button>
       </div>
 
@@ -562,11 +558,9 @@ export default function OrganizationProfilePage() {
                   <div>
                     <h2 className="text-base font-bold text-white flex items-center gap-2">
                       <Award className="w-4 h-4 text-emerald-400" />
-                      Academy Profile & Credentials
+                      Academy Profile
                     </h2>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      Essential legal details and branding presented to athletes and parents
-                    </p>
+
                   </div>
                   <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
                     Step 1 of 3
@@ -876,11 +870,10 @@ export default function OrganizationProfilePage() {
                         key={item.name}
                         type="button"
                         onClick={() => handleSportToggle(item.name)}
-                        className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-semibold transition-all border text-left ${
-                          isSelected
-                            ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-500/10 scale-[1.02]'
-                            : 'bg-zinc-950/80 text-zinc-400 border-zinc-800/80 hover:border-zinc-700 hover:text-zinc-200'
-                        }`}
+                        className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-semibold transition-all border text-left ${isSelected
+                          ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-500/10 scale-[1.02]'
+                          : 'bg-zinc-950/80 text-zinc-400 border-zinc-800/80 hover:border-zinc-700 hover:text-zinc-200'
+                          }`}
                       >
                         <span className="text-base">{item.icon}</span>
                         <span className="truncate flex-1">{item.name}</span>
@@ -949,16 +942,14 @@ export default function OrganizationProfilePage() {
                           key={item.name}
                           type="button"
                           onClick={() => handleAmenityToggle(item.name)}
-                          className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-semibold transition-all border text-left ${
-                            hasAmenity
-                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
-                              : 'bg-zinc-950/70 text-zinc-400 border-zinc-800/80 hover:border-zinc-700 hover:text-zinc-200'
-                          }`}
+                          className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-semibold transition-all border text-left ${hasAmenity
+                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+                            : 'bg-zinc-950/70 text-zinc-400 border-zinc-800/80 hover:border-zinc-700 hover:text-zinc-200'
+                            }`}
                         >
                           <div
-                            className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                              hasAmenity ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-900 text-zinc-500'
-                            }`}
+                            className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${hasAmenity ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-900 text-zinc-500'
+                              }`}
                           >
                             <IconComponent className="w-4 h-4" />
                           </div>
