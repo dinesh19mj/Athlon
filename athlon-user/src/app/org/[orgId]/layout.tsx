@@ -166,26 +166,66 @@ export default function OrganizationLayout({ children }: { children: React.React
   const Icon2 = navItems[2]?.icon;
 
   // 2. Desktop Navigation Sections (Structured with categories like Personal Hub)
-  const navSections = [
-    {
-      title: 'Navigation',
-      items: [{ name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false }],
-    },
-    {
-      title: `${activeOrg.name} Hub`,
-      items: navItems.slice(1).map((item) => ({
-        ...item,
-        badge: item.name === 'Live Stream' ? 'Live' : null,
-        isLive: item.name === 'Live Stream',
-      })),
-    },
-    {
-      title: 'Settings',
-      items: [
-        { name: 'Org Profile', href: `/org/${orgId}/profile`, icon: Building, badge: null, isLive: false },
-      ],
-    },
-  ];
+  const getNavSections = () => {
+    if (activeOrg.type === 'ACADEMY') {
+      return [
+        {
+          title: 'Operations',
+          items: [
+            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Centres & Campuses', href: `/org/${orgId}/centres`, icon: MapPin, badge: null, isLive: false },
+            { name: 'Facilities & Courts', href: `/org/${orgId}/facilities`, icon: Building, badge: null, isLive: false },
+            { name: 'Coaching & Batches', href: `/org/${orgId}/admissions`, icon: Sparkles, badge: null, isLive: false },
+            { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'People',
+          items: [
+            { name: 'Students', href: `/org/${orgId}/students`, icon: Users, badge: null, isLive: false },
+            { name: 'Coaches', href: `/org/${orgId}/coaches`, icon: User, badge: null, isLive: false },
+            { name: 'Staff & Members', href: `/org/${orgId}/members`, icon: Shield, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Finance & Gear',
+          items: [
+            { name: 'Finances & Fees', href: `/org/${orgId}/finances`, icon: CreditCard, badge: null, isLive: false },
+            { name: 'Inventory & Shuttles', href: `/org/${orgId}/inventory`, icon: Grid, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Settings',
+          items: [
+            { name: 'Academy Profile', href: `/org/${orgId}/profile`, icon: Settings, badge: null, isLive: false },
+          ],
+        },
+      ];
+    }
+
+    return [
+      {
+        title: 'Navigation',
+        items: [{ name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false }],
+      },
+      {
+        title: `${activeOrg.name} Hub`,
+        items: navItems.slice(1).map((item) => ({
+          ...item,
+          badge: item.name === 'Live Stream' ? 'Live' : null,
+          isLive: item.name === 'Live Stream',
+        })),
+      },
+      {
+        title: 'Settings',
+        items: [
+          { name: 'Org Profile', href: `/org/${orgId}/profile`, icon: Building, badge: null, isLive: false },
+        ],
+      },
+    ];
+  };
+
+  const navSections = getNavSections();
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
