@@ -322,7 +322,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
 
       {/* Mobile Bottom Nav */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto"
         style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
       >
         <Link

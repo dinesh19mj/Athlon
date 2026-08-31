@@ -1221,8 +1221,8 @@ export default function StudentsPage() {
             SMART PHONE-VERIFIED ENROLL / EDIT STUDENT MODAL
            ══════════════════════════════════════════════════════════════════════ */}
         {showEnrollModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl relative">
               
               {/* Header */}
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
@@ -1488,8 +1488,8 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                {/* Sticky Action Footer */}
+                <div className="sticky bottom-0 bg-surface/95 backdrop-blur-md pt-3 pb-1 border-t border-white/10 flex items-center justify-end gap-2 -mx-4 -mb-4 px-4 sm:-mx-6 sm:-mb-6 sm:px-6 z-20">
                   <button
                     type="button"
                     onClick={() => setShowEnrollModal(false)}
@@ -1515,8 +1515,8 @@ export default function StudentsPage() {
             COURTS / VENUES MODAL
            ══════════════════════════════════════════════════════════════════════ */}
         {showCourtModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl relative">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-blue-400" />
@@ -1655,8 +1655,8 @@ export default function StudentsPage() {
             BATCH MANAGEMENT MODAL
            ══════════════════════════════════════════════════════════════════════ */}
         {showBatchModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+            <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl relative">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <Layers className="w-5 h-5 text-purple-400" />
