@@ -227,13 +227,14 @@ export default function OrganizationAdmissionsPage() {
     loadOrgSports();
   }, [orgId]);
 
-  // Active sport configuration helper
-  const currentConfig = configs[selectedSport] || {
+  // Active sport configuration helper with bulletproof fallbacks
+  const rawConfig = configs[selectedSport];
+  const currentConfig: SportAdmissionsConfig = {
     sport: selectedSport,
-    admissionStatus: 'OPEN',
-    seasonName: `${selectedSport} Academy 2026`,
-    headCoach: 'Lead Coaching Staff',
-    tiers: [
+    admissionStatus: rawConfig?.admissionStatus || 'OPEN',
+    seasonName: rawConfig?.seasonName || `${selectedSport} Academy 2026`,
+    headCoach: rawConfig?.headCoach || 'Lead Coaching Staff',
+    tiers: rawConfig?.tiers && rawConfig.tiers.length > 0 ? rawConfig.tiers : [
       {
         id: '1',
         name: 'Regular Training Plan',
@@ -244,18 +245,18 @@ export default function OrganizationAdmissionsPage() {
         description: `Standard structured coaching program for ${selectedSport}.`,
       },
     ],
-    venues: [
+    venues: rawConfig?.venues && rawConfig.venues.length > 0 ? rawConfig.venues : [
       {
         id: 'v1',
         venueName: `${selectedSport} Center - Main Campus`,
         location: 'Main Training Campus',
-        surfaceType: 'Standard Surface',
+        surfaceType: 'Synthetic BWF Mat',
         courtsCount: 2,
-        courtIdentifiers: 'Court 1 & 2',
+        courtIdentifiers: 'Courts 1 & 2',
         status: 'ACTIVE',
       },
     ],
-    batches: [
+    batches: rawConfig?.batches && rawConfig.batches.length > 0 ? rawConfig.batches : [
       {
         id: 'b1',
         name: 'Morning Batch',
@@ -273,9 +274,15 @@ export default function OrganizationAdmissionsPage() {
   const updateCurrentConfig = (updater: (prev: SportAdmissionsConfig) => SportAdmissionsConfig) => {
     setConfigs((prev) => {
       const existing = prev[selectedSport] || currentConfig;
+      const safeExisting: SportAdmissionsConfig = {
+        ...existing,
+        tiers: existing.tiers || currentConfig.tiers || [],
+        venues: existing.venues || currentConfig.venues || [],
+        batches: existing.batches || currentConfig.batches || [],
+      };
       return {
         ...prev,
-        [selectedSport]: updater(existing),
+        [selectedSport]: updater(safeExisting),
       };
     });
   };
@@ -292,21 +299,21 @@ export default function OrganizationAdmissionsPage() {
     };
     updateCurrentConfig((prev) => ({
       ...prev,
-      tiers: [...prev.tiers, newTier],
+      tiers: [...(prev.tiers || []), newTier],
     }));
   };
 
   const handleRemoveTier = (tierId: string) => {
     updateCurrentConfig((prev) => ({
       ...prev,
-      tiers: prev.tiers.filter((t) => t.id !== tierId),
+      tiers: (prev.tiers || []).filter((t) => t.id !== tierId),
     }));
   };
 
   const handleUpdateTier = (tierId: string, field: keyof CoachingTier, value: any) => {
     updateCurrentConfig((prev) => ({
       ...prev,
-      tiers: prev.tiers.map((t) => (t.id === tierId ? { ...t, [field]: value } : t)),
+      tiers: (prev.tiers || []).map((t) => (t.id === tierId ? { ...t, [field]: value } : t)),
     }));
   };
 
@@ -318,33 +325,34 @@ export default function OrganizationAdmissionsPage() {
       location: 'Campus Address / Area',
       surfaceType: 'Synthetic BWF Mat',
       courtsCount: 2,
-      courtIdentifiers: 'Court 1 & 2',
+      courtIdentifiers: 'Courts 1 & 2',
       status: 'ACTIVE',
     };
     updateCurrentConfig((prev) => ({
       ...prev,
-      venues: [...prev.venues, newVenue],
+      venues: [...(prev.venues || []), newVenue],
     }));
   };
 
   const handleRemoveVenue = (venueId: string) => {
     updateCurrentConfig((prev) => ({
       ...prev,
-      venues: prev.venues.filter((v) => v.id !== venueId),
+      venues: (prev.venues || []).filter((v) => v.id !== venueId),
     }));
   };
 
   const handleUpdateVenue = (venueId: string, field: keyof AcademyVenueCourt, value: any) => {
     updateCurrentConfig((prev) => ({
       ...prev,
-      venues: prev.venues.map((v) => (v.id === venueId ? { ...v, [field]: value } : v)),
+      venues: (prev.venues || []).map((v) => (v.id === venueId ? { ...v, [field]: value } : v)),
     }));
   };
 
   // --- Dynamic Student Batch Handlers ---
   const handleAddBatch = () => {
+    const venueList = currentConfig.venues || [];
     const defaultVenueName =
-      currentConfig.venues.length > 0 ? currentConfig.venues[0].venueName : 'Main Campus';
+      venueList.length > 0 ? venueList[0].venueName : 'Main Campus';
 
     const newBatch: CoachingBatch = {
       id: Date.now().toString(),
@@ -359,21 +367,21 @@ export default function OrganizationAdmissionsPage() {
     };
     updateCurrentConfig((prev) => ({
       ...prev,
-      batches: [...prev.batches, newBatch],
+      batches: [...(prev.batches || []), newBatch],
     }));
   };
 
   const handleRemoveBatch = (batchId: string) => {
     updateCurrentConfig((prev) => ({
       ...prev,
-      batches: prev.batches.filter((b) => b.id !== batchId),
+      batches: (prev.batches || []).filter((b) => b.id !== batchId),
     }));
   };
 
   const handleUpdateBatch = (batchId: string, field: keyof CoachingBatch, value: any) => {
     updateCurrentConfig((prev) => ({
       ...prev,
-      batches: prev.batches.map((b) => (b.id === batchId ? { ...b, [field]: value } : b)),
+      batches: (prev.batches || []).map((b) => (b.id === batchId ? { ...b, [field]: value } : b)),
     }));
   };
 
@@ -389,14 +397,18 @@ export default function OrganizationAdmissionsPage() {
     }
   };
 
-  // Quick summary counts
-  const totalVenuesCount = currentConfig.venues.length;
-  const totalCourtsAcrossVenues = currentConfig.venues.reduce(
+  // Quick summary counts with safe array fallbacks
+  const tiersList = currentConfig.tiers || [];
+  const venuesList = currentConfig.venues || [];
+  const batchesList = currentConfig.batches || [];
+
+  const totalVenuesCount = venuesList.length;
+  const totalCourtsAcrossVenues = venuesList.reduce(
     (sum, v) => sum + (v.courtsCount || 0),
     0
   );
-  const totalCapacity = currentConfig.batches.reduce((sum, b) => sum + (b.maxCapacity || 0), 0);
-  const totalEnrolled = currentConfig.batches.reduce((sum, b) => sum + (b.enrolledCount || 0), 0);
+  const totalCapacity = batchesList.reduce((sum, b) => sum + (b.maxCapacity || 0), 0);
+  const totalEnrolled = batchesList.reduce((sum, b) => sum + (b.enrolledCount || 0), 0);
 
   if (loading) {
     return (
@@ -505,7 +517,7 @@ export default function OrganizationAdmissionsPage() {
         <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Fee Plans</div>
           <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
-            {currentConfig.tiers.length} <span className="text-xs font-medium text-zinc-400">Plans</span>
+            {tiersList.length} <span className="text-xs font-medium text-zinc-400">Plans</span>
           </div>
         </div>
 
@@ -519,7 +531,7 @@ export default function OrganizationAdmissionsPage() {
         <div className="bg-zinc-900/60 p-3 sm:p-4 rounded-2xl border border-zinc-800/80 flex flex-col justify-center">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Batches</div>
           <div className="text-base sm:text-lg font-extrabold text-white mt-0.5">
-            {currentConfig.batches.length} <span className="text-xs font-medium text-zinc-400">Batches</span>
+            {batchesList.length} <span className="text-xs font-medium text-zinc-400">Batches</span>
           </div>
         </div>
 
@@ -547,7 +559,7 @@ export default function OrganizationAdmissionsPage() {
             mobileTab === 'tiers' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
           }`}
         >
-          Plans ({currentConfig.tiers.length})
+          Plans ({tiersList.length})
         </button>
         <button
           onClick={() => setMobileTab('venues')}
@@ -555,7 +567,7 @@ export default function OrganizationAdmissionsPage() {
             mobileTab === 'venues' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
           }`}
         >
-          Venues ({currentConfig.venues.length})
+          Venues ({venuesList.length})
         </button>
         <button
           onClick={() => setMobileTab('batches')}
@@ -563,7 +575,7 @@ export default function OrganizationAdmissionsPage() {
             mobileTab === 'batches' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-400'
           }`}
         >
-          Batches ({currentConfig.batches.length})
+          Batches ({batchesList.length})
         </button>
         <button
           onClick={() => setMobileTab('intake')}
@@ -653,7 +665,7 @@ export default function OrganizationAdmissionsPage() {
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-emerald-400" />
-                Coaching Fee Plans ({currentConfig.tiers.length})
+                Coaching Fee Plans ({tiersList.length})
               </h2>
             </div>
             <button
@@ -667,7 +679,7 @@ export default function OrganizationAdmissionsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            {currentConfig.tiers.map((tier) => (
+            {tiersList.map((tier) => (
               <div
                 key={tier.id}
                 className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3.5 shadow-md flex flex-col justify-between"
@@ -685,7 +697,7 @@ export default function OrganizationAdmissionsPage() {
                       <option value="All Levels">All Levels</option>
                     </select>
 
-                    {currentConfig.tiers.length > 1 && (
+                    {tiersList.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveTier(tier.id)}
@@ -784,7 +796,7 @@ export default function OrganizationAdmissionsPage() {
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-emerald-400" />
-                Training Venues & Courts ({currentConfig.venues.length})
+                Training Venues & Courts ({venuesList.length})
               </h2>
             </div>
             <button
@@ -798,7 +810,7 @@ export default function OrganizationAdmissionsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {currentConfig.venues.map((venue) => (
+            {venuesList.map((venue) => (
               <div
                 key={venue.id}
                 className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-4 space-y-3.5 shadow-md flex flex-col justify-between"
@@ -812,7 +824,7 @@ export default function OrganizationAdmissionsPage() {
                       </span>
                     </div>
 
-                    {currentConfig.venues.length > 1 && (
+                    {venuesList.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveVenue(venue.id)}
@@ -913,7 +925,7 @@ export default function OrganizationAdmissionsPage() {
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-400" />
-                Student Batches ({currentConfig.batches.length})
+                Student Batches ({batchesList.length})
               </h2>
             </div>
             <button
@@ -927,7 +939,7 @@ export default function OrganizationAdmissionsPage() {
           </div>
 
           <div className="space-y-3">
-            {currentConfig.batches.map((batch) => {
+            {batchesList.map((batch) => {
               const fillPercentage = Math.min(
                 100,
                 Math.round((batch.enrolledCount / (batch.maxCapacity || 1)) * 100)
@@ -981,7 +993,7 @@ export default function OrganizationAdmissionsPage() {
                       <label className="block text-[9px] font-bold text-zinc-500 uppercase mb-1">
                         Allocated Venue & Court
                       </label>
-                      {currentConfig.venues.length > 0 ? (
+                      {venuesList.length > 0 ? (
                         <select
                           value={batch.venueCourtId}
                           onChange={(e) =>
@@ -989,7 +1001,7 @@ export default function OrganizationAdmissionsPage() {
                           }
                           className="w-full px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 truncate"
                         >
-                          {currentConfig.venues.map((v) => (
+                          {venuesList.map((v) => (
                             <option key={v.id} value={`${v.venueName} (${v.courtIdentifiers})`}>
                               {v.venueName} ({v.courtIdentifiers})
                             </option>
@@ -1039,7 +1051,7 @@ export default function OrganizationAdmissionsPage() {
                       </div>
                     </div>
 
-                    {currentConfig.batches.length > 1 && (
+                    {batchesList.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveBatch(batch.id)}
