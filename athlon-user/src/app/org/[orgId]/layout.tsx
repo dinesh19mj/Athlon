@@ -25,6 +25,7 @@ import {
   Shield,
   ChevronRight,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -35,6 +36,7 @@ function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
   if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
   if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
+  if (n.includes('admission') || n.includes('intake') || n.includes('enroll')) return 'registered';
   if (n.includes('student') || n.includes('pupil')) return 'students';
   if (n.includes('coach') || n.includes('trainer')) return 'coaches';
   if (n.includes('member') || n.includes('staff') || n.includes('squad') || n.includes('team')) return 'members';
@@ -129,6 +131,7 @@ export default function OrganizationLayout({ children }: { children: React.React
     if (activeOrg.type === 'ACADEMY') {
       return [
         ...base,
+        { name: 'Admissions', href: `/org/${orgId}/admissions`, icon: Sparkles },
         { name: 'Students', href: `/org/${orgId}/students`, icon: Users },
         { name: 'Coaches', href: `/org/${orgId}/coaches`, icon: User },
         { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays },
