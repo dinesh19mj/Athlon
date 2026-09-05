@@ -42,6 +42,9 @@ public class OrganizationMember {
     @Column(name = "role", nullable = false, length = 100)
     private String role;
 
+    @Column(name = "sport_type", length = 100)
+    private String sportType;
+
     @Column(name = "isactive")
     private Integer isActive = 1;
 
@@ -144,6 +147,14 @@ public class OrganizationMember {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getSportType() {
+        return sportType;
+    }
+
+    public void setSportType(String sportType) {
+        this.sportType = sportType;
     }
 
     public Integer getIsActive() {

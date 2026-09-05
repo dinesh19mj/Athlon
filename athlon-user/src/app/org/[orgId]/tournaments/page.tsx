@@ -176,17 +176,17 @@ export default function TournamentsPage() {
   const getStageBadge = (stage = 'REGISTRATION_OPEN') => {
     switch (stage) {
       case 'REGISTRATION_OPEN':
-        return { label: 'Registration Open', class: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
+        return { label: 'Registration Open', class: 'bg-primary/15 text-primary border-primary/30' };
       case 'AUCTION_STAGE':
-        return { label: 'Auction Live', class: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+        return { label: 'Auction Live', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' };
       case 'LEAGUE_STAGE':
-        return { label: 'League Stage', class: 'bg-primary/20 text-primary border-primary/30' };
+        return { label: 'League Stage', class: 'bg-primary/15 text-primary border-primary/30' };
       case 'KNOCKOUT_STAGE':
-        return { label: 'Knockouts', class: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
+        return { label: 'Knockouts', class: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30' };
       case 'COMPLETED':
-        return { label: 'Completed', class: 'bg-white/10 text-white/70 border-white/20' };
+        return { label: 'Completed', class: 'bg-foreground/10 text-foreground/70 border-foreground/20' };
       default:
-        return { label: stage.replace('_', ' '), class: 'bg-primary/20 text-primary border-primary/30' };
+        return { label: stage.replace('_', ' '), class: 'bg-primary/15 text-primary border-primary/30' };
     }
   };
 
@@ -195,106 +195,97 @@ export default function TournamentsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 md:pb-16 selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - EXACT PRESERVED MOBILE EXPERIENCE
+          1. MOBILE VIEW ONLY (< md) - REDESIGNED SLEEK MOBILE EXPERIENCE
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden">
-        {/* Top Hero Command Banner */}
-        <div className="relative border-b overflow-hidden" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="absolute -top-10 right-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 left-10 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="max-w-7xl mx-auto px-4 py-6 relative z-10 space-y-4">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 border border-primary/25 text-primary">
-                <Trophy className="w-3.5 h-3.5" />
-                <span>Organizer Management Hub</span>
+        {/* Modern Sticky Mobile Header */}
+        <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 py-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              onClick={() => router.push(`/org/${orgId}/dashboard`)}
+              className="p-1.5 -ml-1.5 rounded-xl text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors active:scale-95 shrink-0"
+              title="Back to Dashboard"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Organizer Hub</span>
               </div>
-
-              <h1 className="text-2xl font-black text-foreground tracking-tight leading-tight">
+              <h1 className="text-base font-black text-foreground tracking-tight truncate">
                 Tournaments & Championships
               </h1>
-
-              <p className="text-xs font-medium leading-relaxed text-foreground/70">
-                Organize, schedule, and launch competitions. Manage team championships, player auctions, and draws.
-              </p>
             </div>
+          </div>
+        </header>
 
-            {/* 4-Stat Quick Dashboard Metric Cards */}
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <div
-                className="p-3 rounded-2xl border flex items-center gap-2.5"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-              >
-                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+        {/* Hero Banner & Summary Metrics Bar */}
+        <div className="p-4 space-y-3.5">
+          {/* Action Cards / Hero Quick Launch */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+              className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <Trophy className="w-4 h-4" />
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[9.5px] font-extrabold uppercase text-foreground/50 truncate">Total</div>
-                  <div className="text-base font-black text-foreground font-mono">{totalCount}</div>
-                </div>
+                <span className="text-xs font-mono font-black text-foreground">{totalTournaments}</span>
               </div>
+              <div>
+                <div className="text-xs font-black text-foreground group-hover:text-primary transition-colors">+ Tournament</div>
+                <div className="text-[9.5px] text-foreground/50 font-medium">Knockout & Groups</div>
+              </div>
+            </button>
 
-              <div
-                className="p-3 rounded-2xl border flex items-center gap-2.5"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-              >
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+            <button
+              onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+              className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                   <Shield className="w-4 h-4" />
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[9.5px] font-extrabold uppercase text-foreground/50 truncate">Championships</div>
-                  <div className="text-base font-black text-emerald-400 font-mono">{totalChampionships}</div>
-                </div>
+                <span className="text-xs font-mono font-black text-amber-500">{totalChampionships}</span>
               </div>
+              <div>
+                <div className="text-xs font-black text-foreground group-hover:text-amber-500 transition-colors">+ Championship</div>
+                <div className="text-[9.5px] text-foreground/50 font-medium">Franchise & Auctions</div>
+              </div>
+            </button>
+          </div>
 
-              <div
-                className="p-3 rounded-2xl border flex items-center gap-2.5"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-              >
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-                  <Globe className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[9.5px] font-extrabold uppercase text-foreground/50 truncate">Public</div>
-                  <div className="text-base font-black text-foreground font-mono">{publicCount}</div>
-                </div>
-              </div>
-
-              <div
-                className="p-3 rounded-2xl border flex items-center gap-2.5"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-              >
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[9.5px] font-extrabold uppercase text-foreground/50 truncate">Private</div>
-                  <div className="text-base font-black text-foreground font-mono">{privateCount}</div>
-                </div>
-              </div>
+          {/* Quick Metrics Strip */}
+          <div
+            className="p-2 rounded-xl border flex items-center justify-around text-center"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div>
+              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Total</div>
+              <div className="text-xs font-black font-mono text-foreground">{totalCount}</div>
             </div>
-
-            {/* Quick Action Buttons for Mobile */}
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 px-2 rounded-2xl border font-black text-xs text-primary shadow-sm active:scale-95 transition-all"
-                style={{
-                  backgroundColor: 'var(--athlon-surface)',
-                  borderColor: 'var(--athlon-primary)',
-                }}
-              >
-                <Shield className="w-4 h-4 text-primary shrink-0" />
-                <span className="truncate">Create Championship</span>
-              </button>
-
-              <button
-                onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 px-2 rounded-2xl bg-primary text-black font-black text-xs shadow-xl shadow-primary/25 active:scale-95 transition-all"
-              >
-                <Plus className="w-4 h-4 stroke-[3] shrink-0" />
-                <span className="truncate">Create Tournament</span>
-              </button>
+            <div className="w-[1px] h-5 bg-foreground/10" />
+            <div>
+              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Public</div>
+              <div className="text-xs font-black font-mono text-primary">{publicCount}</div>
+            </div>
+            <div className="w-[1px] h-5 bg-foreground/10" />
+            <div>
+              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Private</div>
+              <div className="text-xs font-black font-mono text-foreground/70">{privateCount}</div>
             </div>
           </div>
         </div>
@@ -429,7 +420,7 @@ export default function TournamentsPage() {
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
-                          <div className="h-[2px] w-full bg-gradient-to-r from-amber-400 via-primary to-emerald-400" />
+                          <div className="h-[2.5px] w-full bg-primary shadow-[0_0_8px_var(--athlon-primary)]" />
                           <div className="p-3.5 space-y-2.5">
                             <div className="flex items-center justify-between">
                               <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${stageBadge.class}`}>
@@ -458,7 +449,7 @@ export default function TournamentsPage() {
 
                           <div
                             className="p-2.5 px-3.5 border-t flex items-center justify-between text-[11px]"
-                            style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderColor: 'var(--athlon-border)' }}
+                            style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
                             <span className="font-extrabold text-foreground">
                               {champ.teamRegistrationFee ? `₹${champ.teamRegistrationFee}/Team` : 'Free Entry'}
@@ -502,13 +493,14 @@ export default function TournamentsPage() {
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
+                          <div className="h-[2.5px] w-full bg-primary shadow-[0_0_8px_var(--athlon-primary)]" />
                           <div className="p-3.5 space-y-2.5">
                             <div className="flex items-center justify-between">
                               <span
                                 className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                                   isPublic
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                    ? 'bg-primary/15 text-primary border-primary/30'
+                                    : 'bg-foreground/10 text-foreground/70 border-foreground/20'
                                 }`}
                               >
                                 {tournament.visibility || 'PRIVATE'}
@@ -529,7 +521,7 @@ export default function TournamentsPage() {
                               </div>
                               {tournament.location && (
                                 <div className="flex items-center gap-1 truncate max-w-[150px]">
-                                  <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  <MapPin className="w-3 h-3 text-primary shrink-0" />
                                   <span className="truncate">{tournament.location}</span>
                                 </div>
                               )}
@@ -538,7 +530,7 @@ export default function TournamentsPage() {
 
                           <div
                             className="p-2.5 px-3.5 border-t flex items-center justify-between text-[11px]"
-                            style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderColor: 'var(--athlon-border)' }}
+                            style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
                             <span className="font-extrabold text-foreground">
                               {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'Free Entry'}

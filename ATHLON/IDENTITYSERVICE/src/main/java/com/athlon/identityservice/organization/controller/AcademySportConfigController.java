@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,15 +38,15 @@ public class AcademySportConfigController {
         return ResponseEntity.ok(ApiResponse.success("Academy sports retrieved successfully", list));
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<AcademySportConfigResponse>> createOrUpdateSport(
+    @PostMapping("/save")
+    public ResponseEntity<ApiResponse<AcademySportConfigResponse>> saveSport(
             @Valid @RequestBody CreateSportConfigRequest request) {
 
         AcademySportConfigResponse sport = sportConfigService.createOrUpdateSport(request);
         return ResponseEntity.ok(ApiResponse.success("Academy sport saved successfully", sport));
     }
 
-    @DeleteMapping("/{sportUuid}")
+    @PostMapping("/delete/{sportUuid}")
     public ResponseEntity<ApiResponse<Void>> deleteSport(
             @PathVariable("sportUuid") UUID sportUuid) {
 

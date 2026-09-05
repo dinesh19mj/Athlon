@@ -55,7 +55,7 @@ public class MatchController {
         return ResponseEntity.ok(ApiResponse.success("Matches retrieved successfully", responses));
     }
 
-    @PutMapping("/{uuid}/court")
+    @PostMapping("/{uuid}/court")
     public ResponseEntity<ApiResponse<MatchResponse>> updateMatchCourt(
             @PathVariable("uuid") UUID uuid,
             @RequestParam("courtId") Long courtId) {
@@ -63,7 +63,7 @@ public class MatchController {
         return ResponseEntity.ok(ApiResponse.success("Match court updated successfully", response));
     }
 
-    @PutMapping("/{uuid}/umpire")
+    @PostMapping("/{uuid}/umpire")
     public ResponseEntity<ApiResponse<MatchResponse>> updateMatchUmpire(
             @PathVariable("uuid") UUID uuid,
             @RequestParam("umpirePhone") String umpirePhone) {
@@ -71,7 +71,7 @@ public class MatchController {
         return ResponseEntity.ok(ApiResponse.success("Match umpire updated successfully", response));
     }
 
-    @PutMapping("/{uuid}/schedule")
+    @PostMapping("/{uuid}/schedule")
     public ResponseEntity<ApiResponse<MatchResponse>> updateMatchSchedule(
             @PathVariable("uuid") UUID uuid,
             @RequestParam("scheduledTime") String scheduledTime) {
@@ -86,7 +86,7 @@ public class MatchController {
         return ResponseEntity.ok(ApiResponse.success("Umpire matches retrieved successfully", responses));
     }
 
-    @PutMapping("/{uuid}/status")
+    @PostMapping("/{uuid}/status")
     public ResponseEntity<ApiResponse<MatchResponse>> updateMatchStatus(
             @PathVariable("uuid") UUID uuid,
             @RequestParam("status") String status,

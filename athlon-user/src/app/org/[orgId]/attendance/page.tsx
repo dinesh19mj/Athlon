@@ -21,11 +21,12 @@ import {
   RefreshCw,
   Sparkles,
   ShieldAlert,
-  Save,
-  Lock
+  Lock,
+  Phone
 } from 'lucide-react';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { useAuthStore } from '@/lib/store/useAuthStore';
+import AcademyAttendanceView from '@/components/academy/AcademyAttendanceView';
 
 // Helper to get local date formatted as YYYY-MM-DD (avoiding UTC timezone shift)
 const getLocalDateString = (d: Date = new Date()): string => {
@@ -43,6 +44,10 @@ export default function AttendancePage() {
   const org = getActiveOrganization();
 
   const orgUuid = org?.id || orgIdParam;
+
+  if (org?.type === 'ACADEMY') {
+    return <AcademyAttendanceView orgUuid={orgUuid} orgName={org.name || 'Academy'} />;
+  }
   const { role, isAdmin, isCoach, canManage } = useOrgRole(orgUuid);
   const canTakeAttendance = isAdmin || isCoach;
 
@@ -207,33 +212,6 @@ export default function AttendancePage() {
     }
   };
 
-  // Save full sheet
-  const handleSaveSheet = async () => {
-    try {
-      setSaving(true);
-      await ClubAttendanceService.bulkMarkAttendance({
-        organizationUuid: orgUuid,
-        attendanceDate: selectedDate,
-        records: attendanceList
-          .filter(m => m.status !== 'UNMARKED')
-          .map(m => ({
-            organizationMemberUuid: m.organizationMemberUuid,
-            status: m.status as 'PRESENT' | 'ABSENT',
-            notes: m.notes
-          }))
-      });
-
-      setToastSuccess('Attendance records saved successfully!');
-      setTimeout(() => setToastSuccess(null), 3000);
-      loadAttendanceData(selectedDate);
-    } catch (err: any) {
-      console.error('Save sheet failed:', err);
-      setErrorMessage('Failed to save attendance sheet.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const filteredMembers = attendanceList.filter(m =>
     (m.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (m.phone || '').includes(searchTerm)
@@ -260,8 +238,8 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* ── HEADER SECTION (DESKTOP) ── */}
+      <div className="hidden md:flex md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Club Attendance</h2>
@@ -282,15 +260,7 @@ export default function AttendancePage() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
           </button>
-          {canTakeAttendance ? (
-            <button
-              onClick={handleSaveSheet}
-              disabled={saving || totalCount === 0}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Sheet
-            </button>
-          ) : (
+          {!canTakeAttendance && (
             <span className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/70">
               <User className="w-3.5 h-3.5 text-primary" /> Member Mode
             </span>
@@ -298,46 +268,76 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Date Navigation & Calendar Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 bg-surface border border-foreground/5 rounded-2xl p-3.5 sm:p-4 shadow-sm">
-        {/* Left Side: Day Shifter & Date Picker */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleShiftDate(-1)}
-            className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-            title="Previous Day"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {/* Calendar Date Input Picker */}
-          <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
-            <CalendarIcon className="w-4 h-4 text-primary shrink-0 mr-2" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
-            />
+      {/* ── HEADER SECTION (MOBILE APP-LIKE COMPACT BAR) ── */}
+      <div className="flex md:hidden flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black text-foreground tracking-tight">Club Attendance</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/15 text-primary border border-primary/25 shrink-0">
+                {totalCount} {totalCount === 1 ? 'Member' : 'Members'}
+              </span>
+            </div>
+            <p className="text-xs text-foreground/50 mt-0.5 truncate">
+              {org?.name || 'Club Roster'}
+            </p>
           </div>
 
-          <button
-            onClick={() => handleShiftDate(1)}
-            className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-            title="Next Day"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 rounded-xl bg-surface border border-foreground/10 text-foreground active:scale-95 transition"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── DATE NAVIGATION & CALENDAR BAR ── */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface border border-foreground/10 rounded-2xl p-3 sm:p-4 shadow-sm">
+        {/* Day Shifter & Date Picker */}
+        <div className="flex items-center justify-between sm:justify-start gap-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handleShiftDate(-1)}
+              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors active:scale-90"
+              title="Previous Day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Calendar Date Input Picker */}
+            <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-1.5 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
+              <CalendarIcon className="w-3.5 h-3.5 text-primary shrink-0 mr-1.5" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+              />
+            </div>
+
+            <button
+              onClick={() => handleShiftDate(1)}
+              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors active:scale-90"
+              title="Next Day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
 
           {selectedDate && (
-            <span className="hidden md:inline-block text-xs font-bold text-foreground/60 ml-2">
-              {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            <span className="text-[11px] font-bold text-foreground/60">
+              {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
             </span>
           )}
         </div>
 
-        {/* Right Side: Quick Date Buttons & Actions */}
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        {/* Quick Date Buttons & Bulk Actions */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0 border-t sm:border-t-0 border-foreground/5 flex-wrap">
           <button
             onClick={handleSetToday}
             className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === getLocalDateString()
@@ -349,11 +349,11 @@ export default function AttendancePage() {
           </button>
 
           {canTakeAttendance && (
-            <>
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => handleBulkMark('PRESENT')}
                 disabled={saving || totalCount === 0}
-                className="px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all disabled:opacity-40"
+                className="px-2.5 py-1.5 rounded-xl text-[11px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 active:scale-95 transition-all disabled:opacity-40"
               >
                 Mark All Present
               </button>
@@ -361,49 +361,48 @@ export default function AttendancePage() {
               <button
                 onClick={() => handleBulkMark('ABSENT')}
                 disabled={saving || totalCount === 0}
-                className="px-3 py-1.5 rounded-xl text-xs font-black bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all disabled:opacity-40"
+                className="px-2.5 py-1.5 rounded-xl text-[11px] font-black bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-95 transition-all disabled:opacity-40"
               >
                 Mark All Absent
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Attendance Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+      {/* ── ATTENDANCE STATS CARDS ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Total Members */}
-        <div className="p-4 rounded-2xl bg-surface border border-foreground/5 space-y-1 shadow-sm">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-surface border border-foreground/5 space-y-1 shadow-sm">
           <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">Total Roster</div>
-          <div className="text-2xl font-black text-foreground">{totalCount}</div>
+          <div className="text-xl sm:text-2xl font-black text-foreground">{totalCount}</div>
         </div>
 
         {/* Present */}
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1 shadow-sm">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1 shadow-sm">
           <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Present</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-emerald-400">{presentCount}</span>
-            <span className="text-xs font-bold text-emerald-400/70">({attendanceRate}%)</span>
+          <div className="flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-black text-emerald-400">{presentCount}</span>
+            <span className="text-[11px] sm:text-xs font-bold text-emerald-400/70">({attendanceRate}%)</span>
           </div>
         </div>
 
         {/* Absent */}
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 space-y-1 shadow-sm">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-red-500/10 border border-red-500/20 space-y-1 shadow-sm">
           <div className="text-[10px] font-black uppercase tracking-wider text-red-400">Absent</div>
-          <div className="text-2xl font-black text-red-400">{absentCount}</div>
+          <div className="text-xl sm:text-2xl font-black text-red-400">{absentCount}</div>
         </div>
 
         {/* Unmarked */}
-        <div className="p-4 rounded-2xl bg-foreground/5 border border-foreground/10 space-y-1 shadow-sm">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-foreground/5 border border-foreground/10 space-y-1 shadow-sm">
           <div className="text-[10px] font-black uppercase tracking-wider text-foreground/40">Unmarked</div>
-          <div className="text-2xl font-black text-foreground/60">{unmarkedCount}</div>
+          <div className="text-xl sm:text-2xl font-black text-foreground/60">{unmarkedCount}</div>
         </div>
       </div>
 
       {/* ─── Modern My Attendance Check-In Deck (Member View) ─── */}
       {myAttendanceRecord && (
-        <div className="relative overflow-hidden rounded-[26px] bg-surface/90 border border-white/10 p-5 sm:p-6 shadow-xl backdrop-blur-2xl transition-all duration-300">
-          {/* Subtle Ambient Background Gradient */}
+        <div className="relative overflow-hidden rounded-[26px] bg-surface/90 border border-white/10 p-4 sm:p-6 shadow-xl backdrop-blur-2xl transition-all duration-300">
           <div
             className="absolute inset-0 pointer-events-none opacity-40 transition-opacity duration-300"
             style={{
@@ -416,11 +415,11 @@ export default function AttendancePage() {
             }}
           />
 
-          <div className="relative z-10 space-y-4">
+          <div className="relative z-10 space-y-3.5">
             {/* Top Row: User Identity & Live Status Badge */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
                   {myAttendanceRecord.photo ? (
                     <img
                       src={UserService.getPhotoUrl(myAttendanceRecord.photo)}
@@ -428,7 +427,7 @@ export default function AttendancePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-base font-black text-primary">
+                    <span className="text-sm font-black text-primary">
                       {myAttendanceRecord.fullName?.charAt(0)?.toUpperCase() || 'U'}
                     </span>
                   )}
@@ -436,24 +435,23 @@ export default function AttendancePage() {
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight truncate">
+                    <h3 className="text-sm sm:text-base font-black text-foreground tracking-tight truncate">
                       {myAttendanceRecord.fullName}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                    <span className="px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
                       You
                     </span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white/50">
+                    <span className="px-2 py-0.5 rounded-md text-[9.5px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white/50">
                       {myAttendanceRecord.role || role || 'Member'}
                     </span>
                   </div>
-                  <p className="text-xs text-foreground/45 mt-0.5 font-medium">
+                  <p className="text-[11px] text-foreground/45 mt-0.5 font-medium">
                     {selectedDate === getLocalDateString()
                       ? "Today's Attendance Check-in"
                       : `Attendance for ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', {
                           weekday: 'short',
                           day: 'numeric',
                           month: 'short',
-                          year: 'numeric',
                         })}`}
                   </p>
                 </div>
@@ -462,23 +460,23 @@ export default function AttendancePage() {
               {/* Status Capsule Indicator */}
               <div className="self-start sm:self-auto flex items-center">
                 {myAttendanceRecord.status === 'PRESENT' ? (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
-                    <CheckCircle2 className="w-4 h-4" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Present</span>
                     {myAttendanceRecord.checkInTime && (
-                      <span className="text-[11px] opacity-70 font-mono font-normal">
+                      <span className="text-[10.5px] opacity-70 font-mono font-normal">
                         • {String(myAttendanceRecord.checkInTime).slice(0, 5)}
                       </span>
                     )}
                   </span>
                 ) : myAttendanceRecord.status === 'ABSENT' ? (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black bg-red-500/15 text-red-400 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)]">
-                    <X className="w-4 h-4" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-red-500/15 text-red-400 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)]">
+                    <X className="w-3.5 h-3.5" />
                     <span>Absent</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white/5 text-white/50 border border-white/10">
-                    <span className="w-2 h-2 rounded-full bg-white/30" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/5 text-white/50 border border-white/10">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
                     <span>Not Marked</span>
                   </span>
                 )}
@@ -490,26 +488,26 @@ export default function AttendancePage() {
               <button
                 type="button"
                 onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'PRESENT')}
-                className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 ${
                   myAttendanceRecord.status === 'PRESENT'
                     ? 'bg-emerald-500 text-black shadow-[0_4px_16px_rgba(16,185,129,0.35)] scale-[1.01]'
                     : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
                 }`}
               >
-                <Check className="w-4 h-4" strokeWidth={2.8} />
+                <Check className="w-3.5 h-3.5" strokeWidth={2.8} />
                 <span>Present</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleStatusChange(myAttendanceRecord.organizationMemberUuid, 'ABSENT')}
-                className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-98 ${
+                className={`py-2.5 px-3 rounded-xl text-xs font-black transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 ${
                   myAttendanceRecord.status === 'ABSENT'
                     ? 'bg-red-500 text-white shadow-[0_4px_16px_rgba(239,68,68,0.35)] scale-[1.01]'
                     : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
                 }`}
               >
-                <X className="w-4 h-4" strokeWidth={2.8} />
+                <X className="w-3.5 h-3.5" strokeWidth={2.8} />
                 <span>Absent</span>
               </button>
             </div>
@@ -517,15 +515,15 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Member Attendance Roster Container */}
-      <div className="bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
+      {/* ── MEMBER ATTENDANCE ROSTER CONTAINER ── */}
+      <div>
         {loading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-3">
+          <div className="py-20 flex flex-col items-center justify-center gap-3 bg-surface border border-foreground/5 rounded-3xl">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-foreground/50">Loading club attendance...</p>
+            <p className="text-xs font-semibold text-foreground/50">Loading club attendance...</p>
           </div>
         ) : displayRoster.length === 0 ? (
-          <div className="py-16 px-6 text-center space-y-3">
+          <div className="py-16 px-6 text-center space-y-3 bg-surface border border-foreground/5 rounded-3xl">
             <div className="w-14 h-14 rounded-2xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
               <Users className="w-7 h-7" />
             </div>
@@ -542,126 +540,131 @@ export default function AttendancePage() {
           </div>
         ) : (
           <>
-            {/* Desktop Table Roster */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Athlete</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Role & Contact</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-center">Attendance Status</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Check-in Time</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-foreground/5">
-                  {displayRoster.map((member) => {
-                    const isPresent = member.status === 'PRESENT';
-                    const isAbsent = member.status === 'ABSENT';
-                    const canModify = canTakeAttendance;
+            {/* Desktop Table Roster (Untouched) */}
+            <div className="hidden md:block bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Athlete</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Role &amp; Contact</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-center">Attendance Status</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Check-in Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-foreground/5">
+                    {displayRoster.map((member) => {
+                      const isPresent = member.status === 'PRESENT';
+                      const isAbsent = member.status === 'ABSENT';
+                      const canModify = canTakeAttendance;
 
-                    return (
-                      <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
-                        {/* Member Name + Photo */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
-                              {member.photo ? (
-                                <img
-                                  src={UserService.getPhotoUrl(member.photo)}
-                                  alt={member.fullName}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-xs font-black text-primary">
-                                  {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <div className="font-extrabold text-sm text-foreground">
-                                {member.fullName}
+                      return (
+                        <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
+                          {/* Member Name + Photo */}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                                {member.photo ? (
+                                  <img
+                                    src={UserService.getPhotoUrl(member.photo)}
+                                    alt={member.fullName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-xs font-black text-primary">
+                                    {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-[11px] font-mono text-foreground/40">{member.phone ? `+91 ${member.phone}` : 'No phone'}</div>
+                              <div>
+                                <div className="font-extrabold text-sm text-foreground">
+                                  {member.fullName}
+                                </div>
+                                <div className="text-[11px] font-mono text-foreground/40">{member.phone ? `+91 ${member.phone}` : 'No phone'}</div>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Role */}
-                        <td className="px-6 py-4">
-                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-foreground/5 border border-foreground/10 text-foreground/70">
-                            {member.role || 'MEMBER'}
-                          </span>
-                        </td>
+                          {/* Role */}
+                          <td className="px-6 py-4">
+                            <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-foreground/5 border border-foreground/10 text-foreground/70">
+                              {member.role || 'MEMBER'}
+                            </span>
+                          </td>
 
-                        {/* Status Toggle Buttons or Read-Only Indicator */}
-                        <td className="px-6 py-4">
-                          {canModify ? (
-                            <div className="flex items-center justify-center gap-1.5 bg-background p-1 rounded-2xl border max-w-xs mx-auto shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
-                              {/* PRESENT */}
-                              <button
-                                type="button"
-                                onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isPresent
-                                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 scale-[1.02]'
-                                    : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
-                                  }`}
-                              >
-                                <Check className="w-3.5 h-3.5" /> Present
-                              </button>
+                          {/* Status Toggle Buttons or Read-Only Indicator */}
+                          <td className="px-6 py-4">
+                            {canModify ? (
+                              <div className="flex items-center justify-center gap-1.5 bg-background p-1 rounded-2xl border max-w-xs mx-auto shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+                                {/* PRESENT */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
+                                  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isPresent
+                                      ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 scale-[1.02]'
+                                      : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                    }`}
+                                >
+                                  <Check className="w-3.5 h-3.5" /> Present
+                                </button>
 
-                              {/* ABSENT */}
-                              <button
-                                type="button"
-                                onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isAbsent
-                                    ? 'bg-red-500 text-white shadow-md shadow-red-500/25 scale-[1.02]'
-                                    : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
-                                  }`}
-                              >
-                                <X className="w-3.5 h-3.5" /> Absent
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex justify-center">
-                              <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${isPresent
-                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-                                  : isAbsent
-                                    ? 'bg-red-500/15 text-red-400 border border-red-500/25'
-                                    : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
-                                }`}>
-                                {isPresent ? <Check className="w-3.5 h-3.5" /> : isAbsent ? <X className="w-3.5 h-3.5" /> : null}
-                                {member.status || 'UNMARKED'}
-                              </span>
-                            </div>
-                          )}
-                        </td>
+                                {/* ABSENT */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
+                                  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isAbsent
+                                      ? 'bg-red-500 text-white shadow-md shadow-red-500/25 scale-[1.02]'
+                                      : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
+                                    }`}
+                                >
+                                  <X className="w-3.5 h-3.5" /> Absent
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex justify-center">
+                                <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${isPresent
+                                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                                    : isAbsent
+                                      ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                                      : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
+                                  }`}>
+                                  {isPresent ? <Check className="w-3.5 h-3.5" /> : isAbsent ? <X className="w-3.5 h-3.5" /> : null}
+                                  {member.status || 'UNMARKED'}
+                                </span>
+                              </div>
+                            )}
+                          </td>
 
-                        {/* Check-in Time */}
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-xs font-mono font-bold text-foreground/50">
-                            {member.checkInTime ? String(member.checkInTime).slice(0, 5) : '-'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          {/* Check-in Time */}
+                          <td className="px-6 py-4 text-right">
+                            <span className="text-xs font-mono font-bold text-foreground/50">
+                              {member.checkInTime ? String(member.checkInTime).slice(0, 5) : '-'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Mobile Roster Cards */}
-            <div className="block md:hidden divide-y divide-foreground/5">
+            {/* ── MOBILE VIEW: ULTRA-STYLISH APP-LIKE ROSTER CARDS ── */}
+            <div className="block md:hidden space-y-3">
               {displayRoster.map((member) => {
                 const isPresent = member.status === 'PRESENT';
                 const isAbsent = member.status === 'ABSENT';
                 const canModify = canTakeAttendance;
 
                 return (
-                  <div key={member.organizationMemberUuid} className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors">
-                    {/* Athlete Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                  <div
+                    key={member.organizationMemberUuid}
+                    className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-3 transition-all hover:border-primary/40"
+                  >
+                    {/* Top Row: Avatar + Name + Role + Check-in Time */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-2xl bg-surface border border-border overflow-hidden flex items-center justify-center shrink-0 shadow-sm relative">
                           {member.photo ? (
                             <img
                               src={UserService.getPhotoUrl(member.photo)}
@@ -670,57 +673,82 @@ export default function AttendancePage() {
                             />
                           ) : (
                             <span className="text-xs font-black text-primary">
-                              {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                              {member.fullName?.charAt(0)?.toUpperCase() || 'M'}
                             </span>
                           )}
+                          {isPresent && (
+                            <span className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-card" />
+                          )}
                         </div>
-                        <div>
-                          <div className="font-extrabold text-sm text-foreground">
+
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-black text-foreground leading-tight truncate">
                             {member.fullName}
+                          </h4>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-foreground/5 border border-foreground/10 text-foreground/60">
+                              {member.role || 'MEMBER'}
+                            </span>
+                            {member.checkInTime && (
+                              <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                                • {String(member.checkInTime).slice(0, 5)}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-[11px] font-mono text-foreground/40">{member.phone ? `+91 ${member.phone}` : 'No phone'}</div>
                         </div>
                       </div>
 
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-foreground/5 border border-foreground/10 text-foreground/60">
-                        {member.role || 'MEMBER'}
-                      </span>
+                      {member.phone && (
+                        <a
+                          href={`tel:${member.phone}`}
+                          className="p-2 rounded-xl bg-surface hover:bg-surface-hover border border-border text-primary active:scale-90 transition shrink-0"
+                          title="Call Athlete"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                        </a>
+                      )}
                     </div>
 
-                    {/* Segmented Status Toggle Bar */}
+                    {/* Status Toggle Switch Bar */}
                     {canModify ? (
-                      <div className="grid grid-cols-2 gap-1.5 bg-background p-1.5 rounded-2xl border shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <div className="grid grid-cols-2 gap-1.5 bg-surface p-1 rounded-xl border border-border">
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'PRESENT')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isPresent
-                              ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25'
-                              : 'text-foreground/50 hover:bg-emerald-500/10'
-                            }`}
+                          className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                            isPresent
+                              ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 font-black scale-[1.01]'
+                              : 'text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/10'
+                          }`}
                         >
-                          <Check className="w-3.5 h-3.5" /> Present
+                          <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                          <span>Present</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => handleStatusChange(member.organizationMemberUuid, 'ABSENT')}
-                          className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isAbsent
-                              ? 'bg-red-500 text-white shadow-md shadow-red-500/25'
-                              : 'text-foreground/50 hover:bg-red-500/10'
-                            }`}
+                          className={`py-2 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                            isAbsent
+                              ? 'bg-red-500 text-white shadow-md shadow-red-500/25 font-black scale-[1.01]'
+                              : 'text-foreground/50 hover:text-red-400 hover:bg-red-500/10'
+                          }`}
                         >
-                          <X className="w-3.5 h-3.5" /> Absent
+                          <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                          <span>Absent</span>
                         </button>
                       </div>
                     ) : (
-                      <div className="pt-1 flex items-center justify-between">
+                      <div className="pt-1 flex items-center justify-between border-t border-border">
                         <span className="text-[11px] font-bold text-foreground/40">Status</span>
-                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${isPresent
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
+                          isPresent
                             ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                             : isAbsent
-                              ? 'bg-red-500/15 text-red-400 border border-red-500/25'
-                              : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
-                          }`}>
+                            ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                            : 'bg-foreground/5 text-foreground/40 border border-foreground/10'
+                        }`}>
+                          {isPresent ? <Check className="w-3 h-3" /> : isAbsent ? <X className="w-3 h-3" /> : null}
                           {member.status || 'UNMARKED'}
                         </span>
                       </div>

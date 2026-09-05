@@ -24,7 +24,6 @@ import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { usePracticeMatchStore } from '@/lib/store/usePracticeMatchStore';
 import ContextSwitcher from '@/components/ContextSwitcher';
-import PracticeMatchDrawer from '@/components/home/PracticeMatchDrawer';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
 export default function PersonalLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +34,6 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -108,6 +106,12 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
     pathname.startsWith('/tournaments');
   const isAlertsActive = pathname === '/home/notifications';
   const isProfileActive = pathname === '/profile';
+
+  const hideBottomNav =
+    (pathname.startsWith('/home/tournaments/') && pathname !== '/home/tournaments') ||
+    (pathname.startsWith('/home/team-championship/') && pathname !== '/home/team-championship') ||
+    (pathname.startsWith('/live-score/') && pathname !== '/live-score') ||
+    pathname.startsWith('/setup-workspace');
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -251,27 +255,6 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
             ))}
           </nav>
 
-          {/* Quick Practice Match CTA (Expanded only) */}
-          {!isSidebarCollapsed && (
-            <div className="px-4 py-2">
-              <button
-                onClick={() => setIsDrawerOpen(true)}
-                className="w-full p-3 rounded-2xl border bg-gradient-to-r from-primary/10 to-amber-500/10 hover:from-primary/20 hover:to-amber-500/20 border-primary/30 flex items-center justify-between text-left transition-all shadow-md group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-primary text-black flex items-center justify-center font-black shrink-0 shadow-md shadow-primary/30">
-                    <Activity className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-black text-foreground">Digital Umpire</div>
-                    <div className="text-[10px] text-foreground/50 truncate">Instant Voice Scoring</div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          )}
-
           {/* User Footer Profile & Logout */}
           <div
             className={`p-3 border-t flex items-center ${
@@ -318,13 +301,14 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-auto bg-background md:pb-0 pb-16">{children}</main>
+      <main className={`flex-1 overflow-auto bg-background md:pb-0 ${hideBottomNav ? 'pb-0' : 'pb-16'}`}>{children}</main>
 
       {/* Mobile Bottom Nav */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto"
-        style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
-      >
+      {!hideBottomNav && (
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto"
+          style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
+        >
         <Link
           href={homeHref}
           className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
@@ -357,8 +341,8 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
 
         {/* 3D Circular Elevated Umpire Button */}
         <div className="relative -top-5 flex items-center justify-center">
-          <button
-            onClick={() => setIsDrawerOpen(true)}
+          <Link
+            href="/practice"
             className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
             style={{
               backgroundColor: 'var(--athlon-primary)',
@@ -383,7 +367,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
             {hasLiveMatch && (
               <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background z-20" />
             )}
-          </button>
+          </Link>
         </div>
 
         <Link
@@ -416,9 +400,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
           </span>
         </Link>
       </nav>
-
-      {/* Practice Match Drawer */}
-      <PracticeMatchDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      )}
     </div>
   );
 }

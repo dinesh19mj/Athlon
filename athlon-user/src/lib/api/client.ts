@@ -79,8 +79,16 @@ export const fetchClient = async <T>(
       return {} as T;
     }
 
-    const data = await response.json();
-    return data as T;
+    const textData = await response.text();
+    if (!textData || !textData.trim()) {
+      return {} as T;
+    }
+
+    try {
+      return JSON.parse(textData) as T;
+    } catch {
+      return { message: textData, data: textData } as unknown as T;
+    }
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;

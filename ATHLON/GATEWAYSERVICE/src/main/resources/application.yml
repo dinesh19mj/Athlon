@@ -25,6 +25,11 @@ spring:
           predicates:
             - Path=/api/tournament/**
 
+        - id: tournament_ws_route
+          uri: ws://localhost:5053
+          predicates:
+            - Path=/ws/**
+
       httpclient:
         wiretap: true
 

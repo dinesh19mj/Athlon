@@ -24,6 +24,7 @@ import com.athlon.tournamentservice.dto.response.PoolStandingDTO;
 import com.athlon.tournamentservice.dto.request.ManualDrawRequest;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ public class DrawEngineService {
     private final PoolTeamRepository poolTeamRepository;
     private final LeagueFixtureGenerator leagueFixtureGenerator;
     private final StandingsService standingsService;
+    private final com.athlon.tournamentservice.drawengine.fixture.PooledKnockoutFixtureGenerator pooledKnockoutFixtureGenerator;
     private final com.athlon.tournamentservice.teamevent.service.TeamEventFixtureGenerator teamEventFixtureGenerator;
 
     @Autowired
@@ -53,6 +55,7 @@ public class DrawEngineService {
             DrawValidationEngine validationEngine,
             KnockoutFixtureGenerator knockoutFixtureGenerator,
             com.athlon.tournamentservice.drawengine.fixture.ManualKnockoutFixtureGenerator manualKnockoutFixtureGenerator,
+            com.athlon.tournamentservice.drawengine.fixture.PooledKnockoutFixtureGenerator pooledKnockoutFixtureGenerator,
             DrawRepository drawRepository,
             MatchRepository matchRepository,
             PoolRepository poolRepository,
@@ -65,6 +68,7 @@ public class DrawEngineService {
         this.validationEngine = validationEngine;
         this.knockoutFixtureGenerator = knockoutFixtureGenerator;
         this.manualKnockoutFixtureGenerator = manualKnockoutFixtureGenerator;
+        this.pooledKnockoutFixtureGenerator = pooledKnockoutFixtureGenerator;
         this.drawRepository = drawRepository;
         this.matchRepository = matchRepository;
         this.poolRepository = poolRepository;
@@ -386,6 +390,203 @@ public class DrawEngineService {
         drawRepository.save(playoffDraw);
 
         return playoffDraw;
+    }
+
+    @Transactional
+    public Draw orchestratePooledKnockoutDraw(UUID tournamentUuid, com.athlon.tournamentservice.dto.request.PooledKnockoutDrawRequest request, Long createdBy) {
+        Tournament tournament = tournamentRepository.findByTournamentUuid(tournamentUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Tournament not found"));
+
+        List<Registration> allRegistrations = registrationRepository.findByTournamentIdAndStatus(tournament.getTournamentId(), "APPROVED");
+
+        Long categoryId = request.getCategoryId() != null ? request.getCategoryId() : 1L;
+        
+        // 1. Calculate total teams
+        int totalTeams = 0;
+        if (request.getPools() != null) {
+            for (com.athlon.tournamentservice.dto.request.PooledKnockoutDrawRequest.PoolAssignmentDTO poolDto : request.getPools()) {
+                if (poolDto.getRegistrationUuids() != null) {
+                    totalTeams += poolDto.getRegistrationUuids().size();
+                }
+            }
+        }
+
+        Draw draw = new Draw(tournament.getTournamentId(), categoryId, "POOLED_KNOCKOUT", totalTeams, createdBy);
+        draw.setStatus("PUBLISHED");
+        draw = drawRepository.save(draw);
+
+        List<Match> allPoolMatches = new ArrayList<>();
+
+        // 2. Process each pool and generate its knockout tree
+        if (request.getPools() != null) {
+            for (com.athlon.tournamentservice.dto.request.PooledKnockoutDrawRequest.PoolAssignmentDTO poolDto : request.getPools()) {
+                int capacity = poolDto.getRegistrationUuids() != null ? poolDto.getRegistrationUuids().size() : 0;
+                Pool pool = new Pool(draw.getDrawId(), poolDto.getPoolName(), capacity, createdBy);
+                pool = poolRepository.save(pool);
+
+                List<Registration> poolTeams = new ArrayList<>();
+                if (poolDto.getRegistrationUuids() != null) {
+                    for (UUID teamUuid : poolDto.getRegistrationUuids()) {
+                        Registration reg = allRegistrations.stream()
+                                .filter(r -> r.getRegistrationUuid().equals(teamUuid))
+                                .findFirst()
+                                .orElseThrow(() -> new IllegalArgumentException("Team not found in approved registrations: " + teamUuid));
+
+                        poolTeams.add(reg);
+
+                        PoolTeam pt = new PoolTeam(pool.getPoolId(), reg.getRegistrationId());
+                        poolTeamRepository.save(pt);
+                    }
+                }
+
+                // Generate knockout fixtures for this pool
+                int qualifiersCount = request.getQualifiersPerPool() > 0 ? request.getQualifiersPerPool() : 2;
+                List<Match> poolMatches = pooledKnockoutFixtureGenerator.generateFixtures(
+                        pool, poolTeams, categoryId, createdBy, tournament.getTournamentId(), tournament.getTournamentUuid(), qualifiersCount
+                );
+
+                allPoolMatches.addAll(poolMatches);
+            }
+        }
+
+        matchRepository.saveAll(allPoolMatches);
+        return draw;
+    }
+
+    @Transactional
+    public Draw orchestratePooledPlayoffs(UUID tournamentUuid, com.athlon.tournamentservice.dto.request.PooledPlayoffsRequest request, Long createdBy) {
+        Tournament tournament = tournamentRepository.findByTournamentUuid(tournamentUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Tournament not found"));
+
+        List<Registration> allRegistrations = registrationRepository.findByTournamentIdAndStatus(tournament.getTournamentId(), "APPROVED");
+        Map<Long, Registration> regById = allRegistrations.stream()
+                .collect(Collectors.toMap(Registration::getRegistrationId, r -> r, (a, b) -> a));
+
+        List<ManualDrawRequest.ManualPairing> pairings = new ArrayList<>();
+
+        // Mode 1: Custom Manual Pairings configured by Organizer
+        if (request != null && "CUSTOM_MANUAL".equalsIgnoreCase(request.getPairingMode()) && request.getCustomPairings() != null && !request.getCustomPairings().isEmpty()) {
+            for (com.athlon.tournamentservice.dto.request.PooledPlayoffsRequest.CustomPlayoffMatchDTO cm : request.getCustomPairings()) {
+                ManualDrawRequest.ManualPairing p = new ManualDrawRequest.ManualPairing();
+                p.setSlotIndex(cm.getMatchOrder());
+                if (cm.getPlayer1RegistrationId() != null && regById.containsKey(cm.getPlayer1RegistrationId())) {
+                    p.setTeamAUuid(regById.get(cm.getPlayer1RegistrationId()).getRegistrationUuid());
+                }
+                if (cm.getPlayer2RegistrationId() != null && regById.containsKey(cm.getPlayer2RegistrationId())) {
+                    p.setTeamBUuid(regById.get(cm.getPlayer2RegistrationId()).getRegistrationUuid());
+                }
+                pairings.add(p);
+            }
+        } else {
+            // Mode 2: Standard Cross-Seeding between Pools (A1 vs B2, C1 vs D2, B1 vs A2, D1 vs C2)
+            List<Draw> draws = drawRepository.findByTournamentId(tournament.getTournamentId());
+            List<Pool> pools = new ArrayList<>();
+            for (Draw d : draws) {
+                pools.addAll(poolRepository.findByDrawId(d.getDrawId()));
+            }
+
+            // Find winners & runners-up per pool from completed matches
+            List<Match> allMatches = matchRepository.findByTournamentUuid(tournament.getTournamentUuid());
+            Map<Long, List<Match>> matchesByPool = allMatches.stream()
+                    .filter(m -> m.getPoolId() != null)
+                    .collect(Collectors.groupingBy(Match::getPoolId));
+
+            List<List<Registration>> poolQualifiers = new ArrayList<>();
+            for (Pool p : pools) {
+                List<Match> poolM = matchesByPool.getOrDefault(p.getPoolId(), Collections.emptyList());
+                List<Match> rootMatches = poolM.stream().filter(m -> m.getNextMatchUuid() == null).collect(Collectors.toList());
+                List<Registration> qualifiers = new ArrayList<>();
+                if (rootMatches.size() == 1) {
+                    Match finalM = rootMatches.get(0);
+                    if (finalM.getWinnerRegistrationId() != null) {
+                        Registration winner = regById.get(finalM.getWinnerRegistrationId());
+                        if (winner != null) qualifiers.add(winner);
+
+                        Long runnerUpId = finalM.getWinnerRegistrationId().equals(finalM.getTeamARegistrationId())
+                                ? finalM.getTeamBRegistrationId() : finalM.getTeamARegistrationId();
+                        if (runnerUpId != null && regById.containsKey(runnerUpId)) {
+                            qualifiers.add(regById.get(runnerUpId));
+                        }
+                    }
+                } else {
+                    for (Match rm : rootMatches) {
+                        if (rm.getWinnerRegistrationId() != null) {
+                            Registration winner = regById.get(rm.getWinnerRegistrationId());
+                            if (winner != null) qualifiers.add(winner);
+                        }
+                    }
+                }
+                if (!qualifiers.isEmpty()) {
+                    poolQualifiers.add(qualifiers);
+                }
+            }
+
+            if (poolQualifiers.size() == 2) {
+                List<Registration> pA = poolQualifiers.get(0);
+                List<Registration> pB = poolQualifiers.get(1);
+
+                ManualDrawRequest.ManualPairing p1 = new ManualDrawRequest.ManualPairing();
+                p1.setTeamAUuid(pA.get(0).getRegistrationUuid()); // A1
+                p1.setTeamBUuid(pB.size() > 1 ? pB.get(1).getRegistrationUuid() : null); // B2
+                p1.setSlotIndex(1);
+                pairings.add(p1);
+
+                ManualDrawRequest.ManualPairing p2 = new ManualDrawRequest.ManualPairing();
+                p2.setTeamAUuid(pB.get(0).getRegistrationUuid()); // B1
+                p2.setTeamBUuid(pA.size() > 1 ? pA.get(1).getRegistrationUuid() : null); // A2
+                p2.setSlotIndex(2);
+                pairings.add(p2);
+            } else if (poolQualifiers.size() >= 4) {
+                List<Registration> pA = poolQualifiers.get(0);
+                List<Registration> pB = poolQualifiers.get(1);
+                List<Registration> pC = poolQualifiers.get(2);
+                List<Registration> pD = poolQualifiers.get(3);
+
+                ManualDrawRequest.ManualPairing p1 = new ManualDrawRequest.ManualPairing();
+                p1.setTeamAUuid(pA.get(0).getRegistrationUuid());
+                p1.setTeamBUuid(pB.size() > 1 ? pB.get(1).getRegistrationUuid() : null);
+                p1.setSlotIndex(1);
+                pairings.add(p1);
+
+                ManualDrawRequest.ManualPairing p2 = new ManualDrawRequest.ManualPairing();
+                p2.setTeamAUuid(pC.get(0).getRegistrationUuid());
+                p2.setTeamBUuid(pD.size() > 1 ? pD.get(1).getRegistrationUuid() : null);
+                p2.setSlotIndex(2);
+                pairings.add(p2);
+
+                ManualDrawRequest.ManualPairing p3 = new ManualDrawRequest.ManualPairing();
+                p3.setTeamAUuid(pB.get(0).getRegistrationUuid());
+                p3.setTeamBUuid(pA.size() > 1 ? pA.get(1).getRegistrationUuid() : null);
+                p3.setSlotIndex(3);
+                pairings.add(p3);
+
+                ManualDrawRequest.ManualPairing p4 = new ManualDrawRequest.ManualPairing();
+                p4.setTeamAUuid(pD.get(0).getRegistrationUuid());
+                p4.setTeamBUuid(pC.size() > 1 ? pC.get(1).getRegistrationUuid() : null);
+                p4.setSlotIndex(4);
+                pairings.add(p4);
+            }
+        }
+
+        if (pairings.isEmpty()) {
+            throw new IllegalStateException("Unable to formulate playoff pairings. Ensure pools have completed matches or provide custom pairings.");
+        }
+
+        ManualDrawRequest drawReq = new ManualDrawRequest();
+        drawReq.setDrawType("KNOCKOUT");
+        drawReq.setPairings(pairings);
+
+        Long categoryId = request != null && request.getCategoryId() != null ? request.getCategoryId() : 1L;
+        List<Match> generatedMatches = manualKnockoutFixtureGenerator.generateFixtures(
+                allRegistrations, drawReq, categoryId, createdBy, tournament.getTournamentId(), tournament.getTournamentUuid()
+        );
+
+        matchRepository.saveAll(generatedMatches);
+
+        int drawSize = pairings.size() * 2;
+        Draw playoffDraw = new Draw(tournament.getTournamentId(), categoryId, "POOLED_PLAYOFFS", drawSize, createdBy);
+        playoffDraw.setStatus("PUBLISHED");
+        return drawRepository.save(playoffDraw);
     }
 }
 

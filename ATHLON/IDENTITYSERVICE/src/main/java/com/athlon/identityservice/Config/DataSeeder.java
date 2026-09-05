@@ -28,10 +28,18 @@ public class DataSeeder {
         return args -> {
             if (repository.count() == 0) {
                 repository.saveAll(List.of(
-                        new SubscriptionPackage("Tournament Organizer", 
-                                "The ultimate multi-sport experience for hosting tournaments, managing brackets, and live broadcasting.", 
+                        new SubscriptionPackage("Tournament Organizer (Monthly Pro)", 
+                                "Host unlimited multi-sport tournaments, automate knockout & league brackets, and stream with live scoreboard overlays.", 
                                 new BigDecimal("1200"), 1, 
-                                "[\"Multi-Sport Organizing\", \"Advanced Bracket Generation\", \"Umpiring Interface\", \"Live YouTube Streaming\"]"),
+                                "[\"Unlimited Tournaments per Month\", \"Knockout & League Format Engine\", \"Advanced Bracket Generation\", \"Umpiring Interface\", \"Live YouTube Streaming\"]"),
+                        new SubscriptionPackage("Tournament Organizer (Single Tournament)", 
+                                "Host a single complete knockout or league tournament with fixtures, live YouTube score overlay, and digital umpire console.", 
+                                new BigDecimal("499"), 1, 
+                                "[\"1 Complete Knockout/League Event\", \"Automated Bracket & Pool Generation\", \"Digital Umpire Console\", \"Live YouTube Score Overlay\"]"),
+                        new SubscriptionPackage("Team Championship & Live Auction Pass", 
+                                "Host premier franchise team championships with live player auctions, team purse bidding, multi-match tie lineups, and live broadcasting.", 
+                                new BigDecimal("2499"), 1, 
+                                "[\"1 Complete Team Championship Event\", \"Real-Time Live Player Auction & Bidding\", \"Franchise Purse & Squad Management\", \"Team vs Team Tie Multi-Match Lineups\", \"Live YouTube Auction & Score Overlays\"]"),
                         new SubscriptionPackage("Academy Hub", 
                                 "End-to-end management for sports academies, student rosters, coaches, and training schedules.", 
                                 new BigDecimal("7900"), 1, 

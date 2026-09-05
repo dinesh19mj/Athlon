@@ -24,8 +24,8 @@ export const ClubMatchService = {
     api.post<ClubMatch>('/api/tournament/clubmatch/add', data),
 
   updateScore: (matchId: number, score: string, status?: string) =>
-    api.put<ClubMatch>(`/api/tournament/clubmatch/updateScore/${matchId}?score=${encodeURIComponent(score)}${status ? `&status=${status}` : ''}`, {}),
+    api.post<ClubMatch>(`/api/tournament/clubmatch/updateScore/${matchId}?score=${encodeURIComponent(score)}${status ? `&status=${status}` : ''}`, {}),
 
   deleteMatch: (matchId: number) =>
-    api.delete<void>(`/api/tournament/clubmatch/${matchId}`),
+    api.post<void>(`/api/tournament/clubmatch/delete/${matchId}`, {}),
 };

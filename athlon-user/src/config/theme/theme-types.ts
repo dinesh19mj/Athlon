@@ -91,3 +91,13 @@ export interface AthlonTheme {
   colors: ThemeColors;
   semantic: SemanticColors;
 }
+
+export type ThemeMode = 'dark' | 'light';
+
+export interface LightThemeTokens {
+  bgPage: string;
+  border: string;
+  iconMuted: string;
+  textPrimary: string;
+}
+

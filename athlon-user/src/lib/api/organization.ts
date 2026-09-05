@@ -77,6 +77,7 @@ export interface OrganizationMemberResponse {
   phone?: string;
   photo?: string;
   role: string;
+  sportType?: string;
   status: string;
   isActive?: number;
   joinedAt?: string;
@@ -85,6 +86,7 @@ export interface OrganizationMemberResponse {
 export interface AddMemberRequest {
   phone: string;
   role?: string;
+  sportType?: string;
 }
 
 export const OrganizationService = {
@@ -106,18 +108,18 @@ export const OrganizationService = {
   getProfileByOrgUuid: (orgUuid: string) =>
     api.get<any>(`/api/identity/organizations/getProfileByOrgUuid/${orgUuid}`),
 
-  getLogoUrl: (fileName: string) => {
+  getLogoUrl: (fileName?: string) => {
     if (!fileName) return '';
     if (fileName.startsWith('http') || fileName.startsWith('data:') || fileName.startsWith('blob:')) return fileName;
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
-    return `${baseUrl}/api/identity/organizations/logo/${fileName}`;
+    const cleanName = fileName.split(/[/\\]/).pop() || fileName;
+    return `/api/identity/organizations/logo/${encodeURIComponent(cleanName)}`;
   },
 
-  getBannerUrl: (fileName: string) => {
+  getBannerUrl: (fileName?: string) => {
     if (!fileName) return '';
     if (fileName.startsWith('http') || fileName.startsWith('data:') || fileName.startsWith('blob:')) return fileName;
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
-    return `${baseUrl}/api/identity/organizations/banner/${fileName}`;
+    const cleanName = fileName.split(/[/\\]/).pop() || fileName;
+    return `/api/identity/organizations/banner/${encodeURIComponent(cleanName)}`;
   },
 
   updateSubscription: (orgId: number, status: string, paymentRef?: string) => 

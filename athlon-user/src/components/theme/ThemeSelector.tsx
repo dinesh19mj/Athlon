@@ -14,6 +14,8 @@ import {
   Shield,
   ArrowRight,
   TrendingUp,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import type { AthlonTheme } from '@/config/theme';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
@@ -24,15 +26,15 @@ interface ThemeSelectorProps {
 }
 
 export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
-  const { theme: currentTheme, themeKey, setTheme, availableThemes, iconStyle, setIconStyle } = useAthlonTheme();
+  const { theme: currentTheme, themeKey, mode, setMode, setTheme, availableThemes, iconStyle, setIconStyle } = useAthlonTheme();
   const c = currentTheme.colors;
 
   const handleResetDefault = () => {
-    setTheme('algae');
+    setTheme('algae', 'dark');
     setIconStyle('2d');
   };
 
-  const isDefault = themeKey === 'algae' && iconStyle === '2d';
+  const isDefault = themeKey === 'algae' && mode === 'dark' && iconStyle === '2d';
 
   return (
     <div className={`space-y-5 select-none ${className}`}>
@@ -219,7 +221,114 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
         </div>
       </div>
 
-      {/* ─── 2. ICON GRAPHICS MODE SELECTOR (2D vs 3D) ─── */}
+      {/* ─── 2. THEME DISPLAY MODE (Dark vs Light) ─── */}
+      <div
+        className="rounded-[22px] p-4 border backdrop-blur-xl"
+        style={{
+          backgroundColor: c.card,
+          borderColor: c.border,
+        }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {mode === 'dark' ? (
+              <Moon className="w-4 h-4" style={{ color: c.primary }} />
+            ) : (
+              <Sun className="w-4 h-4" style={{ color: c.primary }} />
+            )}
+            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider" style={{ color: c.text }}>
+              Display Mode
+            </h3>
+          </div>
+          <span className="text-[11px] font-bold" style={{ color: c.textMuted }}>
+            Active: <span className="uppercase" style={{ color: c.primary }}>{mode}</span>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Dark Mode Option */}
+          <button
+            type="button"
+            onClick={() => setMode('dark')}
+            className={`p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden flex items-center justify-between cursor-pointer group active:scale-[0.98] ${
+              mode === 'dark' ? 'shadow-lg' : 'hover:bg-white/[0.03]'
+            }`}
+            style={{
+              backgroundColor: mode === 'dark' ? c.surface : 'transparent',
+              borderColor: mode === 'dark' ? c.primary : c.border,
+              boxShadow: mode === 'dark' ? `0 4px 18px -4px ${c.glow}` : 'none',
+            }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center border shrink-0 transition-transform group-hover:scale-105"
+                style={{ backgroundColor: c.card, borderColor: c.border }}
+              >
+                <Moon className="w-5 h-5" style={{ color: c.primary }} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm font-black" style={{ color: c.text }}>Deep Dark</span>
+                  <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/15">Default</span>
+                </div>
+                <p className="text-[10.5px] font-medium truncate mt-0.5" style={{ color: c.textMuted }}>
+                  Deep slate navy with radiant accent glow
+                </p>
+              </div>
+            </div>
+            {mode === 'dark' && (
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm ml-2"
+                style={{ backgroundColor: c.primary, color: c.primaryForeground }}
+              >
+                <Check className="w-3 h-3" strokeWidth={3} />
+              </div>
+            )}
+          </button>
+
+          {/* Light Mode Option */}
+          <button
+            type="button"
+            onClick={() => setMode('light')}
+            className={`p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden flex items-center justify-between cursor-pointer group active:scale-[0.98] ${
+              mode === 'light' ? 'shadow-lg' : 'hover:bg-white/[0.03]'
+            }`}
+            style={{
+              backgroundColor: mode === 'light' ? c.surface : 'transparent',
+              borderColor: mode === 'light' ? c.primary : c.border,
+              boxShadow: mode === 'light' ? `0 4px 18px -4px ${c.glow}` : 'none',
+            }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center border shrink-0 transition-transform group-hover:scale-105"
+                style={{ backgroundColor: c.card, borderColor: c.border }}
+              >
+                <Sun className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm font-black" style={{ color: c.text }}>Daylight Light</span>
+                  <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">Crisp</span>
+                </div>
+                <p className="text-[10.5px] font-medium truncate mt-0.5" style={{ color: c.textMuted }}>
+                  Pure white cards with tinted ambient page
+                </p>
+              </div>
+            </div>
+            {mode === 'light' && (
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm ml-2"
+                style={{ backgroundColor: c.primary, color: c.primaryForeground }}
+              >
+                <Check className="w-3 h-3" strokeWidth={3} />
+              </div>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ─── 3. ICON GRAPHICS MODE SELECTOR (2D vs 3D) ─── */}
       <div
         className="rounded-[22px] p-4 border backdrop-blur-xl"
         style={{
@@ -322,7 +431,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
         </div>
       </div>
 
-      {/* ─── 3. ACCENT COLOR PALETTES GRID ─── */}
+      {/* ─── 4. ACCENT COLOR PALETTES GRID ─── */}
       <div
         className="rounded-[22px] p-4 border backdrop-blur-xl"
         style={{
@@ -334,7 +443,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
           <div className="flex items-center gap-2">
             <Palette className="w-4 h-4" style={{ color: c.primary }} />
             <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider" style={{ color: c.text }}>
-              Theme
+              Theme Accent
             </h3>
           </div>
           <span className="text-[11px] font-bold" style={{ color: c.textMuted }}>
@@ -342,8 +451,8 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
           </span>
         </div>
 
-        {/* 6 Theme Cards Grid (1 Clean Row of 6 on Desktop, 3 on Tablet, 2 on Mobile) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+        {/* 8 Theme Cards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           {availableThemes.map((t: AthlonTheme) => {
             const isSelected = t.key === themeKey;
             const tc = t.colors;
@@ -389,7 +498,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
                 {/* Bottom: Theme Name */}
                 <div className="flex items-center justify-between gap-1">
                   <div className="text-xs font-black tracking-tight truncate" style={{ color: c.text }}>
-                    {t.name}
+                    {t.name.replace('Athlon ', '')}
                   </div>
                   {t.key === 'algae' && (
                     <span className="text-[8px] font-extrabold uppercase px-1 py-0.5 rounded bg-white/10 text-white/60 shrink-0">
@@ -403,7 +512,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
         </div>
       </div>
 
-      {/* ─── 4. SUMMARY & RESET FOOTER ─── */}
+      {/* ─── 5. SUMMARY & RESET FOOTER ─── */}
       <div className="flex items-center justify-between pt-1 text-xs px-1">
         <div className="flex items-center gap-1.5 text-foreground/50">
           <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.primary }} />

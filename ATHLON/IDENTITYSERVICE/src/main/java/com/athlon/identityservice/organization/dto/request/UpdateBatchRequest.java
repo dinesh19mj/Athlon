@@ -12,9 +12,14 @@ public class UpdateBatchRequest {
     private UUID batchUuid;
 
     private String batchName;
+    private UUID centreUuid;
+    private String centreName;
+    private UUID facilityUuid;
     private UUID courtUuid;
     private String sportType;
     private String level;
+    private String ageCategory;
+    private String programFocus;
     private UUID coachUuid;
     private String coachName;
     private String daysOfWeek;
@@ -23,6 +28,46 @@ public class UpdateBatchRequest {
     private Integer maxCapacity;
     private BigDecimal monthlyFee;
     private String status; // ACTIVE, FULL, ARCHIVED
+
+    public UUID getCentreUuid() {
+        return centreUuid;
+    }
+
+    public void setCentreUuid(UUID centreUuid) {
+        this.centreUuid = centreUuid;
+    }
+
+    public String getCentreName() {
+        return centreName;
+    }
+
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
+    }
+
+    public UUID getFacilityUuid() {
+        return facilityUuid;
+    }
+
+    public void setFacilityUuid(UUID facilityUuid) {
+        this.facilityUuid = facilityUuid;
+    }
+
+    public String getAgeCategory() {
+        return ageCategory;
+    }
+
+    public void setAgeCategory(String ageCategory) {
+        this.ageCategory = ageCategory;
+    }
+
+    public String getProgramFocus() {
+        return programFocus;
+    }
+
+    public void setProgramFocus(String programFocus) {
+        this.programFocus = programFocus;
+    }
 
     public UUID getBatchUuid() {
         return batchUuid;

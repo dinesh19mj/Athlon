@@ -3,9 +3,9 @@ package com.athlon.tournamentservice.dto.request;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.format.annotation.DateTimeFormat;
 
 public class TournamentCreateRequest {
 
@@ -15,13 +15,14 @@ public class TournamentCreateRequest {
     private String description;
 
     @NotNull(message = "Start date is required")
-    @Future(message = "Start date must be in the future")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime startDate;
 
     @NotNull(message = "End date is required")
-    @Future(message = "End date must be in the future")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime endDate;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime registrationClosingDate;
 
     @NotNull(message = "Organizer ID is required")
@@ -51,6 +52,8 @@ public class TournamentCreateRequest {
     private String mapLink;
 
     private String contactPhone;
+
+    private String gpayNumber;
 
     private Double registrationFees;
 
@@ -205,6 +208,14 @@ public class TournamentCreateRequest {
 
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
+    }
+
+    public String getGpayNumber() {
+        return gpayNumber;
+    }
+
+    public void setGpayNumber(String gpayNumber) {
+        this.gpayNumber = gpayNumber;
     }
 
     public Double getRegistrationFees() {

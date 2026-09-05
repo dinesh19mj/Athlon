@@ -29,7 +29,7 @@ import {
   Radio,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
-import { ScoreService, LiveScore } from '@/lib/api/scores';
+import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
@@ -54,16 +54,21 @@ export function MarketingPageClient() {
   useEffect(() => {
     // 1. Fetch live + finished scores
     const fetchScores = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       ScoreService.getLive()
         .then((res: any) => {
-          if (res && res.data) setLiveScores(res.data);
+          if (res && res.data) {
+            const tournamentLive = res.data.filter(isTournamentScore);
+            setLiveScores(tournamentLive);
+          }
         })
         .catch(() => {});
 
       ScoreService.getAll()
         .then((res: any) => {
           if (res?.data) {
-            const finished = res.data.filter((s: LiveScore) => {
+            const tournamentScores = res.data.filter(isTournamentScore);
+            const finished = tournamentScores.filter((s: LiveScore) => {
               const m = s.scoreMeta || {};
               const games = m.games || [];
               const wonA = games.filter((g: any) => g.winner === 'A').length;
@@ -77,9 +82,9 @@ export function MarketingPageClient() {
     };
 
     fetchScores();
-    const interval = setInterval(fetchScores, 5000);
+    const interval = setInterval(fetchScores, 15000);
 
-    // 2. Fetch all public tournaments and team championships with polling
+    // 2. Fetch all public tournaments and team championships
     TournamentService.getAll()
       .then((res) => {
         const publicList = (res.data || []).filter((t: Tournament) => t.visibility === 'PUBLIC');
@@ -89,16 +94,19 @@ export function MarketingPageClient() {
       .finally(() => setLoadingTournaments(false));
 
     const loadPublicChampionships = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       TeamChampionshipService.getAllPublic()
         .then((res: any) => {
           const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
           setChampionships(list);
         })
-        .catch((err) => console.error('Failed to load team championships in marketing client', err));
+        .catch((err) => {
+          console.warn('Temporary issue fetching team championships:', err?.message || err);
+        });
     };
 
     loadPublicChampionships();
-    const champInterval = setInterval(loadPublicChampionships, 6000);
+    const champInterval = setInterval(loadPublicChampionships, 15000);
 
     return () => {
       clearInterval(interval);
@@ -137,47 +145,55 @@ export function MarketingPageClient() {
       <div className="block md:hidden pb-28">
         <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-6 pt-2">
           {/* 1. Hero Banner Carousel */}
-          <section className="relative w-full min-h-[220px] rounded-[24px] overflow-hidden bg-background border border-foreground/10 shadow-[0_10px_40px_rgba(0,136,255,0.15)]">
-            {/* Video Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#001122] via-[#001122]/90 to-transparent z-10" />
-
-              <div className="absolute top-[-10%] right-[-5%] w-[60%] h-[120%] mix-blend-screen opacity-50">
-                <video
-                  key={backgroundVideo}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover"
-                >
-                  <source src={backgroundVideo} type="video/mp4" />
-                </video>
-                <div className="absolute inset-0 bg-gradient-to-l from-transparent to-background" />
-              </div>
+          <section
+            className="relative w-full min-h-[220px] rounded-[24px] overflow-hidden border shadow-lg"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            {/* Right-positioned video with CSS alpha mask (no hard edges or vertical line) */}
+            <div
+              className="absolute top-[-10%] right-[-5%] w-[60%] h-[120%] pointer-events-none z-0"
+              style={{
+                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,1) 100%)',
+                maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,1) 100%)',
+              }}
+            >
+              <video
+                key={backgroundVideo}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover object-center opacity-85 dark:opacity-60"
+              >
+                <source src={backgroundVideo} type="video/mp4" />
+              </video>
             </div>
 
-            <div className="relative z-10 p-6 flex flex-col justify-center h-full w-full">
-              <h1 className="text-[22px] sm:text-[24px] font-black leading-tight tracking-wide uppercase drop-shadow-lg">
+            {/* Left side content with solid readability */}
+            <div className="relative z-10 p-5 sm:p-6 flex flex-col justify-center h-full w-full max-w-[75%] sm:max-w-[65%]">
+              <h1 className="text-[20px] sm:text-[23px] font-black leading-tight tracking-wide uppercase">
                 <span className="text-foreground">Compete Today</span>
                 <br />
-                <span className="text-primary">Champion Tomorrow</span>
+                <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">Champion Tomorrow</span>
               </h1>
-              <p className="text-[11px] sm:text-xs text-foreground/80 mt-2 mb-5 max-w-[260px] leading-relaxed drop-shadow-md">
+              <p className="text-[11px] sm:text-xs text-foreground/75 mt-2 mb-4 leading-relaxed font-medium">
                 Football, Cricket, Badminton & more!
                 <br />
                 Tournaments & Live Scores in one place.
               </p>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <Link
                   href="/tournaments"
-                  className="flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-[10px] sm:text-[11px] font-black px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_var(--athlon-primary-glow)]"
+                  className="flex items-center justify-center gap-1.5 bg-primary text-black text-[10px] sm:text-[11px] font-black px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_4px_16px_var(--athlon-primary-glow)]"
                 >
                   BROWSE TOURNAMENTS <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
                 <Link
                   href="/academies"
-                  className="flex items-center justify-center gap-1.5 bg-black/40 backdrop-blur-md border border-foreground/20 text-foreground text-[10px] sm:text-[11px] font-bold px-4 py-2.5 rounded-xl hover:bg-foreground/10 transition-colors"
+                  className="flex items-center justify-center gap-1.5 bg-surface border border-foreground/15 text-foreground text-[10px] sm:text-[11px] font-bold px-3.5 py-2.5 rounded-xl hover:bg-foreground/5 transition-colors shadow-sm"
                 >
                   <Building2 className="w-3.5 h-3.5 text-primary" /> FIND ACADEMY
                 </Link>
@@ -398,7 +414,7 @@ export function MarketingPageClient() {
             <section className="pt-1">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
                   <h2 className="text-sm font-black uppercase tracking-wider text-foreground">Recent Results</h2>
                 </div>
                 <Link href="/live-score" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
@@ -430,12 +446,12 @@ export function MarketingPageClient() {
                         className="relative rounded-2xl border p-5 shadow-md space-y-4 overflow-hidden transition-all hover:border-primary/50"
                         style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                       >
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-primary shadow-[0_0_10px_var(--athlon-primary)]" />
 
                         <div className="flex items-center justify-between pt-1">
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> COMPLETED
+                            <span className="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-primary" /> COMPLETED
                             </span>
                             <span className="text-[11px] text-foreground/50 font-medium truncate max-w-[130px]">{sTournament}</span>
                           </div>
@@ -456,7 +472,7 @@ export function MarketingPageClient() {
                               </span>
                               {isWinnerA && <Trophy className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />}
                             </div>
-                            <span className={`text-sm font-black font-mono tabular-nums ml-2 shrink-0 ${isWinnerA ? 'text-emerald-400' : 'text-foreground/60'}`}>
+                            <span className={`text-sm font-black font-mono tabular-nums ml-2 shrink-0 ${isWinnerA ? 'text-primary' : 'text-foreground/60'}`}>
                               {gamesWonA}
                             </span>
                           </div>
@@ -474,7 +490,7 @@ export function MarketingPageClient() {
                               </span>
                               {isWinnerB && <Trophy className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />}
                             </div>
-                            <span className={`text-sm font-black font-mono tabular-nums ml-2 shrink-0 ${isWinnerB ? 'text-emerald-400' : 'text-foreground/60'}`}>
+                            <span className={`text-sm font-black font-mono tabular-nums ml-2 shrink-0 ${isWinnerB ? 'text-primary' : 'text-foreground/60'}`}>
                               {gamesWonB}
                             </span>
                           </div>
@@ -597,7 +613,7 @@ export function MarketingPageClient() {
           {/* 3D Circular Elevated Umpire Button */}
           <div className="relative -top-5 flex items-center justify-center">
             <Link
-              href="/match-setup"
+              href="/practice"
               className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
               style={{
                 backgroundColor: 'var(--athlon-primary)',

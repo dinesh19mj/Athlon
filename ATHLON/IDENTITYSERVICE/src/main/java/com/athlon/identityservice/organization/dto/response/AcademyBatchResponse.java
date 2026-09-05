@@ -11,11 +11,16 @@ public class AcademyBatchResponse {
     private UUID batchUuid;
     private Long organizationId;
     private UUID organizationUuid;
+    private UUID centreUuid;
+    private String centreName;
+    private UUID facilityUuid;
     private UUID courtUuid;
     private String courtName;
     private String batchName;
     private String sportType;
     private String level;
+    private String ageCategory;
+    private String programFocus;
     private UUID coachUuid;
     private String coachName;
     private String daysOfWeek;
@@ -59,6 +64,46 @@ public class AcademyBatchResponse {
 
     public void setOrganizationUuid(UUID organizationUuid) {
         this.organizationUuid = organizationUuid;
+    }
+
+    public UUID getCentreUuid() {
+        return centreUuid;
+    }
+
+    public void setCentreUuid(UUID centreUuid) {
+        this.centreUuid = centreUuid;
+    }
+
+    public String getCentreName() {
+        return centreName;
+    }
+
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
+    }
+
+    public UUID getFacilityUuid() {
+        return facilityUuid;
+    }
+
+    public void setFacilityUuid(UUID facilityUuid) {
+        this.facilityUuid = facilityUuid;
+    }
+
+    public String getAgeCategory() {
+        return ageCategory;
+    }
+
+    public void setAgeCategory(String ageCategory) {
+        this.ageCategory = ageCategory;
+    }
+
+    public String getProgramFocus() {
+        return programFocus;
+    }
+
+    public void setProgramFocus(String programFocus) {
+        this.programFocus = programFocus;
     }
 
     public UUID getCourtUuid() {

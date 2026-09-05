@@ -28,6 +28,7 @@ import {
   Calendar,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
   Sliders,
   Flame,
   Star,
@@ -48,6 +49,13 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { OrganizationService, OrganizationProfile } from '@/lib/api/organization';
+import {
+  LocationService,
+  DistrictItem,
+  StateItem,
+  FALLBACK_INDIAN_STATES,
+  FALLBACK_STATE_DISTRICTS,
+} from '@/lib/api/location';
 
 const POPULAR_SPORTS = [
   { name: 'Badminton', icon: '🏸' },
@@ -63,21 +71,6 @@ const POPULAR_SPORTS = [
   { name: 'Athletics', icon: '🏃' },
   { name: 'Martial Arts', icon: '🥋' },
   { name: 'Chess', icon: '♟️' },
-];
-
-const AVAILABLE_AMENITIES = [
-  { name: 'Wooden Flooring', icon: Layers, category: 'Court' },
-  { name: 'Synthetic BWF Mats', icon: Layers, category: 'Court' },
-  { name: 'Air Conditioned', icon: Wind, category: 'Comfort' },
-  { name: 'Dedicated Parking', icon: Car, category: 'Facility' },
-  { name: 'Showers & Changing Rooms', icon: Bath, category: 'Comfort' },
-  { name: 'Locker Facility', icon: Lock, category: 'Facility' },
-  { name: 'Cafeteria / Refreshments', icon: Coffee, category: 'Comfort' },
-  { name: 'Pro Sports Shop', icon: ShoppingBag, category: 'Facility' },
-  { name: 'Drinking Water Dispenser', icon: Droplets, category: 'Facility' },
-  { name: 'High-Speed Wi-Fi', icon: Wifi, category: 'Tech' },
-  { name: 'CCTV Surveillance', icon: Video, category: 'Tech' },
-  { name: 'First Aid & Physio Room', icon: HeartPulse, category: 'Safety' },
 ];
 
 export default function OrganizationProfilePage() {
@@ -104,6 +97,7 @@ export default function OrganizationProfilePage() {
   const [description, setDescription] = useState('');
   const [establishedYear, setEstablishedYear] = useState<number | ''>(2020);
   const [registrationNumber, setRegistrationNumber] = useState('');
+  const [admissionStatus, setAdmissionStatus] = useState<string>('OPEN');
 
   // Branding States
   const [logoUrl, setLogoUrl] = useState(activeOrg?.logo || '');
@@ -114,7 +108,8 @@ export default function OrganizationProfilePage() {
   // Contact & Location States
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
-  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
+  const [state, setState] = useState('Karnataka');
   const [country, setCountry] = useState('India');
   const [postalCode, setPostalCode] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -122,20 +117,69 @@ export default function OrganizationProfilePage() {
   const [website, setWebsite] = useState('');
   const [instagram, setInstagram] = useState('');
 
-  // Sports & Amenities
+  // Location lists for dynamic dropdowns
+  const [statesList, setStatesList] = useState<string[]>(FALLBACK_INDIAN_STATES);
+  const [districtsList, setDistrictsList] = useState<string[]>(FALLBACK_STATE_DISTRICTS['Karnataka'] || []);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+
+  // Sports
   const [selectedSports, setSelectedSports] = useState<string[]>(['Badminton']);
   const [customSportInput, setCustomSportInput] = useState('');
-  const [amenities, setAmenities] = useState<string[]>([
-    'Wooden Flooring',
-    'Synthetic BWF Mats',
-    'Dedicated Parking',
-    'Showers & Changing Rooms',
-    'Drinking Water Dispenser',
-  ]);
-  const [totalCourts, setTotalCourts] = useState<number | ''>(4);
+
+  // Media files & raw backend identifiers
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [savedLogoRaw, setSavedLogoRaw] = useState<string>('');
+  const [savedCoverRaw, setSavedCoverRaw] = useState<string>('');
+
+  // Snapshot tracking for live published status
+  const [initialSnapshot, setInitialSnapshot] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch states on mount
+  useEffect(() => {
+    async function fetchStates() {
+      try {
+        const res = await LocationService.getAllStates();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = Array.from(new Set(res.data.map((s: StateItem) => s.name))).sort() as string[];
+          setStatesList(names);
+        } else {
+          setStatesList(FALLBACK_INDIAN_STATES);
+        }
+      } catch {
+        setStatesList(FALLBACK_INDIAN_STATES);
+      }
+    }
+    fetchStates();
+  }, []);
+
+  // Fetch districts on state change
+  useEffect(() => {
+    if (!state) {
+      setDistrictsList([]);
+      return;
+    }
+    async function fetchDistricts() {
+      try {
+        setLoadingDistricts(true);
+        const res = await LocationService.getDistrictsByStateName(state);
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = Array.from(new Set(res.data.map((d: DistrictItem) => d.name))).sort() as string[];
+          setDistrictsList(names);
+        } else {
+          setDistrictsList(FALLBACK_STATE_DISTRICTS[state] || []);
+        }
+      } catch {
+        setDistrictsList(FALLBACK_STATE_DISTRICTS[state] || []);
+      } finally {
+        setLoadingDistricts(false);
+      }
+    }
+    fetchDistricts();
+  }, [state]);
 
   // Load existing profile from backend
   useEffect(() => {
@@ -143,34 +187,86 @@ export default function OrganizationProfilePage() {
       if (!orgId) return;
       try {
         setLoading(true);
-        const data = await OrganizationService.getProfileByOrgUuid(orgId);
+        const res = await OrganizationService.getProfileByOrgUuid(orgId);
+        const data = res?.data || res;
         if (data) {
-          setName(data.name || activeOrg?.name || '');
-          if (data.type) setType(data.type as any);
-          setBio(data.bio || '');
-          setDescription(data.description || '');
-          setEstablishedYear(data.establishedYear ?? 2020);
-          setRegistrationNumber(data.registrationNumber || '');
-          if (data.logo) setLogoUrl(data.logo);
-          if (data.banner) setCoverUrl(data.banner);
-          setAddress(data.address || '');
-          setCity(data.city || '');
-          setState(data.state || '');
-          setCountry(data.country || 'India');
-          setPostalCode(data.postalCode || '');
-          setContactPhone(data.contactPhone || '');
-          setContactEmail(data.contactEmail || '');
-          setWebsite(data.website || '');
-          setInstagram(data.socialInstagram || '');
+          const loadedName = data.name || activeOrg?.name || '';
+          const loadedType = (data.type as any) || 'ACADEMY';
+          const loadedBio = data.bio || '';
+          const loadedDesc = data.description || '';
+          const loadedYear = data.establishedYear !== undefined && data.establishedYear !== null ? data.establishedYear : 2020;
+          const loadedReg = data.registrationNumber || '';
+          const loadedAdmission = data.admissionStatus || 'OPEN';
+          const loadedAddr = data.address || '';
+          const loadedCity = data.city || '';
+          const loadedDistrict = data.district || '';
+          const loadedState = data.state || 'Karnataka';
+          const loadedCountry = data.country || 'India';
+          const loadedPostal = data.postalCode || '';
+          const loadedPhone = data.contactPhone || '';
+          const loadedEmail = data.contactEmail || '';
+          const loadedWeb = data.website || '';
+          const loadedInsta = data.socialInstagram || '';
+          
+          let loadedSports = ['Badminton'];
           if (data.sportsOffered) {
             const sportsList = data.sportsOffered.split(',').map((s: string) => s.trim()).filter(Boolean);
-            if (sportsList.length > 0) setSelectedSports(sportsList);
+            if (sportsList.length > 0) loadedSports = sportsList;
           }
-          if (data.amenities) {
-            const amenList = data.amenities.split(',').map((a: string) => a.trim()).filter(Boolean);
-            if (amenList.length > 0) setAmenities(amenList);
+
+          setName(loadedName);
+          setType(loadedType);
+          setBio(loadedBio);
+          setDescription(loadedDesc);
+          setEstablishedYear(loadedYear);
+          setRegistrationNumber(loadedReg);
+          setAdmissionStatus(loadedAdmission);
+          setAddress(loadedAddr);
+          setCity(loadedCity);
+          setDistrict(loadedDistrict);
+          setState(loadedState);
+          setCountry(loadedCountry);
+          setPostalCode(loadedPostal);
+          setContactPhone(loadedPhone);
+          setContactEmail(loadedEmail);
+          setWebsite(loadedWeb);
+          setInstagram(loadedInsta);
+          setSelectedSports(loadedSports);
+
+          if (data.logo) {
+            setLogoUrl(OrganizationService.getLogoUrl(data.logo));
+            setSavedLogoRaw(data.logo);
           }
-          setTotalCourts(data.totalCourts ?? 4);
+          if (data.banner) {
+            setCoverUrl(OrganizationService.getBannerUrl(data.banner));
+            setSavedCoverRaw(data.banner);
+          }
+
+          // Capture pristine snapshot
+          setInitialSnapshot(
+            JSON.stringify({
+              name: loadedName.trim(),
+              type: loadedType,
+              bio: loadedBio.trim(),
+              description: loadedDesc.trim(),
+              establishedYear: loadedYear,
+              registrationNumber: loadedReg.trim(),
+              admissionStatus: loadedAdmission,
+              address: loadedAddr.trim(),
+              city: loadedCity.trim(),
+              district: loadedDistrict.trim(),
+              state: loadedState,
+              country: loadedCountry,
+              postalCode: loadedPostal.trim(),
+              contactPhone: loadedPhone.trim(),
+              contactEmail: loadedEmail.trim(),
+              website: loadedWeb.trim(),
+              instagram: loadedInsta.trim(),
+              selectedSports: loadedSports,
+              savedLogoRaw: data.logo || '',
+              savedCoverRaw: data.banner || '',
+            })
+          );
         }
       } catch (err: any) {
         console.warn('Could not fetch existing profile, using defaults:', err);
@@ -181,23 +277,52 @@ export default function OrganizationProfilePage() {
     loadProfile();
   }, [orgId, activeOrg]);
 
+  // Current State Snapshot & Has Unpublished Changes Flag
+  const currentSnapshot = JSON.stringify({
+    name: name.trim(),
+    type,
+    bio: bio.trim(),
+    description: description.trim(),
+    establishedYear,
+    registrationNumber: registrationNumber.trim(),
+    admissionStatus,
+    address: address.trim(),
+    city: city.trim(),
+    district: district.trim(),
+    state,
+    country,
+    postalCode: postalCode.trim(),
+    contactPhone: contactPhone.trim(),
+    contactEmail: contactEmail.trim(),
+    website: website.trim(),
+    instagram: instagram.trim(),
+    selectedSports,
+    savedLogoRaw,
+    savedCoverRaw,
+  });
+
+  const hasUnpublishedChanges = useMemo(() => {
+    if (!initialSnapshot) return false;
+    if (logoFile !== null || coverFile !== null) return true;
+    return initialSnapshot !== currentSnapshot;
+  }, [initialSnapshot, currentSnapshot, logoFile, coverFile]);
+
   // Profile Health Score Calculation
   const profileHealth = useMemo(() => {
     let score = 0;
     const checks = [
-      { name: 'Academy Name', passed: Boolean(name.trim()), weight: 15 },
+      { name: 'Academy Name', passed: Boolean(name.trim()), weight: 20 },
       { name: 'Logo Avatar', passed: Boolean(logoUrl), weight: 15 },
-      { name: 'Cover Image', passed: Boolean(coverUrl), weight: 10 },
-      { name: 'Location Details', passed: Boolean(city.trim() && address.trim()), weight: 20 },
-      { name: 'Contact Phone', passed: Boolean(contactPhone.trim()), weight: 15 },
+      { name: 'Cover Image', passed: Boolean(coverUrl), weight: 15 },
+      { name: 'Location Details', passed: Boolean(city.trim() && address.trim()), weight: 25 },
+      { name: 'Contact Phone', passed: Boolean(contactPhone.trim()), weight: 10 },
       { name: 'Sports Listed', passed: selectedSports.length > 0, weight: 15 },
-      { name: 'Amenities Added', passed: amenities.length > 0, weight: 10 },
     ];
     checks.forEach((c) => {
       if (c.passed) score += c.weight;
     });
     return { score, checks };
-  }, [name, logoUrl, coverUrl, city, address, contactPhone, selectedSports, amenities]);
+  }, [name, logoUrl, coverUrl, city, address, contactPhone, selectedSports]);
 
   const handleSportToggle = (sport: string) => {
     setSelectedSports((prev) =>
@@ -215,15 +340,10 @@ export default function OrganizationProfilePage() {
     setCustomSportInput('');
   };
 
-  const handleAmenityToggle = (amenity: string) => {
-    setAmenities((prev) =>
-      prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity]
-    );
-  };
-
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setLogoFile(file);
       const url = URL.createObjectURL(file);
       setLogoUrl(url);
     }
@@ -232,6 +352,7 @@ export default function OrganizationProfilePage() {
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setCoverFile(file);
       const url = URL.createObjectURL(file);
       setCoverUrl(url);
     }
@@ -243,41 +364,127 @@ export default function OrganizationProfilePage() {
     setErrorMsg('');
 
     try {
-      const payload: OrganizationProfile = {
-        organizationUuid: orgId,
-        name,
-        type,
-        bio,
-        description,
-        establishedYear: establishedYear === '' ? undefined : Number(establishedYear),
-        registrationNumber,
-        logo: logoUrl,
-        banner: coverUrl,
-        address,
-        city,
-        state,
-        country,
-        postalCode,
-        contactPhone,
-        contactEmail,
-        website,
-        socialInstagram: instagram,
-        sportsOffered: selectedSports.join(','),
-        amenities: amenities.join(','),
-        totalCourts: totalCourts === '' ? undefined : Number(totalCourts),
-      };
+      const formData = new FormData();
+      formData.append('organizationUuid', orgId);
+      if (name) formData.append('name', name);
+      if (type) formData.append('type', type);
+      if (bio) formData.append('bio', bio);
+      if (description) formData.append('description', description);
+      if (establishedYear !== '') formData.append('establishedYear', establishedYear.toString());
+      if (registrationNumber) formData.append('registrationNumber', registrationNumber);
+      if (admissionStatus) formData.append('admissionStatus', admissionStatus);
+      if (address) formData.append('address', address);
+      if (city) formData.append('city', city);
+      if (district) formData.append('district', district);
+      if (state) formData.append('state', state);
+      if (country) formData.append('country', country);
+      if (postalCode) formData.append('postalCode', postalCode);
+      if (contactPhone) formData.append('contactPhone', contactPhone);
+      if (contactEmail) formData.append('contactEmail', contactEmail);
+      if (website) formData.append('website', website);
+      if (instagram) formData.append('socialInstagram', instagram);
+      formData.append('sportsOffered', selectedSports.join(','));
+      formData.append('isPublic', '1');
 
-      await OrganizationService.saveProfile(payload);
+      if (logoFile) {
+        formData.append('logoFile', logoFile);
+      } else if (savedLogoRaw) {
+        formData.append('logo', savedLogoRaw);
+      }
+
+      if (coverFile) {
+        formData.append('bannerFile', coverFile);
+      } else if (savedCoverRaw) {
+        formData.append('banner', savedCoverRaw);
+      }
+
+      const saveRes = await OrganizationService.saveProfileMultipart(formData).catch(async () => {
+        // Fallback to JSON saveProfile if multipart endpoint is unreachable
+        const jsonPayload: OrganizationProfile = {
+          organizationUuid: orgId,
+          name,
+          type,
+          bio,
+          description,
+          establishedYear: establishedYear === '' ? undefined : Number(establishedYear),
+          registrationNumber,
+          admissionStatus,
+          logo: savedLogoRaw || (!logoUrl.startsWith('blob:') ? logoUrl : undefined),
+          banner: savedCoverRaw || (!coverUrl.startsWith('blob:') ? coverUrl : undefined),
+          address,
+          city,
+          district,
+          state,
+          country,
+          postalCode,
+          contactPhone,
+          contactEmail,
+          website,
+          socialInstagram: instagram,
+          sportsOffered: selectedSports.join(','),
+          isPublic: 1,
+        };
+        return await OrganizationService.saveProfile(jsonPayload);
+      });
+
+      const savedData = saveRes?.data || saveRes;
+      let newLogoRaw = savedLogoRaw;
+      let newCoverRaw = savedCoverRaw;
+
+      if (savedData?.logo) {
+        setLogoUrl(OrganizationService.getLogoUrl(savedData.logo));
+        setSavedLogoRaw(savedData.logo);
+        newLogoRaw = savedData.logo;
+        setLogoFile(null);
+      }
+      if (savedData?.banner) {
+        setCoverUrl(OrganizationService.getBannerUrl(savedData.banner));
+        setSavedCoverRaw(savedData.banner);
+        newCoverRaw = savedData.banner;
+        setCoverFile(null);
+      }
 
       if (activeOrg) {
         updateOrganization(activeOrg.id, {
           name,
           type,
-          logo: logoUrl,
+          logo: savedData?.logo ? OrganizationService.getLogoUrl(savedData.logo) : logoUrl,
         });
       }
 
-      setSuccessMsg('Organization profile and type updated successfully!');
+      // Synchronize pristine snapshot with freshly saved values
+      setInitialSnapshot(
+        JSON.stringify({
+          name: name.trim(),
+          type,
+          bio: bio.trim(),
+          description: description.trim(),
+          establishedYear,
+          registrationNumber: registrationNumber.trim(),
+          admissionStatus,
+          address: address.trim(),
+          city: city.trim(),
+          district: district.trim(),
+          state,
+          country,
+          postalCode: postalCode.trim(),
+          contactPhone: contactPhone.trim(),
+          contactEmail: contactEmail.trim(),
+          website: website.trim(),
+          instagram: instagram.trim(),
+          selectedSports,
+          savedLogoRaw: newLogoRaw,
+          savedCoverRaw: newCoverRaw,
+        })
+      );
+
+      // Dispatch global sync event to refresh home and marketplace cards
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('athlon-org-updated', { detail: { orgId } }));
+        localStorage.setItem('athlon_org_updated_time', Date.now().toString());
+      }
+
+      setSuccessMsg('Academy profile published & synced live to Marketplace and Home page!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       console.error('Failed to save organization profile:', err);
@@ -395,9 +602,16 @@ export default function OrganizationProfilePage() {
                     Est. {establishedYear || '2020'}
                   </span>
                   <span>•</span>
-                  <span>{selectedSports.length} Sports Offered</span>
-                  <span>•</span>
-                  <span>{totalCourts || 4} Arena Courts</span>
+                  <span>{selectedSports.length} Sports</span>
+                  {city && (
+                    <>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-cyan-400" />
+                        {city}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -416,10 +630,22 @@ export default function OrganizationProfilePage() {
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-hover active:scale-95 text-primary-foreground font-bold text-xs transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-lg active:scale-95 ${
+                  saving
+                    ? 'bg-primary text-primary-foreground opacity-70'
+                    : hasUnpublishedChanges
+                    ? 'bg-primary hover:bg-primary-hover text-primary-foreground shadow-primary/25 cursor-pointer'
+                    : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 cursor-default'
+                }`}
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save Changes
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : hasUnpublishedChanges ? (
+                  <Save className="w-4 h-4" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                )}
+                {saving ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes Now' : 'Published'}
               </button>
             </div>
           </div>
@@ -472,34 +698,7 @@ export default function OrganizationProfilePage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          DEDICATED COACHING & BATCHES CALLOUT CARD
-         ══════════════════════════════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden p-5 sm:p-6 rounded-3xl bg-card/90 border border-primary/30 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 group">
-        <div className="absolute top-0 right-0 w-80 h-full bg-primary/5 blur-3xl pointer-events-none" />
 
-        <div className="flex items-start sm:items-center gap-4 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/30 text-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/10 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-foreground tracking-tight">Coaching & Batches</h3>
-            </div>
-            <p className="text-xs text-text-secondary mt-1 max-w-xl leading-relaxed">
-              Configure training venues & courts, student batches, and coaching fee plans.
-            </p>
-          </div>
-        </div>
-
-        <Link
-          href={`/org/${orgId}/admissions`}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold transition-all shadow-md shadow-primary/20 flex-shrink-0 group/btn"
-        >
-          Manage Coaching & Batches
-          <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-        </Link>
-      </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
           SEGMENTED TAB NAVIGATION
@@ -648,6 +847,39 @@ export default function OrganizationProfilePage() {
                       />
                     </div>
                   </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                      Marketplace Admissions Status
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {[
+                        { value: 'OPEN', label: 'Admissions Open', desc: 'Accepting new athlete enrollments', color: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' },
+                        { value: 'LIMITED', label: 'Limited Slots Available', desc: 'Few batch seats remaining', color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
+                        { value: 'CLOSED', label: 'Admissions Closed', desc: 'Waitlist active / fully booked', color: 'text-rose-500 border-rose-500/30 bg-rose-500/10' },
+                      ].map((item) => {
+                        const isSelected = admissionStatus === item.value;
+                        return (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => setAdmissionStatus(item.value)}
+                            className={`p-3 rounded-2xl border text-left transition-all ${
+                              isSelected
+                                ? `${item.color} shadow-md ring-1 ring-primary/40`
+                                : 'bg-surface border-border hover:border-border-strong text-text-secondary hover:text-foreground'
+                            }`}
+                          >
+                            <div className="text-xs font-bold flex items-center justify-between">
+                              <span>{item.label}</span>
+                              {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                            </div>
+                            <p className="text-[10px] text-text-muted mt-0.5">{item.desc}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -674,11 +906,11 @@ export default function OrganizationProfilePage() {
                   <div>
                     <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-primary" />
-                      Campus Location & Geo Coordinates
+                      Campus Location
                     </h2>
-                    <p className="text-xs text-text-secondary mt-0.5">
+                    {/* <p className="text-xs text-text-secondary mt-0.5">
                       Ensures accurate Google Maps navigation for parents and players
-                    </p>
+                    </p> */}
                   </div>
                   <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                     Step 2 of 3
@@ -702,7 +934,76 @@ export default function OrganizationProfilePage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* Dynamic State Dropdown */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        State <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={state}
+                          onChange={(e) => {
+                            const newState = e.target.value;
+                            setState(newState);
+                            const fallback = FALLBACK_STATE_DISTRICTS[newState] || [];
+                            if (fallback.length > 0) {
+                              setDistrict(fallback[0]);
+                            } else {
+                              setDistrict('');
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition appearance-none cursor-pointer"
+                        >
+                          <option value="" disabled className="bg-card text-foreground">Select State</option>
+                          {statesList.map((st) => (
+                            <option key={st} value={st} className="bg-card text-foreground">
+                              {st}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* Dynamic District Dropdown */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        District <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative">
+                        {districtsList.length > 0 ? (
+                          <select
+                            value={district}
+                            onChange={(e) => setDistrict(e.target.value)}
+                            disabled={loadingDistricts}
+                            className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition appearance-none cursor-pointer disabled:opacity-50"
+                          >
+                            <option value="" disabled className="bg-card text-foreground">
+                              {loadingDistricts ? 'Loading...' : 'Select District'}
+                            </option>
+                            {districtsList.map((dst) => (
+                              <option key={dst} value={dst} className="bg-card text-foreground">
+                                {dst}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={district}
+                            onChange={(e) => setDistrict(e.target.value)}
+                            placeholder="e.g. Bengaluru Urban"
+                            className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+                          />
+                        )}
+                        {districtsList.length > 0 && (
+                          <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* City / Town */}
                     <div>
                       <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                         City / Town *
@@ -715,18 +1016,8 @@ export default function OrganizationProfilePage() {
                         className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
-                        State
-                      </label>
-                      <input
-                        type="text"
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        placeholder="e.g. Karnataka"
-                        className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-                      />
-                    </div>
+
+                    {/* PIN Code */}
                     <div>
                       <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                         PIN Code
@@ -739,6 +1030,8 @@ export default function OrganizationProfilePage() {
                         className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
                       />
                     </div>
+
+                    {/* Country */}
                     <div>
                       <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
                         Country
@@ -845,10 +1138,10 @@ export default function OrganizationProfilePage() {
                   <div>
                     <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                       <Dumbbell className="w-4 h-4 text-primary" />
-                      Sports Disciplines Offered ({selectedSports.length})
+                      Sports ({selectedSports.length})
                     </h2>
                     <p className="text-xs text-text-secondary mt-0.5">
-                      Select all sports your academy trains for. Athletes search by these tags.
+                      Select all sports your academy trains.
                     </p>
                   </div>
                   <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
@@ -894,67 +1187,6 @@ export default function OrganizationProfilePage() {
                   </button>
                 </form>
               </div>
-
-              {/* Amenities & Infrastructure */}
-              <div className="bg-card/80 p-6 sm:p-7 rounded-3xl border border-border backdrop-blur-xl space-y-6 shadow-xl">
-                <div>
-                  <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
-                    Infrastructure & Premium Amenities
-                  </h2>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    Highlight facility specifications to inspire trust in players and parents
-                  </p>
-                </div>
-
-                <div className="max-w-xs">
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">
-                    Total Active Courts / Arena Units
-                  </label>
-                  <div className="relative">
-                    <Layers className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
-                    <input
-                      type="number"
-                      value={totalCourts}
-                      onChange={(e) => setTotalCourts(e.target.value ? parseInt(e.target.value) : '')}
-                      placeholder="4"
-                      className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-3">
-                    Select All Available Campus Amenities ({amenities.length} Active)
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {AVAILABLE_AMENITIES.map((item) => {
-                      const IconComponent = item.icon;
-                      const hasAmenity = amenities.includes(item.name);
-                      return (
-                        <button
-                          key={item.name}
-                          type="button"
-                          onClick={() => handleAmenityToggle(item.name)}
-                          className={`flex items-center gap-3 p-3.5 rounded-2xl text-xs font-semibold transition-all border text-left ${hasAmenity
-                            ? 'bg-primary/15 text-primary border-primary/40 shadow-sm shadow-primary/10'
-                            : 'bg-surface text-text-secondary border-border hover:border-border-strong hover:text-foreground'
-                            }`}
-                        >
-                          <div
-                            className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${hasAmenity ? 'bg-primary text-primary-foreground' : 'bg-surface-hover text-text-muted'
-                              }`}
-                          >
-                            <IconComponent className="w-4 h-4" />
-                          </div>
-                          <span className="truncate flex-1">{item.name}</span>
-                          {hasAmenity && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -968,59 +1200,86 @@ export default function OrganizationProfilePage() {
                 <Compass className="w-3.5 h-3.5" />
                 Live Marketplace Card
               </span>
-              <span className="text-[10px] text-text-muted">Real-time sync</span>
+              {hasUnpublishedChanges ? (
+                <span className="text-[10px] font-bold text-amber-500 flex items-center gap-1 animate-pulse">
+                  ● Unsaved changes
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Live on Marketplace
+                </span>
+              )}
             </div>
 
             {/* Simulated Marketplace Card */}
-            <div className="rounded-2xl overflow-hidden border border-border bg-surface group shadow-2xl">
-              <div className="relative h-36 bg-surface-hover overflow-hidden">
+            <div className="group relative rounded-[26px] overflow-hidden border border-border bg-card shadow-2xl transition-all select-none">
+              <div className="h-[3px] w-full bg-gradient-to-r from-primary via-emerald-400 to-primary/30" />
+              
+              <div className="relative h-44 bg-surface-hover overflow-hidden">
                 <img src={coverUrl} alt="Card Preview" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-black/40" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/30" />
+                <div className="absolute inset-0 bg-primary/5 backdrop-blur-[0.5px]" />
 
-                <div className="absolute top-2.5 right-2.5">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground shadow-md">
+                <div className="absolute top-3 inset-x-3 flex items-center justify-between z-10">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 text-primary border border-primary/30 backdrop-blur-md shadow-lg">
+                    <Sparkles className="w-3 h-3 text-primary" />
                     {type}
                   </span>
+
+                  {admissionStatus === 'OPEN' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-lg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      Admissions Open
+                    </span>
+                  ) : admissionStatus === 'LIMITED' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-lg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      Limited Slots
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide bg-rose-500/20 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-lg">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                      Waitlist
+                    </span>
+                  )}
                 </div>
 
-                <div className="absolute bottom-2.5 left-3 flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-surface border border-primary/50 overflow-hidden shadow-lg flex items-center justify-center">
+                <div className="absolute bottom-3 inset-x-3.5 flex items-center gap-3 z-10">
+                  <div className="w-12 h-12 rounded-2xl border-2 border-primary/50 overflow-hidden shadow-2xl flex items-center justify-center shrink-0 bg-black/70 backdrop-blur-md">
                     {logoUrl ? (
                       <img src={logoUrl} alt="Mini Logo" className="w-full h-full object-cover" />
                     ) : (
-                      <Building2 className="w-5 h-5 text-primary" />
+                      <Building2 className="w-6 h-6 text-primary" />
                     )}
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-foreground leading-tight line-clamp-1">
+                  <div className="min-w-0 flex-1 drop-shadow-md">
+                    <h4 className="text-base font-black text-white leading-tight truncate tracking-tight">
                       {name || 'Academy Title'}
                     </h4>
-                    <p className="text-[11px] text-text-secondary flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-primary" />
-                      {city ? `${city}, ${state || country}` : 'City, Location'}
+                    <p className="text-[11px] text-white/85 font-semibold flex items-center gap-1 mt-0.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="truncate">{city ? `${city}, ${state || country}` : 'City, Location'}</span>
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 space-y-3">
-                {bio && <p className="text-xs text-text-secondary italic line-clamp-2">&ldquo;{bio}&rdquo;</p>}
-
+              <div className="p-4 space-y-3.5">
                 <div>
-                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1.5">
+                  <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider block mb-1.5">
                     Sports Trained
                   </span>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {selectedSports.slice(0, 4).map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[10px] font-semibold"
+                        className="px-2.5 py-1 rounded-xl bg-primary/10 text-primary border border-primary/25 text-[11px] font-bold tracking-tight shadow-sm"
                       >
                         {s}
                       </span>
                     ))}
                     {selectedSports.length > 4 && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-surface-hover text-text-muted text-[10px]">
+                      <span className="px-2 py-1 rounded-xl bg-surface text-text-secondary text-[11px] font-bold border border-border">
                         +{selectedSports.length - 4} more
                       </span>
                     )}
@@ -1028,9 +1287,23 @@ export default function OrganizationProfilePage() {
                 </div>
 
                 <div className="border-t border-border pt-3 flex items-center justify-between text-xs">
-                  <span className="text-text-secondary">{totalCourts || 4} Arena Courts</span>
-                  <span className="text-primary font-bold flex items-center gap-1">
-                    Admissions Open <ChevronRight className="w-3.5 h-3.5" />
+                  <span className="text-text-secondary font-bold text-[11px] flex items-center gap-1.5">
+                    <Dumbbell className="w-3.5 h-3.5 text-primary shrink-0" />
+                    {selectedSports.length} {selectedSports.length === 1 ? 'Sport' : 'Sports'}
+                  </span>
+                  <span className={`font-black flex items-center gap-1 ${
+                    admissionStatus === 'CLOSED'
+                      ? 'text-rose-400'
+                      : admissionStatus === 'LIMITED'
+                      ? 'text-amber-400'
+                      : 'text-primary'
+                  }`}>
+                    {admissionStatus === 'CLOSED'
+                      ? 'Waitlist'
+                      : admissionStatus === 'LIMITED'
+                      ? 'Limited Slots'
+                      : 'Admissions Open'}
+                    <ChevronRight className="w-4 h-4" />
                   </span>
                 </div>
               </div>
@@ -1042,10 +1315,22 @@ export default function OrganizationProfilePage() {
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary hover:bg-primary-hover active:scale-95 text-primary-foreground font-bold text-xs transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs transition-all shadow-lg active:scale-95 ${
+                  saving
+                    ? 'bg-primary text-primary-foreground opacity-70 cursor-wait'
+                    : hasUnpublishedChanges
+                    ? 'bg-primary hover:bg-primary-hover text-primary-foreground shadow-primary/25 cursor-pointer animate-in fade-in'
+                    : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 cursor-default'
+                }`}
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Publish Changes Now
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : hasUnpublishedChanges ? (
+                  <Save className="w-4 h-4" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                )}
+                {saving ? 'Publishing Changes...' : hasUnpublishedChanges ? 'Publish Changes Now' : 'Published'}
               </button>
 
               <button
@@ -1077,10 +1362,22 @@ export default function OrganizationProfilePage() {
           type="button"
           onClick={handleSaveProfile}
           disabled={saving}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary active:scale-95 text-primary-foreground text-xs font-bold shadow-lg shadow-primary/25 disabled:opacity-50 transition"
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs transition-all shadow-lg active:scale-95 ${
+            saving
+              ? 'bg-primary text-primary-foreground opacity-70'
+              : hasUnpublishedChanges
+              ? 'bg-primary text-primary-foreground shadow-primary/25 cursor-pointer'
+              : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 cursor-default'
+          }`}
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Profile
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : hasUnpublishedChanges ? (
+            <Save className="w-4 h-4" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          )}
+          {saving ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes Now' : 'Published'}
         </button>
       </div>
 
@@ -1136,7 +1433,7 @@ export default function OrganizationProfilePage() {
 
               <div className="space-y-2">
                 <h5 className="text-[11px] font-extrabold text-text-muted uppercase tracking-wider">
-                  Sports Offered ({selectedSports.length})
+                  Sports({selectedSports.length})
                 </h5>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedSports.map((s) => (
@@ -1145,22 +1442,6 @@ export default function OrganizationProfilePage() {
                       className="px-3 py-1 rounded-lg bg-primary/10 text-primary border border-primary/25 text-xs font-semibold"
                     >
                       {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h5 className="text-[11px] font-extrabold text-text-muted uppercase tracking-wider">
-                  Facilities & Amenities
-                </h5>
-                <div className="flex flex-wrap gap-1.5">
-                  {amenities.map((a) => (
-                    <span
-                      key={a}
-                      className="px-3 py-1 rounded-lg bg-surface text-foreground border border-border text-xs font-medium"
-                    >
-                      {a}
                     </span>
                   ))}
                 </div>

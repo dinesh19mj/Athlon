@@ -335,7 +335,7 @@ export default function LoginPage() {
         {/* 3D Circular Elevated Umpire Button */}
         <div className="relative -top-5 flex items-center justify-center">
           <Link
-            href="/match-setup"
+            href="/practice"
             className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
             style={{
               backgroundColor: 'var(--athlon-primary)',

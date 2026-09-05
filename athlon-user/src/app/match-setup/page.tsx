@@ -1,20 +1,25 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
-  MoreVertical,
   User,
   Users,
   ListOrdered,
-  ClipboardList,
-  Copy,
-  Settings,
-  ChevronDown,
-  ChevronRight,
   Trophy,
   Activity,
+  CheckCircle2,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  Zap,
+  Flame,
+  Shield,
+  RotateCcw,
+  SlidersHorizontal,
+  ChevronDown,
+  Info,
 } from 'lucide-react';
 import { useMatchStore, GameCategory, Player } from '@/lib/store/useMatchStore';
 import { useCricketStore } from '@/lib/store/useCricketStore';
@@ -27,7 +32,7 @@ import Image from 'next/image';
 function MatchSetupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const setupMatch = useMatchStore(state => state.setupMatch);
+  const setupMatch = useMatchStore((state) => state.setupMatch);
 
   const matchIdParam = searchParams.get('matchId');
 
@@ -39,7 +44,7 @@ function MatchSetupContent() {
             router.replace(`/live-score/${matchIdParam}`);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [matchIdParam, router]);
 
@@ -48,29 +53,31 @@ function MatchSetupContent() {
   const urlCategory = searchParams.get('category');
   const initialCategory = urlCategory || 'Doubles';
   const isFromUmpire = searchParams.get('fromUmpire') === 'true';
-  
+
   const initialTeamA = searchParams.get('teamA')?.split(',') || ['', ''];
   const initialTeamB = searchParams.get('teamB')?.split(',') || ['', ''];
   const initialTeamAName = searchParams.get('teamAName') || 'Team A';
   const initialTeamBName = searchParams.get('teamBName') || 'Team B';
   const isPreFilled = !!searchParams.get('teamA') || !!searchParams.get('teamB');
 
-  const [activeTab, setActiveTab] = useState<'sport' | 'rules' | 'team1' | 'team2'>(isFromUmpire ? 'rules' : 'sport');
+  const [activeTab, setActiveTab] = useState<'sport' | 'rules' | 'team1' | 'team2'>(
+    isFromUmpire || !!urlSport ? 'rules' : 'sport'
+  );
 
   const [sport, setSport] = useState(initialSport);
   const [category, setCategory] = useState<GameCategory>(initialCategory as GameCategory);
   const [sets, setSets] = useState<number>(3);
-  const [pointBreak, setPointBreak] = useState<number>(15);
+  const [pointBreak, setPointBreak] = useState<number>(21);
 
   // Cricket specific config
-  const [totalOvers, setTotalOvers] = useState<number>(10);
-  const [playersPerTeam, setPlayersPerTeam] = useState<number>(11);
+  const [totalOvers, setTotalOvers] = useState<number>(5);
+  const [playersPerTeam, setPlayersPerTeam] = useState<number>(6);
   const [tossWinner, setTossWinner] = useState<'A' | 'B'>('A');
   const [tossDecision, setTossDecision] = useState<'Batting' | 'Bowling'>('Batting');
 
   // Football specific config
-  const [halfLengthMinutes, setHalfLengthMinutes] = useState<number>(45);
-  const [footballPlayers, setFootballPlayers] = useState<number>(11);
+  const [halfLengthMinutes, setHalfLengthMinutes] = useState<number>(15);
+  const [footballPlayers, setFootballPlayers] = useState<number>(5);
   const [footballTossWinner, setFootballTossWinner] = useState<'A' | 'B'>('A');
   const [footballTossDecision, setFootballTossDecision] = useState<'Kickoff' | 'Side'>('Kickoff');
 
@@ -83,7 +90,7 @@ function MatchSetupContent() {
 
   const [teamAPlayers, setTeamAPlayers] = useState<Player[]>([]);
   const [teamBPlayers, setTeamBPlayers] = useState<Player[]>([]);
-  const [subsPerTeam, setSubsPerTeam] = useState<number>(3);
+  const [subsPerTeam, setSubsPerTeam] = useState<number>(2);
 
   useEffect(() => {
     let count = 0;
@@ -92,12 +99,33 @@ function MatchSetupContent() {
     else if (sport === 'Volleyball') count = 6;
 
     if (count > 0 && teamAPlayers.length !== count + subsPerTeam) {
-      setTeamAPlayers(Array.from({ length: count + subsPerTeam }).map((_, i) => ({ id: `A-${Date.now()}-${i}`, name: '', position: '', jerseyNumber: '', onField: i < count })));
-      setTeamBPlayers(Array.from({ length: count + subsPerTeam }).map((_, i) => ({ id: `B-${Date.now()}-${i}`, name: '', position: '', jerseyNumber: '', onField: i < count })));
+      setTeamAPlayers(
+        Array.from({ length: count + subsPerTeam }).map((_, i) => ({
+          id: `A-${Date.now()}-${i}`,
+          name: i === 0 && teamA[0] ? teamA[0] : `Player A${i + 1}`,
+          position: '',
+          jerseyNumber: String(i + 1),
+          onField: i < count,
+        }))
+      );
+      setTeamBPlayers(
+        Array.from({ length: count + subsPerTeam }).map((_, i) => ({
+          id: `B-${Date.now()}-${i}`,
+          name: i === 0 && teamB[0] ? teamB[0] : `Player B${i + 1}`,
+          position: '',
+          jerseyNumber: String(i + 1),
+          onField: i < count,
+        }))
+      );
     }
-  }, [sport, playersPerTeam, footballPlayers, subsPerTeam]);
+  }, [sport, playersPerTeam, footballPlayers, subsPerTeam, teamA, teamB]);
 
-  const handlePlayerChange = (team: 'A' | 'B', index: number, field: 'name' | 'position' | 'jerseyNumber', value: string) => {
+  const handlePlayerChange = (
+    team: 'A' | 'B',
+    index: number,
+    field: 'name' | 'position' | 'jerseyNumber',
+    value: string
+  ) => {
     if (team === 'A') {
       const newPlayers = [...teamAPlayers];
       newPlayers[index] = { ...newPlayers[index], [field]: value };
@@ -118,9 +146,20 @@ function MatchSetupContent() {
     else handleStartMatch();
   };
 
+  const handlePrev = () => {
+    if (activeTab === 'team2') setActiveTab('team1');
+    else if (activeTab === 'team1') setActiveTab('rules');
+    else if (activeTab === 'rules') {
+      if (!urlSport) setActiveTab('sport');
+      else router.back();
+    } else {
+      router.back();
+    }
+  };
+
   const handleStartMatch = () => {
     if (sport === 'Cricket') {
-      const matchId = `match-${Date.now()}`;
+      const matchId = `practice-${Date.now()}`;
       const setupCricketMatch = useCricketStore.getState().setupMatch;
       setupCricketMatch({
         id: matchId,
@@ -143,15 +182,15 @@ function MatchSetupContent() {
           teamBLabel: teamB[0] || 'Team B',
           createdAt: new Date().toISOString(),
           status: 'live',
-          liveRoute: '/scoring/live?sport=Cricket',
+          liveRoute: `/scoring/${matchId}?sport=Cricket&isPractice=true`,
         });
       }
-      router.push('/scoring/live?sport=Cricket');
+      router.push(`/scoring/${matchId}?sport=Cricket&isPractice=true`);
       return;
     }
 
     if (sport === 'Football') {
-      const matchId = `match-${Date.now()}`;
+      const matchId = `practice-${Date.now()}`;
       const setupFootballMatch = useFootballStore.getState().setupMatch;
       setupFootballMatch({
         id: matchId,
@@ -174,15 +213,15 @@ function MatchSetupContent() {
           teamBLabel: teamB[0] || 'Team B',
           createdAt: new Date().toISOString(),
           status: 'live',
-          liveRoute: '/scoring/live?sport=Football',
+          liveRoute: `/scoring/${matchId}?sport=Football&isPractice=true`,
         });
       }
-      router.push('/scoring/live?sport=Football');
+      router.push(`/scoring/${matchId}?sport=Football&isPractice=true`);
       return;
     }
 
     if (sport === 'Volleyball') {
-      const matchId = `match-${Date.now()}`;
+      const matchId = `practice-${Date.now()}`;
       const setupVolleyballMatch = useVolleyballStore.getState().setupMatch;
       setupVolleyballMatch({
         id: matchId,
@@ -198,19 +237,20 @@ function MatchSetupContent() {
         usePracticeMatchStore.getState().addRecord({
           id: matchId,
           sport: 'Volleyball',
-          category: `Best of ${bestOfSets} (${pointsPerSet} pts)`,
+          category: `Best of ${bestOfSets} (${pointsPerSet} Pts)`,
           teamALabel: teamA[0] || 'Team A',
           teamBLabel: teamB[0] || 'Team B',
           createdAt: new Date().toISOString(),
           status: 'live',
-          liveRoute: '/scoring/live?sport=Volleyball',
+          liveRoute: `/scoring/${matchId}?sport=Volleyball&isPractice=true`,
         });
       }
-      router.push('/scoring/live?sport=Volleyball');
+      router.push(`/scoring/${matchId}?sport=Volleyball&isPractice=true`);
       return;
     }
 
-    if (sport === 'Badminton') {
+    // Default Badminton
+    {
       const finalTeamA = isDoubles ? teamA : [teamA[0]];
       const finalTeamB = isDoubles ? teamB : [teamB[0]];
 
@@ -219,7 +259,7 @@ function MatchSetupContent() {
       if (!finalTeamB[0]) finalTeamB[0] = 'Player 1 (B)';
       if (isDoubles && !finalTeamB[1]) finalTeamB[1] = 'Player 2 (B)';
 
-      const generatedId = searchParams.get('matchId') || `match-${Date.now()}`;
+      const generatedId = searchParams.get('matchId') || `practice-${Date.now()}`;
 
       setupMatch({
         id: generatedId,
@@ -246,650 +286,673 @@ function MatchSetupContent() {
           status: 'live',
           scoreA: '0',
           scoreB: '0',
-          liveRoute: '/scoring/live?sport=Badminton',
+          liveRoute: `/scoring/${generatedId}?sport=Badminton&isPractice=true`,
         });
       }
 
       const categoryId = searchParams.get('categoryId');
-      let url = '/scoring/live?sport=Badminton';
+      let url = `/scoring/${generatedId}?sport=Badminton&isPractice=true`;
       if (searchParams.get('matchId')) {
-          url = `/scoring/${searchParams.get('matchId')}?sport=Badminton${categoryId ? `&categoryId=${categoryId}` : ''}`;
+        url = `/scoring/${searchParams.get('matchId')}?sport=Badminton${categoryId ? `&categoryId=${categoryId}` : ''}`;
       }
       router.push(url);
     }
   };
 
-  const CustomSwitch = ({ checked, onChange }: { checked: boolean, onChange: (v: boolean) => void }) => (
-    <div
-      onClick={() => onChange(!checked)}
-      className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors border border-foreground/5 shadow-inner ${checked ? 'bg-red-500/20 border-red-500/30' : 'bg-background'}`}
-    >
-      <div className={`w-4 h-4 rounded-full transition-transform shadow-lg ${checked ? 'translate-x-6 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'translate-x-0 bg-foreground/40'}`} />
-    </div>
-  );
+  const sportsOptions = [
+    {
+      name: 'Badminton',
+      icon: '🏸',
+      desc: 'Rally Scoring • 1v1 / 2v2',
+      badge: 'Voice Umpire',
+    },
+    {
+      name: 'Cricket',
+      icon: '🏏',
+      desc: 'Box & Gully • Ball-by-Ball',
+      badge: 'Scorecard',
+    },
+    {
+      name: 'Football',
+      icon: '⚽',
+      desc: 'Futsal & Turf • Goals & Cards',
+      badge: 'Live Timer',
+    },
+    {
+      name: 'Volleyball',
+      icon: '🏐',
+      desc: 'Sets & Rotations • 25 Pts',
+      badge: 'Rally Score',
+    },
+  ];
+
+  const steps: { id: 'sport' | 'rules' | 'team1' | 'team2'; label: string; stepNumber: number }[] = [
+    { id: 'sport', label: 'Sport', stepNumber: 1 },
+    { id: 'rules', label: 'Rules', stepNumber: 2 },
+    { id: 'team1', label: sport === 'Badminton' ? (isDoubles ? 'Side A' : 'Player 1') : 'Team 1', stepNumber: 3 },
+    { id: 'team2', label: sport === 'Badminton' ? (isDoubles ? 'Side B' : 'Player 2') : 'Team 2', stepNumber: 4 },
+  ];
+
+  const currentStepIdx = steps.findIndex((s) => s.id === activeTab);
 
   return (
-    <div className="h-[100dvh] bg-background text-foreground font-sans flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 pb-28">
 
-      {/* Ambient Red Glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
+      {/* ══════════════════════════════════════════════════════════════════════
+          1. STYLISH MOBILE TOP BAR
+         ══════════════════════════════════════════════════════════════════════ */}
+      <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 py-3.5">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
+          <button
+            onClick={handlePrev}
+            className="p-2 -ml-2 rounded-xl text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors active:scale-95"
+            title="Back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
 
-      {/* HEADER */}
-      <header className="px-4 py-6 flex items-center justify-between shrink-0 relative z-10">
-        <button onClick={() => router.back()} className="p-3 -ml-3 text-foreground/70 hover:text-foreground transition-colors bg-foreground/0 hover:bg-foreground/5 rounded-full">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <div className="flex flex-col items-center">
-          <h1 className="text-xl font-black uppercase tracking-widest text-foreground drop-shadow-md">Match Setup</h1>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Umpire Mode</span>
+          <div className="flex flex-col items-center">
+            <h1 className="text-sm font-black uppercase tracking-wider text-foreground">
+              Match Setup
+            </h1>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                Digital Umpire Mode
+              </span>
+            </div>
+          </div>
+
+          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs">
+            {currentStepIdx + 1}/4
           </div>
         </div>
-        <button className="p-3 -mr-3 text-foreground/70 hover:text-foreground transition-colors bg-foreground/0 hover:bg-foreground/5 rounded-full">
-          <MoreVertical className="w-6 h-6" />
-        </button>
       </header>
 
-      {/* SEGMENTED TABS / MATCH INFO BANNER */}
-      <div className="px-4 pb-6 shrink-0 relative z-10">
+      {/* ══════════════════════════════════════════════════════════════════════
+          2. STEP INDICATOR TABS (THEME-ADAPTIVE)
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="max-w-md mx-auto w-full px-4 pt-3">
         {isFromUmpire ? (
-          <div className="bg-gradient-to-r from-red-500/10 via-surface to-red-500/10 border border-red-500/20 p-4 rounded-2xl shadow-xl flex items-center justify-between">
+          <div className="p-3.5 rounded-2xl bg-surface border border-primary/30 flex items-center justify-between shadow-sm">
             <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-red-400">Assigned Fixture</span>
-              <span className="text-sm font-bold text-foreground mt-0.5">{initialTeamAName} <span className="text-red-400 font-black">VS</span> {initialTeamBName}</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                Official Fixture
+              </span>
+              <span className="text-xs font-bold text-foreground mt-0.5">
+                {initialTeamAName} <span className="text-primary font-black mx-1">VS</span> {initialTeamBName}
+              </span>
             </div>
-            <span className="px-3 py-1 bg-red-500 text-white font-black text-[10px] uppercase tracking-widest rounded-lg">
+            <span className="px-2.5 py-1 bg-primary text-black font-black text-[10px] uppercase tracking-wider rounded-lg shadow-sm">
               {sport}
             </span>
           </div>
         ) : (
-          <div className="flex bg-surface border border-foreground/5 p-1.5 rounded-2xl shadow-xl">
-            <button
-              onClick={() => setActiveTab('sport')}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'sport' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-            >
-              Sport
-            </button>
-            <button
-              onClick={() => setActiveTab('rules')}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'rules' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-            >
-              Rules
-            </button>
-            <button
-              onClick={() => setActiveTab('team1')}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'team1' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-            >
-              {sport !== 'Badminton' ? 'Team 1' : isDoubles ? 'Team 1' : 'Player 1'}
-            </button>
-            <button
-              onClick={() => setActiveTab('team2')}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${activeTab === 'team2' ? 'bg-red-500 text-foreground shadow-[0_4px_20px_rgba(239,68,68,0.4)]' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
-            >
-              {sport !== 'Badminton' ? 'Team 2' : isDoubles ? 'Team 2' : 'Player 2'}
-            </button>
+          <div className="flex bg-surface border border-foreground/10 p-1 rounded-2xl shadow-sm gap-1">
+            {steps.map((step, idx) => {
+              const isActive = activeTab === step.id;
+              const isPast = idx < currentStepIdx;
+              return (
+                <button
+                  key={step.id}
+                  onClick={() => setActiveTab(step.id)}
+                  className={`flex-1 py-2 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 ${isActive
+                    ? 'bg-primary text-black shadow-md shadow-primary/25'
+                    : isPast
+                      ? 'text-primary hover:bg-foreground/5'
+                      : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'
+                    }`}
+                >
+                  {isPast ? <CheckCircle2 className="w-3 h-3 text-primary" /> : null}
+                  <span className="truncate">{step.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto px-4 pb-32 relative z-10 hide-scrollbar">
+      {/* ══════════════════════════════════════════════════════════════════════
+          3. CONTENT BODY AREA
+         ══════════════════════════════════════════════════════════════════════ */}
+      <main className="max-w-md mx-auto w-full px-4 pt-4 flex-1 space-y-4">
 
-        {/* SPORT TAB */}
+        {/* TAB 1: SPORT SELECTION */}
         {activeTab === 'sport' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Sport Selection */}
+          <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-3">
-              <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest pl-2">Sport</h2>
-              <div className="flex overflow-x-auto gap-4 sm:gap-6 pt-4 pb-4 -mx-4 px-4 hide-scrollbar snap-x snap-mandatory">
+              <h2 className="text-[11px] font-black text-foreground/50 uppercase tracking-widest pl-1">
+                Sport
+              </h2>
+
+              <div className="grid grid-cols-4 gap-2.5 pt-1">
                 {[
-                  { name: 'Badminton', image: '/shuttle.png', shadow: 'shadow-cyan-500/20' },
-                  { name: 'Football', image: '/football.png', shadow: 'shadow-emerald-500/20' },
-                  { name: 'Cricket', image: '/cricket.png', shadow: 'shadow-orange-500/20' },
-                  { name: 'Volleyball', image: '/volleyball.png', shadow: 'shadow-purple-500/20' }
-                ].map((s) => (
-                  <button
-                    key={s.name}
-                    onClick={() => {
-                      if (urlSport) return;
-                      setSport(s.name);
-                      setActiveTab('rules');
-                    }}
-                    disabled={!!urlSport}
-                    className={`flex flex-col items-center gap-3 outline-none group shrink-0 snap-center ${urlSport && urlSport !== s.name ? 'opacity-30 cursor-not-allowed' : ''}`}
-                  >
-                    <div className={`relative w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-[18px] flex items-center justify-center transition-colors duration-200 shadow-sm bg-surface group-hover:bg-foreground/10 group-active:bg-foreground/15 border border-foreground/5 group-hover:border-foreground/20 group-active:border-foreground/30 ${sport === s.name ? 'ring-[1.5px] ring-foreground/20 bg-foreground/10' : ''}`}>
-                      <div className="relative w-8 h-8 sm:w-10 sm:h-10">
-                        <Image 
-                          src={s.image} 
-                          alt={s.name} 
-                          fill 
-                          className="object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]"
-                        />
+                  { name: 'Badminton', image: '/shuttle.png' },
+                  { name: 'Football', image: '/football.png' },
+                  { name: 'Cricket', image: '/cricket.png' },
+                  { name: 'Volleyball', image: '/volleyball.png' },
+                ].map((s) => {
+                  const isSelected = sport === s.name;
+                  return (
+                    <button
+                      key={s.name}
+                      onClick={() => {
+                        if (urlSport) return;
+                        setSport(s.name);
+                        setActiveTab('rules');
+                      }}
+                      disabled={!!urlSport}
+                      className={`flex flex-col items-center gap-2.5 outline-none group ${urlSport && urlSport !== s.name ? 'opacity-30 cursor-not-allowed' : ''
+                        }`}
+                    >
+                      <div
+                        className={`relative w-full aspect-square rounded-[22px] flex items-center justify-center transition-all duration-200 shadow-md ${isSelected
+                          ? 'bg-surface border-2 border-primary ring-2 ring-primary/30 shadow-primary/20 scale-[1.03]'
+                          : 'bg-surface border border-foreground/10 hover:border-foreground/20 active:scale-95'
+                          }`}
+                      >
+                        <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+                          <Image
+                            src={s.image}
+                            alt={s.name}
+                            fill
+                            className="object-contain drop-shadow-[0_3px_6px_rgba(0,0,0,0.25)]"
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-widest mt-0.5 transition-colors ${sport === s.name ? 'text-foreground' : 'text-foreground/40 group-hover:text-foreground/70'}`}>
-                      {s.name}
-                    </span>
-                  </button>
-                ))}
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-wider text-center transition-colors ${isSelected ? 'text-primary' : 'text-foreground/50 group-hover:text-foreground/80'
+                          }`}
+                      >
+                        {s.name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
 
-        {/* RULES TAB */}
+        {/* TAB 2: RULES CONFIGURATION */}
         {activeTab === 'rules' && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="px-1">
+              <h2 className="text-xs font-black uppercase tracking-wider text-foreground/50">
+                {sport} Rules & Presets
+              </h2>
+
+            </div>
+
             {sport === 'Badminton' ? (
-              <>
-                {/* Match Type (Singles vs Doubles) */}
-                <div className="space-y-3">
-                  <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest pl-2">Match Format</h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => !urlCategory && setCategory('Singles')}
-                      disabled={!!urlCategory}
-                      className={`flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border transition-all ${!isDoubles ? 'bg-surface border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] scale-[1.02]' : 'bg-background border-foreground/5 hover:border-foreground/20 hover:bg-foreground/5'} ${urlCategory ? 'opacity-80 cursor-not-allowed' : ''}`}
-                    >
-                      <div className={`p-3 rounded-full ${!isDoubles ? 'bg-red-500/20 text-red-500' : 'bg-foreground/5 text-foreground/40'}`}>
-                        <User className="w-6 h-6" />
-                      </div>
-                      <span className={`text-sm font-bold uppercase tracking-wide ${!isDoubles ? 'text-foreground' : 'text-foreground/40'}`}>Singles</span>
-                    </button>
-                    <button
-                      onClick={() => !urlCategory && setCategory('Doubles')}
-                      disabled={!!urlCategory}
-                      className={`flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border transition-all ${isDoubles ? 'bg-surface border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.15)] scale-[1.02]' : 'bg-background border-foreground/5 hover:border-foreground/20 hover:bg-foreground/5'} ${urlCategory ? 'opacity-80 cursor-not-allowed' : ''}`}
-                    >
-                      <div className={`p-3 rounded-full ${isDoubles ? 'bg-red-500/20 text-red-500' : 'bg-foreground/5 text-foreground/40'}`}>
-                        <Users className="w-6 h-6" />
-                      </div>
-                      <span className={`text-sm font-bold uppercase tracking-wide ${isDoubles ? 'text-foreground' : 'text-foreground/40'}`}>Doubles</span>
-                    </button>
+              <div className="space-y-3.5">
+                {/* Format: Singles vs Doubles */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 pl-1">
+                    Match Format
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {(['Singles', 'Doubles'] as GameCategory[]).map((fmt) => {
+                      const isSelected = category === fmt;
+                      return (
+                        <button
+                          key={fmt}
+                          onClick={() => !urlCategory && setCategory(fmt)}
+                          disabled={!!urlCategory}
+                          className={`p-3.5 rounded-2xl border transition-all flex flex-col items-center justify-center gap-2 active:scale-95 ${isSelected
+                            ? 'bg-surface border-primary ring-2 ring-primary/30 text-foreground'
+                            : 'bg-surface border-foreground/10 text-foreground/60 hover:text-foreground'
+                            } ${urlCategory ? 'opacity-80 cursor-not-allowed' : ''}`}
+                        >
+                          <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-primary/20 text-primary' : 'bg-foreground/5 text-foreground/40'}`}>
+                            {fmt === 'Singles' ? <User className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                          </div>
+                          <span className="text-xs font-black uppercase tracking-wide">{fmt}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Rules & Configuration */}
-                <div className="space-y-3">
-                  <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest pl-2">Rules & Scoring</h2>
-
-                  <div className="bg-surface border border-foreground/5 rounded-3xl overflow-hidden shadow-xl">
-
-                    <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                          <ListOrdered className="w-5 h-5 text-foreground/70" />
-                        </div>
-                        <span className="text-sm font-bold text-foreground/90">Max games (sets)</span>
-                      </div>
-                      <select
-                        value={sets}
-                        onChange={(e) => setSets(Number(e.target.value))}
-                        className="bg-background border border-foreground/10 rounded-xl px-4 py-2 font-bold outline-none focus:ring-2 focus:ring-red-500/50"
+                {/* Points Per Set */}
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-primary" /> Points Per Game
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">{pointBreak} Points</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {[11, 15, 21, 30].map((pts) => (
+                      <button
+                        key={pts}
+                        onClick={() => setPointBreak(pts)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${pointBreak === pts
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
                       >
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <option key={i} value={i}>{i}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Points Per Game */}
-                    <div className="flex items-center justify-between p-5 hover:bg-foreground/5 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                          <Trophy className="w-5 h-5 text-foreground/70" />
-                        </div>
-                        <span className="text-sm font-bold text-foreground/90">Points per game</span>
-                      </div>
-                      <select
-                        value={pointBreak}
-                        onChange={(e) => setPointBreak(Number(e.target.value))}
-                        className="bg-background border border-foreground/10 rounded-xl px-4 py-2 font-bold outline-none focus:ring-2 focus:ring-red-500/50"
-                      >
-                        {Array.from({ length: 30 }, (_, i) => i + 1).map((i) => (
-                          <option key={i} value={i}>{i}</option>
-                        ))}
-                      </select>
-                    </div>
+                        {pts}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </>
+
+                {/* Max Games (Sets) */}
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <ListOrdered className="w-3.5 h-3.5 text-primary" /> Best of Sets
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">{sets} {sets === 1 ? 'Set' : 'Sets'}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {[1, 3, 5].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSets(s)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${sets === s
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
+                      >
+                        {s} {s === 1 ? 'Game' : 'Games'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ) : sport === 'Cricket' ? (
-              <div className="space-y-3">
-                <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest pl-2">Cricket Rules</h2>
-
-                <div className="bg-surface border border-foreground/5 rounded-3xl overflow-hidden shadow-xl">
-                  {/* Total Overs */}
-                  <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <ListOrdered className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Total Overs</span>
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={totalOvers}
-                        onChange={(e) => setTotalOvers(Number(e.target.value))}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      >
-                        <option value={5}>5 Overs</option>
-                        <option value={10}>10 Overs</option>
-                        <option value={15}>15 Overs</option>
-                        <option value={20}>T20 (20 Overs)</option>
-                        <option value={50}>ODI (50 Overs)</option>
-                      </select>
-                      <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                        <span className="font-bold">{totalOvers}</span>
-                        <ChevronDown className="w-4 h-4 text-foreground/50" />
-                      </div>
-                    </div>
+              <div className="space-y-3.5">
+                {/* Total Overs */}
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <ListOrdered className="w-3.5 h-3.5 text-primary" /> Total Overs
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">{totalOvers} Overs</span>
                   </div>
-
-                  {/* Players Per Team */}
-                  <div className="flex items-center justify-between p-5 border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <Users className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Players Per Team</span>
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={playersPerTeam}
-                        onChange={(e) => setPlayersPerTeam(Number(e.target.value))}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {[2, 5, 10, 20].map((ov) => (
+                      <button
+                        key={ov}
+                        onClick={() => setTotalOvers(ov)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${totalOvers === ov
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
                       >
-                        <option value={6}>6</option>
-                        <option value={8}>8</option>
-                        <option value={11}>11</option>
-                      </select>
-                      <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                        <span className="font-bold">{playersPerTeam}</span>
-                        <ChevronDown className="w-4 h-4 text-foreground/50" />
-                      </div>
-                    </div>
+                        {ov} Ov
+                      </button>
+                    ))}
                   </div>
+                </div>
 
+                {/* Players Per Team */}
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-primary" /> Players / Team
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">{playersPerTeam}v{playersPerTeam}</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {[4, 6, 8, 11].map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPlayersPerTeam(p)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${playersPerTeam === p
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-
-                  {/* Substitutes */}
-                  <div className="flex items-center justify-between p-5 border-t border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <Users className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Bench Substitutes</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={subsPerTeam}
-                        onChange={(e) => setSubsPerTeam(Number(e.target.value))}
-                        className="w-20 bg-background border border-foreground/10 rounded-xl px-4 py-2 text-center font-bold focus:outline-none focus:border-red-500 shadow-inner"
-                      />
-                    </div>
+                {/* Bench Substitutes */}
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-primary" /> Bench Substitutes
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSubsPerTeam(Math.max(0, subsPerTeam - 1))}
+                      className="w-8 h-8 rounded-lg bg-background border border-foreground/10 text-foreground font-black flex items-center justify-center active:scale-90"
+                    >
+                      -
+                    </button>
+                    <span className="w-6 text-center font-mono font-black text-xs">{subsPerTeam}</span>
+                    <button
+                      onClick={() => setSubsPerTeam(subsPerTeam + 1)}
+                      className="w-8 h-8 rounded-lg bg-background border border-foreground/10 text-foreground font-black flex items-center justify-center active:scale-90"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
               </div>
             ) : sport === 'Football' ? (
-              <div className="space-y-3">
-                <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest pl-2">Football Rules</h2>
-
-                <div className="bg-surface border border-foreground/5 rounded-3xl overflow-hidden shadow-xl">
-                  {/* Half Length */}
-                  <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <Activity className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Half Length (Mins)</span>
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={halfLengthMinutes}
-                        onChange={(e) => setHalfLengthMinutes(Number(e.target.value))}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      >
-                        <option value={10}>10 Mins</option>
-                        <option value={30}>30 Mins</option>
-                        <option value={45}>45 Mins</option>
-                      </select>
-                      <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                        <span className="font-bold">{halfLengthMinutes}</span>
-                        <ChevronDown className="w-4 h-4 text-foreground/50" />
-                      </div>
-                    </div>
+              <div className="space-y-3.5">
+                {/* Half Length */}
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-primary" /> Half Duration
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">{halfLengthMinutes} Mins</span>
                   </div>
-
-                  {/* Players Per Team */}
-                  <div className="flex items-center justify-between p-5 border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <Users className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Players Per Team</span>
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={footballPlayers}
-                        onChange={(e) => setFootballPlayers(Number(e.target.value))}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {[10, 15, 20, 45].map((half) => (
+                      <button
+                        key={half}
+                        onClick={() => setHalfLengthMinutes(half)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${halfLengthMinutes === half
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
                       >
-                        <option value={5}>5-a-side</option>
-                        <option value={7}>7-a-side</option>
-                        <option value={11}>11-a-side</option>
-                      </select>
-                      <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                        <span className="font-bold">{footballPlayers}</span>
-                        <ChevronDown className="w-4 h-4 text-foreground/50" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Substitutes */}
-                  <div className="flex items-center justify-between p-5 border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <Users className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Bench Substitutes</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={subsPerTeam}
-                        onChange={(e) => setSubsPerTeam(Number(e.target.value))}
-                        className="w-20 bg-background border border-foreground/10 rounded-xl px-4 py-2 text-center font-bold focus:outline-none focus:border-red-500 shadow-inner"
-                      />
-                    </div>
+                        {half}m
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ) : sport === 'Volleyball' ? (
-              <div className="space-y-3">
-                <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest pl-2">Volleyball Rules</h2>
 
-                <div className="bg-surface border border-foreground/5 rounded-3xl overflow-hidden shadow-xl">
-                  {/* Sets */}
-                  <div className="flex items-center justify-between p-5 border-b border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <ListOrdered className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Best of Sets</span>
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={bestOfSets}
-                        onChange={(e) => setBestOfSets(Number(e.target.value) as 3 | 5)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      >
-                        <option value={3}>3 Sets</option>
-                        <option value={5}>5 Sets</option>
-                      </select>
-                      <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                        <span className="font-bold">{bestOfSets}</span>
-                        <ChevronDown className="w-4 h-4 text-foreground/50" />
-                      </div>
-                    </div>
+                {/* Football Players */}
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-primary" /> Pitch Format
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">{footballPlayers}v{footballPlayers}</span>
                   </div>
-
-                  {/* Points Per Set */}
-                  <div className="flex items-center justify-between p-5 border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <Trophy className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Points Per Set</span>
-                    </div>
-                    <div className="relative">
-                      <select
-                        value={pointsPerSet}
-                        onChange={(e) => setPointsPerSet(Number(e.target.value))}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {[5, 7, 11].map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setFootballPlayers(p)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${footballPlayers === p
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
                       >
-                        <option value={15}>15 Points</option>
-                        <option value={21}>21 Points</option>
-                        <option value={25}>25 Points</option>
-                      </select>
-                      <div className="bg-background border border-foreground/10 rounded-xl px-4 py-2 flex items-center gap-4 pointer-events-none shadow-inner">
-                        <span className="font-bold">{pointsPerSet}</span>
-                        <ChevronDown className="w-4 h-4 text-foreground/50" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Substitutes */}
-                  <div className="flex items-center justify-between p-5 border-foreground/5 hover:bg-foreground/5 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-background rounded-xl border border-foreground/5">
-                        <Users className="w-5 h-5 text-foreground/70" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground/90">Bench Substitutes</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={subsPerTeam}
-                        onChange={(e) => setSubsPerTeam(Number(e.target.value))}
-                        className="w-20 bg-background border border-foreground/10 rounded-xl px-4 py-2 text-center font-bold focus:outline-none focus:border-red-500 shadow-inner"
-                      />
-                    </div>
+                        {p}-a-side
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center bg-surface border border-foreground/5 rounded-3xl shadow-xl space-y-4">
-                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <Settings className="w-8 h-8" />
+              /* Volleyball */
+              <div className="space-y-3.5">
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <ListOrdered className="w-3.5 h-3.5 text-primary" /> Best of Sets
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">Best of {bestOfSets}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    {[3, 5].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setBestOfSets(s as 3 | 5)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${bestOfSets === s
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
+                      >
+                        Best of {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <h3 className="font-bold text-lg">{sport} Umpiring</h3>
-                <p className="text-foreground/60 text-sm">
-                  Full umpiring dashboard support for {sport} is coming in a future update! You can still continue to setup teams.
-                </p>
+
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-primary" /> Points Per Set
+                    </span>
+                    <span className="text-xs font-mono font-black text-primary">{pointsPerSet} Points</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {[15, 21, 25].map((pts) => (
+                      <button
+                        key={pts}
+                        onClick={() => setPointsPerSet(pts)}
+                        className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${pointsPerSet === pts
+                          ? 'bg-primary text-black border-primary shadow-sm'
+                          : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                          }`}
+                      >
+                        {pts} Pts
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
-
           </div>
         )}
 
-        {/* TEAM 1 TAB */}
+        {/* TAB 3: TEAM 1 DETAILS */}
         {activeTab === 'team1' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
-            <div className="bg-surface border border-foreground/5 rounded-3xl p-6 shadow-xl">
-              <h2 className="text-lg font-black uppercase tracking-wide mb-6 text-foreground drop-shadow-md">
-                {sport !== 'Badminton' ? 'Team 1 Details' : isDoubles ? 'Team 1' : 'Player 1 Details'}
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="px-1">
+              <h2 className="text-xs font-black uppercase tracking-wider text-foreground/50">
+                {sport !== 'Badminton' ? 'Team 1 (Side A)' : isDoubles ? 'Side A (Doubles)' : 'Player 1 (Side A)'}
               </h2>
 
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2 ml-1">
-                    {sport !== 'Badminton' ? 'Team Name' : 'Player 1 Name'}
+            </div>
+
+            <div className="p-4 rounded-3xl bg-surface border border-foreground/10 space-y-4 shadow-sm">
+              <div>
+                <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block mb-1.5 pl-1">
+                  {sport !== 'Badminton' ? 'Team Name' : 'Player 1 Name'}
+                </label>
+                <input
+                  type="text"
+                  value={teamA[0]}
+                  readOnly={isPreFilled}
+                  onChange={(e) => setTeamA([e.target.value, teamA[1]])}
+                  placeholder={sport === 'Badminton' ? 'e.g. Rahul S.' : 'e.g. Team Phoenix'}
+                  className="w-full px-4 py-3 rounded-2xl bg-background border border-foreground/10 text-foreground placeholder:text-foreground/30 text-sm font-bold focus:outline-none focus:border-primary transition-colors shadow-inner"
+                />
+              </div>
+
+              {isDoubles && sport === 'Badminton' && (
+                <div className="animate-in fade-in duration-200">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block mb-1.5 pl-1">
+                    Partner / Player 2 Name
                   </label>
                   <input
                     type="text"
-                    value={teamA[0]}
+                    value={teamA[1]}
                     readOnly={isPreFilled}
-                    onChange={(e) => setTeamA([e.target.value, teamA[1]])}
-                    placeholder="Enter full name"
-                    className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    onChange={(e) => setTeamA([teamA[0], e.target.value])}
+                    placeholder="e.g. Amit K."
+                    className="w-full px-4 py-3 rounded-2xl bg-background border border-foreground/10 text-foreground placeholder:text-foreground/30 text-sm font-bold focus:outline-none focus:border-primary transition-colors shadow-inner"
                   />
                 </div>
-                {isDoubles && sport === 'Badminton' && (
-                  <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                    <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2 ml-1">Player 2 Name</label>
-                    <input
-                      type="text"
-                      value={teamA[1]}
-                      readOnly={isPreFilled}
-                      onChange={(e) => setTeamA([teamA[0], e.target.value])}
-                      placeholder="Enter full name"
-                      className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    />
-                  </div>
-                )}
-                {sport !== 'Badminton' && (
-                  <div className="mt-6 border-t border-foreground/5 pt-6 space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-foreground/60 mb-4">Player Roster</h3>
+              )}
+
+              {sport !== 'Badminton' && (
+                <div className="pt-2 border-t border-foreground/10 space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block pl-1">
+                    Player Roster ({teamAPlayers.length})
+                  </span>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {teamAPlayers.map((player, idx) => (
-                      <div key={player.id} className="flex items-center gap-2 bg-background/50 p-2 rounded-2xl border border-foreground/5">
-                        <div className="w-6 h-6 flex items-center justify-center bg-red-500/10 text-red-500 rounded-full text-[10px] font-black shrink-0">
-                          {idx + 1}
-                        </div>
-                        <input
-                          type="text"
-                          value={player.jerseyNumber || ''}
-                          onChange={(e) => handlePlayerChange('A', idx, 'jerseyNumber', e.target.value)}
-                          placeholder="#"
-                          className="w-12 bg-surface border border-foreground/10 rounded-xl px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:border-red-500 transition-all placeholder-foreground/20"
-                        />
+                      <div key={player.id} className="flex items-center gap-2 bg-background p-2 rounded-xl border border-foreground/10">
+                        <span className="w-6 text-center text-xs font-mono font-bold text-primary shrink-0">
+                          #{idx + 1}
+                        </span>
                         <input
                           type="text"
                           value={player.name}
                           onChange={(e) => handlePlayerChange('A', idx, 'name', e.target.value)}
-                          placeholder="Player Name"
-                          className="flex-1 bg-transparent border-none text-sm font-bold focus:outline-none focus:ring-0 placeholder-foreground/20 min-w-0"
-                        />
-                        <input
-                          type="text"
-                          value={player.position}
-                          onChange={(e) => handlePlayerChange('A', idx, 'position', e.target.value)}
-                          placeholder="Position"
-                          className="w-20 bg-surface border border-foreground/10 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-red-500 transition-all placeholder-foreground/20"
+                          placeholder={`Player ${idx + 1}`}
+                          className="flex-1 bg-transparent border-none text-xs font-bold focus:outline-none placeholder:text-foreground/30 min-w-0"
                         />
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* TEAM 2 TAB */}
+        {/* TAB 4: TEAM 2 DETAILS */}
         {activeTab === 'team2' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
-            <div className="bg-surface border border-foreground/5 rounded-3xl p-6 shadow-xl">
-              <h2 className="text-lg font-black uppercase tracking-wide mb-6 text-foreground drop-shadow-md">
-                {sport !== 'Badminton' ? 'Team 2 Details' : isDoubles ? 'Team 2' : 'Player 2 Details'}
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="px-1">
+              <h2 className="text-xs font-black uppercase tracking-wider text-foreground/50">
+                {sport !== 'Badminton' ? 'Team 2 (Side B)' : isDoubles ? 'Side B (Doubles)' : 'Player 2 (Side B)'}
               </h2>
 
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2 ml-1">
-                    {sport !== 'Badminton' ? 'Team Name' : 'Player 1 Name'}
+            </div>
+
+            <div className="p-4 rounded-3xl bg-surface border border-foreground/10 space-y-4 shadow-sm">
+              <div>
+                <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block mb-1.5 pl-1">
+                  {sport !== 'Badminton' ? 'Team Name' : 'Player 2 Name'}
+                </label>
+                <input
+                  type="text"
+                  value={teamB[0]}
+                  readOnly={isPreFilled}
+                  onChange={(e) => setTeamB([e.target.value, teamB[1]])}
+                  placeholder={sport === 'Badminton' ? 'e.g. Vikram K.' : 'e.g. Team Titans'}
+                  className="w-full px-4 py-3 rounded-2xl bg-background border border-foreground/10 text-foreground placeholder:text-foreground/30 text-sm font-bold focus:outline-none focus:border-primary transition-colors shadow-inner"
+                />
+              </div>
+
+              {isDoubles && sport === 'Badminton' && (
+                <div className="animate-in fade-in duration-200">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block mb-1.5 pl-1">
+                    Partner / Player 2 Name
                   </label>
                   <input
                     type="text"
-                    value={teamB[0]}
+                    value={teamB[1]}
                     readOnly={isPreFilled}
-                    onChange={(e) => setTeamB([e.target.value, teamB[1]])}
-                    placeholder="Enter full name"
-                    className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    onChange={(e) => setTeamB([teamB[0], e.target.value])}
+                    placeholder="e.g. Karthik R."
+                    className="w-full px-4 py-3 rounded-2xl bg-background border border-foreground/10 text-foreground placeholder:text-foreground/30 text-sm font-bold focus:outline-none focus:border-primary transition-colors shadow-inner"
                   />
                 </div>
-                {isDoubles && sport === 'Badminton' && (
-                  <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                    <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2 ml-1">Player 2 Name</label>
-                    <input
-                      type="text"
-                      value={teamB[1]}
-                      readOnly={isPreFilled}
-                      onChange={(e) => setTeamB([teamB[0], e.target.value])}
-                      placeholder="Enter full name"
-                      className={`w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 text-foreground font-bold focus:outline-none focus:border-red-500 focus:shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all placeholder-white/20 ${isPreFilled ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    />
-                  </div>
-                )}
-                {sport !== 'Badminton' && (
-                  <div className="mt-6 border-t border-foreground/5 pt-6 space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-foreground/60 mb-4">Player Roster</h3>
+              )}
+
+              {sport !== 'Badminton' && (
+                <div className="pt-2 border-t border-foreground/10 space-y-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block pl-1">
+                    Player Roster ({teamBPlayers.length})
+                  </span>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {teamBPlayers.map((player, idx) => (
-                      <div key={player.id} className="flex items-center gap-2 bg-background/50 p-2 rounded-2xl border border-foreground/5">
-                        <div className="w-6 h-6 flex items-center justify-center bg-red-500/10 text-red-500 rounded-full text-[10px] font-black shrink-0">
-                          {idx + 1}
-                        </div>
-                        <input
-                          type="text"
-                          value={player.jerseyNumber || ''}
-                          onChange={(e) => handlePlayerChange('B', idx, 'jerseyNumber', e.target.value)}
-                          placeholder="#"
-                          className="w-12 bg-surface border border-foreground/10 rounded-xl px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:border-red-500 transition-all placeholder-foreground/20"
-                        />
+                      <div key={player.id} className="flex items-center gap-2 bg-background p-2 rounded-xl border border-foreground/10">
+                        <span className="w-6 text-center text-xs font-mono font-bold text-amber-500 shrink-0">
+                          #{idx + 1}
+                        </span>
                         <input
                           type="text"
                           value={player.name}
                           onChange={(e) => handlePlayerChange('B', idx, 'name', e.target.value)}
-                          placeholder="Player Name"
-                          className="flex-1 bg-transparent border-none text-sm font-bold focus:outline-none focus:ring-0 placeholder-foreground/20 min-w-0"
-                        />
-                        <input
-                          type="text"
-                          value={player.position}
-                          onChange={(e) => handlePlayerChange('B', idx, 'position', e.target.value)}
-                          placeholder="Position"
-                          className="w-20 bg-surface border border-foreground/10 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-red-500 transition-all placeholder-foreground/20"
+                          placeholder={`Player ${idx + 1}`}
+                          className="flex-1 bg-transparent border-none text-xs font-bold focus:outline-none placeholder:text-foreground/30 min-w-0"
                         />
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+
+            {/* Toss Details for Cricket & Football */}
             {(sport === 'Cricket' || sport === 'Football') && (
-              <div className="bg-surface border border-foreground/5 rounded-3xl p-6 shadow-xl mt-6">
-                <h2 className="text-lg font-black uppercase tracking-wide mb-6 text-foreground drop-shadow-md">
-                  Toss Details
-                </h2>
-                <div className="space-y-5">
+              <div className="p-4 rounded-3xl bg-surface border border-foreground/10 space-y-3.5 shadow-sm">
+                <div className="text-xs font-black uppercase tracking-wider text-foreground/50 pl-1">
+                  Toss & Choice
+                </div>
+
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2 ml-1">
-                      Toss Winner
+                    <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block mb-1.5 pl-1">
+                      Toss Won By
                     </label>
-                    <div className="relative">
-                      <select
-                        value={sport === 'Cricket' ? tossWinner : footballTossWinner}
-                        onChange={(e) => sport === 'Cricket' ? setTossWinner(e.target.value as 'A' | 'B') : setFootballTossWinner(e.target.value as 'A' | 'B')}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => sport === 'Cricket' ? setTossWinner('A') : setFootballTossWinner('A')}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all truncate ${(sport === 'Cricket' ? tossWinner : footballTossWinner) === 'A'
+                          ? 'bg-primary text-black border-primary'
+                          : 'bg-background border-foreground/10 text-foreground/70'
+                          }`}
                       >
-                        <option value="A">{teamA[0] || 'Team 1'}</option>
-                        <option value="B">{teamB[0] || 'Team 2'}</option>
-                      </select>
-                      <div className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 flex items-center justify-between text-foreground font-bold shadow-inner">
-                        <span>{(sport === 'Cricket' ? tossWinner : footballTossWinner) === 'A' ? (teamA[0] || 'Team 1') : (teamB[0] || 'Team 2')}</span>
-                        <ChevronDown className="w-5 h-5 text-foreground/50" />
-                      </div>
+                        {teamA[0] || 'Team A'}
+                      </button>
+                      <button
+                        onClick={() => sport === 'Cricket' ? setTossWinner('B') : setFootballTossWinner('B')}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all truncate ${(sport === 'Cricket' ? tossWinner : footballTossWinner) === 'B'
+                          ? 'bg-primary text-black border-primary'
+                          : 'bg-background border-foreground/10 text-foreground/70'
+                          }`}
+                      >
+                        {teamB[0] || 'Team B'}
+                      </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-2 ml-1">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 block mb-1.5 pl-1">
                       Decision
                     </label>
-                    <div className="relative">
-                      <select
-                        value={sport === 'Cricket' ? tossDecision : footballTossDecision}
-                        onChange={(e) => sport === 'Cricket' ? setTossDecision(e.target.value as 'Batting' | 'Bowling') : setFootballTossDecision(e.target.value as 'Kickoff' | 'Side')}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      >
-                        {sport === 'Cricket' ? (
-                          <>
-                            <option value="Batting">Batting</option>
-                            <option value="Bowling">Bowling</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="Kickoff">Kickoff</option>
-                            <option value="Side">Side</option>
-                          </>
-                        )}
-                      </select>
-                      <div className="w-full bg-background border border-foreground/10 rounded-2xl px-5 py-4 flex items-center justify-between text-foreground font-bold shadow-inner">
-                        <span>{sport === 'Cricket' ? tossDecision : footballTossDecision}</span>
-                        <ChevronDown className="w-5 h-5 text-foreground/50" />
-                      </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {sport === 'Cricket' ? (
+                        <>
+                          <button
+                            onClick={() => setTossDecision('Batting')}
+                            className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all ${tossDecision === 'Batting'
+                              ? 'bg-primary text-black border-primary'
+                              : 'bg-background border-foreground/10 text-foreground/70'
+                              }`}
+                          >
+                            Batting First
+                          </button>
+                          <button
+                            onClick={() => setTossDecision('Bowling')}
+                            className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all ${tossDecision === 'Bowling'
+                              ? 'bg-primary text-black border-primary'
+                              : 'bg-background border-foreground/10 text-foreground/70'
+                              }`}
+                          >
+                            Bowling First
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setFootballTossDecision('Kickoff')}
+                            className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all ${footballTossDecision === 'Kickoff'
+                              ? 'bg-primary text-black border-primary'
+                              : 'bg-background border-foreground/10 text-foreground/70'
+                              }`}
+                          >
+                            Kickoff First
+                          </button>
+                          <button
+                            onClick={() => setFootballTossDecision('Side')}
+                            className={`py-2.5 px-3 rounded-xl text-xs font-black border transition-all ${footballTossDecision === 'Side'
+                              ? 'bg-primary text-black border-primary'
+                              : 'bg-background border-foreground/10 text-foreground/70'
+                              }`}
+                          >
+                            Choose Side
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -897,22 +960,41 @@ function MatchSetupContent() {
             )}
           </div>
         )}
+      </main>
 
+      {/* ══════════════════════════════════════════════════════════════════════
+          4. FIXED BOTTOM MOBILE ACTION BAR (THEME-ADAPTIVE PRIMARY)
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent z-40">
+        <div className="max-w-md mx-auto">
+          <button
+            onClick={handleNext}
+            className="w-full py-4 rounded-2xl bg-primary text-black font-black uppercase tracking-wider text-sm flex items-center justify-center gap-2 shadow-xl hover:opacity-95 active:scale-[0.98] transition-all"
+            style={{
+              boxShadow: '0 10px 25px -2px var(--athlon-primary-glow, rgba(16, 185, 129, 0.4)), 0 4px 12px rgba(0,0,0,0.2)',
+            }}
+          >
+            <span>
+              {activeTab === 'sport'
+                ? 'Configure Rules'
+                : activeTab === 'rules'
+                  ? 'Set Team 1'
+                  : activeTab === 'team1'
+                    ? 'Set Team 2'
+                    : 'Start Scoring Match'}
+            </span>
+            {activeTab !== 'team2' ? (
+              <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+            ) : (
+              <Zap className="w-5 h-5 fill-black stroke-[2.5]" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* FIXED BOTTOM ACTION BAR */}
-      <div className="fixed bottom-20 md:bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-background via-background/95 to-background/0 backdrop-blur-sm pt-12 z-40">
-        <button
-          onClick={handleNext}
-          className="w-full bg-red-500 text-foreground font-black uppercase tracking-widest py-4 rounded-2xl text-sm flex items-center justify-center gap-2 hover:bg-red-400 active:scale-[0.98] transition-all shadow-[0_10px_40px_rgba(239,68,68,0.3)] border border-red-400/50"
-        >
-          {activeTab === 'sport' ? 'Configure Rules' : activeTab === 'rules' ? 'Configure Team 1' : activeTab === 'team1' ? 'Configure Team 2' : 'Start Scoring Match'}
-          {activeTab !== 'team2' ? <ChevronRight className="w-5 h-5 ml-1" /> : <Activity className="w-5 h-5 ml-1" />}
-        </button>
-      </div>
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
@@ -920,8 +1002,17 @@ function MatchSetupContent() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 }
-export default function MatchSetupPage() { return <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><MatchSetupContent /></Suspense>; }
+
+export default function MatchSetupPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <MatchSetupContent />
+    </Suspense>
+  );
+}

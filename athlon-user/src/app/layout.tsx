@@ -3,7 +3,15 @@ import { Inter } from "next/font/google";
 import StoreProvider from "@/components/providers/StoreProvider";
 import { AntdProvider } from "@/components/providers/AntdProvider";
 import { AthlonThemeProvider } from "@/providers/athlon-theme-provider";
-import { ATHLON_THEMES, DEFAULT_THEME_KEY, THEME_STORAGE_KEY, SEMANTIC_COLORS } from "@/config/theme";
+import {
+  ATHLON_THEMES,
+  ATHLON_LIGHT_THEMES,
+  DEFAULT_THEME_KEY,
+  THEME_STORAGE_KEY,
+  DEFAULT_THEME_MODE,
+  THEME_MODE_STORAGE_KEY,
+  SEMANTIC_COLORS,
+} from "@/config/theme";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,11 +39,17 @@ const themeInitScript = `
   try {
     var storageKey = '${THEME_STORAGE_KEY}';
     var defaultKey = '${DEFAULT_THEME_KEY}';
-    var themes = ${JSON.stringify(ATHLON_THEMES)};
+    var modeStorageKey = '${THEME_MODE_STORAGE_KEY}';
+    var defaultMode = '${DEFAULT_THEME_MODE}';
+    var darkThemes = ${JSON.stringify(ATHLON_THEMES)};
+    var lightThemes = ${JSON.stringify(ATHLON_LIGHT_THEMES)};
     var semantic = ${JSON.stringify(SEMANTIC_COLORS)};
 
     var savedKey = localStorage.getItem(storageKey);
-    var t = (savedKey && themes[savedKey]) ? themes[savedKey] : themes[defaultKey];
+    var savedMode = localStorage.getItem(modeStorageKey);
+    var mode = (savedMode === 'light') ? 'light' : 'dark';
+    var activeDict = mode === 'light' ? lightThemes : darkThemes;
+    var t = (savedKey && activeDict[savedKey]) ? activeDict[savedKey] : activeDict[defaultKey];
     var c = t.colors;
     var root = document.documentElement;
 
@@ -110,8 +124,13 @@ const themeInitScript = `
     root.style.setProperty('--athlon-error', semantic.error);
     root.style.setProperty('--athlon-live', semantic.live);
 
-    root.classList.add('dark');
-    root.classList.remove('light');
+    if (mode === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    } else {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    }
   } catch(e) {}
 })();
 `;

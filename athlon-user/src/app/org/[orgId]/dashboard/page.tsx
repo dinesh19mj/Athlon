@@ -32,6 +32,7 @@ import {
   CheckCircle2,
   SlidersHorizontal,
   UserCheck,
+  Building2,
 } from 'lucide-react';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
@@ -49,6 +50,7 @@ function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
   if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
   if (n.includes('student') || n.includes('pupil')) return 'students';
+  if (n.includes('batch') || n.includes('group') || n.includes('coaching')) return 'schedule';
   if (n.includes('coach') || n.includes('trainer')) return 'coaches';
   if (n.includes('member') || n.includes('staff') || n.includes('squad') || n.includes('team')) return 'members';
   if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
@@ -60,6 +62,7 @@ function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   if (n.includes('leaderboard') || n.includes('rank') || n.includes('standing') || n.includes('result')) return 'rankings';
   if (n.includes('inventory') || n.includes('equipment') || n.includes('shuttle') || n.includes('gear')) return 'inventory';
   if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card')) return 'finances';
+  if (n.includes('centre') || n.includes('campus') || n.includes('branch')) return 'facilities';
   if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('map') || n.includes('venue')) return 'facilities';
   if (n.includes('setting') || n.includes('config')) return 'settings';
   if (n.includes('registration') || n.includes('register') || n.includes('approv') || n.includes('entry') || n.includes('pass')) return 'registered';
@@ -149,37 +152,56 @@ export default function OrganizationDashboard() {
     const actions = [];
 
     if (org.type === 'ACADEMY') {
+      // ── 1. Infrastructure ──────────────────────────────────────
+      actions.push({
+        id: `/org/${org.id}/centres`,
+        label: 'Centres',
+        description: 'Campus branches & locations',
+        icon: Building2,
+        color: 'text-violet-400',
+        bg: 'bg-violet-500/10',
+      });
+      actions.push({
+        id: `/org/${org.id}/facilities`,
+        label: 'Facilities',
+        description: 'Courts, turfs & arenas',
+        icon: MapPin,
+        color: 'text-cyan-400',
+        bg: 'bg-cyan-500/10',
+      });
+      // ── 2. People ──────────────────────────────────────────────
       actions.push({
         id: `/org/${org.id}/students`,
         label: 'Students',
-        description: 'Manage enrollments & batches',
+        description: 'Enrollments & active roster',
         icon: GraduationCap,
-        color: 'text-[#3B82F6]',
+        color: 'text-blue-400',
         bg: 'bg-blue-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/attendance`,
-        label: 'Attendance',
-        description: 'Daily check-ins & roll call',
-        icon: ClipboardList,
-        color: 'text-emerald-400',
-        bg: 'bg-emerald-500/10',
       });
       actions.push({
         id: `/org/${org.id}/coaches`,
         label: 'Coaches',
-        description: 'Staff & coaching roster',
+        description: 'Coaching staff & roster',
         icon: UserCheck,
         color: 'text-purple-400',
         bg: 'bg-purple-500/10',
       });
       actions.push({
-        id: `/org/${org.id}/members`,
+        id: `/org/${org.id}/staff`,
         label: 'Staff',
         description: 'Administration & roles',
         icon: ShieldCheck,
-        color: 'text-foreground/70',
+        color: 'text-slate-400',
         bg: 'bg-white/5',
+      });
+      // ── 3. Training Operations ─────────────────────────────────
+      actions.push({
+        id: `/org/${org.id}/batches`,
+        label: 'Batches',
+        description: 'Coaching groups & schedules',
+        icon: Sparkles,
+        color: 'text-indigo-400',
+        bg: 'bg-indigo-500/10',
       });
       actions.push({
         id: `/org/${org.id}/schedule`,
@@ -189,6 +211,15 @@ export default function OrganizationDashboard() {
         color: 'text-orange-400',
         bg: 'bg-orange-500/10',
       });
+      actions.push({
+        id: `/org/${org.id}/attendance`,
+        label: 'Attendance',
+        description: 'Daily check-ins & roll call',
+        icon: ClipboardList,
+        color: 'text-emerald-400',
+        bg: 'bg-emerald-500/10',
+      });
+      // ── 4. Performance & Competition ───────────────────────────
       actions.push({
         id: `/org/${org.id}/performance`,
         label: 'Performance',
@@ -205,22 +236,7 @@ export default function OrganizationDashboard() {
         color: 'text-red-400',
         bg: 'bg-red-500/10',
       });
-      actions.push({
-        id: `/org/${org.id}/match-setup`,
-        label: 'Setup',
-        description: 'Quick court launch console',
-        icon: SlidersHorizontal,
-        color: 'text-amber-500',
-        bg: 'bg-amber-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/livestream`,
-        label: 'Live Stream',
-        description: 'Broadcast court cameras',
-        icon: Video,
-        color: 'text-red-500',
-        bg: 'bg-red-500/10',
-      });
+      // ── 5. Finances & Settings handled by common section below ─
     } else if (org.type === 'CLUB') {
       actions.push({
         id: `/org/${org.id}/members`,
@@ -459,29 +475,45 @@ export default function OrganizationDashboard() {
         {/* UNIFIED ORG STATS & METRICS CARD */}
         <div className="px-6 relative z-10 mb-4 max-w-7xl mx-auto">
           <div
-            className="rounded-[18px] shadow-lg overflow-hidden border border-white/[0.08] relative"
+            className="rounded-[18px] shadow-sm overflow-hidden border relative"
             style={{
-              background: 'linear-gradient(145deg, var(--athlon-card) 0%, rgba(14, 22, 38, 0.95) 100%)',
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
             }}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
 
             {/* Org Info Header */}
-            <div className="flex items-center justify-between p-3.5 border-b border-white/[0.06] relative z-10">
+            <div
+              className="flex items-center justify-between p-3.5 border-b relative z-10"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="relative">
-                  <div className="w-9 h-9 rounded-xl bg-black/40 border border-white/10 overflow-hidden shrink-0 shadow-inner flex items-center justify-center">
+                  <div
+                    className="w-9 h-9 rounded-xl border overflow-hidden shrink-0 shadow-inner flex items-center justify-center"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
                     {org.logo ? (
                       <img src={org.logo} alt={org.name} className="w-full h-full object-cover" />
                     ) : (
-                      <OrgIcon className="w-4 h-4 text-foreground/50" />
+                      <OrgIcon className="w-4 h-4" style={{ color: 'var(--athlon-text-muted)' }} />
                     )}
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#0A0F1D]" />
+                  <div
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2"
+                    style={{ borderColor: 'var(--athlon-card)' }}
+                  />
                 </div>
 
                 <div className="flex flex-col min-w-0">
-                  <span className="text-foreground font-bold text-xs tracking-wide uppercase truncate">
+                  <span
+                    className="font-bold text-xs tracking-wide uppercase truncate"
+                    style={{ color: 'var(--athlon-text)' }}
+                  >
                     {org.name}
                   </span>
                 </div>
@@ -495,10 +527,10 @@ export default function OrganizationDashboard() {
                 </div>
                 <span className={`px-2 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider ${
                   isAdmin
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25'
                     : isCoach
-                    ? 'bg-purple-500/15 text-purple-400 border border-purple-500/25'
-                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                    ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/25'
+                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25'
                 }`}>
                   {isAdmin ? '👑 Admin' : isCoach ? '🧢 Coach' : '👤 Member'}
                 </span>
@@ -506,41 +538,61 @@ export default function OrganizationDashboard() {
             </div>
 
             {/* 2 Metrics Grid */}
-            <div className="grid grid-cols-2 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
+            <div
+              className="grid grid-cols-2 divide-x relative z-10"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
               <Link
                 href={`/org/${org.id}/finances`}
-                className="flex flex-col items-center justify-center py-2.5 px-2 gap-1 hover:bg-white/5 transition-colors"
+                className="flex flex-col items-center justify-center py-2.5 px-2 gap-1 hover:opacity-80 transition-opacity"
+                style={{ borderColor: 'var(--athlon-border)' }}
               >
-                <div className="flex items-center gap-1 text-foreground/40 text-[8px] font-extrabold tracking-wider uppercase">
-                  <CreditCard className="w-3 h-3 text-foreground/50" />
+                <div
+                  className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
+                  style={{ color: 'var(--athlon-text-muted)' }}
+                >
+                  <CreditCard className="w-3 h-3" />
                   <span>MONTHLY REVENUE</span>
                 </div>
-                <div className="text-foreground font-bold text-xs leading-tight flex items-baseline gap-1">
+                <div
+                  className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                  style={{ color: 'var(--athlon-text)' }}
+                >
                   <span>₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}</span>
                   {financeSummary && Number(financeSummary.netBalance) !== 0 ? (
                     <span className={`text-[8px] font-semibold ${
-                      Number(financeSummary.netBalance) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      Number(financeSummary.netBalance) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     }`}>
                       {Number(financeSummary.netBalance) >= 0 ? `+₹${Number(financeSummary.netBalance).toLocaleString('en-IN')}` : `-₹${Math.abs(Number(financeSummary.netBalance)).toLocaleString('en-IN')}`}
                     </span>
                   ) : (
-                    <span className="text-[8px] text-emerald-400 font-semibold">+0%</span>
+                    <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">+0%</span>
                   )}
                 </div>
               </Link>
 
               <Link
-                href={`/org/${org.id}/members`}
-                className="flex flex-col items-center justify-center py-2.5 px-2 gap-1 hover:bg-white/5 transition-colors"
+                href={org.type === 'ACADEMY' ? `/org/${org.id}/staff` : `/org/${org.id}/members`}
+                className="flex flex-col items-center justify-center py-2.5 px-2 gap-1 hover:opacity-80 transition-opacity"
+                style={{ borderColor: 'var(--athlon-border)' }}
               >
-                <div className="flex items-center gap-1 text-foreground/40 text-[8px] font-extrabold tracking-wider uppercase">
-                  <Users className="w-3 h-3 text-foreground/50" />
-                  <span>ACTIVE MEMBERS</span>
+                <div
+                  className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
+                  style={{ color: 'var(--athlon-text-muted)' }}
+                >
+                  <Users className="w-3 h-3" />
+                  <span>{org.type === 'ACADEMY' ? 'STAFF ROSTER' : 'ACTIVE MEMBERS'}</span>
                 </div>
-                <div className="text-foreground font-bold text-xs leading-tight flex items-baseline gap-1">
+                <div
+                  className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                  style={{ color: 'var(--athlon-text)' }}
+                >
                   <span>{members.length}</span>
-                  <span className="text-[8px] text-blue-400 font-semibold">
-                    {newMembersThisWeek > 0 ? `+${newMembersThisWeek} new` : 'Roster'}
+                  <span className="text-[8px] text-blue-600 dark:text-blue-400 font-semibold">
+                    {org.type === 'ACADEMY' ? 'Staff' : (newMembersThisWeek > 0 ? `+${newMembersThisWeek} new` : 'Roster')}
                   </span>
                 </div>
               </Link>

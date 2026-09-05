@@ -4,11 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,7 +47,7 @@ public class AcademyCentreController {
         return ResponseEntity.ok(ApiResponse.success("Academy centre retrieved successfully", centre));
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ApiResponse<AcademyCentreResponse>> createCentre(
             @Valid @RequestBody CreateCentreRequest request) {
 
@@ -57,7 +55,7 @@ public class AcademyCentreController {
         return ResponseEntity.ok(ApiResponse.success("Academy centre created successfully", centre));
     }
 
-    @PutMapping("/{centreUuid}")
+    @PostMapping("/update/{centreUuid}")
     public ResponseEntity<ApiResponse<AcademyCentreResponse>> updateCentre(
             @PathVariable("centreUuid") UUID centreUuid,
             @Valid @RequestBody UpdateCentreRequest request) {
@@ -66,7 +64,7 @@ public class AcademyCentreController {
         return ResponseEntity.ok(ApiResponse.success("Academy centre updated successfully", centre));
     }
 
-    @DeleteMapping("/{centreUuid}")
+    @PostMapping("/delete/{centreUuid}")
     public ResponseEntity<ApiResponse<Void>> deleteCentre(
             @PathVariable("centreUuid") UUID centreUuid) {
 

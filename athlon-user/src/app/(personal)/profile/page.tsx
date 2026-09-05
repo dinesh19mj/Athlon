@@ -645,37 +645,37 @@ export default function ProfilePage() {
             <div className="px-4 py-3 flex items-center justify-between border-b border-foreground/5">
               <div className="flex items-center gap-2">
                 <UserIcon className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">Personal Info</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Personal Info</span>
               </div>
               <ChevronRight className="w-4 h-4 text-foreground/30" />
             </div>
             <div className="divide-y divide-foreground/5">
               <div className="px-4 py-3.5 flex items-center justify-between">
-                <span className="text-xs font-medium text-foreground/60">Email</span>
-                <span className="text-xs font-medium text-white">{profile?.email || userEmail || '-'}</span>
+                <span className="text-xs font-medium text-foreground/70">Email</span>
+                <span className="text-xs font-semibold text-foreground">{profile?.email || userEmail || '-'}</span>
               </div>
               {profile?.phone && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
-                  <span className="text-xs font-medium text-foreground/60">Phone</span>
-                  <span className="text-xs font-medium text-white">{profile.phone}</span>
+                  <span className="text-xs font-medium text-foreground/70">Phone</span>
+                  <span className="text-xs font-semibold text-foreground">{profile.phone}</span>
                 </div>
               )}
               {profile?.city && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
-                  <span className="text-xs font-medium text-foreground/60">City</span>
-                  <span className="text-xs font-medium text-white">{profile.city}</span>
+                  <span className="text-xs font-medium text-foreground/70">City</span>
+                  <span className="text-xs font-semibold text-foreground">{profile.city}</span>
                 </div>
               )}
               {profile?.district && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
-                  <span className="text-xs font-medium text-foreground/60">District</span>
-                  <span className="text-xs font-medium text-white">{profile.district}</span>
+                  <span className="text-xs font-medium text-foreground/70">District</span>
+                  <span className="text-xs font-semibold text-foreground">{profile.district}</span>
                 </div>
               )}
               {profile?.state && (
                 <div className="px-4 py-3.5 flex items-center justify-between">
-                  <span className="text-xs font-medium text-foreground/60">State</span>
-                  <span className="text-xs font-medium text-white">{profile.state}</span>
+                  <span className="text-xs font-medium text-foreground/70">State</span>
+                  <span className="text-xs font-semibold text-foreground">{profile.state}</span>
                 </div>
               )}
             </div>
@@ -686,11 +686,11 @@ export default function ProfilePage() {
             <div className="px-4 py-3 flex items-center justify-between border-b border-foreground/5">
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">Sports Profile</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Sports Profile</span>
               </div>
               <button
                 onClick={() => setIsAddingSport(true)}
-                className="text-[10px] font-bold text-primary hover:text-white transition-colors flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-md"
+                className="text-[10px] font-bold text-primary hover:opacity-80 transition-opacity flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-md"
               >
                 <Plus className="w-3 h-3" /> Add New
               </button>
@@ -698,16 +698,16 @@ export default function ProfilePage() {
 
             <div className="px-4 py-3 border-b border-foreground/5 overflow-x-auto hide-scrollbar flex gap-2">
               {sportsProfiles.length === 0 ? (
-                <span className="text-sm text-foreground/50">No sports profiles found.</span>
+                <div className="text-xs text-foreground/50 py-2">No sports added yet.</div>
               ) : (
                 sportsProfiles.map((sp) => (
                   <button
                     key={sp.uuid}
                     onClick={() => setSelectedSportId(sp.uuid)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
                       selectedSportId === sp.uuid
-                        ? 'bg-primary text-black'
-                        : 'bg-surface border border-foreground/10 text-foreground/70 hover:border-primary/50'
+                        ? 'bg-primary text-black border-primary'
+                        : 'bg-surface border-border text-foreground hover:bg-foreground/5'
                     }`}
                   >
                     {sp.sportName}
@@ -780,16 +780,16 @@ export default function ProfilePage() {
                 .map((sp) => (
                   <div key={sp.uuid}>
                     <div className="px-4 py-4 flex items-center justify-between border-b border-foreground/5">
-                      <span className="text-sm font-medium text-foreground/60">Sport</span>
-                      <span className="text-sm font-medium text-white">{sp.sportName}</span>
+                      <span className="text-sm font-medium text-foreground/70">Sport</span>
+                      <span className="text-sm font-semibold text-foreground">{sp.sportName}</span>
                     </div>
                     <div className="px-4 py-4 flex items-center justify-between border-b border-foreground/5">
-                      <span className="text-sm font-medium text-foreground/60">Ranking</span>
-                      <span className="text-sm font-medium text-white">{sp.currentRanking || 'N/A'}</span>
+                      <span className="text-sm font-medium text-foreground/70">Ranking</span>
+                      <span className="text-sm font-semibold text-foreground">{sp.currentRanking || 'N/A'}</span>
                     </div>
                     <div className="px-4 py-4 flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground/60">Highlights</span>
-                      <span className="text-sm font-medium text-white">{sp.careerHighlights || 'None'}</span>
+                      <span className="text-sm font-medium text-foreground/70">Highlights</span>
+                      <span className="text-sm font-semibold text-foreground">{sp.careerHighlights || 'None'}</span>
                     </div>
                   </div>
                 ))}
@@ -800,7 +800,7 @@ export default function ProfilePage() {
           {/* APPEARANCE & THEMES (Color + 2D/3D Icons) */}
           <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-foreground/5 flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">Appearance &amp; Style</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Appearance &amp; Style</span>
               <span className="text-[10px] font-bold text-primary uppercase">Customize</span>
             </div>
             <button
@@ -812,18 +812,18 @@ export default function ProfilePage() {
                   <Palette className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-white">Theme &amp; Icon Mode</div>
-                  <div className="text-xs text-foreground/50">Change color palette and 2D / 3D icon graphics</div>
+                  <div className="text-sm font-bold text-foreground">Theme &amp; Icon Mode</div>
+                  <div className="text-xs text-foreground/60">Change color palette and 2D / 3D icon graphics</div>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-foreground/30" />
+              <ChevronRight className="w-4 h-4 text-foreground/40" />
             </button>
           </section>
 
           {/* REWARDS */}
           <section className="bg-surface border border-primary/20 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-primary/10">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/40">Rewards</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Rewards</span>
             </div>
             <div className="px-4 py-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -831,8 +831,8 @@ export default function ProfilePage() {
                   <Gift className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
-                  <span className="text-sm font-bold text-white truncate">Referrals</span>
-                  <span className="text-[10px] font-medium text-foreground/40 truncate">
+                  <span className="text-sm font-bold text-foreground truncate">Referrals</span>
+                  <span className="text-[10px] font-medium text-foreground/60 truncate">
                     Invite players · earn credits
                   </span>
                 </div>
@@ -841,7 +841,7 @@ export default function ProfilePage() {
                 <span className="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-xs font-bold">
                   0 credits
                 </span>
-                <ChevronRight className="w-4 h-4 text-foreground/30" />
+                <ChevronRight className="w-4 h-4 text-foreground/40" />
               </div>
             </div>
           </section>
@@ -849,36 +849,36 @@ export default function ProfilePage() {
           {/* LEGAL */}
           <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm mt-4">
             <div className="px-4 py-3 border-b border-foreground/5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">Legal</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Legal</span>
             </div>
             <button className="w-full px-4 py-4 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left">
-              <span className="text-sm font-medium text-white">Terms &amp; Conditions</span>
-              <ChevronRight className="w-4 h-4 text-foreground/30" />
+              <span className="text-sm font-medium text-foreground">Terms &amp; Conditions</span>
+              <ChevronRight className="w-4 h-4 text-foreground/40" />
             </button>
             <button className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left">
-              <span className="text-sm font-medium text-white">Privacy Policy</span>
-              <ChevronRight className="w-4 h-4 text-foreground/30" />
+              <span className="text-sm font-medium text-foreground">Privacy Policy</span>
+              <ChevronRight className="w-4 h-4 text-foreground/40" />
             </button>
           </section>
 
           {/* SUPPORT & HELP */}
           <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-foreground/5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">Support &amp; Help</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Support &amp; Help</span>
             </div>
             <button className="w-full px-4 py-4 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left">
-              <div className="flex items-center gap-3 text-white">
+              <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-foreground/60" />
-                <span className="text-sm font-medium text-white">admin@athlon.com</span>
+                <span className="text-sm font-medium text-foreground">admin@athlon.com</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-foreground/30" />
+              <ChevronRight className="w-4 h-4 text-foreground/40" />
             </button>
             <button className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left">
-              <div className="flex items-center gap-3 text-white">
+              <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-foreground/60" />
-                <span className="text-sm font-medium text-white">+91 8891704026</span>
+                <span className="text-sm font-medium text-foreground">+91 8891704026</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-foreground/30" />
+              <ChevronRight className="w-4 h-4 text-foreground/40" />
             </button>
           </section>
 

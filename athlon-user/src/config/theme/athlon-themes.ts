@@ -1,5 +1,5 @@
-import type { AthlonTheme } from './theme-types';
-import { SEMANTIC_COLORS } from './theme-constants';
+import type { AthlonTheme, ThemeKey, ThemeMode, LightThemeTokens } from './theme-types';
+import { SEMANTIC_COLORS, LIGHT_THEME_TOKENS } from './theme-constants';
 
 const SEM = SEMANTIC_COLORS;
 
@@ -509,4 +509,113 @@ export function getThemeVideo(themeKey?: string | null): string {
   if (!themeKey) return DEFAULT_THEME_VIDEO;
   return THEME_VIDEOS[themeKey] || DEFAULT_THEME_VIDEO;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIGHT THEME DERIVATION & REGISTRY (ADDITIVE ONLY)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Pure function to derive light theme tokens from an arbitrary accent hex color.
+ * NOTE: This is NOT used for the 8 primary built-in accents (which use reviewed,
+ * hardcoded values from the design specification in LIGHT_THEME_TOKENS), but acts as
+ * a documented fallback and mathematical utility should future accent colors be
+ * introduced dynamically via RGB linear interpolation.
+ */
+export function deriveLightTokens(accentHex: string): LightThemeTokens {
+  const hex = accentHex.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16) || 0;
+  const g = parseInt(hex.substring(2, 4), 16) || 0;
+  const b = parseInt(hex.substring(4, 6), 16) || 0;
+
+  const lerp = (c: number, target: number, amount: number) =>
+    Math.round(c + (target - c) * amount);
+
+  const toHex = (num: number) => num.toString(16).padStart(2, '0').toUpperCase();
+  const mix = (target: number, amount: number) =>
+    `#${toHex(lerp(r, target, amount))}${toHex(lerp(g, target, amount))}${toHex(lerp(b, target, amount))}`;
+
+  // bgPage: 92% blend towards white
+  const bgPage = mix(255, 0.92);
+  // border: 80% blend towards white
+  const border = mix(255, 0.80);
+  // iconMuted: 45% blend towards black
+  const iconMuted = mix(0, 0.45);
+  // textPrimary: 85% blend towards black
+  const textPrimary = mix(0, 0.85);
+
+  return { bgPage, border, iconMuted, textPrimary };
+}
+
+function createLightTheme(darkTheme: AthlonTheme): AthlonTheme {
+  const t = LIGHT_THEME_TOKENS[darkTheme.key] || deriveLightTokens(darkTheme.colors.primary);
+  return {
+    key: darkTheme.key,
+    name: darkTheme.name,
+    description: `${darkTheme.name} daylight theme with branded light accents.`,
+    colors: {
+      background: t.bgPage,
+      backgroundSecondary: t.bgPage,
+      surface: '#FFFFFF',
+      surfaceHover: '#F8FAF9',
+      surfaceActive: '#F1F5F3',
+      card: '#FFFFFF',
+      cardHover: '#FFFFFF',
+      cardElevated: '#FFFFFF',
+      border: t.border,
+      borderStrong: t.border,
+      borderSubtle: t.border,
+      primary: darkTheme.colors.primary,
+      primaryHover: darkTheme.colors.primaryHover,
+      primaryActive: darkTheme.colors.primaryActive,
+      primaryLight: darkTheme.colors.primaryLight,
+      primaryDark: darkTheme.colors.primaryDark,
+      primarySoft: `${darkTheme.colors.primary}1A`,
+      primaryMuted: `${darkTheme.colors.primary}0D`,
+      primaryGlow: `${darkTheme.colors.primary}33`,
+      primaryForeground: darkTheme.colors.primaryForeground,
+      text: t.textPrimary,
+      textSecondary: t.iconMuted,
+      textMuted: t.iconMuted,
+      textDisabled: '#94A3B8',
+      icon: t.iconMuted,
+      iconMuted: t.iconMuted,
+      iconActive: darkTheme.colors.primary,
+      inputBackground: '#FFFFFF',
+      inputBorder: t.border,
+      inputFocus: darkTheme.colors.primary,
+      navigationBackground: '#FFFFFF',
+      navigationActive: darkTheme.colors.primary,
+      navigationHover: `${darkTheme.colors.primary}14`,
+      headerBackground: '#FFFFFF',
+      sidebarBackground: '#FFFFFF',
+      panelBackground: '#FFFFFF',
+      gradientStart: t.bgPage,
+      gradientMiddle: '#FFFFFF',
+      gradientEnd: darkTheme.colors.primary,
+      shadow: 'rgba(0, 0, 0, 0.06)',
+      glow: `${darkTheme.colors.primary}26`,
+      chartPrimary: darkTheme.colors.chartPrimary,
+      chartSecondary: darkTheme.colors.chartSecondary,
+      chartTertiary: darkTheme.colors.chartTertiary,
+    },
+    semantic: darkTheme.semantic,
+  };
+}
+
+export const ATHLON_LIGHT_THEMES: Record<string, AthlonTheme> = {
+  algae: createLightTheme(algae),
+  cyan: createLightTheme(cyan),
+  pulse: createLightTheme(pulse),
+  fire: createLightTheme(fire),
+  wine: createLightTheme(wine),
+  berry: createLightTheme(berry),
+  slate: createLightTheme(slate),
+  forest: createLightTheme(forest),
+};
+
+export function getAthlonTheme(key: ThemeKey, mode: ThemeMode = 'dark'): AthlonTheme {
+  const themeDict = mode === 'light' ? ATHLON_LIGHT_THEMES : ATHLON_THEMES;
+  return themeDict[key] || (mode === 'light' ? ATHLON_LIGHT_THEMES.algae : ATHLON_THEMES.algae);
+}
+
 

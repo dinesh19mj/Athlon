@@ -25,6 +25,8 @@ import {
   Layers,
   Activity,
   Plus,
+  Trash2,
+  QrCode,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -33,11 +35,19 @@ import { TeamEventCategoryConfig } from '@/components/tournaments/teamevent/Team
 import { OrganizationService } from '@/lib/api/organization';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { useOrgSports } from '@/lib/hooks/useOrgSports';
+
+export interface TournamentCategoryItem {
+  id: string;
+  name: string;
+  maxTeams?: number | string;
+}
 
 export default function CreateTournamentPage() {
   const router = useRouter();
   const params = useParams();
   const orgUuid = params.orgId as string;
+  const { sports: orgSports } = useOrgSports(orgUuid);
   const posterInputRef = useRef<HTMLInputElement>(null);
   const desktopPosterInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,10 +98,38 @@ export default function CreateTournamentPage() {
     matchFormats: [] as string[],
     playersCount: '',
     registrationFees: '',
+    gpayNumber: '',
     description: '',
     contactPhone: '',
     teamEventCategories: [] as TeamEventCategoryConfig[],
   });
+
+  const [isMultiCategory, setIsMultiCategory] = useState(false);
+  const [customCategories, setCustomCategories] = useState<TournamentCategoryItem[]>([
+    { id: '1', name: 'Beginner', maxTeams: 16 },
+    { id: '2', name: 'C Level', maxTeams: 16 },
+  ]);
+
+  const addCategoryItem = (name = '', maxTeams: number | string = 16) => {
+    setCustomCategories((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        name,
+        maxTeams,
+      },
+    ]);
+  };
+
+  const removeCategoryItem = (id: string) => {
+    setCustomCategories((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const updateCategoryItem = (id: string, field: keyof TournamentCategoryItem, value: any) => {
+    setCustomCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
+    );
+  };
 
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -102,6 +140,20 @@ export default function CreateTournamentPage() {
     setPosterFile(file);
     const reader = new FileReader();
     reader.onload = () => setPosterPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const qrCodeInputRef = useRef<HTMLInputElement>(null);
+  const desktopQrCodeInputRef = useRef<HTMLInputElement>(null);
+  const [qrCodePreview, setQrCodePreview] = useState<string | null>(null);
+  const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
+
+  const handleQrCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setQrCodeFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setQrCodePreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -139,17 +191,26 @@ export default function CreateTournamentPage() {
       form.append('sport', formData.sport);
       if (formData.tournamentType === 'TEAM_EVENT') {
         form.append('teamEventCategories', JSON.stringify(formData.teamEventCategories));
+      } else if (isMultiCategory && customCategories.length > 0) {
+        const categoryNames = customCategories.map((c) => c.name.trim()).filter(Boolean).join(', ');
+        form.append('category', categoryNames || 'Open');
+        form.append('matchFormat', formData.matchFormat);
+        const totalTeams = customCategories.reduce((sum, c) => sum + (Number(c.maxTeams) || 0), 0);
+        if (totalTeams > 0) {
+          form.append('playersCount', totalTeams.toString());
+        }
       } else {
         form.append('matchFormat', formData.matchFormat);
-        form.append('category', formData.category);
-      }
-      if (formData.playersCount) {
-        form.append('playersCount', formData.playersCount.toString());
+        form.append('category', formData.category || 'Open');
+        if (formData.playersCount) {
+          form.append('playersCount', formData.playersCount.toString());
+        }
       }
       form.append('visibility', formData.type);
       form.append('location', formData.location);
       if (formData.mapLink) form.append('mapLink', formData.mapLink);
       if (formData.contactPhone) form.append('contactPhone', formData.contactPhone);
+      if (formData.gpayNumber) form.append('gpayNumber', formData.gpayNumber.trim());
       if (formData.registrationFees) form.append('registrationFees', formData.registrationFees);
 
       form.append('organizerId', orgData.orgId.toString());
@@ -163,10 +224,16 @@ export default function CreateTournamentPage() {
         form.append('poster', posterFile);
       }
 
+      if (qrCodeFile) {
+        form.append('upiQrCode', qrCodeFile);
+      }
+
       await TournamentService.create(form);
       router.push(`/org/${orgUuid}/tournaments`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create tournament', error);
+      const errMsg = error?.response?.data?.message || error?.message || 'Failed to create tournament. Please check required fields.';
+      alert(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -179,8 +246,8 @@ export default function CreateTournamentPage() {
   const isFormValid = formData.name.trim() !== '' && formData.location.trim() !== '';
 
   const inputClass =
-    'w-full bg-[#0D1520] border border-white/10 rounded-2xl px-4 py-4 text-white text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-white/25 font-medium';
-  const labelClass = 'block text-[10px] font-black text-white/50 uppercase tracking-widest mb-2';
+    'w-full bg-card border border-foreground/15 rounded-2xl px-4 py-4 text-foreground text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-foreground/35 font-medium';
+  const labelClass = 'block text-[10px] font-black text-foreground/60 uppercase tracking-widest mb-2';
 
   const desktopInputClass =
     'w-full px-4 py-3.5 rounded-2xl border text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-foreground/30';
@@ -189,17 +256,17 @@ export default function CreateTournamentPage() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL EXPERIENCE
+          1. MOBILE VIEW ONLY (< md) - THEME-ADAPTIVE MOBILE EXPERIENCE
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24">
         {/* Header */}
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-white/5 px-5 py-4 flex items-center gap-4">
-          <Link href={`/org/${orgUuid}/tournaments`} className="text-white/60 hover:text-white transition-colors">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-foreground/10 px-5 py-4 flex items-center gap-4">
+          <Link href={`/org/${orgUuid}/tournaments`} className="text-foreground/60 hover:text-foreground transition-colors">
             <ArrowLeftIcon className="w-5 h-5" />
           </Link>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary" />
-            <span className="text-white/50 text-sm font-bold tracking-widest uppercase"> CREATE TOURNAMENT</span>
+            <span className="text-foreground/60 text-sm font-bold tracking-widest uppercase"> CREATE TOURNAMENT</span>
           </div>
         </div>
 
@@ -216,21 +283,21 @@ export default function CreateTournamentPage() {
                   key={opt.value}
                   onClick={() => setFormData({ ...formData, type: opt.value })}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-all ${
-                    formData.type === opt.value ? 'border-primary bg-primary/10' : 'border-white/10 bg-[#0D1520]'
+                    formData.type === opt.value ? 'border-primary bg-primary/10' : 'border-foreground/10 bg-card hover:border-foreground/20'
                   }`}
                 >
                   <div
                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      formData.type === opt.value ? 'border-primary' : 'border-white/30'
+                      formData.type === opt.value ? 'border-primary' : 'border-foreground/30'
                     }`}
                   >
                     {formData.type === opt.value && <div className="w-2 h-2 rounded-full bg-primary" />}
                   </div>
                   <div>
-                    <div className={`font-bold text-sm ${formData.type === opt.value ? 'text-white' : 'text-white/70'}`}>
+                    <div className={`font-bold text-sm ${formData.type === opt.value ? 'text-primary font-black' : 'text-foreground'}`}>
                       {opt.label}
                     </div>
-                    <div className="text-[10px] text-white/35 mt-0.5">{opt.desc}</div>
+                    <div className="text-[10px] text-foreground/50 mt-0.5">{opt.desc}</div>
                   </div>
                 </div>
               ))}
@@ -256,8 +323,8 @@ export default function CreateTournamentPage() {
             <label className={labelClass}>
               Sport <span className="text-primary">*</span>
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {['Badminton', 'Cricket', 'Football', 'Volleyball'].map((sport) => (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {orgSports.map((sport) => (
                 <button
                   key={sport}
                   type="button"
@@ -265,9 +332,9 @@ export default function CreateTournamentPage() {
                     setFormData({ ...formData, sport });
                   }}
                   className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
-                    formData.sport === sport
-                      ? 'border-primary bg-primary/10 text-white'
-                      : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
+                    formData.sport.toLowerCase() === sport.toLowerCase()
+                      ? 'border-primary bg-primary/10 text-primary font-black'
+                      : 'border-foreground/10 bg-card text-foreground/70 hover:border-foreground/25 hover:text-foreground'
                   }`}
                 >
                   {sport}
@@ -291,8 +358,8 @@ export default function CreateTournamentPage() {
                   }}
                   className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
                     formData.tournamentType === type
-                      ? 'border-primary bg-primary/10 text-white'
-                      : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
+                      ? 'border-primary bg-primary/10 text-primary font-black'
+                      : 'border-foreground/10 bg-card text-foreground/70 hover:border-foreground/25 hover:text-foreground'
                   }`}
                 >
                   {type === 'KNOCKOUT' ? 'Knockout' : 'League'}
@@ -344,7 +411,7 @@ export default function CreateTournamentPage() {
             <label className={labelClass}>Google Maps Link (Optional)</label>
             <div className="relative">
               <svg
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/30"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -386,12 +453,12 @@ export default function CreateTournamentPage() {
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
                   <input
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                    className="w-full bg-card border border-foreground/15 rounded-xl pl-9 pr-3 py-3 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                   />
                 </div>
                 <div className="relative">
@@ -399,7 +466,7 @@ export default function CreateTournamentPage() {
                     type="time"
                     value={formData.startTime}
                     onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                    className="w-full bg-card border border-foreground/15 rounded-xl px-3 py-3 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                   />
                 </div>
               </div>
@@ -411,12 +478,12 @@ export default function CreateTournamentPage() {
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
                   <input
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                    className="w-full bg-card border border-foreground/15 rounded-xl pl-9 pr-3 py-3 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                   />
                 </div>
                 <div className="relative">
@@ -424,7 +491,7 @@ export default function CreateTournamentPage() {
                     type="time"
                     value={formData.endTime}
                     onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                    className="w-full bg-card border border-foreground/15 rounded-xl px-3 py-3 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                   />
                 </div>
               </div>
@@ -434,12 +501,12 @@ export default function CreateTournamentPage() {
               <label className={labelClass}>Registration Closing Date</label>
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
                   <input
                     type="date"
                     value={formData.registrationClosingDate}
                     onChange={(e) => setFormData({ ...formData, registrationClosingDate: e.target.value })}
-                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                    className="w-full bg-card border border-foreground/15 rounded-xl pl-9 pr-3 py-3 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                   />
                 </div>
                 <div className="relative">
@@ -447,11 +514,11 @@ export default function CreateTournamentPage() {
                     type="time"
                     value={formData.registrationClosingTime}
                     onChange={(e) => setFormData({ ...formData, registrationClosingTime: e.target.value })}
-                    className="w-full bg-[#0D1520] border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
+                    className="w-full bg-card border border-foreground/15 rounded-xl px-3 py-3 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-white/40 mt-1">
+              <p className="text-[10px] text-foreground/50 mt-1">
                 Registrations will automatically lock after this date and time.
               </p>
             </div>
@@ -462,7 +529,7 @@ export default function CreateTournamentPage() {
             <label className={labelClass}>Tournament Poster</label>
             <input ref={posterInputRef} type="file" accept="image/*" onChange={handlePosterChange} className="hidden" />
             {posterPreview ? (
-              <div className="relative rounded-2xl overflow-hidden border border-white/10 aspect-[16/7]">
+              <div className="relative rounded-2xl overflow-hidden border border-foreground/15 aspect-[16/7]">
                 <img src={posterPreview} alt="Poster" className="w-full h-full object-cover" />
                 <button
                   onClick={() => {
@@ -477,16 +544,16 @@ export default function CreateTournamentPage() {
             ) : (
               <button
                 onClick={() => posterInputRef.current?.click()}
-                className="w-full bg-[#0D1520] border-2 border-dashed border-white/15 rounded-2xl py-8 flex flex-col items-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                className="w-full bg-card border-2 border-dashed border-foreground/15 rounded-2xl py-8 flex flex-col items-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                  <ImageIcon className="w-6 h-6 text-white/30 group-hover:text-primary transition-colors" />
+                <div className="w-12 h-12 rounded-xl bg-foreground/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                  <ImageIcon className="w-6 h-6 text-foreground/40 group-hover:text-primary transition-colors" />
                 </div>
                 <div className="text-center">
-                  <div className="text-sm font-bold text-white/50 group-hover:text-white/70 transition-colors">
+                  <div className="text-sm font-bold text-foreground/70 group-hover:text-foreground transition-colors">
                     Tap to upload poster
                   </div>
-                  <div className="text-xs text-white/25 mt-0.5">JPG, PNG or WEBP · Max 5MB</div>
+                  <div className="text-xs text-foreground/40 mt-0.5">JPG, PNG or WEBP · Max 5MB</div>
                 </div>
               </button>
             )}
@@ -494,55 +561,225 @@ export default function CreateTournamentPage() {
 
           {/* CATEGORY (Only for Knockout and League tournaments) */}
           {formData.tournamentType !== 'TEAM_EVENT' && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-[10px] font-black text-white/50 uppercase tracking-widest">
-                  Category
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-[10px] font-black text-foreground/60 uppercase tracking-widest">
+                  Category Setup
                 </label>
-                <Link
-                  href={`/org/${orgUuid}/categories?returnTo=create-tournament`}
-                  className="text-[10px] font-bold text-primary hover:text-primary-dark hover:underline uppercase tracking-wider flex items-center gap-1 transition-colors"
-                >
-                  + Add Category
-                </Link>
+                <div className="flex items-center bg-card border border-foreground/15 rounded-xl p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsMultiCategory(false)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      !isMultiCategory
+                        ? 'bg-primary text-black font-black shadow-sm'
+                        : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                  >
+                    Single
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMultiCategory(true)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      isMultiCategory
+                        ? 'bg-primary text-black font-black shadow-sm'
+                        : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                  >
+                    Multi-Category
+                  </button>
+                </div>
               </div>
 
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className={`${inputClass} appearance-none`}
-                disabled={!formData.sport}
-              >
-                <option value="" disabled>
-                  Select category...
-                </option>
-                {orgCategories
-                  .filter((c) => c.sportType === formData.sport)
-                  .map((c) => (
-                    <option key={c.categoryUuid} value={c.categoryName}>
-                      {c.categoryName}
-                    </option>
-                  ))}
-              </select>
-              {!formData.sport && (
-                <div className="text-[10px] text-primary mt-2 ml-1">Please select a sport first to see categories</div>
+              {!isMultiCategory ? (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold text-foreground/50">Category Tier</span>
+                    <Link
+                      href={`/org/${orgUuid}/categories?returnTo=create-tournament`}
+                      className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-1"
+                    >
+                      + Add Category
+                    </Link>
+                  </div>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className={`${inputClass} appearance-none`}
+                    disabled={!formData.sport}
+                  >
+                    <option value="">Default Open Category</option>
+                    {orgCategories
+                      .filter((c) => c.sportType === formData.sport)
+                      .map((c) => (
+                        <option key={c.categoryUuid} value={c.categoryName}>
+                          {c.categoryName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-3 p-4 rounded-2xl border border-primary/20 bg-primary/5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-black text-foreground flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-primary" />
+                        Tournament Categories ({customCategories.length})
+                      </span>
+                      <p className="text-[10px] text-foreground/50 mt-0.5">
+                        Format: <span className="text-primary font-bold">{formData.matchFormat}</span> (applies to all categories)
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addCategoryItem(`Category ${String.fromCharCode(65 + customCategories.length)}`)}
+                      className="px-3 py-1.5 rounded-lg bg-primary text-black text-xs font-black uppercase flex items-center gap-1 shadow-sm hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Category
+                    </button>
+                  </div>
+
+                  {/* Category cards */}
+                  <div className="space-y-2.5 pt-1">
+                    {customCategories.map((cat, idx) => (
+                      <div
+                        key={cat.id}
+                        className="p-3 rounded-xl border border-foreground/15 bg-card flex items-center gap-3 shadow-sm"
+                      >
+                        <span className="w-6 h-6 rounded-lg bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center font-mono shrink-0">
+                          #{idx + 1}
+                        </span>
+
+                        <div className="flex-1 min-w-0">
+                          <label className="text-[9px] font-black uppercase text-foreground/40 block mb-0.5">
+                            Category Name
+                          </label>
+                          <input
+                            type="text"
+                            value={cat.name}
+                            onChange={(e) => updateCategoryItem(cat.id, 'name', e.target.value)}
+                            placeholder="e.g. Beginner, 70+, C Level..."
+                            className="w-full bg-transparent text-xs font-black text-foreground focus:outline-none placeholder:text-foreground/30 border-b border-foreground/10 pb-0.5"
+                          />
+                        </div>
+
+                        <div className="w-24 shrink-0">
+                          <label className="text-[9px] font-black uppercase text-foreground/40 block mb-0.5">
+                            Max Teams
+                          </label>
+                          <input
+                            type="number"
+                            min="2"
+                            value={cat.maxTeams}
+                            onChange={(e) => updateCategoryItem(cat.id, 'maxTeams', e.target.value)}
+                            placeholder="16"
+                            className="w-full bg-surface border border-foreground/10 rounded-lg px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary font-mono"
+                          />
+                        </div>
+
+                        {customCategories.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeCategoryItem(cat.id)}
+                            className="p-1.5 text-foreground/40 hover:text-red-400 transition-colors mt-3"
+                            title="Remove category"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}
 
-          {/* REGISTRATION FEES */}
-          <div>
-            <label className={labelClass}>Registration Fees</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-black text-lg">₹</span>
+          {/* REGISTRATION FEES & PAYMENT SETUP */}
+          <div className="space-y-4 pt-2 border-t border-foreground/10">
+            <label className="block text-[10px] font-black text-foreground/60 uppercase tracking-widest">
+              Registration Fees &amp; Payment Details
+            </label>
+
+            <div>
+              <label className={labelClass}>Entry Fee (₹)</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40 font-black text-lg">₹</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.registrationFees}
+                  onChange={(e) => setFormData({ ...formData, registrationFees: e.target.value })}
+                  className={`${inputClass} pl-9`}
+                  placeholder="0 for free entry"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>GPay / PhonePe / UPI Number</label>
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                  UPI
+                </div>
+                <input
+                  type="text"
+                  value={formData.gpayNumber}
+                  onChange={(e) => setFormData({ ...formData, gpayNumber: e.target.value })}
+                  className={`${inputClass} pl-14 font-mono text-sm`}
+                  placeholder="e.g. 9876543210 or user@okhdfcbank"
+                />
+              </div>
+            </div>
+
+            {/* UPI QR CODE IMAGE UPLOAD */}
+            <div>
+              <label className={labelClass}>UPI QR Code Image (Optional)</label>
               <input
-                type="number"
-                min="0"
-                value={formData.registrationFees}
-                onChange={(e) => setFormData({ ...formData, registrationFees: e.target.value })}
-                className={`${inputClass} pl-9`}
-                placeholder="0 for free entry"
+                ref={qrCodeInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleQrCodeChange}
+                className="hidden"
               />
+              {qrCodePreview ? (
+                <div className="relative rounded-2xl overflow-hidden border border-foreground/15 p-3 bg-card flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-black/10 shrink-0 border border-foreground/10 flex items-center justify-center">
+                    <img src={qrCodePreview} alt="UPI QR" className="w-full h-full object-contain" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-foreground truncate">QR Code Selected</p>
+                    <p className="text-[10px] text-foreground/50">For player registration scan &amp; pay</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQrCodePreview(null);
+                      setQrCodeFile(null);
+                    }}
+                    className="w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => qrCodeInputRef.current?.click()}
+                  className="w-full bg-card border-2 border-dashed border-foreground/15 rounded-2xl py-4 flex items-center justify-center gap-3 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-foreground/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                    <QrCode className="w-4 h-4 text-foreground/40 group-hover:text-primary transition-colors" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-foreground/70 group-hover:text-foreground transition-colors">
+                      Upload UPI QR Code (Scanner)
+                    </div>
+                    <div className="text-[10px] text-foreground/40">PNG, JPG or WEBP</div>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
@@ -559,7 +796,7 @@ export default function CreateTournamentPage() {
 
           {/* CONTACT PHONE */}
           <div>
-            <label className={labelClass}>Contact Phone (Optional)</label>
+            <label className={labelClass}>Organizer Contact Phone (Optional)</label>
             <input
               type="tel"
               value={formData.contactPhone}
@@ -574,7 +811,7 @@ export default function CreateTournamentPage() {
           <button
             onClick={handleSubmit}
             disabled={!formData.name.trim() || !formData.location.trim() || isSubmitting}
-            className="w-full bg-primary disabled:opacity-40 disabled:cursor-not-allowed text-black text-base font-black uppercase tracking-wider py-5 rounded-2xl transition-all hover:bg-primary-dark active:scale-95 shadow-[0_8px_30px_rgba(27,156,86,0.3)]"
+            className="w-full bg-primary disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-black uppercase tracking-wider py-3.5 rounded-xl transition-all hover:bg-primary-dark active:scale-95 shadow-md shadow-primary/20"
           >
             {isSubmitting ? 'Creating...' : 'Create Tournament'}
           </button>
@@ -679,20 +916,20 @@ export default function CreateTournamentPage() {
                   <label className={desktopLabelClass}>
                     Sport Discipline <span className="text-primary">*</span>
                   </label>
-                  <div className="grid grid-cols-4 gap-3">
-                    {['Badminton', 'Cricket', 'Football', 'Volleyball'].map((sport) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {orgSports.map((sport) => (
                       <button
                         key={sport}
                         type="button"
                         onClick={() => setFormData({ ...formData, sport })}
                         className={`py-3 px-3 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${
-                          formData.sport === sport
+                          formData.sport.toLowerCase() === sport.toLowerCase()
                             ? 'bg-primary text-black border-primary shadow-md shadow-primary/20 scale-[1.02]'
                             : 'text-foreground/70 hover:text-foreground hover:bg-white/5'
                         }`}
                         style={{
-                          backgroundColor: formData.sport === sport ? 'var(--athlon-primary)' : 'var(--athlon-surface)',
-                          borderColor: formData.sport === sport ? 'transparent' : 'var(--athlon-border)',
+                          backgroundColor: formData.sport.toLowerCase() === sport.toLowerCase() ? 'var(--athlon-primary)' : 'var(--athlon-surface)',
+                          borderColor: formData.sport.toLowerCase() === sport.toLowerCase() ? 'transparent' : 'var(--athlon-border)',
                         }}
                       >
                         <span>{sport}</span>
@@ -762,54 +999,172 @@ export default function CreateTournamentPage() {
                   </div>
                 </div>
 
-                {/* Match Format & Category Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={desktopLabelClass}>
-                      Match Format <span className="text-primary">*</span>
-                    </label>
-                    <select
-                      value={formData.matchFormat}
-                      onChange={(e) => setFormData({ ...formData, matchFormat: e.target.value })}
-                      className={`${desktopInputClass} appearance-none cursor-pointer`}
-                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                    >
-                      <option value="Men's Singles">Men's Singles</option>
-                      <option value="Women's Singles">Women's Singles</option>
-                      <option value="Men's Doubles">Men's Doubles</option>
-                      <option value="Women's Doubles">Women's Doubles</option>
-                      <option value="Mixed Doubles">Mixed Doubles</option>
-                    </select>
+                {/* Category Configuration Area */}
+                <div className="space-y-4 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className={desktopLabelClass}>Tournament Category Architecture</span>
+                      <p className="text-xs text-foreground/50">Choose between a single open bracket or multiple tiered categories (e.g. Beginner, 70+, C Level)</p>
+                    </div>
+
+                    <div className="flex items-center p-1 rounded-2xl border" style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsMultiCategory(false)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                          !isMultiCategory
+                            ? 'bg-primary text-black shadow-md'
+                            : 'text-foreground/60 hover:text-foreground'
+                        }`}
+                      >
+                        Single Category
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsMultiCategory(true)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                          isMultiCategory
+                            ? 'bg-primary text-black shadow-md'
+                            : 'text-foreground/60 hover:text-foreground'
+                        }`}
+                      >
+                        Multi-Category (Pooled Knockout)
+                      </button>
+                    </div>
                   </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-black uppercase tracking-wider text-foreground/60">
-                        Category Tier
-                      </label>
-                      <Link
-                        href={`/org/${orgUuid}/categories?returnTo=create-tournament`}
-                        className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
-                      >
-                        <Plus className="w-3 h-3" /> Add Category
-                      </Link>
+                  {!isMultiCategory ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className={desktopLabelClass}>
+                          Match Format <span className="text-primary">*</span>
+                        </label>
+                        <select
+                          value={formData.matchFormat}
+                          onChange={(e) => setFormData({ ...formData, matchFormat: e.target.value })}
+                          className={`${desktopInputClass} appearance-none cursor-pointer`}
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        >
+                          <option value="Men's Singles">Men's Singles</option>
+                          <option value="Women's Singles">Women's Singles</option>
+                          <option value="Men's Doubles">Men's Doubles</option>
+                          <option value="Women's Doubles">Women's Doubles</option>
+                          <option value="Mixed Doubles">Mixed Doubles</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-black uppercase tracking-wider text-foreground/60">
+                            Category Tier
+                          </label>
+                          <Link
+                            href={`/org/${orgUuid}/categories?returnTo=create-tournament`}
+                            className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                          >
+                            <Plus className="w-3 h-3" /> Add Category
+                          </Link>
+                        </div>
+                        <select
+                          value={formData.category}
+                          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                          className={`${desktopInputClass} appearance-none cursor-pointer`}
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        >
+                          <option value="">Default Open Category</option>
+                          {orgCategories
+                            .filter((c) => c.sportType === formData.sport)
+                            .map((c) => (
+                              <option key={c.categoryUuid} value={c.categoryName}>
+                                {c.categoryName}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
                     </div>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className={`${desktopInputClass} appearance-none cursor-pointer`}
+                  ) : (
+                    <div
+                      className="p-5 rounded-2xl border space-y-4 shadow-sm"
                       style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                     >
-                      <option value="">Default Open Category</option>
-                      {orgCategories
-                        .filter((c) => c.sportType === formData.sport)
-                        .map((c) => (
-                          <option key={c.categoryUuid} value={c.categoryName}>
-                            {c.categoryName}
-                          </option>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+                            <Layers className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black text-foreground">Tournament Categories ({customCategories.length})</h4>
+                            <p className="text-[11px] text-foreground/50">
+                              Format: <span className="text-primary font-bold">{formData.matchFormat}</span> (applies to all pools &amp; categories)
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => addCategoryItem(`Category ${String.fromCharCode(65 + customCategories.length)}`)}
+                          className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add Category
+                        </button>
+                      </div>
+
+                      {/* Category cards */}
+                      <div className="space-y-3 pt-1">
+                        {customCategories.map((cat, idx) => (
+                          <div
+                            key={cat.id}
+                            className="p-4 rounded-2xl border flex items-center gap-4 shadow-sm"
+                            style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                          >
+                            <span className="w-7 h-7 rounded-xl bg-primary/10 border border-primary/20 text-primary font-black text-xs flex items-center justify-center font-mono shrink-0">
+                              #{idx + 1}
+                            </span>
+
+                            <div className="flex-1 min-w-0">
+                              <label className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block mb-1">
+                                Category Name
+                              </label>
+                              <input
+                                type="text"
+                                value={cat.name}
+                                onChange={(e) => updateCategoryItem(cat.id, 'name', e.target.value)}
+                                placeholder="e.g. Beginner, 70+, C Level..."
+                                className="w-full bg-transparent border-b text-sm font-black text-foreground focus:outline-none focus:border-primary pb-1 placeholder:text-foreground/30"
+                                style={{ borderColor: 'var(--athlon-border)' }}
+                              />
+                            </div>
+
+                            <div className="w-40">
+                              <label className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block mb-1">
+                                Max Teams (Draw Cap)
+                              </label>
+                              <input
+                                type="number"
+                                min="2"
+                                value={cat.maxTeams}
+                                onChange={(e) => updateCategoryItem(cat.id, 'maxTeams', e.target.value)}
+                                placeholder="16"
+                                className="w-full px-3 py-2 rounded-xl border text-xs font-bold text-foreground focus:outline-none focus:border-primary font-mono"
+                                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                              />
+                            </div>
+
+                            {customCategories.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeCategoryItem(cat.id)}
+                                className="p-2 rounded-xl hover:bg-red-500/10 text-foreground/40 hover:text-red-400 transition-colors mt-4"
+                                title="Remove category"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         ))}
-                    </select>
-                  </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -967,12 +1322,12 @@ export default function CreateTournamentPage() {
                     <Ticket className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-foreground">Registration Fees &amp; Tournament Notes</h2>
-                    <p className="text-xs text-foreground/50">Entry pricing, organizer contact number, and description</p>
+                    <h2 className="text-base font-black text-foreground">Registration Fees &amp; Payment Details</h2>
+                    <p className="text-xs text-foreground/50">Entry pricing, GPay/UPI payment details, and organizer contact</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className={desktopLabelClass}>Entry Fee Per Entry (₹)</label>
                     <div className="relative">
@@ -985,6 +1340,23 @@ export default function CreateTournamentPage() {
                         className={`${desktopInputClass} pl-8`}
                         style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         placeholder="0 for free entry"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={desktopLabelClass}>GPay / PhonePe / UPI Number</label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                        UPI
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.gpayNumber}
+                        onChange={(e) => setFormData({ ...formData, gpayNumber: e.target.value })}
+                        className={`${desktopInputClass} pl-14 font-mono text-sm`}
+                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        placeholder="9876543210 or ID"
                       />
                     </div>
                   </div>
@@ -1004,6 +1376,70 @@ export default function CreateTournamentPage() {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* UPI QR CODE UPLOAD IN DESKTOP */}
+                <div className="p-4 rounded-2xl border border-foreground/10 bg-surface/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-wider text-foreground/70 flex items-center gap-2">
+                      <QrCode className="w-4 h-4 text-primary" />
+                      UPI Scanner QR Code Image (Optional)
+                    </label>
+                    <span className="text-[10px] text-foreground/40 font-bold">For player registration scan &amp; pay</span>
+                  </div>
+
+                  <input
+                    ref={desktopQrCodeInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleQrCodeChange}
+                    className="hidden"
+                  />
+
+                  {qrCodePreview ? (
+                    <div className="flex items-center gap-4 p-3 rounded-xl border border-foreground/15 bg-card">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-foreground/10 flex items-center justify-center">
+                        <img src={qrCodePreview} alt="QR Preview" className="w-full h-full object-contain" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-foreground">UPI QR Code Uploaded</p>
+                        <p className="text-[11px] text-foreground/50">Players will be able to scan and pay directly during registration</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => desktopQrCodeInputRef.current?.click()}
+                          className="px-3 py-1.5 rounded-lg bg-surface border border-foreground/15 text-xs font-bold text-foreground hover:border-primary transition-all"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQrCodePreview(null);
+                            setQrCodeFile(null);
+                          }}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => desktopQrCodeInputRef.current?.click()}
+                      className="border border-dashed rounded-xl p-4 flex items-center justify-center gap-3 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all text-center"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <QrCode className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <span className="text-xs font-bold text-foreground block">Click to upload UPI QR Code</span>
+                        <span className="text-[10px] text-foreground/40">PNG, JPG or WEBP · Max 5MB</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>

@@ -16,9 +16,12 @@ import {
   FileImage,
   FileText,
   ChevronDown,
+  Swords,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as htmlToImage from 'html-to-image';
+import { UserService } from '@/lib/api/user';
+import { RegistrationPlayer } from '@/lib/api/tournaments';
 
 interface BracketViewerProps {
   matches: Match[];
@@ -26,6 +29,7 @@ interface BracketViewerProps {
   tournamentType?: string;
   tournamentName?: string;
   onMatchClick?: (match: Match) => void;
+  playerPhotos?: Record<string, string>;
 }
 
 export const BracketViewer: React.FC<BracketViewerProps> = ({
@@ -34,9 +38,48 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
   tournamentType,
   tournamentName = 'tournament',
   onMatchClick,
+  playerPhotos = {},
 }) => {
   const router = useRouter();
   const [downloadingSection, setDownloadingSection] = useState<string | null>(null);
+  const [internalPhotos, setInternalPhotos] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      const phonesToFetch: string[] = [];
+      registrations.forEach((reg) => {
+        reg.players?.forEach((p) => {
+          if (p.phoneNumber && !playerPhotos?.[p.phoneNumber] && !internalPhotos[p.phoneNumber]) {
+            phonesToFetch.push(p.phoneNumber);
+          }
+        });
+      });
+
+      if (phonesToFetch.length === 0) return;
+
+      const newPhotos: Record<string, string> = {};
+      await Promise.all(
+        phonesToFetch.map(async (phone) => {
+          try {
+            const res = await UserService.getUserByPhone(phone);
+            if (res?.data?.photo) {
+              newPhotos[phone] = UserService.getPhotoUrl(res.data.photo);
+            }
+          } catch {
+            // ignore
+          }
+        })
+      );
+
+      if (Object.keys(newPhotos).length > 0) {
+        setInternalPhotos((prev) => ({ ...prev, ...newPhotos }));
+      }
+    };
+
+    if (registrations.length > 0) {
+      fetchPhotos();
+    }
+  }, [registrations, playerPhotos]);
 
   // ── Data Separation ───────────────────────────────────────────────────────
   const { poolMatches, playoffMatches, poolsList } = useMemo(() => {
@@ -66,6 +109,49 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
   const [activeStage, setActiveStage] = useState<'all' | 'playoffs' | 'pools'>(
     hasBothStages ? 'all' : poolMatches.length > 0 ? 'pools' : 'playoffs'
   );
+
+  // Pool-wise active filter for Round Robin section
+  const [selectedPoolFilter, setSelectedPoolFilter] = useState<string>('ALL');
+
+  const getSafePoolId = (name: string) => {
+    return name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+  };
+
+  const getPoolBadgeLabel = (name: string) => {
+    const poolMatch = name.match(/Pool\s+([A-Za-z0-9]+)/i);
+    if (poolMatch) return poolMatch[1].toUpperCase();
+    const clean = name.trim();
+    if (clean.length <= 4) return clean;
+    const words = clean.split(/\s+/);
+    if (words.length > 1) {
+      return words.map((w) => w[0]).join('').substring(0, 3).toUpperCase();
+    }
+    return clean.substring(0, 3).toUpperCase();
+  };
+
+  const getPoolChampion = useCallback((rootMatch?: Match | null) => {
+    if (!rootMatch || rootMatch.status !== 'COMPLETED') return null;
+    const winnerUuid = rootMatch.winnerRegistrationUuid;
+    const winnerId = rootMatch.winnerRegistrationId;
+
+    if (winnerUuid) {
+      const reg = registrations.find(
+        (r) => r.registrationUuid === winnerUuid || r.uuid === winnerUuid
+      );
+      if (reg?.teamName) return reg.teamName;
+      if (winnerUuid === rootMatch.teamARegistrationUuid) return rootMatch.teamAName || 'Team A';
+      if (winnerUuid === rootMatch.teamBRegistrationUuid) return rootMatch.teamBName || 'Team B';
+    }
+    if (winnerId) {
+      const reg = registrations.find(
+        (r) => r.registrationId === winnerId || r.id === winnerId
+      );
+      if (reg?.teamName) return reg.teamName;
+      if (winnerId === rootMatch.teamARegistrationId) return rootMatch.teamAName || 'Team A';
+      if (winnerId === rootMatch.teamBRegistrationId) return rootMatch.teamBName || 'Team B';
+    }
+    return null;
+  }, [registrations]);
 
   // ── Adjacency tree for playoff / knockout matches ─────────────────────────
   const { childrenMap, rootMatches } = useMemo(() => {
@@ -135,6 +221,9 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
 
   if (!matches || matches.length === 0) return null;
 
+  // State to force-render all pools during 'Download All' capture
+  const [isCapturingAll, setIsCapturingAll] = useState(false);
+
   // ── Mobile-Safe Full Element Capture ──────────────────────────────────────
   const captureFullElement = async (el: HTMLElement): Promise<string> => {
     const savedStates: {
@@ -144,10 +233,26 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
       overflowY: string;
       maxWidth: string;
       width: string;
+      minWidth: string;
       position: string;
     }[] = [];
 
     const allDescendants = [el, ...Array.from(el.querySelectorAll<HTMLElement>('*'))];
+
+    // Find the true maximum content width across all descendants to avoid clipping wide trees
+    let maxContentWidth = Math.max(el.scrollWidth, el.offsetWidth, el.clientWidth);
+    allDescendants.forEach((item) => {
+      if (item.scrollWidth > maxContentWidth) {
+        maxContentWidth = item.scrollWidth;
+      }
+      if (item.offsetWidth > maxContentWidth) {
+        maxContentWidth = item.offsetWidth;
+      }
+    });
+
+    const targetWidth = Math.max(maxContentWidth, 680);
+
+    // Expand all scrollable containers so horizontal tree lines & cards are fully visible
     allDescendants.forEach((item) => {
       const style = window.getComputedStyle(item);
       const isScrollable =
@@ -155,6 +260,7 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
         style.overflowX === 'scroll' ||
         style.overflow === 'auto' ||
         style.overflow === 'scroll' ||
+        style.overflowX === 'hidden' ||
         item.scrollWidth > item.clientWidth;
 
       if (isScrollable) {
@@ -165,6 +271,7 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
           overflowY: item.style.overflowY,
           maxWidth: item.style.maxWidth,
           width: item.style.width,
+          minWidth: item.style.minWidth,
           position: item.style.position,
         });
 
@@ -172,50 +279,80 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
         item.style.overflowX = 'visible';
         item.style.overflowY = 'visible';
         item.style.maxWidth = 'none';
-        if (item.scrollWidth > 0) {
-          item.style.width = `${Math.max(item.scrollWidth, item.offsetWidth)}px`;
-        }
       }
     });
 
-    const fullWidth = Math.max(el.scrollWidth, el.offsetWidth, 1100);
-    const fullHeight = Math.max(el.scrollHeight, el.offsetHeight);
+    // Save and expand the root captured element
+    savedStates.push({
+      el,
+      overflow: el.style.overflow,
+      overflowX: el.style.overflowX,
+      overflowY: el.style.overflowY,
+      maxWidth: el.style.maxWidth,
+      width: el.style.width,
+      minWidth: el.style.minWidth,
+      position: el.style.position,
+    });
+
+    el.style.width = `${targetWidth}px`;
+    el.style.minWidth = `${targetWidth}px`;
+    el.style.maxWidth = 'none';
+    el.style.overflow = 'visible';
+
+    // Allow DOM to reflow before capturing canvas
+    await new Promise((r) => setTimeout(r, 80));
 
     try {
       const dataUrl = await htmlToImage.toPng(el, {
-        backgroundColor: '#0a0a0a',
+        backgroundColor: '#0c0f17',
         pixelRatio: 2,
-        width: fullWidth,
-        height: fullHeight,
-        canvasWidth: fullWidth * 2,
-        canvasHeight: fullHeight * 2,
+        cacheBust: true,
+        filter: (node) => {
+          if (node instanceof HTMLElement) {
+            if (node.getAttribute('data-no-export') === 'true') return false;
+            if (node.classList?.contains('z-50')) return false;
+            // Filter out download buttons during image capture
+            if (node.dataset?.downloadBtn === 'true' || node.closest('[data-download-btn="true"]')) {
+              return false;
+            }
+          }
+          return true;
+        },
         style: {
-          padding: '24px',
-          width: `${fullWidth}px`,
-          height: 'auto',
+          width: `${targetWidth}px`,
+          minWidth: `${targetWidth}px`,
           maxWidth: 'none',
-          transform: 'none',
+          height: 'auto',
           boxSizing: 'border-box',
+          margin: '0',
         },
       });
       return dataUrl;
     } finally {
-      savedStates.forEach(({ el: item, overflow, overflowX, overflowY, maxWidth, width, position }) => {
+      // Restore all original styles in reverse order
+      savedStates.reverse().forEach(({ el: item, overflow, overflowX, overflowY, maxWidth, width, minWidth, position }) => {
         item.style.overflow = overflow;
         item.style.overflowX = overflowX;
         item.style.overflowY = overflowY;
         item.style.maxWidth = maxWidth;
         item.style.width = width;
+        item.style.minWidth = minWidth;
         item.style.position = position;
       });
     }
   };
 
   const handleDownloadPng = async (elementId: string, label: string) => {
-    const el = document.getElementById(elementId);
-    if (!el) return;
     try {
       setDownloadingSection(`${elementId}-png`);
+      if (elementId === 'bracket-pools-area') {
+        setIsCapturingAll(true);
+        await new Promise((r) => setTimeout(r, 120));
+      }
+
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
       const dataUrl = await captureFullElement(el);
       const link = document.createElement('a');
       link.download = `${tournamentName}-${label}.png`;
@@ -224,17 +361,23 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
     } catch (err) {
       console.error(`Failed to download PNG: ${label}`, err);
     } finally {
+      setIsCapturingAll(false);
       setDownloadingSection(null);
     }
   };
 
   const handleDownloadPdf = async (elementId: string, label: string) => {
-    const el = document.getElementById(elementId);
-    if (!el) return;
     try {
       setDownloadingSection(`${elementId}-pdf`);
-      const dataUrl = await captureFullElement(el);
+      if (elementId === 'bracket-pools-area') {
+        setIsCapturingAll(true);
+        await new Promise((r) => setTimeout(r, 120));
+      }
 
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
+      const dataUrl = await captureFullElement(el);
       const { jsPDF } = await import('jspdf');
 
       const imgEl = new window.Image();
@@ -243,22 +386,18 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
         imgEl.onload = () => res();
       });
 
-      const imgWidthPx = imgEl.width / 2;
-      const imgHeightPx = imgEl.height / 2;
-
       const pxToMm = 0.264583;
-      const imgWidthMm = imgWidthPx * pxToMm;
-      const imgHeightMm = imgHeightPx * pxToMm;
+      // Dimensions at 1x resolution (image is captured at 2x)
+      const imgWidthMm = (imgEl.width / 2) * pxToMm;
+      const imgHeightMm = (imgEl.height / 2) * pxToMm;
 
-      const isLandscape = imgWidthMm > imgHeightMm;
+      const isLandscape = imgWidthMm >= imgHeightMm;
       const pageWidth = isLandscape ? 297 : 210;
       const pageHeight = isLandscape ? 210 : 297;
 
       const margin = 10;
       const usableWidth = pageWidth - margin * 2;
-      const scale = usableWidth / imgWidthMm;
-      const finalW = usableWidth;
-      const finalH = imgHeightMm * scale;
+      const usableHeight = pageHeight - margin * 2;
 
       const pdf = new jsPDF({
         orientation: isLandscape ? 'landscape' : 'portrait',
@@ -266,32 +405,45 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
         format: 'a4',
       });
 
-      if (finalH <= pageHeight - margin * 2) {
-        const yOffset = (pageHeight - finalH) / 2;
+      const scaleW = usableWidth / imgWidthMm;
+
+      // If card/bracket fits nicely on a single page by width scaling
+      if (imgHeightMm * scaleW <= usableHeight) {
+        const finalW = usableWidth;
+        const finalH = imgHeightMm * scaleW;
+        const yOffset = margin + (usableHeight - finalH) / 2;
         pdf.addImage(dataUrl, 'PNG', margin, yOffset, finalW, finalH);
+      } else if (imgHeightMm * scaleW <= usableHeight * 1.2) {
+        // Slightly taller than 1 page: scale down slightly to fit on 1 complete page
+        const fitScale = usableHeight / imgHeightMm;
+        const finalW = imgWidthMm * fitScale;
+        const finalH = usableHeight;
+        const xOffset = margin + (usableWidth - finalW) / 2;
+        pdf.addImage(dataUrl, 'PNG', xOffset, margin, finalW, finalH);
       } else {
+        // Multi-page slicing for large multi-pool collections
+        const finalW = usableWidth;
+        const usableHeightPx = (usableHeight / pxToMm / scaleW) * 2;
+
         const canvas = document.createElement('canvas');
         canvas.width = imgEl.width;
         canvas.height = imgEl.height;
         const ctx = canvas.getContext('2d')!;
         ctx.drawImage(imgEl, 0, 0);
 
-        const usableHeightMm = pageHeight - margin * 2;
-        const usableHeightPx = (usableHeightMm / pxToMm / scale) * 2;
-        const sliceWidthPx = imgEl.width;
         let sliceTop = 0;
         let pageIndex = 0;
 
         while (sliceTop < imgEl.height) {
           const sliceH = Math.min(usableHeightPx, imgEl.height - sliceTop);
           const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = sliceWidthPx;
+          sliceCanvas.width = imgEl.width;
           sliceCanvas.height = sliceH;
           const sliceCtx = sliceCanvas.getContext('2d')!;
-          sliceCtx.drawImage(canvas, 0, sliceTop, sliceWidthPx, sliceH, 0, 0, sliceWidthPx, sliceH);
+          sliceCtx.drawImage(canvas, 0, sliceTop, imgEl.width, sliceH, 0, 0, imgEl.width, sliceH);
 
           const sliceDataUrl = sliceCanvas.toDataURL('image/png');
-          const sliceHeightMm = (sliceH / 2) * pxToMm * scale;
+          const sliceHeightMm = (sliceH / 2) * pxToMm * scaleW;
 
           if (pageIndex > 0) pdf.addPage();
           pdf.addImage(sliceDataUrl, 'PNG', margin, margin, finalW, sliceHeightMm);
@@ -305,12 +457,23 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
     } catch (err) {
       console.error(`Failed to download PDF: ${label}`, err);
     } finally {
+      setIsCapturingAll(false);
       setDownloadingSection(null);
     }
   };
 
   // ── Download Dropdown Menu Component ──────────────────────────────────────
-  const DownloadDropdown = ({ elementId, label }: { elementId: string; label: string }) => {
+  const DownloadDropdown = ({
+    elementId,
+    label,
+    size = 'default',
+    title = 'Download',
+  }: {
+    elementId: string;
+    label: string;
+    size?: 'default' | 'sm';
+    title?: string;
+  }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const isPngLoading = downloadingSection === `${elementId}-png`;
@@ -327,12 +490,20 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const isSmall = size === 'sm';
+
     return (
-      <div className="relative inline-block" ref={dropdownRef}>
+      <div className="relative inline-block" ref={dropdownRef} data-download-btn="true" data-no-export="true">
         <button
+          type="button"
           onClick={() => setIsOpen((prev) => !prev)}
           disabled={isLoading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all hover:bg-white/5 disabled:opacity-60 shrink-0"
+          data-download-btn="true"
+          className={`flex items-center gap-1.5 font-bold transition-all hover:bg-white/5 disabled:opacity-60 shrink-0 ${
+            isSmall
+              ? 'px-2.5 py-1 text-[11px] rounded-lg border'
+              : 'px-3 py-1.5 text-xs rounded-xl border'
+          }`}
           style={{
             backgroundColor: 'var(--athlon-surface)',
             borderColor: 'var(--athlon-border)',
@@ -341,16 +512,17 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
           title={`Download ${label}`}
         >
           {isLoading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+            <Loader2 className={`${isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'} animate-spin text-primary`} />
           ) : (
-            <Download className="w-3.5 h-3.5 text-primary" />
+            <Download className={`${isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-primary`} />
           )}
-          <span>Download</span>
-          <ChevronDown className="w-3 h-3 opacity-60" />
+          <span>{title}</span>
+          <ChevronDown className={`${isSmall ? 'w-2.5 h-2.5' : 'w-3 h-3'} opacity-60`} />
         </button>
 
         {isOpen && (
           <div
+            data-no-export="true"
             className="absolute right-0 top-full mt-1.5 w-44 rounded-2xl border p-1.5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md"
             style={{
               backgroundColor: 'var(--athlon-card)',
@@ -358,6 +530,7 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
             }}
           >
             <button
+              type="button"
               onClick={() => {
                 setIsOpen(false);
                 handleDownloadPng(elementId, label);
@@ -374,6 +547,7 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 setIsOpen(false);
                 handleDownloadPdf(elementId, label);
@@ -448,15 +622,122 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
         : match.poolName || 'Pool Match');
 
     const scheduledTimeStr = match.scheduledTime
-      ? new Date(match.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      ? new Date(match.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
       : match.matchTime || null;
+
+    const TeamAvatar = ({
+      team,
+      fallbackName,
+      isWinner,
+      isTbd,
+    }: {
+      team?: Registration;
+      fallbackName: string;
+      isWinner: boolean;
+      isTbd: boolean;
+    }) => {
+      if (isTbd) {
+        return (
+          <div className="w-6 h-6 rounded-lg bg-foreground/5 border border-foreground/10 flex items-center justify-center font-bold text-[10px] text-foreground/40 shrink-0">
+            ?
+          </div>
+        );
+      }
+
+      const allPhotos = { ...internalPhotos, ...(playerPhotos || {}) };
+
+      const getPlayerPhoto = (p?: RegistrationPlayer): string | null => {
+        if (!p) return null;
+        const direct = p.photo || p.photoUrl || p.avatar || p.profilePic || p.userPhoto || (p as any).image;
+        if (direct) {
+          return direct.startsWith('http') || direct.startsWith('data:') || direct.startsWith('/')
+            ? direct
+            : UserService.getPhotoUrl(direct);
+        }
+        if (p.phoneNumber && allPhotos[p.phoneNumber]) {
+          return allPhotos[p.phoneNumber];
+        }
+        return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.playerName || fallbackName)}&backgroundColor=0ea5e9,10b981,8b5cf6,f59e0b`;
+      };
+
+      const players = team?.players || [];
+
+      // Check for dual photos if doubles (2 players)
+      if (players.length >= 2) {
+        const p1Url = getPlayerPhoto(players[0]);
+        const p2Url = getPlayerPhoto(players[1]);
+
+        return (
+          <div className="relative w-8 h-6 flex items-center shrink-0">
+            {p1Url ? (
+              <img
+                src={p1Url}
+                alt={players[0]?.playerName || 'Player 1'}
+                className="w-5 h-5 rounded-full object-cover border-2 border-[var(--athlon-card)] shadow-sm shrink-0 z-10"
+              />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center text-[8.5px] font-black shrink-0 z-10">
+                {players[0]?.playerName?.charAt(0).toUpperCase() || fallbackName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            {p2Url ? (
+              <img
+                src={p2Url}
+                alt={players[1]?.playerName || 'Player 2'}
+                className="w-5 h-5 rounded-full object-cover border-2 border-[var(--athlon-card)] shadow-sm shrink-0 -ml-2"
+              />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center text-[8.5px] font-black shrink-0 -ml-2">
+                {players[1]?.playerName?.charAt(0).toUpperCase() || 'P'}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Single player
+      if (players.length === 1) {
+        const pUrl = getPlayerPhoto(players[0]);
+        if (pUrl) {
+          return (
+            <div className="w-6 h-6 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-black/20 shadow-sm">
+              <img
+                src={pUrl}
+                alt={players[0]?.playerName || fallbackName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          );
+        }
+      }
+
+      // Single player photo or team photo
+      const directTeamPhoto = (team as any)?.photo || (team as any)?.teamLogo || (team as any)?.logo;
+      const teamPhotoUrl = directTeamPhoto
+        ? directTeamPhoto.startsWith('http') || directTeamPhoto.startsWith('data:') || directTeamPhoto.startsWith('/')
+          ? directTeamPhoto
+          : UserService.getPhotoUrl(directTeamPhoto)
+        : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackName)}&backgroundColor=0ea5e9,10b981,8b5cf6,f59e0b`;
+
+      return (
+        <div className="w-6 h-6 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-black/20 shadow-sm">
+          <img
+            src={teamPhotoUrl}
+            alt={fallbackName}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      );
+    };
 
     const TeamRow = ({
       name,
+      team,
       isWinner,
       isTbd,
     }: {
       name: string;
+      team?: Registration;
       isWinner: boolean;
       isTbd: boolean;
     }) => (
@@ -469,14 +750,12 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
           }`}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div
-            className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[10px] shrink-0 ${isWinner
-              ? 'bg-primary text-primary-foreground font-black shadow-sm'
-              : 'bg-foreground/5 border border-foreground/10 text-foreground/70'
-              }`}
-          >
-            {!isTbd ? name.charAt(0).toUpperCase() : '?'}
-          </div>
+          <TeamAvatar
+            team={team}
+            fallbackName={name}
+            isWinner={isWinner}
+            isTbd={isTbd}
+          />
           <span
             className={`text-xs truncate leading-tight ${isTbd
               ? 'italic text-foreground/35 font-medium'
@@ -560,9 +839,9 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
             className="p-2 rounded-xl border space-y-1.5"
             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
           >
-            <TeamRow name={teamAName} isWinner={!!isWinnerA} isTbd={teamAName === 'TBD'} />
+            <TeamRow name={teamAName} team={teamA} isWinner={!!isWinnerA} isTbd={teamAName === 'TBD'} />
             <div className="h-px w-full bg-border/40" />
-            <TeamRow name={teamBName} isWinner={!!isWinnerB} isTbd={teamBName === 'TBD'} />
+            <TeamRow name={teamBName} team={teamB} isWinner={!!isWinnerB} isTbd={teamBName === 'TBD'} />
           </div>
 
           {/* Footer */}
@@ -580,17 +859,33 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
   };
 
   // ── Bracket Tree Node ─────────────────────────────────────────────────────
-  const BracketNode = ({ match }: { match: Match }) => {
-    const children = childrenMap.get(match.uuid) || [];
+  const BracketNode = ({
+    match,
+    customChildrenMap,
+    poolChampion,
+  }: {
+    match: Match;
+    customChildrenMap?: Map<string, Match[]>;
+    poolChampion?: string | null;
+  }) => {
+    const mapToUse = customChildrenMap || childrenMap;
+    const children = mapToUse.get(match.uuid) || [];
     children.sort((a, b) => (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0));
-    const isRootMatch = !match.nextMatchUuid;
+    const isRootMatch = !match.nextMatchUuid || (customChildrenMap && !Array.from(customChildrenMap.values()).flat().some((m) => m.uuid === match.uuid && m.nextMatchUuid));
+
+    const champToShow = poolChampion || (isRootMatch ? playoffChampion : null);
 
     return (
       <div className="flex items-center">
         {children.length > 0 && (
           <div className="flex flex-col justify-around h-full relative pr-10">
             {children.map((child) => (
-              <BracketNode key={child.uuid} match={child} />
+              <BracketNode
+                key={child.uuid}
+                match={child}
+                customChildrenMap={customChildrenMap}
+                poolChampion={poolChampion}
+              />
             ))}
             {/* Bracket connectors */}
             <div
@@ -608,7 +903,7 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
           <MatchCard match={match} isPlayoff />
 
           {/* Connected Champion Trophy Box next to Final Match */}
-          {isRootMatch && playoffChampion && (
+          {isRootMatch && champToShow && (
             <div className="flex items-center pl-6 shrink-0 animate-in fade-in zoom-in-95 duration-200">
               <div
                 className="w-8 border-b-2 relative"
@@ -633,10 +928,10 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
-                    <Crown className="w-3.5 h-3.5 fill-current" /> Tournament Winner
+                    <Crown className="w-3.5 h-3.5 fill-current" /> Winner
                   </span>
                   <h4 className="text-sm font-black text-foreground truncate mt-0.5">
-                    {playoffChampion}
+                    {champToShow}
                   </h4>
                   <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wide">
                     Champion 🏆
@@ -762,91 +1057,192 @@ export const BracketViewer: React.FC<BracketViewerProps> = ({
         </div>
       )}
 
-      {/* ── Round Robin Pool Fixtures ── */}
+      {/* ── Round Robin & Category Bracket Fixtures ── */}
       {(activeStage === 'all' || activeStage === 'pools') && poolMatches.length > 0 && (
         <div className="space-y-4">
           {/* Section header */}
           <div
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3"
+            className="flex items-center justify-between gap-3 border-b pb-3"
             style={{ borderColor: 'var(--athlon-border)' }}
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                 <Layers className="w-4 h-4" />
               </div>
-              <div>
-                <h4 className="text-base font-black text-foreground">Round Robin Pool Fixtures</h4>
+              <div className="min-w-0">
+                <h4 className="text-base font-black text-foreground truncate">Category Pool & Draw Fixtures</h4>
                 <p className="text-[11px] text-foreground/50 font-medium">
-                  All pool matches — {poolsList.length} pool{poolsList.length !== 1 ? 's' : ''},{' '}
+                  {poolsList.length} category pool{poolsList.length !== 1 ? 's' : ''},{' '}
                   {poolMatches.length} matches total.
                 </p>
               </div>
             </div>
 
-            <DownloadDropdown elementId="bracket-pools-area" label="pool-fixtures" />
+            <div className="flex items-center gap-2 shrink-0 ml-auto">
+              <DownloadDropdown elementId="bracket-pools-area" label="all-pools-fixtures" title="Download All" />
+            </div>
           </div>
 
-          {/* Horizontal pool scroll — each pool is a vertical card column */}
-          <div
-            id="bracket-pools-area"
-            className="flex gap-5 overflow-x-auto pb-4 custom-scrollbar"
-            style={{ scrollSnapType: 'x mandatory' }}
-          >
+          {/* Pool Selection Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+            <button
+              type="button"
+              onClick={() => setSelectedPoolFilter('ALL')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all active:scale-95 ${
+                selectedPoolFilter === 'ALL'
+                  ? 'bg-primary text-primary-foreground font-black shadow-md shadow-primary/20 ring-1 ring-primary/40'
+                  : 'bg-surface border border-border text-foreground/70 hover:text-foreground'
+              }`}
+            >
+              All Categories ({groupedPools.length})
+            </button>
             {groupedPools.map(([poolName, pMatches]) => {
+              const isSelected = selectedPoolFilter === poolName;
               const completedCount = pMatches.filter((m) => m.status === 'COMPLETED').length;
-              const liveCount = pMatches.filter((m) => m.status === 'LIVE' || m.status === 'IN_PROGRESS').length;
-
               return (
-                <div
+                <button
                   key={poolName}
-                  className="flex flex-col rounded-2xl border shadow-md shrink-0"
-                  style={{
-                    width: '300px',
-                    scrollSnapAlign: 'start',
-                    backgroundColor: 'var(--athlon-surface)',
-                    borderColor: 'var(--athlon-border)',
-                  }}
+                  type="button"
+                  onClick={() => setSelectedPoolFilter(poolName)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all active:scale-95 ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground font-black shadow-md shadow-primary/20 ring-1 ring-primary/40'
+                      : 'bg-surface border border-border text-foreground/70 hover:text-foreground'
+                  }`}
                 >
-                  {/* Pool Header */}
-                  <div
-                    className="flex items-center justify-between p-4 border-b"
-                    style={{ borderColor: 'var(--athlon-border-subtle)' }}
+                  <span>{poolName}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                      isSelected
+                        ? 'bg-black/20 text-white'
+                        : 'bg-foreground/10 text-foreground/60'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                        <span className="text-primary font-black text-sm">
-                          {poolName.replace(/[^A-Za-z0-9]/g, '').charAt(poolName.replace(/[^A-Za-z0-9]/g, '').length - 1) || poolName.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <h5 className="text-sm font-black text-foreground">{poolName}</h5>
-                        <p className="text-[10px] text-foreground/50 font-medium">
-                          {pMatches.length} matches
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-black uppercase">
-                        {completedCount}/{pMatches.length} Done
-                      </span>
-                      {liveCount > 0 && (
-                        <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-black uppercase animate-pulse">
-                          {liveCount} LIVE
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Match list */}
-                  <div className="flex flex-col gap-3 p-4">
-                    {pMatches.map((match) => (
-                      <MatchCard key={match.uuid || match.id} match={match} />
-                    ))}
-                  </div>
-                </div>
+                    {completedCount}/{pMatches.length}
+                  </span>
+                </button>
               );
             })}
+          </div>
+
+          {/* Category / Pool Fixture Cards */}
+          <div
+            id="bracket-pools-area"
+            className="space-y-6"
+          >
+            {groupedPools
+              .filter(([poolName]) => isCapturingAll || selectedPoolFilter === 'ALL' || selectedPoolFilter === poolName)
+              .map(([poolName, pMatches]) => {
+                const completedCount = pMatches.filter((m) => m.status === 'COMPLETED').length;
+                const liveCount = pMatches.filter((m) => m.status === 'LIVE' || m.status === 'IN_PROGRESS').length;
+                const safePoolId = getSafePoolId(poolName);
+
+                // Build category-specific adjacency tree
+                const poolMap = new Map(pMatches.map((m) => [m.uuid, m]));
+                const poolChildMap = new Map<string, Match[]>();
+                pMatches.forEach((m) => {
+                  if (m.nextMatchUuid && poolMap.has(m.nextMatchUuid)) {
+                    if (!poolChildMap.has(m.nextMatchUuid)) poolChildMap.set(m.nextMatchUuid, []);
+                    poolChildMap.get(m.nextMatchUuid)!.push(m);
+                  }
+                });
+                const poolRoots = pMatches.filter((m) => !m.nextMatchUuid || !poolMap.has(m.nextMatchUuid));
+                const hasTree = poolChildMap.size > 0;
+                const poolChampion = poolRoots.length === 1 ? getPoolChampion(poolRoots[0]) : null;
+
+                return (
+                  <div
+                    key={poolName}
+                    id={`bracket-pool-${safePoolId}`}
+                    className="flex flex-col rounded-2xl border shadow-sm transition-all overflow-hidden"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    {/* Pool Header */}
+                    <div
+                      className="flex items-center justify-between p-4 border-b gap-3"
+                      style={{
+                        borderColor: 'var(--athlon-border-subtle)',
+                        backgroundColor: 'var(--athlon-surface-elevated, var(--athlon-surface))',
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="px-2.5 py-1 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                          <span className="text-primary font-black text-xs">
+                            {getPoolBadgeLabel(poolName)}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h5 className="text-sm font-black text-foreground truncate">{poolName}</h5>
+                            {hasTree && (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9.5px] font-mono font-bold">
+                                Draw Bracket
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-foreground/50 font-medium">
+                            {pMatches.length} matches • {completedCount}/{pMatches.length} completed
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 ml-auto">
+                        {liveCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[9.5px] font-black uppercase animate-pulse">
+                            {liveCount} LIVE
+                          </span>
+                        )}
+                        <DownloadDropdown
+                          elementId={`bracket-pool-${safePoolId}`}
+                          label={`${safePoolId}-bracket`}
+                          size="sm"
+                          title="Download"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bracket Tree (Default) or Match List */}
+                    {hasTree ? (
+                      <div className="p-4 sm:p-6 overflow-x-auto custom-scrollbar bg-background/50 border-t border-border/40">
+                        <div className="flex flex-col min-w-max p-2">
+                          {poolRoots.map((root) => (
+                            <div key={root.uuid} className="flex justify-start py-2">
+                              <BracketNode
+                                match={root}
+                                customChildrenMap={poolChildMap}
+                                poolChampion={poolChampion}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3 p-4">
+                        {pMatches.map((match, idx) => (
+                          <div key={match.uuid || match.id} className="space-y-1">
+                            <div className="flex items-center justify-between px-1 text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                              <span>Match #{idx + 1}</span>
+                              {match.scheduledTime && (
+                                <span className="font-mono text-primary/70">
+                                  {new Date(match.scheduledTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                            <MatchCard match={match} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}

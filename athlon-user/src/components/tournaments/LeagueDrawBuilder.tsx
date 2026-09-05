@@ -349,7 +349,11 @@ export function LeagueDrawBuilder({ tournamentUuid, registrations, onComplete, o
                               <div className="ml-2 border-l border-foreground/10 pl-2">
                                 <TeamSpinner 
                                   unassignedTeams={availableTeams}
-                                  onSelect={(team) => assignTeamToPool(team.registrationUuid!, pool.id)}
+                                  onSelect={(selection) => {
+                                    if (selection.type === 'team' && selection.team.registrationUuid) {
+                                      assignTeamToPool(selection.team.registrationUuid, pool.id);
+                                    }
+                                  }}
                                   disabled={availableTeams.length === 0}
                                 />
                               </div>

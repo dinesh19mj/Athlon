@@ -42,7 +42,8 @@ import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
-import { ScoreService, LiveScore } from '@/lib/api/scores';
+import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
+import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { MatchService, Match } from '@/lib/api/matches';
 import { OrganizationService } from '@/lib/api/organization';
 import { AuthService } from '@/lib/api/auth';
@@ -127,16 +128,33 @@ export default function PersonalHomePage() {
       .then((res) => setPublicTournaments(res.data.filter((t: Tournament) => t.visibility === 'PUBLIC')))
       .catch(() => { });
 
-    // Public Academies
-    OrganizationService.getAll()
-      .then((res: any) => {
-        const list = Array.isArray(res) ? res : res?.data || [];
-        setPublicAcademies(list.filter((o: any) => o.type === 'ACADEMY'));
-      })
-      .catch(() => { });
+    // Public Academies with event-driven real-time sync
+    const loadPublicAcademies = () => {
+      OrganizationService.getAll()
+        .then((res: any) => {
+          const list = Array.isArray(res) ? res : res?.data || [];
+          setPublicAcademies(list.filter((o: any) => o.type === 'ACADEMY'));
+        })
+        .catch(() => { });
+    };
+
+    loadPublicAcademies();
+
+    // Listen for publish events across tabs/windows
+    const handleOrgSync = () => {
+      loadPublicAcademies();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('athlon-org-updated', handleOrgSync);
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'athlon_org_updated_time') loadPublicAcademies();
+      });
+    }
 
     // Public Championships with auto-polling
     const loadPublicChampionships = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       TeamChampionshipService.getAllPublic()
         .then((res: any) => {
           const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
@@ -146,7 +164,7 @@ export default function PersonalHomePage() {
     };
 
     loadPublicChampionships();
-    const champInterval = setInterval(loadPublicChampionships, 6000);
+    const champInterval = setInterval(loadPublicChampionships, 15000);
 
     // Fetch real organizations from API and sync to store
     if (userUuid) {
@@ -167,8 +185,13 @@ export default function PersonalHomePage() {
         .catch(() => { });
     }
 
-    return () => clearInterval(champInterval);
-  }, [userUuid, setActiveWorkspace]);
+    return () => {
+      clearInterval(champInterval);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('athlon-org-updated', handleOrgSync);
+      }
+    };
+  }, [userUuid]);
 
   useEffect(() => {
     if (userId) {
@@ -273,14 +296,21 @@ export default function PersonalHomePage() {
     }
 
     const fetchScores = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       ScoreService.getLive()
-        .then((res: any) => res?.data && setLiveScores(res.data))
+        .then((res: any) => {
+          if (res?.data) {
+            const tournamentLive = res.data.filter(isTournamentScore);
+            setLiveScores(tournamentLive);
+          }
+        })
         .catch(() => { });
 
       ScoreService.getAll()
         .then((res: any) => {
           if (res?.data) {
-            const finished = res.data.filter((s: LiveScore) => {
+            const tournamentScores = res.data.filter(isTournamentScore);
+            const finished = tournamentScores.filter((s: LiveScore) => {
               const meta = s.scoreMeta || {};
               const games = meta.games || [];
               const wonA = games.filter((g: any) => g.winner === 'A').length;
@@ -300,7 +330,7 @@ export default function PersonalHomePage() {
     };
 
     fetchScores();
-    const iv = setInterval(fetchScores, 5000);
+    const iv = setInterval(fetchScores, 12000);
     return () => clearInterval(iv);
   }, [userId, userUuid, token]);
 
@@ -365,64 +395,85 @@ export default function PersonalHomePage() {
         {activeRole === 'PLAYER' && (
           <>
             {/* Profile Stats Card */}
+            {/* 👤 ATHLON PROFILE HERO CARD */}
             <div className="px-6 mb-3.5">
               <div
-                className="rounded-[18px] shadow-lg overflow-hidden border border-white/[0.08] relative"
+                className="rounded-[18px] shadow-sm overflow-hidden border relative transition-colors"
                 style={{
-                  background: 'linear-gradient(145deg, var(--athlon-card) 0%, rgba(14, 22, 38, 0.95) 100%)',
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
                 }}
               >
                 {/* Top Subtle Ambient Glow */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+                <div
+                  className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
+                  style={{ backgroundColor: 'var(--athlon-primary)' }}
+                />
 
                 {/* Profile Info Header */}
-                <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-white/[0.06] relative z-10">
+                <div className="flex items-center justify-between p-3.5 sm:p-4 border-b relative z-10" style={{ borderColor: 'var(--athlon-border)' }}>
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="relative">
-                      <div className="w-9 h-9 rounded-xl bg-black/40 border border-white/10 overflow-hidden shrink-0 shadow-inner flex items-center justify-center">
+                      <div
+                        className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-inner flex items-center justify-center border"
+                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                      >
                         <img
                           src={personalProfile?.avatar || '/placeholder.png'}
                           alt="Profile"
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#0A0F1D]" />
+                      <div
+                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2"
+                        style={{ borderColor: 'var(--athlon-card)' }}
+                      />
                     </div>
 
                     <div className="flex flex-col min-w-0">
-                      <span className="text-foreground font-bold text-xs sm:text-sm tracking-wide uppercase truncate">
+                      <span className="text-foreground font-black text-xs sm:text-sm tracking-wide uppercase truncate">
                         {displayName}
                       </span>
                     </div>
                   </div>
 
                   {/* Win Rate Capsule */}
-                  <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1.5 shrink-0">
+                  <div className="flex items-center gap-2 bg-primary/10 border border-primary/25 rounded-xl px-2.5 py-1.5 shrink-0">
                     <div className="flex flex-col items-end">
-                      <span className="text-[7.5px] font-extrabold tracking-widest uppercase text-emerald-400/80 leading-none mb-0.5">
+                      <span className="text-[7.5px] font-extrabold tracking-widest uppercase text-primary/80 leading-none mb-0.5">
                         WIN RATE
                       </span>
-                      <span className="text-emerald-400 font-black text-sm sm:text-base leading-none">
+                      <span className="text-primary font-black text-sm sm:text-base leading-none">
                         {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
                       </span>
                     </div>
-                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0 opacity-90" />
+                    <TrendingUp className="w-3.5 h-3.5 text-primary shrink-0 opacity-90" />
                   </div>
                 </div>
 
                 {/* 3 Stats Grid (Compact) */}
-                <div className="grid grid-cols-3 divide-x divide-white/[0.06] bg-black/[0.15] relative z-10">
+                <div
+                  className="grid grid-cols-3 divide-x relative z-10"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
                   {[
                     { label: 'MATCHES', icon: Activity, value: String(playerStats?.totalMatches ?? 0) },
                     { label: 'WINS', icon: Trophy, value: String(playerStats?.matchesWon ?? 0) },
                     { label: 'WIN RATE', icon: TrendingUp, value: `${playerStats?.winRate ? Math.round(playerStats.winRate) : 0}%` },
                   ].map((s) => (
-                    <div key={s.label} className="flex flex-col items-center justify-center py-2.5 px-2 gap-1">
-                      <div className="flex items-center gap-1 text-foreground/40 text-[8px] font-extrabold tracking-wider uppercase">
-                        <s.icon className="w-3 h-3 text-foreground/50" />
+                    <div
+                      key={s.label}
+                      className="flex flex-col items-center justify-center py-2.5 px-2 gap-1"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                    >
+                      <div className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase" style={{ color: 'var(--athlon-icon-muted)' }}>
+                        <s.icon className="w-3 h-3" style={{ color: 'var(--athlon-icon-muted)' }} />
                         <span>{s.label}</span>
                       </div>
-                      <div className="text-foreground font-bold text-xs sm:text-sm leading-tight">{s.value}</div>
+                      <div className="text-foreground font-black text-xs sm:text-sm leading-tight font-mono">{s.value}</div>
                     </div>
                   ))}
                 </div>
@@ -508,13 +559,13 @@ export default function PersonalHomePage() {
 
                             {/* Role Badge */}
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${isAdmin
-                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${isAdmin
+                                ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30'
                                 : isCoach
-                                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                  ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30'
                                   : isStudent
-                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                    ? 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30'
+                                    : 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30'
                                 }`}
                             >
                               {isAdmin ? '👑 Admin' : isCoach ? '🧢 Coach' : isStudent ? '🎓 Student' : '👤 Member'}
@@ -525,7 +576,7 @@ export default function PersonalHomePage() {
                             <h4 className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">
                               {orgItem.name}
                             </h4>
-                            <span className="text-[9.5px] font-semibold text-foreground/40 uppercase tracking-wider block mt-0.5">
+                            <span className="text-[9.5px] font-bold text-foreground/70 dark:text-foreground/40 uppercase tracking-wider block mt-0.5">
                               {orgItem.type}
                             </span>
                           </div>
@@ -557,49 +608,23 @@ export default function PersonalHomePage() {
                 </Link>
               </div>
 
-              <div className="flex items-stretch gap-3.5 overflow-x-auto pb-2 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+              <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
                 {publicAcademies.length > 0 ? (
                   publicAcademies.map((acad: any) => (
-                    <div key={acad.uuid || acad.id} className="snap-start shrink-0 w-[240px]">
-                      <div
-                        className="rounded-2xl border border-white/10 p-3 bg-surface/90 hover:border-primary/40 transition-all flex flex-col justify-between h-full space-y-2.5 shadow-md"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
-                            {acad.logo ? (
-                              <img src={acad.logo} alt={acad.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <Athlon3DIcon type="academies" size={24} active={true} />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-xs font-black text-foreground truncate">{acad.name}</h4>
-                            <span className="text-[10px] text-primary font-bold block mt-0.5">
-                              {acad.profile?.sportsOffered || 'Badminton'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                          <span className="text-[10px] text-foreground/40">{acad.profile?.city || 'Training Center'}</span>
-                          <Link
-                            href="/academies"
-                            className="px-2.5 py-1 rounded-lg bg-primary text-black font-black text-[10px] hover:brightness-110 transition-all"
-                          >
-                            Enroll
-                          </Link>
-                        </div>
-                      </div>
+                    <div
+                      key={acad.uuid || acad.id}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                    >
+                      <AcademyMarketplaceCard academy={acad} className="h-full shadow-md" />
                     </div>
                   ))
                 ) : (
-                  <div className="snap-start shrink-0 w-[240px]">
+                  <div className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]">
                     <Link
                       href="/academies"
-                      className="block p-3.5 rounded-2xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-1.5"
+                      className="block p-4 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-1.5"
                     >
-                      <GraduationCap className="w-6 h-6 text-primary mx-auto" />
+                      <GraduationCap className="w-7 h-7 text-primary mx-auto" />
                       <div className="text-xs font-bold text-foreground">Find Sports Academies</div>
                       <p className="text-[10px] text-foreground/40">Browse batches and enroll in coaching</p>
                     </Link>
@@ -640,136 +665,142 @@ export default function PersonalHomePage() {
                       <div key={score.scoreId} className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[340px] md:w-[360px] max-w-[380px]">
                         <Link
                           href={`/live-score/${score.matchUuid}`}
-                          className="block h-full rounded-[22px] overflow-hidden shadow-2xl group relative transition-all hover:scale-[1.02]"
+                          className="block h-full rounded-[22px] overflow-hidden shadow-md group relative transition-all hover:scale-[1.02] border"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
                         >
-                          <div className="relative bg-gradient-to-br from-[#0d1117] via-[#111827] to-[#0f172a] p-[1px] rounded-[22px] h-full">
-                            <div className="absolute inset-0 rounded-[22px] bg-gradient-to-br from-red-500/20 via-transparent to-emerald-500/10 opacity-60" />
-                            <div className="relative bg-[#0d1117]/95 backdrop-blur-md rounded-[22px] overflow-hidden h-full flex flex-col justify-between">
-                              <div>
-                                <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
-                                  <span className="inline-flex items-center gap-1.5 px-2 py-[3px] rounded-full text-[9px] font-black uppercase tracking-widest bg-red-500/15 text-red-400 border border-red-500/25">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
-                                  </span>
-                                  <div className="flex items-center gap-2 text-[9px] font-bold text-white/40 uppercase tracking-wider">
-                                    <span>{config.courtName || 'Court'}</span>
-                                    <span className="text-white/15">•</span>
-                                    <span>Game {gi + 1}</span>
+                          <div className="relative rounded-[22px] overflow-hidden h-full flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between px-4 pt-3.5 pb-2 border-b" style={{ borderColor: 'var(--athlon-border)' }}>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[9px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/25">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
+                                </span>
+                                <div className="flex items-center gap-2 text-[9px] font-bold text-foreground/75 dark:text-foreground/50 uppercase tracking-wider">
+                                  <span>{config.courtName || 'Court'}</span>
+                                  <span className="text-foreground/30">•</span>
+                                  <span>Game {gi + 1}</span>
+                                </div>
+                              </div>
+
+                              <div className="px-4 py-3">
+                                <div className="flex items-stretch gap-3">
+                                  <div className="flex-1 min-w-0 space-y-1.5">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div
+                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'A'
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40 border'
+                                          : 'bg-surface text-foreground/70 border border-border'
+                                          }`}
+                                      >
+                                        {isServing === 'A' ? <Zap className="w-3.5 h-3.5" /> : 'A'}
+                                      </div>
+                                      <span
+                                        className={`text-2xl font-black tabular-nums font-mono ${Number(scoreA) > Number(scoreB) ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
+                                          }`}
+                                      >
+                                        {scoreA}
+                                      </span>
+                                    </div>
+                                    {teamAPlayers.length > 0 ? (
+                                      teamAPlayers.map((p: string, i: number) => (
+                                        <div key={i} className="flex items-center gap-1.5">
+                                          <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 flex items-center justify-center shrink-0">
+                                            <span className="text-[8px] font-black text-emerald-800 dark:text-emerald-400">{p.charAt(0)}</span>
+                                          </div>
+                                          <span className="text-[11px] font-bold text-foreground/90 truncate">{p}</span>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <span className="text-[11px] font-bold text-foreground/90 truncate block">{teamAName}</span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex flex-col items-center justify-center gap-2 px-1">
+                                    <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center">
+                                      <span className="text-[9px] font-black text-foreground/60 dark:text-foreground/40 uppercase">vs</span>
+                                    </div>
+                                    {games.length > 1 && (
+                                      <div className="flex flex-col items-center gap-[3px]">
+                                        {games.map((_: any, idx: number) => (
+                                          <div
+                                            key={idx}
+                                            className={`w-1.5 h-1.5 rounded-full ${idx === gi
+                                              ? 'bg-red-500'
+                                              : games[idx]?.winner === 'A'
+                                                ? 'bg-emerald-600'
+                                                : games[idx]?.winner === 'B'
+                                                  ? 'bg-amber-600'
+                                                  : 'bg-foreground/30'
+                                              }`}
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex-1 min-w-0 space-y-1.5 text-right">
+                                    <div className="flex items-center justify-end gap-2 mb-2">
+                                      <span
+                                        className={`text-2xl font-black tabular-nums font-mono ${Number(scoreB) > Number(scoreA) ? 'text-amber-800 dark:text-amber-400' : 'text-foreground'
+                                          }`}
+                                      >
+                                        {scoreB}
+                                      </span>
+                                      <div
+                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'B'
+                                          ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40 border'
+                                          : 'bg-surface text-foreground/70 border border-border'
+                                          }`}
+                                      >
+                                        {isServing === 'B' ? <Zap className="w-3.5 h-3.5" /> : 'B'}
+                                      </div>
+                                    </div>
+                                    {teamBPlayers.length > 0 ? (
+                                      teamBPlayers.map((p: string, i: number) => (
+                                        <div key={i} className="flex items-center justify-end gap-1.5">
+                                          <span className="text-[11px] font-bold text-foreground/90 truncate">{p}</span>
+                                          <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 flex items-center justify-center shrink-0">
+                                            <span className="text-[8px] font-black text-amber-800 dark:text-amber-400">{p.charAt(0)}</span>
+                                          </div>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <span className="text-[11px] font-bold text-foreground/90 truncate block">{teamBName}</span>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="px-4 py-3">
-                                  <div className="flex items-stretch gap-3">
-                                    <div className="flex-1 min-w-0 space-y-1.5">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <div
-                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'A'
-                                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                                            : 'bg-white/5 text-white/40 border border-white/10'
-                                            }`}
-                                        >
-                                          {isServing === 'A' ? <Zap className="w-3.5 h-3.5" /> : 'A'}
-                                        </div>
-                                        <span
-                                          className={`text-2xl font-black tabular-nums ${Number(scoreA) > Number(scoreB) ? 'text-emerald-400' : 'text-white/90'
-                                            }`}
-                                        >
-                                          {scoreA}
-                                        </span>
-                                      </div>
-                                      {teamAPlayers.length > 0 ? (
-                                        teamAPlayers.map((p: string, i: number) => (
-                                          <div key={i} className="flex items-center gap-1.5">
-                                            <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                                              <span className="text-[8px] font-black text-emerald-400">{p.charAt(0)}</span>
-                                            </div>
-                                            <span className="text-[11px] font-bold text-white/80 truncate">{p}</span>
-                                          </div>
-                                        ))
-                                      ) : (
-                                        <span className="text-[11px] font-bold text-white/60 truncate block">{teamAName}</span>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-col items-center justify-center gap-2 px-1">
-                                      <div className="w-8 h-8 rounded-full bg-white/[0.04] border border-white/10 flex items-center justify-center">
-                                        <span className="text-[9px] font-black text-white/25 uppercase">vs</span>
-                                      </div>
-                                      {games.length > 1 && (
-                                        <div className="flex flex-col items-center gap-[3px]">
-                                          {games.map((_: any, idx: number) => (
-                                            <div
-                                              key={idx}
-                                              className={`w-1.5 h-1.5 rounded-full ${idx === gi
-                                                ? 'bg-red-400'
-                                                : games[idx]?.winner === 'A'
-                                                  ? 'bg-emerald-400/80'
-                                                  : games[idx]?.winner === 'B'
-                                                    ? 'bg-amber-400/80'
-                                                    : 'bg-white/15'
-                                                }`}
-                                            />
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex-1 min-w-0 space-y-1.5 text-right">
-                                      <div className="flex items-center justify-end gap-2 mb-2">
-                                        <span
-                                          className={`text-2xl font-black tabular-nums ${Number(scoreB) > Number(scoreA) ? 'text-amber-400' : 'text-white/90'
-                                            }`}
-                                        >
-                                          {scoreB}
-                                        </span>
-                                        <div
-                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'B'
-                                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                                            : 'bg-white/5 text-white/40 border border-white/10'
-                                            }`}
-                                        >
-                                          {isServing === 'B' ? <Zap className="w-3.5 h-3.5" /> : 'B'}
-                                        </div>
-                                      </div>
-                                      {teamBPlayers.length > 0 ? (
-                                        teamBPlayers.map((p: string, i: number) => (
-                                          <div key={i} className="flex items-center justify-end gap-1.5">
-                                            <span className="text-[11px] font-bold text-white/80 truncate">{p}</span>
-                                            <div className="w-5 h-5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                                              <span className="text-[8px] font-black text-amber-400">{p.charAt(0)}</span>
-                                            </div>
-                                          </div>
-                                        ))
-                                      ) : (
-                                        <span className="text-[11px] font-bold text-white/60 truncate block">{teamBName}</span>
-                                      )}
-                                    </div>
+                              </div>
+
+                              {(setsWonA > 0 || setsWonB > 0) && (
+                                <div className="mx-4 mb-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-foreground/40">
+                                  <span className="text-emerald-500 dark:text-emerald-400 font-bold">{setsWonA}</span>
+                                  <div className="flex-1 h-[2px] rounded-full bg-foreground/10 overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-emerald-500/80 to-emerald-500/30 rounded-full"
+                                      style={{ width: `${(setsWonA / (setsWonA + setsWonB || 1)) * 100}%` }}
+                                    />
                                   </div>
+                                  <span>Sets</span>
+                                  <div className="flex-1 h-[2px] rounded-full bg-foreground/10 overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-l from-amber-500/80 to-amber-500/30 rounded-full ml-auto"
+                                      style={{ width: `${(setsWonB / (setsWonA + setsWonB || 1)) * 100}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-amber-500 dark:text-amber-400 font-bold">{setsWonB}</span>
                                 </div>
-                                {(setsWonA > 0 || setsWonB > 0) && (
-                                  <div className="mx-4 mb-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-white/30">
-                                    <span className="text-emerald-400/80">{setsWonA}</span>
-                                    <div className="flex-1 h-[2px] rounded-full bg-white/5 overflow-hidden">
-                                      <div
-                                        className="h-full bg-gradient-to-r from-emerald-500/60 to-emerald-500/20 rounded-full"
-                                        style={{ width: `${(setsWonA / (setsWonA + setsWonB || 1)) * 100}%` }}
-                                      />
-                                    </div>
-                                    <span>Sets</span>
-                                    <div className="flex-1 h-[2px] rounded-full bg-white/5 overflow-hidden">
-                                      <div
-                                        className="h-full bg-gradient-to-l from-amber-500/60 to-amber-500/20 rounded-full ml-auto"
-                                        style={{ width: `${(setsWonB / (setsWonA + setsWonB || 1)) * 100}%` }}
-                                      />
-                                    </div>
-                                    <span className="text-amber-400/80">{setsWonB}</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.02] border-t border-white/[0.04]">
-                                <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider truncate max-w-[60%]">
-                                  {config.tournamentName || 'Live Match'}
-                                </span>
-                                <span className="text-[9px] font-black text-red-400 uppercase tracking-widest flex items-center gap-0.5 group-hover:text-red-300 transition-colors">
-                                  Watch <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                                </span>
-                              </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between px-4 py-2.5 bg-surface/50 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                              <span className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider truncate max-w-[60%]">
+                                {config.tournamentName || 'Live Match'}
+                              </span>
+                              <span className="text-[9px] font-black text-red-500 uppercase tracking-widest flex items-center gap-0.5 group-hover:text-red-400 transition-colors">
+                                Watch <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                              </span>
                             </div>
                           </div>
                         </Link>
@@ -824,13 +855,13 @@ export default function PersonalHomePage() {
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
-                          <div className="h-[2px] w-full bg-emerald-500" />
+                          <div className="h-[2px] w-full bg-primary shadow-[0_0_8px_var(--athlon-primary)]" />
                           <div className="p-4 space-y-3 flex flex-col justify-between h-full">
                             <div className="flex items-center justify-between">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                                <CheckCircle2 className="w-2.5 h-2.5" /> Completed
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                                <CheckCircle2 className="w-2.5 h-2.5 text-primary" /> Completed
                               </span>
-                              <span className="text-[9px] font-bold text-foreground/45 uppercase tracking-wider truncate max-w-[150px]">
+                              <span className="text-[9px] font-bold text-foreground/75 dark:text-foreground/45 uppercase tracking-wider truncate max-w-[150px]">
                                 {config.tournamentName || 'Tournament Match'}
                               </span>
                             </div>
@@ -856,7 +887,7 @@ export default function PersonalHomePage() {
                                   </span>
                                 </div>
                                 <span
-                                  className={`text-xs font-black font-mono tabular-nums ${winner === 'A' ? 'text-emerald-400 font-black' : 'text-foreground/60'
+                                  className={`text-xs font-black font-mono tabular-nums ${winner === 'A' ? 'text-primary font-black' : 'text-foreground/60'
                                     }`}
                                 >
                                   {setsWonA}
@@ -868,7 +899,7 @@ export default function PersonalHomePage() {
                                 style={{ borderColor: 'var(--athlon-border-subtle)' }}
                               >
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-foreground/70 shrink-0">
+                                  <div className="w-6 h-6 rounded-lg bg-surface border border-border flex items-center justify-center text-[10px] font-bold text-foreground/70 shrink-0">
                                     {teamBName.charAt(0)}
                                   </div>
                                   <span
@@ -879,7 +910,7 @@ export default function PersonalHomePage() {
                                   </span>
                                 </div>
                                 <span
-                                  className={`text-xs font-black font-mono tabular-nums ${winner === 'B' ? 'text-emerald-400 font-black' : 'text-foreground/60'
+                                  className={`text-xs font-black font-mono tabular-nums ${winner === 'B' ? 'text-primary font-black' : 'text-foreground/60'
                                     }`}
                                 >
                                   {setsWonB}
@@ -893,16 +924,16 @@ export default function PersonalHomePage() {
                               style={{ borderColor: 'var(--athlon-border-subtle)' }}
                             >
                               {games.length > 0 ? (
-                                <div className="flex items-center gap-1.5 flex-wrap text-foreground/60">
-                                  <span className="font-bold text-foreground/40 text-[9px] uppercase">Sets:</span>
+                                <div className="flex items-center gap-1.5 flex-wrap text-foreground/80 dark:text-foreground/60">
+                                  <span className="font-bold text-foreground/60 dark:text-foreground/40 text-[9px] uppercase">Sets:</span>
                                   {games.map((g: any, gIdx: number) => (
-                                    <span key={gIdx} className="px-1.5 py-0.2 rounded bg-white/5 font-mono font-bold text-[9px]">
+                                    <span key={gIdx} className="px-1.5 py-0.2 rounded bg-surface border border-border font-mono font-bold text-[9px] text-foreground">
                                       {g.scoreA ?? 0}–{g.scoreB ?? 0}
                                     </span>
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-[9px] text-foreground/40 font-bold uppercase">Finished</span>
+                                <span className="text-[9px] text-foreground/60 dark:text-foreground/40 font-bold uppercase">Finished</span>
                               )}
 
                               <span className="text-[9px] font-bold text-primary flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2">
@@ -1518,12 +1549,12 @@ export default function PersonalHomePage() {
                 </div>
 
                 <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="text-[10px] font-black uppercase text-foreground/50">Win Rate</div>
-                    <div className="text-lg font-black text-emerald-400 font-mono">
+                    <div className="text-lg font-black text-primary font-mono">
                       {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
                     </div>
                   </div>
@@ -1953,49 +1984,12 @@ export default function PersonalHomePage() {
             >
               {publicAcademies.length > 0 ? (
                 publicAcademies.map((acad: any) => (
-                  <div key={acad.uuid || acad.id} className="snap-start shrink-0 w-[340px]">
-                    <div
-                      className="rounded-3xl border border-white/10 p-4 bg-surface/80 hover:border-primary/40 transition-all flex flex-col justify-between h-full space-y-3 shadow-lg group backdrop-blur-md"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-                          {acad.logo ? (
-                            <img src={acad.logo} alt={acad.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Athlon3DIcon type="academies" size={30} active={true} />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">
-                            {acad.name}
-                          </h4>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 border border-primary/20 text-primary inline-block mt-1">
-                            {acad.profile?.sportsOffered || 'Badminton'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-foreground/60 line-clamp-2">
-                        {acad.description || 'Professional training academy with dedicated courts, certified coaches, and flexible morning/evening batches.'}
-                      </p>
-
-                      <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                        <span className="text-[11px] text-foreground/40 font-medium">
-                          {acad.profile?.city || 'Training Facility'}
-                        </span>
-                        <Link
-                          href="/academies"
-                          className="px-3.5 py-1.5 rounded-xl bg-primary text-black font-black text-xs hover:brightness-110 transition-all shadow-md shadow-primary/20"
-                        >
-                          Enroll Now
-                        </Link>
-                      </div>
-                    </div>
+                  <div key={acad.uuid || acad.id} className="snap-start shrink-0 w-[360px]">
+                    <AcademyMarketplaceCard academy={acad} className="h-full" />
                   </div>
                 ))
               ) : (
-                <div className="snap-start shrink-0 w-[340px]">
+                <div className="snap-start shrink-0 w-[360px]">
                   <Link
                     href="/academies"
                     className="block p-6 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-2"
@@ -2170,7 +2164,7 @@ export default function PersonalHomePage() {
                         style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                       >
                         <div className="flex items-center justify-between text-xs">
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black uppercase">
+                          <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-black uppercase">
                             Finished
                           </span>
                           <span className="text-[11px] text-foreground/50 truncate max-w-[180px]">{config.tournamentName || 'Tournament'}</span>
@@ -2179,11 +2173,11 @@ export default function PersonalHomePage() {
                         <div className="p-3.5 rounded-2xl border space-y-2 bg-surface/50" style={{ borderColor: 'var(--athlon-border)' }}>
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-black text-foreground truncate">{teamAName}</span>
-                            <span className="font-mono font-black text-sm text-emerald-400">{setsWonA}</span>
+                            <span className="font-mono font-black text-sm text-primary">{setsWonA}</span>
                           </div>
                           <div className="flex items-center justify-between border-t pt-2" style={{ borderColor: 'var(--athlon-border)' }}>
                             <span className="text-xs font-black text-foreground truncate">{teamBName}</span>
-                            <span className="font-mono font-black text-sm text-amber-400">{setsWonB}</span>
+                            <span className="font-mono font-black text-sm text-primary">{setsWonB}</span>
                           </div>
                         </div>
 

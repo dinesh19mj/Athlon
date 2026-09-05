@@ -35,7 +35,7 @@ public class ClubMatchController {
         }
     }
 
-    @PutMapping("/updateScore/{matchId}")
+    @PostMapping("/updateScore/{matchId}")
     public ResponseEntity<ClubMatch> updateScore(
             @PathVariable("matchId") Long matchId,
             @RequestParam("score") String score,
@@ -58,7 +58,7 @@ public class ClubMatchController {
         }
     }
 
-    @DeleteMapping("/{matchId}")
+    @PostMapping("/delete/{matchId}")
     public ResponseEntity<Void> deleteMatch(@PathVariable("matchId") Long matchId) {
         try {
             clubMatchService.deleteMatch(matchId);

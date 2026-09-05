@@ -16,6 +16,7 @@ public class OrganizationMemberResponse {
     private String phone;
     private String photo;
     private String role;
+    private String sportType;
     private String status;
     private Integer isActive;
     private LocalDateTime joinedAt;
@@ -109,6 +110,14 @@ public class OrganizationMemberResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getSportType() {
+        return sportType;
+    }
+
+    public void setSportType(String sportType) {
+        this.sportType = sportType;
     }
 
     public String getStatus() {

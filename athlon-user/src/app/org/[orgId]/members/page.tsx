@@ -290,8 +290,8 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* ── HEADER SECTION (DESKTOP) ── */}
+      <div className="hidden md:flex md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Club Member</h2>
@@ -318,7 +318,7 @@ export default function MembersPage() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh
           </button>
-          
+
           {canManage ? (
             clubSport ? (
               <button
@@ -347,54 +347,86 @@ export default function MembersPage() {
         </div>
       </div>
 
+      {/* ── HEADER SECTION (MOBILE APP-LIKE COMPACT BAR) ── */}
+      <div className="flex md:hidden flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black text-foreground tracking-tight">Club Members</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/15 text-primary border border-primary/25 shrink-0">
+                {members.length}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-foreground/50">
+              {clubSport ? (
+                <span className="inline-flex items-center gap-1 font-bold text-primary">
+                  <span>{AVAILABLE_SPORTS.find(s => s.name === clubSport)?.icon || '🏅'}</span>
+                  <span>{clubSport}</span>
+                </span>
+              ) : (
+                <span>No sport set</span>
+              )}
+              <span>•</span>
+              <span className="truncate">{org?.name || 'Club'}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 rounded-xl bg-surface border border-foreground/10 text-foreground active:scale-95 transition"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* REQUIREMENT: SINGLE SPORT CONFIGURATION CARD (WHEN NO SPORT CONFIGURED) */}
       {sportLoaded && !clubSport && canManage && (
-        <div className="p-6 sm:p-8 rounded-[28px] border bg-gradient-to-br from-primary/10 via-surface to-surface border-primary/30 shadow-xl space-y-6 animate-in fade-in duration-300">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
-                <Sparkles className="w-3.5 h-3.5" />
-                Setup Required
-              </div>
-              <h3 className="text-xl sm:text-2xl font-black text-foreground">Select Primary Sport for this Club</h3>
-              <p className="text-xs sm:text-sm text-foreground/60 font-medium max-w-2xl">
-                This club account is dedicated to <strong>one sport</strong>. Please select your sport to unlock member management and club match recording.
-              </p>
+        <div className="p-5 sm:p-8 rounded-3xl border bg-gradient-to-br from-primary/10 via-surface to-surface border-primary/30 shadow-xl space-y-4 sm:space-y-6 animate-in fade-in duration-300">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
+              <Sparkles className="w-3 h-3" />
+              Setup Required
             </div>
+            <h3 className="text-base sm:text-2xl font-black text-foreground">Select Primary Sport for this Club</h3>
+            <p className="text-xs sm:text-sm text-foreground/60 font-medium">
+              This club account is dedicated to <strong>one sport</strong>. Please select your sport to unlock member management.
+            </p>
           </div>
 
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-              {AVAILABLE_SPORTS.map((sport) => {
-                const isSelected = selectedSportToSave === sport.name;
-                return (
-                  <button
-                    key={sport.name}
-                    type="button"
-                    onClick={() => setSelectedSportToSave(sport.name)}
-                    className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-2.5 transition-all text-center ${
-                      isSelected
-                        ? 'bg-primary text-black font-black border-primary shadow-lg shadow-primary/25 scale-[1.03]'
-                        : 'bg-background/80 border-foreground/10 text-foreground/70 hover:text-foreground hover:bg-foreground/5'
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+            {AVAILABLE_SPORTS.map((sport) => {
+              const isSelected = selectedSportToSave === sport.name;
+              return (
+                <button
+                  key={sport.name}
+                  type="button"
+                  onClick={() => setSelectedSportToSave(sport.name)}
+                  className={`p-3 sm:p-4 rounded-2xl border flex flex-col items-center justify-center gap-1.5 sm:gap-2.5 transition-all text-center ${isSelected
+                      ? 'bg-primary text-black font-black border-primary shadow-lg shadow-primary/25 scale-[1.03]'
+                      : 'bg-background/80 border-foreground/10 text-foreground/70 hover:text-foreground hover:bg-foreground/5'
                     }`}
-                  >
-                    <span className="text-2xl">{sport.icon}</span>
-                    <span className="text-xs font-black tracking-tight">{sport.name}</span>
-                  </button>
-                );
-              })}
-            </div>
+                >
+                  <span className="text-xl sm:text-2xl">{sport.icon}</span>
+                  <span className="text-[11px] sm:text-xs font-black tracking-tight">{sport.name}</span>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="pt-2 flex items-center justify-between gap-4 border-t border-foreground/10 flex-wrap">
-            <p className="text-xs text-foreground/50 font-medium flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              Member adding and club matches will adapt to <strong>{selectedSportToSave}</strong>
+          <div className="pt-2 flex items-center justify-between gap-3 border-t border-foreground/10 flex-wrap">
+            <p className="text-[11px] sm:text-xs text-foreground/50 font-medium flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Selected: <strong>{selectedSportToSave}</strong></span>
             </p>
             <button
               onClick={handleSaveClubSport}
               disabled={isSavingSport}
-              className="px-6 py-3 rounded-2xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/25 flex items-center gap-2"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
             >
               {isSavingSport ? (
                 <>
@@ -402,7 +434,7 @@ export default function MembersPage() {
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4" /> Save & Enable Club Members
+                  <CheckCircle2 className="w-4 h-4" /> Save Sport
                 </>
               )}
             </button>
@@ -410,196 +442,146 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Search, Filter Tabs & Controls */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm">
-        <div className="relative flex-grow">
-          <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
+      {/* ── SEARCH & FILTER CONTROLS ── */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
           <input
             type="text"
-            placeholder="Search members by name, phone, email, or role..."
+            placeholder="Search name, phone, email, or role..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-background border border-foreground/10 rounded-xl pl-12 pr-4 py-2.5 text-sm font-medium text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full bg-surface border border-foreground/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Role Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none shrink-0">
-          {['ALL', 'MEMBER', 'COACH', 'ADMIN', 'STUDENT'].map((role) => (
-            <button
-              key={role}
-              onClick={() => setRoleFilter(role)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shrink-0 ${
-                roleFilter === role
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'bg-background/60 text-foreground/60 hover:text-foreground border border-foreground/5'
-              }`}
-            >
-              {role === 'ALL' ? 'All Roles' : role}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+          {['ALL', 'MEMBER', 'COACH', 'ADMIN', 'STUDENT'].map((roleKey) => {
+            const count = roleKey === 'ALL'
+              ? members.length
+              : members.filter(m => (m.role || '').toUpperCase() === roleKey).length;
+            const active = roleFilter === roleKey;
+            return (
+              <button
+                key={roleKey}
+                onClick={() => setRoleFilter(roleKey)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-black tracking-tight transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                  active
+                    ? 'bg-primary text-black shadow-md shadow-primary/20'
+                    : 'bg-surface text-foreground/60 hover:text-foreground border border-foreground/10'
+                }`}
+              >
+                <span>{roleKey === 'ALL' ? 'All' : roleKey.charAt(0) + roleKey.slice(1).toLowerCase()}</span>
+                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
+                  active ? 'bg-black/20 text-black font-extrabold' : 'bg-foreground/10 text-foreground/60'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Members Directory Table */}
-      <div className="bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
+      {/* ── MEMBERS DIRECTORY ── */}
+      <div>
         {loading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-3">
+          <div className="py-20 flex flex-col items-center justify-center gap-3 bg-surface border border-foreground/5 rounded-3xl">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-foreground/50">Loading club members...</p>
+            <p className="text-xs font-semibold text-foreground/50">Loading club members...</p>
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="py-20 px-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
-              <Users className="w-8 h-8" />
+          <div className="py-16 px-6 text-center space-y-3 bg-surface border border-foreground/5 rounded-3xl">
+            <div className="w-14 h-14 rounded-2xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
+              <Users className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-foreground">
+              <h3 className="text-base font-bold text-foreground">
                 {searchTerm || roleFilter !== 'ALL' ? 'No matching members found' : 'No members added yet'}
               </h3>
-              <p className="text-sm text-foreground/50 max-w-md mx-auto mt-1">
+              <p className="text-xs text-foreground/50 max-w-sm mx-auto mt-1">
                 {searchTerm || roleFilter !== 'ALL'
-                  ? 'Try adjusting your search query or role filter.'
+                  ? 'Try broadening your search query or role filter.'
                   : clubSport
-                  ? 'Start building your club directory by adding members using their phone number.'
-                  : 'Please configure your club sport above to begin adding members.'}
+                    ? 'Start building your club directory by adding members.'
+                    : 'Please configure your club sport above to begin adding members.'}
               </p>
             </div>
-            {!searchTerm && roleFilter === 'ALL' && clubSport && (
+            {!searchTerm && roleFilter === 'ALL' && clubSport && canManage && (
               <button
                 onClick={() => {
                   resetModal();
                   setIsAddModalOpen(true);
                 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
               >
-                <Plus className="w-4 h-4" /> Add First Member
+                <Plus className="w-3.5 h-3.5" /> Add First Member
               </button>
             )}
           </div>
         ) : (
           <>
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Member</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Phone & Contact</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Role</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Joined</th>
-                    {canManage && (
-                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-foreground/5">
-                  {filteredMembers.map((member) => (
-                    <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center text-foreground font-bold shrink-0 shadow-inner">
-                            {member.photo ? (
-                              <img
-                                src={UserService.getPhotoUrl(member.photo)}
-                                alt={member.fullName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-sm font-black text-primary">
-                                {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-black text-sm text-foreground flex items-center gap-2">
-                              <span>{member.fullName}</span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            </div>
-                            <div className="text-xs text-foreground/50">{member.email || 'No email registered'}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-xs font-mono font-semibold text-foreground/80">
-                          <Phone className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                          <span>{member.phone ? `+91 ${member.phone}` : '-'}</span>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-foreground/5 border border-foreground/10 text-foreground/80">
-                          {member.role === 'ADMIN' ? (
-                            <Shield className="w-3.5 h-3.5 text-purple-400" />
-                          ) : member.role === 'COACH' ? (
-                            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                          ) : (
-                            <User className="w-3.5 h-3.5 text-primary/70" />
-                          )}
-                          <span>{member.role || 'MEMBER'}</span>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          {member.status || 'Active'}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4 text-xs font-medium text-foreground/50">
-                        {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}
-                      </td>
-
+            {/* Desktop Table View (Untouched) */}
+            <div className="hidden md:block bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Member</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Phone &amp; Contact</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Role</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Joined</th>
                       {canManage && (
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
-                            className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
-                            title="Remove member"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
+                        <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-foreground/5">
+                    {filteredMembers.map((member) => (
+                      <tr key={member.organizationMemberUuid} className="hover:bg-foreground/[0.02] transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center text-foreground font-bold shrink-0 shadow-inner">
+                              {member.photo ? (
+                                <img
+                                  src={UserService.getPhotoUrl(member.photo)}
+                                  alt={member.fullName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-sm font-black text-primary">
+                                  {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-black text-sm text-foreground flex items-center gap-2">
+                                <span>{member.fullName}</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              </div>
+                            </div>
+                          </div>
+                        </td>
 
-            {/* Mobile Stylish Member Cards View */}
-            <div className="block md:hidden divide-y divide-foreground/5">
-              {filteredMembers.map((member) => (
-                <div
-                  key={member.organizationMemberUuid}
-                  className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors"
-                >
-                  {/* Top Row: Avatar + Name + Status + Delete */}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center text-foreground font-bold shrink-0 shadow-inner">
-                        {member.photo ? (
-                          <img
-                            src={UserService.getPhotoUrl(member.photo)}
-                            alt={member.fullName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-base font-black text-primary">
-                            {member.fullName?.charAt(0)?.toUpperCase() || 'A'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-black text-sm text-foreground flex items-center gap-1.5 truncate">
-                          <span className="truncate">{member.fullName}</span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-foreground/5 border border-foreground/10 text-foreground/70">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2 text-xs font-mono font-semibold text-foreground/80">
+                            <Phone className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                            <span>{member.phone ? `+91 ${member.phone}` : '-'}</span>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-foreground/5 border border-foreground/10 text-foreground/80">
                             {member.role === 'ADMIN' ? (
                               <Shield className="w-3.5 h-3.5 text-purple-400" />
                             ) : member.role === 'COACH' ? (
@@ -608,38 +590,132 @@ export default function MembersPage() {
                               <User className="w-3.5 h-3.5 text-primary/70" />
                             )}
                             <span>{member.role || 'MEMBER'}</span>
-                          </span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             {member.status || 'Active'}
                           </span>
+                        </td>
+
+                        <td className="px-6 py-4 text-xs font-medium text-foreground/50">
+                          {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}
+                        </td>
+
+                        {canManage && (
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
+                              className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
+                              title="Remove member"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ── MOBILE VIEW: ULTRA-STYLISH APP-LIKE MEMBER CARDS ── */}
+            <div className="block md:hidden space-y-3">
+              {filteredMembers.map((member) => {
+                const roleUpper = (member.role || 'MEMBER').toUpperCase();
+                const isAdminRole = roleUpper === 'ADMIN' || roleUpper === 'OWNER';
+                const isCoachRole = roleUpper === 'COACH';
+                const isStudentRole = roleUpper === 'STUDENT';
+
+                return (
+                  <div
+                    key={member.organizationMemberUuid}
+                    className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-2.5 transition-all hover:border-primary/40"
+                  >
+                    {/* Top Row: Avatar + Name + Role Badge + Actions */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Avatar */}
+                        <div className="w-11 h-11 rounded-2xl bg-surface border border-border overflow-hidden flex items-center justify-center shrink-0 shadow-sm relative">
+                          {member.photo ? (
+                            <img
+                              src={UserService.getPhotoUrl(member.photo)}
+                              alt={member.fullName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-black text-primary">
+                              {member.fullName?.charAt(0)?.toUpperCase() || 'M'}
+                            </span>
+                          )}
+                          <span className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-card" />
+                        </div>
+
+                        {/* Name & Role Tag */}
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-black text-foreground leading-tight truncate">
+                            {member.fullName}
+                          </h4>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider border ${
+                                isAdminRole
+                                  ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+                                  : isCoachRole
+                                  ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                  : isStudentRole
+                                  ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              }`}
+                            >
+                              {isAdminRole ? (
+                                <Shield className="w-2.5 h-2.5" />
+                              ) : isCoachRole ? (
+                                <Trophy className="w-2.5 h-2.5" />
+                              ) : (
+                                <User className="w-2.5 h-2.5" />
+                              )}
+                            </span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Right Action Menu / Trash */}
+                      {canManage && (
+                        <button
+                          onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
+                          className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition active:scale-90 shrink-0"
+                          title="Remove member"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
-                    {canManage && (
-                      <button
-                        onClick={() => handleRemoveMember(member.organizationMemberUuid, member.fullName)}
-                        className="p-2.5 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-                        title="Remove member"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                    {/* Bottom Row: Quick 1-Tap Call & Joined Tag */}
+                    <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
+                      {member.phone ? (
+                        <a
+                          href={`tel:${member.phone}`}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-surface hover:bg-surface-hover border border-border text-primary font-mono text-[11px] font-bold active:scale-95 transition"
+                        >
+                          <Phone className="w-3 h-3 text-primary" />
+                          <span>+91 {member.phone}</span>
+                        </a>
+                      ) : (
+                        <span className="text-[11px] text-text-muted italic">No phone added</span>
+                      )}
 
-                  {/* Bottom Details Strip */}
-                  <div className="flex items-center justify-between pt-1 text-xs text-foreground/60 border-t border-foreground/[0.04]">
-                    <div className="flex items-center gap-1.5 font-mono text-foreground/80 font-semibold">
-                      <Phone className="w-3.5 h-3.5 text-primary/70" />
-                      <span>{member.phone ? `+91 ${member.phone}` : '-'}</span>
-                    </div>
-                    <div className="text-[11px] text-foreground/40 font-medium">
-                      Joined {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}
+                      <span className="text-[10px] text-text-muted font-medium">
+                        Joined {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Recently'}
+                      </span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
@@ -800,11 +876,10 @@ export default function MembersPage() {
                         key={r.value}
                         type="button"
                         onClick={() => setSelectedRole(r.value)}
-                        className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition-all text-center ${
-                          selectedRole === r.value
+                        className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition-all text-center ${selectedRole === r.value
                             ? 'bg-primary text-black font-black border-primary shadow-md shadow-primary/20 scale-[1.02]'
                             : 'bg-background border-foreground/10 text-foreground/60 hover:text-foreground hover:bg-foreground/5'
-                        }`}
+                          }`}
                       >
                         {r.label}
                       </button>
@@ -865,6 +940,26 @@ export default function MembersPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── MOBILE FLOATING ACTION BUTTON (FAB) ── */}
+      {canManage && (
+        <div className="fixed bottom-24 right-5 md:hidden z-40">
+          <button
+            onClick={() => {
+              if (!clubSport) {
+                alert('Please configure your club sport below before adding members.');
+                return;
+              }
+              resetModal();
+              setIsAddModalOpen(true);
+            }}
+            className="w-13 h-13 rounded-full bg-primary text-black flex items-center justify-center shadow-[0_8px_25px_rgba(255,200,0,0.4)] border border-primary/50 active:scale-90 transition-transform hover:scale-105"
+            title="Add Member"
+          >
+            <Plus className="w-6 h-6 stroke-[3]" />
+          </button>
         </div>
       )}
     </div>

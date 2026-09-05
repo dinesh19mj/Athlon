@@ -21,6 +21,7 @@ import {
   Layers,
   ShieldAlert,
   SlidersHorizontal,
+  Loader2,
 } from "lucide-react";
 import {
   TournamentService,
@@ -31,7 +32,9 @@ import {
   Match,
   Registration,
   CourtConfig,
+  RegistrationPlayer,
 } from "@/lib/api/tournaments";
+import { UserService, UserResponse } from "@/lib/api/user";
 
 interface MatchSetupSettingsProps {
   tournamentId: string;
@@ -43,6 +46,166 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [courts, setCourts] = useState<CourtConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
+  const [umpireVerification, setUmpireVerification] = useState<
+    Record<string, { checking?: boolean; valid?: boolean; name?: string; error?: string }>
+  >({});
+
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      const phonesToFetch: string[] = [];
+      registrations.forEach((reg) => {
+        reg.players?.forEach((p) => {
+          if (p.phoneNumber && !playerPhotos[p.phoneNumber]) {
+            phonesToFetch.push(p.phoneNumber);
+          }
+        });
+      });
+
+      if (phonesToFetch.length === 0) return;
+
+      const newPhotos: Record<string, string> = {};
+      await Promise.all(
+        phonesToFetch.map(async (phone) => {
+          try {
+            const res = await UserService.getUserByPhone(phone);
+            if (res?.data?.photo) {
+              newPhotos[phone] = UserService.getPhotoUrl(res.data.photo);
+            }
+          } catch {
+            // ignore
+          }
+        })
+      );
+
+      if (Object.keys(newPhotos).length > 0) {
+        setPlayerPhotos((prev) => ({ ...prev, ...newPhotos }));
+      }
+    };
+
+    if (registrations.length > 0) {
+      fetchPhotos();
+    }
+  }, [registrations]);
+
+  const resolvePlayerPhoto = (p: RegistrationPlayer): string => {
+    const direct =
+      p.photo ||
+      p.photoUrl ||
+      p.avatar ||
+      p.profilePic ||
+      p.userPhoto ||
+      (p as any).image ||
+      (p as any).profileImage;
+
+    if (direct) {
+      if (direct.startsWith('http') || direct.startsWith('data:') || direct.startsWith('/')) {
+        return direct;
+      }
+      return UserService.getPhotoUrl(direct);
+    }
+
+    if (p.phoneNumber && playerPhotos[p.phoneNumber]) {
+      return playerPhotos[p.phoneNumber];
+    }
+
+    return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.playerName)}&backgroundColor=0ea5e9,10b981,8b5cf6,f59e0b`;
+  };
+
+  const verifyUmpirePhone = async (matchUuid: string, rawPhone: string): Promise<boolean> => {
+    const rawClean = rawPhone.trim().replace(/\D/g, '');
+    if (!rawClean) {
+      setUmpireVerification((prev) => ({
+        ...prev,
+        [matchUuid]: { valid: undefined },
+      }));
+      return true;
+    }
+
+    if (rawClean.length < 10) {
+      setUmpireVerification((prev) => ({
+        ...prev,
+        [matchUuid]: { checking: false, valid: false, error: 'Enter 10-digit phone number' },
+      }));
+      return false;
+    }
+
+    setUmpireVerification((prev) => ({
+      ...prev,
+      [matchUuid]: { checking: true },
+    }));
+
+    // Try last 10 digits as standard mobile number, or full number
+    const phonesToTry = [rawClean.slice(-10), rawClean];
+    const uniquePhones = Array.from(new Set(phonesToTry));
+
+    try {
+      let foundUser: UserResponse | null = null;
+      for (const p of uniquePhones) {
+        try {
+          const res = await UserService.getUserByPhone(p);
+          if (res?.data && (res.data.uuid || res.data.phone || res.data.firstName)) {
+            foundUser = res.data;
+            break;
+          }
+        } catch {
+          // try next
+        }
+      }
+
+      if (foundUser) {
+        const uName =
+          `${foundUser.firstName || ''} ${foundUser.lastName || ''}`.trim() ||
+          (foundUser as any).name ||
+          foundUser.phone ||
+          'Registered User';
+
+        setUmpireVerification((prev) => ({
+          ...prev,
+          [matchUuid]: { checking: false, valid: true, name: uName },
+        }));
+        return true;
+      } else {
+        setUmpireVerification((prev) => ({
+          ...prev,
+          [matchUuid]: { checking: false, valid: false, error: 'Not a registered user' },
+        }));
+        return false;
+      }
+    } catch {
+      setUmpireVerification((prev) => ({
+        ...prev,
+        [matchUuid]: { checking: false, valid: false, error: 'Not a registered user' },
+      }));
+      return false;
+    }
+  };
+
+  // Auto-verify umpire phone numbers of existing matches on load
+  useEffect(() => {
+    matches.forEach((m) => {
+      if (m.umpirePhone && m.uuid && !umpireVerification[m.uuid]) {
+        verifyUmpirePhone(m.uuid, m.umpirePhone);
+      }
+    });
+  }, [matches]);
+
+  const formatMatchDateTime = (dateStr?: string | null) => {
+    if (!dateStr) return 'Time TBA';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Time TBA';
+    
+    const day = d.getDate();
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const year = d.getFullYear();
+    const time = d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    
+    return `${day} ${month} ${year}, ${time}`;
+  };
 
   // Filters State
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'UNASSIGNED' | 'READY' | 'COMPLETED'>('ALL');
@@ -56,6 +219,7 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!tournamentId) return;
       try {
         setIsLoading(true);
         const tRes = await TournamentService.getById(tournamentId);
@@ -119,11 +283,36 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
         [field]: value
       }
     }));
+
+    if (field === 'umpirePhone') {
+      const clean = value.replace(/\D/g, '');
+      if (clean.length >= 10) {
+        verifyUmpirePhone(matchUuid, clean);
+      } else if (!clean) {
+        setUmpireVerification((prev) => ({
+          ...prev,
+          [matchUuid]: { valid: undefined },
+        }));
+      }
+    }
   };
 
   const handleSaveMatch = async (matchUuid: string) => {
     const edits = editState[matchUuid];
     if (!edits) return;
+
+    // Verify umpire phone if changed and non-empty
+    if (edits.umpirePhone !== undefined && edits.umpirePhone.trim() !== '') {
+      const isValid = await verifyUmpirePhone(matchUuid, edits.umpirePhone);
+      if (!isValid) {
+        setFeedback({
+          type: 'error',
+          message: `Cannot assign umpire: "${edits.umpirePhone}" is not a registered user. Please verify the phone number or have the umpire register first.`,
+        });
+        setTimeout(() => setFeedback(null), 4500);
+        return;
+      }
+    }
 
     setSavingMatches(prev => ({ ...prev, [matchUuid]: true }));
     try {
@@ -137,7 +326,7 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
       }
 
       if (edits.umpirePhone !== undefined) {
-        updatedMatch = await MatchService.updateUmpire(matchUuid, edits.umpirePhone);
+        updatedMatch = await MatchService.updateUmpire(matchUuid, edits.umpirePhone.trim());
       }
 
       if (edits.matchDate !== undefined || edits.matchTime !== undefined) {
@@ -323,7 +512,7 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-surface border border-border/80 rounded-2xl shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-primary" /> Match Assignments & Controls
+            <Trophy className="w-5 h-5 text-primary" /> Match Assignments
           </h2>
           <p className="text-sm text-text-muted mt-1">
             Assign courts, set match dates/times, and add umpire contacts for scheduled matches.
@@ -338,8 +527,8 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
       {feedback && (
         <div
           className={`p-4 rounded-xl border flex items-center gap-3 text-xs font-bold animate-in fade-in duration-200 ${feedback.type === 'success'
-              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-              : 'bg-red-500/15 text-red-400 border-red-500/30'
+            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+            : 'bg-red-500/15 text-red-400 border-red-500/30'
             }`}
         >
           {feedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
@@ -355,8 +544,8 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
           <button
             onClick={() => setStatusFilter('ALL')}
             className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'ALL'
-                ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10 ring-1 ring-primary'
-                : 'bg-surface border-border/80 hover:border-foreground/30'
+              ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10 ring-1 ring-primary'
+              : 'bg-surface border-border/80 hover:border-foreground/30'
               }`}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
@@ -377,16 +566,16 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
           <button
             onClick={() => setStatusFilter('UNASSIGNED')}
             className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'UNASSIGNED'
-                ? 'bg-amber-500/15 border-amber-500 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500'
-                : 'bg-surface border-border/80 hover:border-amber-500/40'
+              ? 'bg-amber-500/15 border-amber-500 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500'
+              : 'bg-surface border-border/80 hover:border-amber-500/40'
               }`}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Needs Setup</span>
               <div
                 className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${statusFilter === 'UNASSIGNED'
-                    ? 'bg-amber-500 text-black'
-                    : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
+                  ? 'bg-amber-500 text-black'
+                  : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
                   }`}
               >
                 {counts.unassigned}
@@ -402,16 +591,16 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
           <button
             onClick={() => setStatusFilter('READY')}
             className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'READY'
-                ? 'bg-emerald-500/15 border-emerald-500 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500'
-                : 'bg-surface border-border/80 hover:border-emerald-500/40'
+              ? 'bg-emerald-500/15 border-emerald-500 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500'
+              : 'bg-surface border-border/80 hover:border-emerald-500/40'
               }`}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Ready to Play</span>
               <div
                 className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${statusFilter === 'READY'
-                    ? 'bg-emerald-500 text-black'
-                    : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                  ? 'bg-emerald-500 text-black'
+                  : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
                   }`}
               >
                 {counts.ready}
@@ -427,16 +616,16 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
           <button
             onClick={() => setStatusFilter('COMPLETED')}
             className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between group ${statusFilter === 'COMPLETED'
-                ? 'bg-sky-500/15 border-sky-500 shadow-lg shadow-sky-500/10 ring-1 ring-sky-500'
-                : 'bg-surface border-border/80 hover:border-sky-500/40'
+              ? 'bg-sky-500/15 border-sky-500 shadow-lg shadow-sky-500/10 ring-1 ring-sky-500'
+              : 'bg-surface border-border/80 hover:border-sky-500/40'
               }`}
           >
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-sky-400">Finished</span>
               <div
                 className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${statusFilter === 'COMPLETED'
-                    ? 'bg-sky-500 text-black'
-                    : 'bg-sky-500/15 border border-sky-500/30 text-sky-400'
+                  ? 'bg-sky-500 text-black'
+                  : 'bg-sky-500/15 border border-sky-500/30 text-sky-400'
                   }`}
               >
                 {counts.completed}
@@ -461,8 +650,8 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
             <button
               onClick={() => setSelectedPool('ALL')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedPool === 'ALL'
-                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
-                  : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
+                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
                 }`}
             >
               All ({scheduledMatches.length})
@@ -475,8 +664,8 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
                   key={pool}
                   onClick={() => setSelectedPool(pool)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedPool === pool
-                      ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
-                      : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
+                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                    : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
                     }`}
                 >
                   {pool} ({poolCount})
@@ -488,8 +677,8 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
               <button
                 onClick={() => setSelectedPool('NO_POOL')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${selectedPool === 'NO_POOL'
-                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
-                    : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                  : 'bg-background hover:bg-white/5 border border-border text-foreground/70'
                   }`}
               >
                 Playoffs / Knockouts ({scheduledMatches.filter((m) => !m.poolName).length})
@@ -687,9 +876,7 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
                     <div className="flex items-center gap-1.5 text-xs text-text-muted font-medium">
                       <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
                       <span>
-                        {match.scheduledTime
-                          ? new Date(match.scheduledTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
-                          : 'Time TBA'}
+                        {formatMatchDateTime(match.scheduledTime)}
                       </span>
                     </div>
                   </div>
@@ -700,28 +887,56 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
                     {/* Team A Card */}
                     <div className="p-4 bg-background/60 border border-border/60 rounded-xl flex flex-col justify-between space-y-3">
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Side A</span>
-                          {teamA && <Users className="w-3.5 h-3.5 text-primary" />}
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h4 className={`font-extrabold text-base leading-tight truncate ${teamA ? 'text-foreground' : 'text-text-muted italic'}`}>
+                            {teamA ? teamA.teamName : 'TBD (Winner)'}
+                          </h4>
+                          {teamA && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {teamA.players && teamA.players.length >= 2 ? (
+                                <div className="flex -space-x-1.5 items-center">
+                                  {teamA.players.slice(0, 2).map((p, idx) => (
+                                    <img
+                                      key={idx}
+                                      src={resolvePlayerPhoto(p)}
+                                      alt={p.playerName}
+                                      className="w-5 h-5 rounded-full object-cover border border-background shadow-xs"
+                                    />
+                                  ))}
+                                </div>
+                              ) : (
+                                <Users className="w-4 h-4 text-primary" />
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <h4 className={`font-extrabold text-base leading-tight ${teamA ? 'text-foreground' : 'text-text-muted italic'}`}>
-                          {teamA ? teamA.teamName : 'TBD (Winner)'}
-                        </h4>
                       </div>
 
                       {/* Team A Players */}
                       {teamA && teamA.players && teamA.players.length > 0 && (
-                        <div className="flex flex-col gap-1.5 pt-2 border-t border-border/40">
-                          {teamA.players.map((p, pIdx) => (
-                            <div key={pIdx} className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-text-muted flex items-center gap-1.5">
-                                <User className="w-3 h-3 text-primary/70" /> {p.playerName}
-                              </span>
-                              {p.phoneNumber && (
-                                <span className="text-[10px] font-mono text-text-muted/70 bg-surface px-1.5 py-0.5 rounded">{p.phoneNumber}</span>
-                              )}
-                            </div>
-                          ))}
+                        <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+                          {teamA.players.map((p, pIdx) => {
+                            const photoUrl = resolvePlayerPhoto(p);
+                            return (
+                              <div key={pIdx} className="flex items-center justify-between text-xs py-0.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-5 h-5 rounded-full overflow-hidden border border-primary/30 bg-surface shrink-0 shadow-sm">
+                                    <img
+                                      src={photoUrl}
+                                      alt={p.playerName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <span className="font-semibold text-foreground/90 truncate">{p.playerName}</span>
+                                </div>
+                                {p.phoneNumber && (
+                                  <span className="text-[10px] font-mono text-text-muted bg-surface px-1.5 py-0.5 rounded border border-border/40 shrink-0 ml-2">
+                                    {p.phoneNumber}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -734,28 +949,56 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
                     {/* Team B Card */}
                     <div className="p-4 bg-background/60 border border-border/60 rounded-xl flex flex-col justify-between space-y-3">
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] font-black text-text-muted uppercase tracking-widest">Side B</span>
-                          {teamB && <Users className="w-3.5 h-3.5 text-emerald-400" />}
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h4 className={`font-extrabold text-base leading-tight truncate ${teamB ? 'text-foreground' : 'text-text-muted italic'}`}>
+                            {teamB ? teamB.teamName : 'TBD (Winner)'}
+                          </h4>
+                          {teamB && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {teamB.players && teamB.players.length >= 2 ? (
+                                <div className="flex -space-x-1.5 items-center">
+                                  {teamB.players.slice(0, 2).map((p, idx) => (
+                                    <img
+                                      key={idx}
+                                      src={resolvePlayerPhoto(p)}
+                                      alt={p.playerName}
+                                      className="w-5 h-5 rounded-full object-cover border border-background shadow-xs"
+                                    />
+                                  ))}
+                                </div>
+                              ) : (
+                                <Users className="w-4 h-4 text-emerald-400" />
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <h4 className={`font-extrabold text-base leading-tight ${teamB ? 'text-foreground' : 'text-text-muted italic'}`}>
-                          {teamB ? teamB.teamName : 'TBD (Winner)'}
-                        </h4>
                       </div>
 
                       {/* Team B Players */}
                       {teamB && teamB.players && teamB.players.length > 0 && (
-                        <div className="flex flex-col gap-1.5 pt-2 border-t border-border/40">
-                          {teamB.players.map((p, pIdx) => (
-                            <div key={pIdx} className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-text-muted flex items-center gap-1.5">
-                                <User className="w-3 h-3 text-emerald-400/70" /> {p.playerName}
-                              </span>
-                              {p.phoneNumber && (
-                                <span className="text-[10px] font-mono text-text-muted/70 bg-surface px-1.5 py-0.5 rounded">{p.phoneNumber}</span>
-                              )}
-                            </div>
-                          ))}
+                        <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
+                          {teamB.players.map((p, pIdx) => {
+                            const photoUrl = resolvePlayerPhoto(p);
+                            return (
+                              <div key={pIdx} className="flex items-center justify-between text-xs py-0.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-5 h-5 rounded-full overflow-hidden border border-emerald-500/30 bg-surface shrink-0 shadow-sm">
+                                    <img
+                                      src={photoUrl}
+                                      alt={p.playerName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <span className="font-semibold text-foreground/90 truncate">{p.playerName}</span>
+                                </div>
+                                {p.phoneNumber && (
+                                  <span className="text-[10px] font-mono text-text-muted bg-surface px-1.5 py-0.5 rounded border border-border/40 shrink-0 ml-2">
+                                    {p.phoneNumber}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -787,16 +1030,46 @@ export function MatchSetupSettings({ tournamentId }: MatchSetupSettingsProps) {
 
                     {/* Umpire Phone */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-emerald-400" /> Umpire Phone
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-emerald-400" /> Umpire Phone
+                        </label>
+                        {umpireVerification[match.uuid]?.checking ? (
+                          <span className="text-[10px] text-amber-400 flex items-center gap-1 font-bold">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Verifying user...
+                          </span>
+                        ) : umpireVerification[match.uuid]?.valid === true ? (
+                          <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-bold">
+                            <CheckCircle2 className="w-3 h-3" />{umpireVerification[match.uuid]?.name}
+                          </span>
+                        ) : umpireVerification[match.uuid]?.valid === false ? (
+                          <span className="text-[10px] text-red-400 flex items-center gap-1 font-bold">
+                            <AlertCircle className="w-3 h-3" /> {umpireVerification[match.uuid]?.error || 'Not an user'}
+                          </span>
+                        ) : null}
+                      </div>
                       <input
                         type="text"
                         placeholder="e.g. 9876543210"
-                        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:border-primary transition-colors"
+                        className={`w-full bg-surface border rounded-lg px-3 py-2 text-xs font-mono text-foreground focus:outline-none transition-colors ${umpireVerification[match.uuid]?.valid === false
+                          ? 'border-red-500/70 focus:border-red-500'
+                          : umpireVerification[match.uuid]?.valid === true
+                            ? 'border-emerald-500/70 focus:border-emerald-500'
+                            : 'border-border focus:border-primary'
+                          }`}
                         value={currentUmpirePhone || ''}
                         onChange={(e) => handleEditChange(match.uuid, 'umpirePhone', e.target.value)}
+                        onBlur={(e) => {
+                          if (e.target.value.trim()) {
+                            verifyUmpirePhone(match.uuid, e.target.value);
+                          }
+                        }}
                       />
+                      {umpireVerification[match.uuid]?.valid === false && (
+                        <p className="text-[10px] text-red-400 font-medium">
+                          Only registered users can be assigned as umpires.
+                        </p>
+                      )}
                     </div>
 
                   </div>

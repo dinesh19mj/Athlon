@@ -46,6 +46,9 @@ public class AcademyCentre {
     @Column(name = "state", length = 100)
     private String state;
 
+    @Column(name = "district", length = 100)
+    private String district;
+
     @Column(name = "postal_code", length = 30)
     private String postalCode;
 
@@ -173,6 +176,14 @@ public class AcademyCentre {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
     }
 
     public String getPostalCode() {

@@ -31,6 +31,8 @@ public class TournamentResponse {
     private String location;
     private String mapLink;
     private String contactPhone;
+    private String gpayNumber;
+    private String upiQrCode;
     private Double registrationFees;
     private String poster;
 
@@ -72,6 +74,8 @@ public class TournamentResponse {
         response.setLocation(tournament.getLocation());
         response.setMapLink(tournament.getMapLink());
         response.setContactPhone(tournament.getContactPhone());
+        response.setGpayNumber(tournament.getGpayNumber());
+        response.setUpiQrCode(tournament.getUpiQrCode());
         response.setRegistrationFees(tournament.getRegistrationFees());
         response.setPoster(tournament.getPoster());
 
@@ -239,6 +243,22 @@ public class TournamentResponse {
 
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
+    }
+
+    public String getGpayNumber() {
+        return gpayNumber;
+    }
+
+    public void setGpayNumber(String gpayNumber) {
+        this.gpayNumber = gpayNumber;
+    }
+
+    public String getUpiQrCode() {
+        return upiQrCode;
+    }
+
+    public void setUpiQrCode(String upiQrCode) {
+        this.upiQrCode = upiQrCode;
     }
 
     public Double getRegistrationFees() {

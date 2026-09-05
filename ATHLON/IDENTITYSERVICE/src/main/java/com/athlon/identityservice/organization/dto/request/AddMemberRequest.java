@@ -10,6 +10,7 @@ public class AddMemberRequest {
     private String phone;
 
     private String role = "MEMBER";
+    private String sportType;
 
     public AddMemberRequest() {
     }
@@ -17,6 +18,12 @@ public class AddMemberRequest {
     public AddMemberRequest(String phone, String role) {
         this.phone = phone;
         this.role = role != null ? role : "MEMBER";
+    }
+
+    public AddMemberRequest(String phone, String role, String sportType) {
+        this.phone = phone;
+        this.role = role != null ? role : "MEMBER";
+        this.sportType = sportType;
     }
 
     public String getPhone() {
@@ -33,5 +40,13 @@ public class AddMemberRequest {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getSportType() {
+        return sportType;
+    }
+
+    public void setSportType(String sportType) {
+        this.sportType = sportType;
     }
 }

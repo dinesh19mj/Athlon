@@ -87,6 +87,12 @@ public class Tournament {
 	@Column(name = "poster")
 	private String poster;
 
+	@Column(name = "gpaynumber")
+	private String gpayNumber;
+
+	@Column(name = "upiqrcode")
+	private String upiQrCode;
+
 	@Column(name = "status")
 	private String status;
 
@@ -333,6 +339,22 @@ public class Tournament {
 
 	public void setPoster(String poster) {
 		this.poster = poster;
+	}
+
+	public String getGpayNumber() {
+		return gpayNumber;
+	}
+
+	public void setGpayNumber(String gpayNumber) {
+		this.gpayNumber = gpayNumber;
+	}
+
+	public String getUpiQrCode() {
+		return upiQrCode;
+	}
+
+	public void setUpiQrCode(String upiQrCode) {
+		this.upiQrCode = upiQrCode;
 	}
 
 	public String getStatus() {

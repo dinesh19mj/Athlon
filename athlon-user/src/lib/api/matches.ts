@@ -52,5 +52,5 @@ export const MatchService = {
     api.get<{ data: any[] }>(`/api/tournament/matches/umpire/${encodeURIComponent(phone)}`),
     
   updateStatus: (uuid: string, status: string, winnerRegistrationId?: number) =>
-    api.put<{ data: any }>(`/api/tournament/matches/${uuid}/status?status=${status}${winnerRegistrationId ? `&winnerRegistrationId=${winnerRegistrationId}` : ''}`, {})
+    api.post<{ data: any }>(`/api/tournament/matches/${uuid}/status?status=${status}${winnerRegistrationId ? `&winnerRegistrationId=${winnerRegistrationId}` : ''}`, {})
 };

@@ -8,11 +8,13 @@ import Link from "next/link";
 import { CategoryService } from "@/lib/api/tournaments";
 import { OrganizationService } from "@/lib/api/organization";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { useOrgSports } from "@/lib/hooks/useOrgSports";
 
 export default function CreateCategoryPage() {
   const router = useRouter();
   const params = useParams();
   const orgUuid = params.orgId as string;
+  const { sports: orgSports } = useOrgSports(orgUuid);
 
   const { userId } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +29,12 @@ export default function CreateCategoryPage() {
     categoryName: "",
     sportType: "",
   });
+
+  useEffect(() => {
+    if (orgSports.length > 0 && !formData.sportType) {
+      setFormData((prev) => ({ ...prev, sportType: orgSports[0] }));
+    }
+  }, [orgSports, formData.sportType]);
 
   const handleSubmit = async () => {
     try {
@@ -60,23 +68,23 @@ export default function CreateCategoryPage() {
   };
 
   const inputClass =
-    "w-full bg-[#0D1520] border border-white/10 rounded-2xl px-4 py-4 text-white text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-white/25 font-medium";
+    "w-full bg-card border border-foreground/15 rounded-2xl px-4 py-4 text-foreground text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-foreground/35 font-medium";
 
-  const labelClass = "block text-[10px] font-black text-white/50 uppercase tracking-widest mb-2";
+  const labelClass = "block text-[10px] font-black text-foreground/60 uppercase tracking-widest mb-2";
 
   return (
-    <div className="min-h-screen bg-background pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-h-screen bg-background text-foreground pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-white/5 px-5 py-4 flex items-center gap-4">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-foreground/10 px-5 py-4 flex items-center gap-4">
         <Link 
           href={returnTo === "create-tournament" ? `/org/${orgUuid}/tournaments/create` : `/org/${orgUuid}/tournaments`} 
-          className="text-white/60 hover:text-white transition-colors"
+          className="text-foreground/60 hover:text-foreground transition-colors"
         >
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-primary" />
-          <span className="text-white/50 text-sm font-bold tracking-widest uppercase"> ADD CATEGORY</span>
+          <span className="text-foreground/60 text-sm font-bold tracking-widest uppercase"> ADD CATEGORY</span>
         </div>
       </div>
 
@@ -98,15 +106,16 @@ export default function CreateCategoryPage() {
         <div>
           <label className={labelClass}>Sport <span className="text-primary">*</span></label>
           <div className="grid grid-cols-2 gap-2">
-            {['Badminton', 'Cricket', 'Football', 'Volleyball'].map((sport) => (
+            {orgSports.map((sport) => (
               <button
                 key={sport}
                 type="button"
                 onClick={() => setFormData({ ...formData, sportType: sport })}
-                className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${formData.sportType === sport
-                  ? 'border-primary bg-primary/10 text-white'
-                  : 'border-white/10 bg-[#0D1520] text-white/50 hover:border-white/25 hover:text-white/80'
-                  }`}
+                className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
+                  formData.sportType.toLowerCase() === sport.toLowerCase()
+                    ? 'border-primary bg-primary/10 text-primary font-black'
+                    : 'border-foreground/10 bg-card text-foreground/70 hover:border-foreground/25 hover:text-foreground'
+                }`}
               >
                 {sport}
               </button>
@@ -118,7 +127,7 @@ export default function CreateCategoryPage() {
         <button
           onClick={handleSubmit}
           disabled={!formData.categoryName.trim() || !formData.sportType || isSubmitting}
-          className="w-full bg-primary disabled:opacity-40 disabled:cursor-not-allowed text-black text-base font-black uppercase tracking-wider py-5 rounded-2xl transition-all hover:bg-primary-dark active:scale-95 shadow-[0_8px_30px_rgba(27,156,86,0.3)] mt-8"
+          className="w-full bg-primary disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-black uppercase tracking-wider py-3.5 rounded-xl transition-all hover:bg-primary-dark active:scale-95 shadow-md shadow-primary/20 mt-4"
         >
           {isSubmitting ? "Adding..." : "Add Category"}
         </button>

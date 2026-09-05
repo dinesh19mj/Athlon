@@ -27,7 +27,7 @@ import {
   Gavel,
 } from 'lucide-react';
 import Link from 'next/link';
-import { ScoreService, LiveScore } from '@/lib/api/scores';
+import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
@@ -61,10 +61,10 @@ export default function LiveScorePage() {
       ]);
 
       if (liveRes && liveRes.data) {
-        setLiveScores(liveRes.data);
+        setLiveScores(liveRes.data.filter(isTournamentScore));
       }
       if (allRes && allRes.data) {
-        setAllScores(allRes.data);
+        setAllScores(allRes.data.filter(isTournamentScore));
       }
       const champList = (Array.isArray(champRes) ? champRes : ((champRes as any)?.data || [])) as TeamChampionship[];
       setLiveAuctions(champList.filter((c: TeamChampionship) => c.stage === 'AUCTION_STAGE' || c.stage === 'AUCTION_PAUSED'));
@@ -669,7 +669,7 @@ export default function LiveScorePage() {
           {/* 3D Circular Elevated Umpire Button */}
           <div className="relative -top-5 flex items-center justify-center">
             <Link
-              href="/match-setup"
+              href="/practice"
               className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
               style={{
                 backgroundColor: 'var(--athlon-primary)',

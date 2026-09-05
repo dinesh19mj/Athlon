@@ -123,6 +123,7 @@ export interface EnrollStudentPayload {
   bloodGroup?: string;
   level?: string;
   courtUuid?: string;
+  courtName?: string;
   batchUuid?: string;
   batchName?: string;
   batchTiming?: string;
@@ -138,6 +139,7 @@ export interface EnrollStudentPayload {
   monthlyFee?: number;
   feeFrequency?: string;
   feeStatus?: string;
+  status?: string;
 }
 
 export interface UpdateStudentPayload {
@@ -149,6 +151,7 @@ export interface UpdateStudentPayload {
   bloodGroup?: string;
   level?: string;
   courtUuid?: string;
+  courtName?: string;
   batchUuid?: string;
   batchName?: string;
   batchTiming?: string;
@@ -217,12 +220,12 @@ export const AcademyStudentService = {
   },
 
   updateCourt: async (payload: UpdateCourtPayload): Promise<AcademyCourt> => {
-    const res = await api.put<{ data: AcademyCourt }>(`/api/identity/academy/courts/update`, payload);
+    const res = await api.post<{ data: AcademyCourt }>(`/api/identity/academy/courts/update`, payload);
     return (res as any)?.data || res;
   },
 
   deleteCourt: async (courtUuid: string): Promise<void> => {
-    await api.delete(`/api/identity/academy/courts/${courtUuid}`);
+    await api.post(`/api/identity/academy/courts/delete/${courtUuid}`, {});
   },
 
   // STUDENTS
@@ -264,12 +267,12 @@ export const AcademyStudentService = {
   },
 
   updateStudent: async (payload: UpdateStudentPayload): Promise<AcademyStudent> => {
-    const res = await api.put<{ data: AcademyStudent }>(`/api/identity/academy/students/update`, payload);
+    const res = await api.post<{ data: AcademyStudent }>(`/api/identity/academy/students/update`, payload);
     return (res as any)?.data || res;
   },
 
   deleteStudent: async (studentUuid: string): Promise<void> => {
-    await api.delete(`/api/identity/academy/students/${studentUuid}`);
+    await api.post(`/api/identity/academy/students/delete/${studentUuid}`, {});
   },
 
   getSummary: async (organizationUuid: string): Promise<AcademySummary> => {
@@ -291,11 +294,11 @@ export const AcademyStudentService = {
   },
 
   updateBatch: async (payload: UpdateBatchPayload): Promise<AcademyBatch> => {
-    const res = await api.put<{ data: AcademyBatch }>(`/api/identity/academy/batches/update`, payload);
+    const res = await api.post<{ data: AcademyBatch }>(`/api/identity/academy/batches/update`, payload);
     return (res as any)?.data || res;
   },
 
   deleteBatch: async (batchUuid: string): Promise<void> => {
-    await api.delete(`/api/identity/academy/batches/${batchUuid}`);
+    await api.post(`/api/identity/academy/batches/delete/${batchUuid}`, {});
   }
 };

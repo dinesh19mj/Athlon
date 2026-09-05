@@ -74,16 +74,16 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
 
       {/* Sheet Content */}
       <div
-        className="relative z-10 w-full max-w-lg rounded-t-[32px] border-t border-border bg-[#0e1626] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col"
+        className="relative z-10 w-full max-w-lg rounded-t-[32px] border-t border-foreground/10 bg-surface p-6 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[85vh] flex flex-col"
         style={{
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
+          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.2)',
         }}
       >
         {/* Drag Handle */}
-        <div className="mx-auto -mt-2 mb-4 h-1.5 w-12 rounded-full bg-white/20" />
+        <div className="mx-auto -mt-2 mb-4 h-1.5 w-12 rounded-full bg-foreground/20" />
 
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-foreground/10">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
               <Activity className="w-5 h-5" />
@@ -93,12 +93,23 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
               <p className="text-[11px] text-foreground/50">Stored directly on this device</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/10 text-foreground/60 hover:text-foreground transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                onClose();
+                router.push('/practice');
+              }}
+              className="px-2.5 py-1 rounded-lg text-xs font-bold text-primary hover:bg-primary/10 transition-colors"
+            >
+              Open Hub
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-foreground/5 text-foreground/60 hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable list */}
@@ -108,7 +119,7 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
             <div>
               <div className="flex items-center gap-2 mb-2 pl-1">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                <span className="text-[11px] font-black uppercase tracking-wider text-red-400">
+                <span className="text-[11px] font-black uppercase tracking-wider text-red-500 dark:text-red-400">
                   Active Match In Progress
                 </span>
               </div>
@@ -116,19 +127,19 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
                 {activeMatches.map((m) => (
                   <div
                     key={m.id}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-red-500/10 via-surface to-red-500/5 border border-red-500/30 flex items-center justify-between gap-3 shadow-lg"
+                    className="p-4 rounded-2xl bg-surface border border-red-500/30 flex items-center justify-between gap-3 shadow-sm"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-wider border border-red-500/30">
+                        <span className="px-2 py-0.5 rounded-md bg-red-500/10 text-red-500 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider border border-red-500/20">
                           {m.sport}
                         </span>
-                        <span className="text-[11px] text-foreground/40 font-medium">
+                        <span className="text-[11px] text-foreground/50 font-medium">
                           {m.category} • {formatTime(m.createdAt)}
                         </span>
                       </div>
                       <div className="text-sm font-bold text-foreground truncate">
-                        {m.teamALabel} <span className="text-red-400 font-extrabold">VS</span> {m.teamBLabel}
+                        {m.teamALabel} <span className="text-red-500 dark:text-red-400 font-extrabold">VS</span> {m.teamBLabel}
                       </div>
                     </div>
 
@@ -142,7 +153,7 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
                       </button>
                       <button
                         onClick={() => removeRecord(m.id)}
-                        className="p-2 rounded-xl hover:bg-white/10 text-foreground/40 hover:text-red-400 transition-colors"
+                        className="p-2 rounded-xl hover:bg-foreground/10 text-foreground/40 hover:text-red-400 transition-colors"
                         title="Remove"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -163,7 +174,7 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
               {records.length > 0 && (
                 <button
                   onClick={clearAll}
-                  className="text-[11px] font-bold text-red-400/80 hover:text-red-400 transition-colors"
+                  className="text-[11px] font-bold text-red-500/80 hover:text-red-500 transition-colors"
                 >
                   Clear History
                 </button>
@@ -171,10 +182,10 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
             </div>
 
             {records.length === 0 ? (
-              <div className="py-8 px-4 text-center rounded-2xl bg-surface/40 border border-white/5 flex flex-col items-center justify-center gap-2">
-                <Swords className="w-8 h-8 text-foreground/20" />
-                <p className="text-sm font-semibold text-foreground/60">No local matches recorded yet</p>
-                <p className="text-xs text-foreground/40 max-w-xs">
+              <div className="py-8 px-4 text-center rounded-2xl bg-surface border border-foreground/10 flex flex-col items-center justify-center gap-2">
+                <Swords className="w-8 h-8 text-foreground/30" />
+                <p className="text-sm font-semibold text-foreground">No local matches recorded yet</p>
+                <p className="text-xs text-foreground/50 max-w-xs">
                   Quick matches started from the bottom bar will be saved here on your device.
                 </p>
               </div>
@@ -185,27 +196,27 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
                 {pastMatches.map((m) => (
                   <div
                     key={m.id}
-                    className="p-3.5 rounded-2xl bg-surface/60 border border-white/5 hover:border-white/10 flex items-center justify-between gap-3 transition-colors"
+                    className="p-3.5 rounded-2xl bg-surface border border-foreground/10 hover:border-foreground/20 flex items-center justify-between gap-3 transition-colors shadow-sm"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded-md bg-white/5 text-foreground/70 text-[10px] font-bold uppercase tracking-wider border border-white/10">
+                        <span className="px-2 py-0.5 rounded-md bg-foreground/5 text-foreground/70 text-[10px] font-bold uppercase tracking-wider border border-foreground/10">
                           {m.sport}
                         </span>
-                        <span className="text-[10px] text-foreground/40 font-medium">
+                        <span className="text-[10px] text-foreground/50 font-medium">
                           {formatDate(m.createdAt)} at {formatTime(m.createdAt)}
                         </span>
                         {m.winner && (
-                          <span className="px-1.5 py-0.2 rounded bg-green-500/10 text-green-400 text-[9px] font-bold">
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">
                             Winner: Team {m.winner}
                           </span>
                         )}
                       </div>
-                      <div className="text-xs font-semibold text-foreground/90 truncate">
+                      <div className="text-xs font-semibold text-foreground truncate">
                         {m.teamALabel} vs {m.teamBLabel}
                       </div>
                       {(m.scoreA || m.scoreB) && (
-                        <div className="text-[11px] font-mono text-primary mt-0.5">
+                        <div className="text-[11px] font-mono text-primary font-bold mt-0.5">
                           Score: {m.scoreA || '0'} - {m.scoreB || '0'}
                         </div>
                       )}
@@ -213,7 +224,7 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
 
                     <button
                       onClick={() => removeRecord(m.id)}
-                      className="p-2 rounded-lg hover:bg-white/10 text-foreground/30 hover:text-red-400 transition-colors"
+                      className="p-2 rounded-lg hover:bg-foreground/10 text-foreground/40 hover:text-red-500 transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -226,7 +237,7 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-white/10 flex items-center gap-3">
+        <div className="pt-4 border-t border-foreground/10 flex items-center gap-3">
           <button
             onClick={handleStartNew}
             className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -27,8 +27,14 @@ import {
   Loader2,
   Image as ImageIcon,
   Lock,
+  IndianRupee,
+  QrCode,
+  Copy,
+  Check,
+  ExternalLink,
+  Tag,
 } from 'lucide-react';
-import { TournamentService, Tournament } from '@/lib/api/tournaments';
+import { TournamentService, Tournament, RegistrationService, Registration } from '@/lib/api/tournaments';
 import { UserService, UserResponse } from '@/lib/api/user';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { api } from '@/lib/api/client';
@@ -47,6 +53,7 @@ export default function RegistrationPage() {
   const { userId, userUuid } = useAuthStore();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +61,81 @@ export default function RegistrationPage() {
 
   const [step, setStep] = useState(1);
   const [registrationType, setRegistrationType] = useState<'self' | 'someone_else'>('self');
+  const [copiedGPay, setCopiedGPay] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+  const categoriesList = useMemo(() => {
+    return tournament?.category
+      ? tournament.category.split(',').map((c) => c.trim()).filter(Boolean)
+      : [];
+  }, [tournament?.category]);
+
+  const validRegistrations = useMemo(
+    () => registrations.filter((r) => r.status?.toUpperCase() !== 'REJECTED'),
+    [registrations]
+  );
+
+  const totalPlayersCount = tournament?.playersCount || 0;
+  const categoryLimit = useMemo(() => {
+    if (categoriesList.length > 0 && totalPlayersCount > 0) {
+      return Math.ceil(totalPlayersCount / categoriesList.length);
+    }
+    return totalPlayersCount || 16;
+  }, [categoriesList.length, totalPlayersCount]);
+
+  const categoryCounts = useMemo(() => {
+    return categoriesList.reduce((acc, cat) => {
+      const count = validRegistrations.filter((reg) => {
+        if (reg.teamName) {
+          const match = reg.teamName.match(/\(([^)]+)\)$/) || reg.teamName.match(/\[([^\]]+)\]$/);
+          if (match && match[1]?.trim().toLowerCase() === cat.trim().toLowerCase()) {
+            return true;
+          }
+        }
+        if (reg.place && reg.place.trim().toLowerCase() === cat.trim().toLowerCase()) {
+          return true;
+        }
+        return false;
+      }).length;
+      acc[cat] = count;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [categoriesList, validRegistrations]);
+
+  const isCategoryLocked = (cat: string) => {
+    if (!totalPlayersCount) return false;
+    const currentCount = categoryCounts[cat] || 0;
+    return currentCount >= categoryLimit;
+  };
+
+  useEffect(() => {
+    if (tournament?.category && categoriesList.length > 0) {
+      // If current selected category is locked or not set, auto-select first available unlocked category
+      if (!selectedCategory || isCategoryLocked(selectedCategory)) {
+        const firstAvailable = categoriesList.find((c) => !isCategoryLocked(c));
+        if (firstAvailable) {
+          setSelectedCategory(firstAvailable);
+        } else {
+          setSelectedCategory('');
+        }
+      }
+    }
+  }, [tournament?.category, categoriesList, categoryCounts, categoryLimit, totalPlayersCount, selectedCategory]);
+
+  const handleCopyGPay = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (tournament?.gpayNumber) {
+      navigator.clipboard.writeText(tournament.gpayNumber);
+      setCopiedGPay(true);
+      setTimeout(() => setCopiedGPay(false), 2500);
+    }
+  };
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+  const qrCodePath = tournament?.upiQrCode ? tournament.upiQrCode.replace(/^\/([a-zA-Z]:)/, '$1') : '';
+  const qrCodeUrl = qrCodePath
+    ? `${baseUrl}/api/tournament/tournaments/getFile?filePath=${encodeURIComponent(qrCodePath)}`
+    : '';
 
   const [player1, setPlayer1] = useState({ name: '', phone: '' });
   const [player2, setPlayer2] = useState({ name: '', phone: '' });
@@ -84,7 +166,18 @@ export default function RegistrationPage() {
           TournamentService.getById(tournamentUuid),
           userUuid ? UserService.getUserByUuid(userUuid) : Promise.resolve(null),
         ]);
-        if (tRes.data) setTournament(tRes.data);
+        if (tRes.data) {
+          const tData = tRes.data;
+          setTournament(tData);
+          if (tData.tournamentId) {
+            try {
+              const rRes = await RegistrationService.getByTournament(tData.tournamentId);
+              setRegistrations(rRes.data || []);
+            } catch (e) {
+              console.error('Failed to load registrations', e);
+            }
+          }
+        }
         if (uRes?.data) setUserProfile(uRes.data);
       } catch (err) {
         console.error(err);
@@ -260,6 +353,12 @@ export default function RegistrationPage() {
 
   const handleSubmit = async () => {
     if (!tournament) return;
+
+    if (selectedCategory && isCategoryLocked(selectedCategory)) {
+      alert(`The category "${selectedCategory}" has reached its maximum team capacity (${categoryLimit} teams). Please select an available category.`);
+      return;
+    }
+
     setSubmitting(true);
 
     const players = [];
@@ -292,7 +391,10 @@ export default function RegistrationPage() {
 
     let finalTeamName = teamName;
     if (!finalTeamName) {
-      finalTeamName = isDoubles ? `${player1.name} & ${player2.name}` : player1.name;
+      const baseName = isDoubles ? `${player1.name} & ${player2.name}` : player1.name;
+      finalTeamName = selectedCategory ? `${baseName} (${selectedCategory})` : baseName;
+    } else if (selectedCategory && !finalTeamName.includes(selectedCategory)) {
+      finalTeamName = `${finalTeamName} (${selectedCategory})`;
     }
     if (isTeamEvent && userProfile && !finalTeamName) {
       finalTeamName = userProfile.firstName + "'s Team";
@@ -507,293 +609,588 @@ export default function RegistrationPage() {
               </p>
             </div>
 
-            {/* ── Registration type selector ──────────────────────────── */}
-            <div
-              className="p-1.5 rounded-2xl border grid grid-cols-2 gap-1"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-            >
-              <button
-                onClick={() => setRegistrationType('self')}
-                className={`relative py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2.5 ${registrationType === 'self'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 font-black'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/[0.04]'
-                  }`}
+            {/* ── Category Selection ──────────────────────────────────── */}
+            {categoriesList.length > 0 && (
+              <div
+                className="rounded-2xl border p-5 space-y-3 relative overflow-hidden shadow-sm"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
               >
-                <UserCheck className={`w-4 h-4 ${registrationType === 'self' ? 'text-primary-foreground' : 'text-foreground/40'}`} />
-                <span>I'm Playing</span>
-                {registrationType === 'self' && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-background" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-primary" />
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
+                        Select Category {categoriesList.length > 1 ? `(${categoriesList.length} Categories)` : ''}
+                      </h3>
+                      <p className="text-[10px] text-foreground/50">
+                        Maximum limit of {categoryLimit} teams per category
+                      </p>
+                    </div>
+                  </div>
+                  {selectedCategory && (
+                    <span className="px-2.5 py-0.5 rounded-lg bg-primary/15 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/30">
+                      {selectedCategory}
+                    </span>
+                  )}
+                </div>
+
+                {/* All categories full alert */}
+                {categoriesList.every((c) => isCategoryLocked(c)) && (
+                  <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2.5 text-xs text-red-400 font-bold">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>All categories have reached maximum team capacity. Registrations are currently full.</span>
+                  </div>
                 )}
-              </button>
 
-              <button
-                onClick={() => setRegistrationType('someone_else')}
-                className={`relative py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2.5 ${registrationType === 'someone_else'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 font-black'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/[0.04]'
-                  }`}
-              >
-                <UserPlus className={`w-4 h-4 ${registrationType === 'someone_else' ? 'text-primary-foreground' : 'text-foreground/40'}`} />
-                <span>For Others</span>
-                {registrationType === 'someone_else' && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-background" />
-                )}
-              </button>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                  {categoriesList.map((cat) => {
+                    const isSelected = selectedCategory === cat;
+                    const isLocked = isCategoryLocked(cat);
+                    const count = categoryCounts[cat] || 0;
+                    const remaining = Math.max(0, categoryLimit - count);
 
-            {/* Context hint */}
-            <div
-              className="px-4 py-2.5 rounded-xl border flex items-center gap-2 text-xs font-medium"
-              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-            >
-              {registrationType === 'self' ? (
-                <>
-                  <Star className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="text-foreground/60">
-                    Your profile details have been pre-filled. Enter your doubles partner details below.
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="text-foreground/60">
-                    Enter the phone numbers. If registered on Athlon, details will auto-sync; otherwise, you can attach their player photo.
-                  </span>
-                </>
-              )}
-            </div>
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        disabled={isLocked}
+                        onClick={() => !isLocked && setSelectedCategory(cat)}
+                        className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between gap-2.5 relative overflow-hidden ${
+                          isLocked
+                            ? 'opacity-65 cursor-not-allowed border-red-500/25 bg-red-500/5 text-foreground/50'
+                            : isSelected
+                            ? 'border-primary bg-primary/15 text-primary shadow-sm ring-1 ring-primary font-black'
+                            : 'border-border bg-surface hover:border-foreground/25 text-foreground font-bold'
+                        }`}
+                        style={{
+                          backgroundColor: isLocked ? undefined : isSelected ? undefined : 'var(--athlon-surface)',
+                          borderColor: isLocked ? undefined : isSelected ? undefined : 'var(--athlon-border)',
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2 w-full">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className={`w-2 h-2 rounded-full shrink-0 ${
+                                isLocked ? 'bg-red-400' : isSelected ? 'bg-primary' : 'bg-foreground/30'
+                              }`}
+                            />
+                            <span className="text-xs font-black truncate">{cat}</span>
+                          </div>
+                          {isLocked ? (
+                            <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-black uppercase flex items-center gap-1 shrink-0 border border-red-500/30">
+                              <Lock className="w-2.5 h-2.5" /> Full
+                            </span>
+                          ) : isSelected ? (
+                            <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                          ) : null}
+                        </div>
 
-            {/* ── Team Name (TEAM_EVENT only) ────────────────────────── */}
-            {isTeamEvent && (
-              <div className="space-y-2">
-                <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 flex items-center gap-1.5 pl-1">
-                  <Users className="w-3 h-3" />
-                  Team Name <span className="text-primary">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border text-sm font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    borderColor: 'var(--athlon-border)',
-                    color: 'var(--athlon-text)',
-                  }}
-                  placeholder="e.g. The Smashers"
-                />
+                        <div className="flex items-center justify-between text-[10px] w-full pt-1.5 border-t border-white/5">
+                          <span className={isLocked ? 'text-red-400 font-bold' : 'text-foreground/50 font-medium'}>
+                            {count} / {categoryLimit} Teams
+                          </span>
+                          {!isLocked && (
+                            <span className="text-primary/80 font-bold">
+                              {remaining} spot{remaining === 1 ? '' : 's'} left
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            {/* ── Primary Player Card (Me / Player 1) ─────────────────── */}
-            <div
-              className="rounded-2xl border p-5 space-y-5 relative overflow-hidden"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary/50" />
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
-                  <User className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm text-foreground">
-                    {isTeamEvent
-                      ? 'Team Owner / Captain'
-                      : registrationType === 'self'
-                        ? 'Me'
-                        : isDoubles
-                          ? 'Player 1'
-                          : 'Player'}
-                  </h3>
-                  <p className="text-[10px] text-foreground/45 font-medium">Primary registration contact</p>
-                </div>
+            {/* ════════════════════════════════════════════════════════════
+                MOBILE VIEW DESIGN (md:hidden) - Ultra-stylish Mobile UI
+               ════════════════════════════════════════════════════════════ */}
+            <div className="space-y-4 md:hidden">
+              {/* 1. Modern Mobile Segmented Switcher */}
+              <div
+                className="p-1 rounded-2xl border shadow-md flex items-center gap-1 backdrop-blur-xl relative"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setRegistrationType('self')}
+                  className={`flex-1 py-3 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 relative ${
+                    registrationType === 'self'
+                      ? 'bg-primary text-black shadow-md shadow-primary/25 font-black scale-[1.01]'
+                      : 'text-foreground/60 hover:text-foreground font-bold'
+                  }`}
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>I'm Playing</span>
+                  {registrationType === 'self' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+                  )}
+                </button>
 
-                {registrationType === 'self' && (
-                  <span className="ml-auto px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <BadgeCheck className="w-3 h-3" />
-                    Verified
-                  </span>
-                )}
-
-                {registrationType === 'someone_else' && (
-                  <div className="ml-auto">
-                    {player1Check.isChecking && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Verifying...
-                      </span>
-                    )}
-                    {!player1Check.isChecking && player1Check.isAppUser === true && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                        <BadgeCheck className="w-3 h-3" /> Verified
-                      </span>
-                    )}
-                    {!player1Check.isChecking && player1Check.isAppUser === false && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> Unregistered
-                      </span>
-                    )}
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setRegistrationType('someone_else')}
+                  className={`flex-1 py-3 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 relative ${
+                    registrationType === 'someone_else'
+                      ? 'bg-primary text-black shadow-md shadow-primary/25 font-black scale-[1.01]'
+                      : 'text-foreground/60 hover:text-foreground font-bold'
+                  }`}
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>For Others</span>
+                  {registrationType === 'someone_else' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+                  )}
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 pl-0.5 flex items-center gap-1.5">
-                    <Phone className="w-3 h-3" /> Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={player1.phone}
-                    onChange={(e) => setPlayer1({ ...player1, phone: e.target.value })}
-                    disabled={registrationType === 'self'}
-                    className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30 disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: 'var(--athlon-surface)',
-                      borderColor: 'var(--athlon-border-subtle)',
-                      color: 'var(--athlon-text)',
-                    }}
-                    placeholder="+91 98765 43210"
-                  />
+              {/* 2. Mobile Context Hint Capsule */}
+              <div
+                className="p-3 rounded-2xl border flex items-center gap-2.5 shadow-sm"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border-subtle)',
+                }}
+              >
+                <div className="w-7 h-7 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
+                  {registrationType === 'self' ? <Star className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
                 </div>
+                <span className="text-[11px] font-medium leading-snug text-foreground/70">
+                  {registrationType === 'self'
+                    ? 'Your profile is pre-filled. Enter your partner details below.'
+                    : 'Enter phone numbers. Registered athletes will auto-sync.'}
+                </span>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 pl-0.5 flex items-center gap-1.5">
-                    <User className="w-3 h-3" /> Full Name
+              {/* 3. Mobile Team Name Field (TEAM_EVENT only) */}
+              {isTeamEvent && (
+                <div
+                  className="p-4 rounded-2xl border space-y-2 shadow-sm"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <label className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" /> Team Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
-                    value={player1.name}
-                    onChange={(e) => setPlayer1({ ...player1, name: e.target.value })}
-                    disabled={registrationType === 'self'}
-                    className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border text-sm font-bold focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30"
                     style={{
                       backgroundColor: 'var(--athlon-surface)',
                       borderColor: 'var(--athlon-border-subtle)',
                       color: 'var(--athlon-text)',
                     }}
-                    placeholder="Full name"
+                    placeholder="e.g. The Smashers"
                   />
                 </div>
-              </div>
+              )}
 
-              {/* ── Photo Upload Provision for Player 1 (When Unregistered) ── */}
-              {registrationType === 'someone_else' && player1Check.isAppUser === false && (
-                <div
-                  className="p-4 rounded-xl border space-y-3 animate-in fade-in duration-300"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Camera className="w-4 h-4 text-amber-400" />
-                      <div>
-                        <span className="text-xs font-black text-foreground block">Player Photo (ID & Scorecard)</span>
-                        <span className="text-[10px] text-foreground/50">
-                          Since this athlete is not registered on Athlon, upload their photo.
-                        </span>
-                      </div>
+              {/* 4. Mobile Primary Player Card (Me / Player 1) */}
+              <div
+                className="rounded-3xl border p-4 space-y-3.5 relative overflow-hidden shadow-md"
+                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-emerald-400 to-primary/40" />
+
+                <div className="flex items-center justify-between gap-3 pt-0.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/25 to-emerald-500/10 border border-primary/35 flex items-center justify-center text-primary shrink-0 shadow-inner">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-foreground leading-tight">
+                        {isTeamEvent
+                          ? 'Team Owner / Captain'
+                          : registrationType === 'self'
+                            ? 'Me'
+                            : isDoubles
+                              ? 'Player 1'
+                              : 'Player'}
+                      </h3>
+                      <p className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider mt-0.5">
+                        Primary Contact
+                      </p>
                     </div>
                   </div>
 
-                  <input
-                    type="file"
-                    ref={player1FileInputRef}
-                    accept="image/*"
-                    onChange={(e) => handlePhotoUpload(e, 1)}
-                    className="hidden"
-                  />
+                  {registrationType === 'self' && (
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                      <BadgeCheck className="w-3.5 h-3.5" />
+                      Verified
+                    </span>
+                  )}
 
-                  {player1Check.photo ? (
-                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-black/20 border border-white/10">
-                      <img
-                        src={player1Check.photo}
-                        alt="Player 1"
-                        className="w-12 h-12 rounded-xl object-cover border border-primary/40 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-bold text-foreground block truncate">Photo Attached</span>
-                        <span className="text-[10px] text-emerald-400 font-bold">Ready for Scorecard Display</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => player1FileInputRef.current?.click()}
-                          className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/10 hover:bg-white/20 text-foreground transition-colors"
-                        >
-                          Change
-                        </button>
+                  {registrationType === 'someone_else' && (
+                    <div>
+                      {player1Check.isChecking && (
+                        <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Verifying
+                        </span>
+                      )}
+                      {!player1Check.isChecking && player1Check.isAppUser === true && (
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                          <BadgeCheck className="w-3.5 h-3.5" /> Verified
+                        </span>
+                      )}
+                      {!player1Check.isChecking && player1Check.isAppUser === false && (
+                        <span className="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> Unregistered
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile Grouped Fields Box */}
+                <div
+                  className="rounded-2xl border divide-y divide-white/5 overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border-subtle)',
+                  }}
+                >
+                  <div className="p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-foreground/50 shrink-0">
+                      <Phone className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Phone</span>
+                    </div>
+                    <input
+                      type="tel"
+                      value={player1.phone}
+                      onChange={(e) => setPlayer1({ ...player1, phone: e.target.value })}
+                      disabled={registrationType === 'self'}
+                      className="text-right text-xs font-bold bg-transparent focus:outline-none placeholder:text-foreground/30 disabled:opacity-80 flex-1 min-w-0"
+                      style={{ color: 'var(--athlon-text)' }}
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+
+                  <div className="p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-foreground/50 shrink-0">
+                      <User className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Name</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={player1.name}
+                      onChange={(e) => setPlayer1({ ...player1, name: e.target.value })}
+                      disabled={registrationType === 'self'}
+                      className="text-right text-xs font-bold bg-transparent focus:outline-none placeholder:text-foreground/30 disabled:opacity-80 flex-1 min-w-0"
+                      style={{ color: 'var(--athlon-text)' }}
+                      placeholder="Full name"
+                    />
+                  </div>
+                </div>
+
+                {/* Mobile Photo Upload for Player 1 */}
+                {registrationType === 'someone_else' && player1Check.isAppUser === false && (
+                  <div
+                    className="p-3 rounded-2xl border space-y-2.5 animate-in fade-in duration-300"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-amber-400" />
+                      <span className="text-[11px] font-black text-foreground">Player Photo (Optional)</span>
+                    </div>
+                    {player1Check.photo ? (
+                      <div className="flex items-center gap-2.5 p-2 rounded-xl bg-black/20 border border-white/10">
+                        <img src={player1Check.photo} alt="Player 1" className="w-10 h-10 rounded-lg object-cover" />
+                        <span className="text-xs font-bold text-foreground flex-1 truncate">Photo Attached</span>
                         <button
                           type="button"
                           onClick={() => handleRemovePhoto(1)}
-                          className="p-1.5 text-foreground/40 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                          className="p-1 text-foreground/40 hover:text-red-400"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => player1FileInputRef.current?.click()}
+                        className="w-full py-2.5 px-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 text-xs font-bold text-primary flex items-center justify-center gap-2"
+                      >
+                        <Upload className="w-3.5 h-3.5" /> Upload Photo
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Mobile Player 2 ("Doubles Partner") Card */}
+              {isDoubles && (
+                <div
+                  className="rounded-3xl border p-4 space-y-3.5 relative overflow-hidden shadow-md"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500/40" />
+
+                  <div className="flex items-center justify-between gap-3 pt-0.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/25 to-cyan-500/10 border border-blue-500/35 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-sm text-foreground leading-tight">Doubles Partner</h3>
+                        <p className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider mt-0.5">
+                          Partner in Event
+                        </p>
+                      </div>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => player1FileInputRef.current?.click()}
-                      className="w-full py-3 px-4 rounded-xl border border-dashed border-white/20 hover:border-primary/50 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center gap-2 text-xs font-bold text-foreground/75 hover:text-foreground transition-all"
+
+                    <div>
+                      {player2Check.isChecking && (
+                        <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Checking
+                        </span>
+                      )}
+                      {!player2Check.isChecking && player2Check.isAppUser === true && (
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                          <BadgeCheck className="w-3.5 h-3.5" /> Verified
+                        </span>
+                      )}
+                      {!player2Check.isChecking && player2Check.isAppUser === false && (
+                        <span className="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" /> Unregistered
+                        </span>
+                      )}
+                      {player2Check.isAppUser === null && (
+                        <span className="px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-500 dark:text-blue-400 border border-blue-500/30 text-[10px] font-black uppercase tracking-wider">
+                          Required
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mobile Grouped Fields Box for Partner */}
+                  <div
+                    className="rounded-2xl border divide-y divide-white/5 overflow-hidden"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border-subtle)',
+                    }}
+                  >
+                    <div className="p-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-foreground/50 shrink-0">
+                        <Phone className="w-3.5 h-3.5 text-blue-400" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Partner Phone</span>
+                      </div>
+                      <input
+                        type="tel"
+                        value={player2.phone}
+                        onChange={(e) => setPlayer2({ ...player2, phone: e.target.value })}
+                        className="text-right text-xs font-bold bg-transparent focus:outline-none placeholder:text-foreground/30 flex-1 min-w-0"
+                        style={{ color: 'var(--athlon-text)' }}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+
+                    <div className="p-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-foreground/50 shrink-0">
+                        <User className="w-3.5 h-3.5 text-blue-400" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Partner Name</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={player2.name}
+                        onChange={(e) => setPlayer2({ ...player2, name: e.target.value })}
+                        className="text-right text-xs font-bold bg-transparent focus:outline-none placeholder:text-foreground/30 flex-1 min-w-0"
+                        style={{ color: 'var(--athlon-text)' }}
+                        placeholder="Partner's full name"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mobile Photo Upload for Partner */}
+                  {player2Check.isAppUser === false && (
+                    <div
+                      className="p-3 rounded-2xl border space-y-2.5 animate-in fade-in duration-300"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                     >
-                      <Upload className="w-4 h-4 text-primary" />
-                      <span>Upload Player 1 Photo (Optional)</span>
-                    </button>
+                      <div className="flex items-center gap-2">
+                        <Camera className="w-4 h-4 text-amber-400" />
+                        <span className="text-[11px] font-black text-foreground">Partner Photo (Optional)</span>
+                      </div>
+                      {player2Check.photo ? (
+                        <div className="flex items-center gap-2.5 p-2 rounded-xl bg-black/20 border border-white/10">
+                          <img src={player2Check.photo} alt="Player 2" className="w-10 h-10 rounded-lg object-cover" />
+                          <span className="text-xs font-bold text-foreground flex-1 truncate">Partner Photo Attached</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(2)}
+                            className="p-1 text-foreground/40 hover:text-red-400"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => player2FileInputRef.current?.click()}
+                          className="w-full py-2.5 px-3 rounded-xl border border-dashed border-blue-500/40 bg-blue-500/5 text-xs font-bold text-blue-400 flex items-center justify-center gap-2"
+                        >
+                          <Upload className="w-3.5 h-3.5" /> Upload Partner Photo
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* ── Partner Card (Doubles only) ────────────────────────── */}
-            {isDoubles && (
+            {/* ════════════════════════════════════════════════════════════
+                DESKTOP VIEW DESIGN (hidden md:block) - Untouched Desktop UI
+               ════════════════════════════════════════════════════════════ */}
+            <div className="hidden md:block space-y-6">
+              {/* ── Registration type selector ──────────────────────────── */}
+              <div
+                className="p-1.5 rounded-2xl border grid grid-cols-2 gap-1"
+                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setRegistrationType('self')}
+                  className={`relative py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2.5 ${registrationType === 'self'
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 font-black'
+                    : 'text-foreground/50 hover:text-foreground hover:bg-white/[0.04]'
+                    }`}
+                >
+                  <UserCheck className={`w-4 h-4 ${registrationType === 'self' ? 'text-primary-foreground' : 'text-foreground/40'}`} />
+                  <span>I'm Playing</span>
+                  {registrationType === 'self' && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-background" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRegistrationType('someone_else')}
+                  className={`relative py-3.5 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2.5 ${registrationType === 'someone_else'
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 font-black'
+                    : 'text-foreground/50 hover:text-foreground hover:bg-white/[0.04]'
+                    }`}
+                >
+                  <UserPlus className={`w-4 h-4 ${registrationType === 'someone_else' ? 'text-primary-foreground' : 'text-foreground/40'}`} />
+                  <span>For Others</span>
+                  {registrationType === 'someone_else' && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-background" />
+                  )}
+                </button>
+              </div>
+
+              {/* Context hint */}
+              <div
+                className="px-4 py-2.5 rounded-xl border flex items-center gap-2 text-xs font-medium"
+                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+              >
+                {registrationType === 'self' ? (
+                  <>
+                    <Star className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="text-foreground/60">
+                      Your profile details have been pre-filled. Enter your doubles partner details below.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-foreground/60">
+                      Enter the phone numbers. If registered on Athlon, details will auto-sync; otherwise, you can attach their player photo.
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* ── Team Name (TEAM_EVENT only) ────────────────────────── */}
+              {isTeamEvent && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 flex items-center gap-1.5 pl-1">
+                    <Users className="w-3 h-3" />
+                    Team Name <span className="text-primary">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    className="w-full px-4 py-3.5 rounded-xl border text-sm font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                      color: 'var(--athlon-text)',
+                    }}
+                    placeholder="e.g. The Smashers"
+                  />
+                </div>
+              )}
+
+              {/* ── Primary Player Card (Me / Player 1) ─────────────────── */}
               <div
                 className="rounded-2xl border p-5 space-y-5 relative overflow-hidden"
                 style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               >
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500/50" />
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary/50" />
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
-                    <Users className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                    <User className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-black text-sm text-foreground">Doubles Partner</h3>
-                    <p className="text-[10px] text-foreground/45 font-medium">Your partner in this event</p>
+                    <h3 className="font-black text-sm text-foreground">
+                      {isTeamEvent
+                        ? 'Team Owner / Captain'
+                        : registrationType === 'self'
+                          ? 'Me'
+                          : isDoubles
+                            ? 'Player 1'
+                            : 'Player'}
+                    </h3>
+                    <p className="text-[10px] text-foreground/45 font-medium">Primary registration contact</p>
                   </div>
 
-                  <div className="ml-auto">
-                    {player2Check.isChecking && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Checking...
-                      </span>
-                    )}
-                    {!player2Check.isChecking && player2Check.isAppUser === true && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                        <BadgeCheck className="w-3 h-3" /> Verified
-                      </span>
-                    )}
-                    {!player2Check.isChecking && player2Check.isAppUser === false && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> Unregistered
-                      </span>
-                    )}
-                    {player2Check.isAppUser === null && (
-                      <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-black uppercase tracking-wider">
-                        Required
-                      </span>
-                    )}
-                  </div>
+                  {registrationType === 'self' && (
+                    <span className="ml-auto px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <BadgeCheck className="w-3 h-3" />
+                      Verified
+                    </span>
+                  )}
+
+                  {registrationType === 'someone_else' && (
+                    <div className="ml-auto">
+                      {player1Check.isChecking && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Verifying...
+                        </span>
+                      )}
+                      {!player1Check.isChecking && player1Check.isAppUser === true && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <BadgeCheck className="w-3 h-3" /> Verified
+                        </span>
+                      )}
+                      {!player1Check.isChecking && player1Check.isAppUser === false && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> Unregistered
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 pl-0.5 flex items-center gap-1.5">
-                      <Phone className="w-3 h-3" /> Partner's Phone
+                      <Phone className="w-3 h-3" /> Phone Number
                     </label>
                     <input
                       type="tel"
-                      value={player2.phone}
-                      onChange={(e) => setPlayer2({ ...player2, phone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-blue-500 transition-all placeholder:text-foreground/30"
+                      value={player1.phone}
+                      onChange={(e) => setPlayer1({ ...player1, phone: e.target.value })}
+                      disabled={registrationType === 'self'}
+                      className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30 disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{
                         backgroundColor: 'var(--athlon-surface)',
                         borderColor: 'var(--athlon-border-subtle)',
@@ -805,25 +1202,26 @@ export default function RegistrationPage() {
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 pl-0.5 flex items-center gap-1.5">
-                      <User className="w-3 h-3" /> Partner's Full Name
+                      <User className="w-3 h-3" /> Full Name
                     </label>
                     <input
                       type="text"
-                      value={player2.name}
-                      onChange={(e) => setPlayer2({ ...player2, name: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-blue-500 transition-all placeholder:text-foreground/30"
+                      value={player1.name}
+                      onChange={(e) => setPlayer1({ ...player1, name: e.target.value })}
+                      disabled={registrationType === 'self'}
+                      className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30 disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{
                         backgroundColor: 'var(--athlon-surface)',
                         borderColor: 'var(--athlon-border-subtle)',
                         color: 'var(--athlon-text)',
                       }}
-                      placeholder="Partner's full name"
+                      placeholder="Full name"
                     />
                   </div>
                 </div>
 
-                {/* ── Photo Upload Provision for Player 2 (When Unregistered) ── */}
-                {player2Check.isAppUser === false && (
+                {/* ── Photo Upload Provision for Player 1 (When Unregistered) ── */}
+                {registrationType === 'someone_else' && player1Check.isAppUser === false && (
                   <div
                     className="p-4 rounded-xl border space-y-3 animate-in fade-in duration-300"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
@@ -832,9 +1230,9 @@ export default function RegistrationPage() {
                       <div className="flex items-center gap-2">
                         <Camera className="w-4 h-4 text-amber-400" />
                         <div>
-                          <span className="text-xs font-black text-foreground block">Partner Photo (ID & Scorecard)</span>
+                          <span className="text-xs font-black text-foreground block">Player Photo (ID & Scorecard)</span>
                           <span className="text-[10px] text-foreground/50">
-                            Partner is not an Athlon app user. Upload their photo for referee & scorecard verification.
+                            Since this athlete is not registered on Athlon, upload their photo.
                           </span>
                         </div>
                       </div>
@@ -842,34 +1240,34 @@ export default function RegistrationPage() {
 
                     <input
                       type="file"
-                      ref={player2FileInputRef}
+                      ref={player1FileInputRef}
                       accept="image/*"
-                      onChange={(e) => handlePhotoUpload(e, 2)}
+                      onChange={(e) => handlePhotoUpload(e, 1)}
                       className="hidden"
                     />
 
-                    {player2Check.photo ? (
+                    {player1Check.photo ? (
                       <div className="flex items-center gap-3 p-2.5 rounded-xl bg-black/20 border border-white/10">
                         <img
-                          src={player2Check.photo}
-                          alt="Player 2"
-                          className="w-12 h-12 rounded-xl object-cover border border-blue-500/40 shrink-0"
+                          src={player1Check.photo}
+                          alt="Player 1"
+                          className="w-12 h-12 rounded-xl object-cover border border-primary/40 shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs font-bold text-foreground block truncate">Partner Photo Attached</span>
+                          <span className="text-xs font-bold text-foreground block truncate">Photo Attached</span>
                           <span className="text-[10px] text-emerald-400 font-bold">Ready for Scorecard Display</span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
-                            onClick={() => player2FileInputRef.current?.click()}
+                            onClick={() => player1FileInputRef.current?.click()}
                             className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/10 hover:bg-white/20 text-foreground transition-colors"
                           >
                             Change
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleRemovePhoto(2)}
+                            onClick={() => handleRemovePhoto(1)}
                             className="p-1.5 text-foreground/40 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -879,17 +1277,164 @@ export default function RegistrationPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => player2FileInputRef.current?.click()}
-                        className="w-full py-3 px-4 rounded-xl border border-dashed border-white/20 hover:border-blue-500/50 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center gap-2 text-xs font-bold text-foreground/75 hover:text-foreground transition-all"
+                        onClick={() => player1FileInputRef.current?.click()}
+                        className="w-full py-3 px-4 rounded-xl border border-dashed border-white/20 hover:border-primary/50 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center gap-2 text-xs font-bold text-foreground/75 hover:text-foreground transition-all"
                       >
-                        <Upload className="w-4 h-4 text-blue-400" />
-                        <span>Upload Partner Photo (Optional)</span>
+                        <Upload className="w-4 h-4 text-primary" />
+                        <span>Upload Player 1 Photo (Optional)</span>
                       </button>
                     )}
                   </div>
                 )}
               </div>
-            )}
+
+              {/* ── Partner Card (Doubles only) ────────────────────────── */}
+              {isDoubles && (
+                <div
+                  className="rounded-2xl border p-5 space-y-5 relative overflow-hidden"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500/50" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-foreground">Doubles Partner</h3>
+                      <p className="text-[10px] text-foreground/45 font-medium">Your partner in this event</p>
+                    </div>
+
+                    <div className="ml-auto">
+                      {player2Check.isChecking && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Checking...
+                        </span>
+                      )}
+                      {!player2Check.isChecking && player2Check.isAppUser === true && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <BadgeCheck className="w-3 h-3" /> Verified
+                        </span>
+                      )}
+                      {!player2Check.isChecking && player2Check.isAppUser === false && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> Unregistered
+                        </span>
+                      )}
+                      {player2Check.isAppUser === null && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-black uppercase tracking-wider">
+                          Required
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 pl-0.5 flex items-center gap-1.5">
+                        <Phone className="w-3 h-3" /> Partner's Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={player2.phone}
+                        onChange={(e) => setPlayer2({ ...player2, phone: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-blue-500 transition-all placeholder:text-foreground/30"
+                        style={{
+                          backgroundColor: 'var(--athlon-surface)',
+                          borderColor: 'var(--athlon-border-subtle)',
+                          color: 'var(--athlon-text)',
+                        }}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/45 pl-0.5 flex items-center gap-1.5">
+                        <User className="w-3 h-3" /> Partner's Full Name
+                      </label>
+                      <input
+                        type="text"
+                        value={player2.name}
+                        onChange={(e) => setPlayer2({ ...player2, name: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:border-blue-500 transition-all placeholder:text-foreground/30"
+                        style={{
+                          backgroundColor: 'var(--athlon-surface)',
+                          borderColor: 'var(--athlon-border-subtle)',
+                          color: 'var(--athlon-text)',
+                        }}
+                        placeholder="Partner's full name"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Photo Upload Provision for Player 2 (When Unregistered) ── */}
+                  {player2Check.isAppUser === false && (
+                    <div
+                      className="p-4 rounded-xl border space-y-3 animate-in fade-in duration-300"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Camera className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="text-xs font-black text-foreground block">Partner Photo (ID & Scorecard)</span>
+                            <span className="text-[10px] text-foreground/50">
+                              Partner is not an Athlon app user. Upload their photo for referee & scorecard verification.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <input
+                        type="file"
+                        ref={player2FileInputRef}
+                        accept="image/*"
+                        onChange={(e) => handlePhotoUpload(e, 2)}
+                        className="hidden"
+                      />
+
+                      {player2Check.photo ? (
+                        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-black/20 border border-white/10">
+                          <img
+                            src={player2Check.photo}
+                            alt="Player 2"
+                            className="w-12 h-12 rounded-xl object-cover border border-blue-500/40 shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-bold text-foreground block truncate">Partner Photo Attached</span>
+                            <span className="text-[10px] text-emerald-400 font-bold">Ready for Scorecard Display</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => player2FileInputRef.current?.click()}
+                              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/10 hover:bg-white/20 text-foreground transition-colors"
+                            >
+                              Change
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(2)}
+                              className="p-1.5 text-foreground/40 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => player2FileInputRef.current?.click()}
+                          className="w-full py-3 px-4 rounded-xl border border-dashed border-white/20 hover:border-blue-500/50 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center gap-2 text-xs font-bold text-foreground/75 hover:text-foreground transition-all"
+                        >
+                          <Upload className="w-4 h-4 text-blue-400" />
+                          <span>Upload Partner Photo (Optional)</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* ── Continue button ────────────────────────────────────── */}
             <button
@@ -897,7 +1442,8 @@ export default function RegistrationPage() {
                 !player1.name ||
                 !player1.phone ||
                 (isTeamEvent && !teamName) ||
-                (isDoubles && (!player2.name || !player2.phone))
+                (isDoubles && (!player2.name || !player2.phone)) ||
+                (categoriesList.length > 0 && (!selectedCategory || isCategoryLocked(selectedCategory)))
               }
               onClick={handleNext}
               className="w-full py-4 bg-primary text-primary-foreground font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
@@ -936,9 +1482,15 @@ export default function RegistrationPage() {
                       <span className="px-2 py-0.5 rounded bg-primary/15 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-wider">
                         {tournament?.sport || 'Sports'}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-white/5 text-foreground/60 border border-white/10 text-[10px] font-bold uppercase tracking-wider">
+                      <span className="px-2 py-0.5 rounded bg-surface text-foreground border border-border text-[10px] font-bold uppercase tracking-wider">
                         {isTeamEvent ? 'Team Event' : isDoubles ? 'Doubles' : 'Singles'}
                       </span>
+                      {selectedCategory && (
+                        <span className="px-2 py-0.5 rounded bg-primary/15 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <Tag className="w-3 h-3 text-primary" />
+                          {selectedCategory}
+                        </span>
+                      )}
                     </div>
                     <h3 className="text-base font-black text-foreground leading-tight">{tournament?.name}</h3>
                     {tournament?.location && (
@@ -1054,6 +1606,74 @@ export default function RegistrationPage() {
                         <p className="text-[10px] font-extrabold uppercase tracking-wider text-foreground/40">Team Name</p>
                         <p className="text-sm font-black text-foreground">{teamName}</p>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Payment / UPI Box */}
+                  {(tournament?.gpayNumber || qrCodeUrl || (tournament?.registrationFees ?? 0) > 0) && (
+                    <div
+                      className="p-4 rounded-xl border space-y-3"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <IndianRupee className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs font-black text-foreground uppercase tracking-wider">Tournament Entry Fee</span>
+                        </div>
+                        <span className="text-sm font-black text-emerald-400 font-mono">
+                          {tournament?.registrationFees ? `₹${tournament.registrationFees}` : 'FREE ENTRY'}
+                        </span>
+                      </div>
+
+                      {(tournament?.gpayNumber || qrCodeUrl) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                          {tournament?.gpayNumber && (
+                            <div
+                              className="p-3 rounded-xl border flex items-center justify-between gap-2"
+                              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <div className="min-w-0">
+                                <span className="text-[9px] font-extrabold text-text-muted uppercase tracking-wider block">UPI / GPay Number</span>
+                                <span className="text-xs font-black text-foreground font-mono truncate block">{tournament.gpayNumber}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleCopyGPay}
+                                className="px-2.5 py-1 rounded-md bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold transition-all flex items-center gap-1 shrink-0"
+                              >
+                                {copiedGPay ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                <span>{copiedGPay ? 'Copied' : 'Copy'}</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {qrCodeUrl && (
+                            <div
+                              className="p-3 rounded-xl border flex items-center justify-between gap-2"
+                              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded bg-white p-0.5 shrink-0 border border-border shadow-xs">
+                                  <img src={qrCodeUrl} alt="UPI QR" className="w-full h-full object-contain" />
+                                </div>
+                                <div>
+                                  <span className="text-[10px] font-black text-foreground block">UPI QR Scanner</span>
+                                  <span className="text-[9px] text-text-muted block">Scan to transfer</span>
+                                </div>
+                              </div>
+                              <a
+                                href={qrCodeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-md bg-surface hover:bg-surface-hover text-foreground/70 transition-colors border border-border"
+                                title="Open QR Code"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

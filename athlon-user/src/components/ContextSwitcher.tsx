@@ -59,15 +59,15 @@ export default function ContextSwitcher() {
         </div>
         
         <div className="flex-1 text-left truncate">
-          <div className="text-xs font-bold text-white/50 uppercase tracking-widest leading-none mb-1">
+          <div className="text-xs font-bold text-foreground/50 uppercase tracking-widest leading-none mb-1">
             {isPersonal ? 'Personal Space' : activeOrg?.type}
           </div>
-          <div className="text-sm font-medium text-white leading-none truncate">
+          <div className="text-sm font-bold text-foreground leading-none truncate">
             {isPersonal ? personalProfile?.name : activeOrg?.name}
           </div>
         </div>
 
-        <ChevronDown className={`w-4 h-4 text-white/50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-foreground/50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
@@ -76,23 +76,23 @@ export default function ContextSwitcher() {
           {!isPersonal && (
             <>
               <div className="px-3 py-1.5">
-                <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Personal</div>
+                <div className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest mb-2">Personal</div>
                 <button
                   onClick={() => handleSelect('PERSONAL')}
-                  className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:bg-white/5"
+                  className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm font-medium transition-colors text-foreground hover:bg-foreground/5"
                 >
                   <img src={personalProfile?.avatar || '/placeholder.png'} alt="Profile" className="w-5 h-5 rounded-full" />
                   <span className="flex-1 text-left">{personalProfile?.name}</span>
                 </button>
               </div>
-              <div className="h-px bg-white/5 my-1 mx-3" />
+              <div className="h-px bg-border my-1 mx-3" />
             </>
           )}
 
           {organizations.filter(org => org.id !== activeWorkspaceId).length > 0 && (
             <>
               <div className="px-3 py-1.5">
-                <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Organizations</div>
+                <div className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest mb-2">Organizations</div>
                 <div className="space-y-1">
                   {organizations
                     .filter((org) => org.id !== activeWorkspaceId)
@@ -100,7 +100,7 @@ export default function ContextSwitcher() {
                     <button
                       key={org.id}
                       onClick={() => handleSelect(org.id)}
-                      className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:bg-white/5"
+                      className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm font-medium transition-colors text-foreground hover:bg-foreground/5"
                     >
                       {getIcon(org.type)}
                       <span className="flex-1 text-left truncate">{org.name}</span>
@@ -108,7 +108,7 @@ export default function ContextSwitcher() {
                   ))}
                 </div>
               </div>
-              <div className="h-px bg-white/5 my-1 mx-3" />
+              <div className="h-px bg-border my-1 mx-3" />
             </>
           )}
           

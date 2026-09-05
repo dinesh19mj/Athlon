@@ -4,11 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -51,7 +49,7 @@ public class AcademyFacilityController {
         return ResponseEntity.ok(ApiResponse.success("Academy facility retrieved successfully", facility));
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ApiResponse<AcademyFacilityResponse>> createFacility(
             @Valid @RequestBody CreateFacilityRequest request) {
 
@@ -59,7 +57,7 @@ public class AcademyFacilityController {
         return ResponseEntity.ok(ApiResponse.success("Academy facility created successfully", facility));
     }
 
-    @PutMapping("/{facilityUuid}")
+    @PostMapping("/update/{facilityUuid}")
     public ResponseEntity<ApiResponse<AcademyFacilityResponse>> updateFacility(
             @PathVariable("facilityUuid") UUID facilityUuid,
             @Valid @RequestBody UpdateFacilityRequest request) {
@@ -68,7 +66,7 @@ public class AcademyFacilityController {
         return ResponseEntity.ok(ApiResponse.success("Academy facility updated successfully", facility));
     }
 
-    @DeleteMapping("/{facilityUuid}")
+    @PostMapping("/delete/{facilityUuid}")
     public ResponseEntity<ApiResponse<Void>> deleteFacility(
             @PathVariable("facilityUuid") UUID facilityUuid) {
 

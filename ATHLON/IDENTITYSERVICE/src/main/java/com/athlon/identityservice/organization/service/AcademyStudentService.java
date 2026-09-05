@@ -25,7 +25,9 @@ import com.athlon.identityservice.organization.entity.AcademyCourt;
 import com.athlon.identityservice.organization.entity.AcademyStudent;
 import com.athlon.identityservice.organization.entity.Organization;
 import com.athlon.identityservice.organization.repository.AcademyBatchRepository;
+import com.athlon.identityservice.organization.repository.AcademyCentreRepository;
 import com.athlon.identityservice.organization.repository.AcademyCourtRepository;
+import com.athlon.identityservice.organization.repository.AcademyFacilityRepository;
 import com.athlon.identityservice.organization.repository.AcademyStudentRepository;
 import com.athlon.identityservice.organization.repository.OrganizationRepository;
 
@@ -35,16 +37,22 @@ public class AcademyStudentService {
     private final AcademyStudentRepository studentRepository;
     private final AcademyBatchRepository batchRepository;
     private final AcademyCourtRepository courtRepository;
+    private final AcademyCentreRepository centreRepository;
+    private final AcademyFacilityRepository facilityRepository;
     private final OrganizationRepository organizationRepository;
 
     public AcademyStudentService(
             AcademyStudentRepository studentRepository,
             AcademyBatchRepository batchRepository,
             AcademyCourtRepository courtRepository,
+            AcademyCentreRepository centreRepository,
+            AcademyFacilityRepository facilityRepository,
             OrganizationRepository organizationRepository) {
         this.studentRepository = studentRepository;
         this.batchRepository = batchRepository;
         this.courtRepository = courtRepository;
+        this.centreRepository = centreRepository;
+        this.facilityRepository = facilityRepository;
         this.organizationRepository = organizationRepository;
     }
 
@@ -221,7 +229,7 @@ public class AcademyStudentService {
         student.setMonthlyFee(request.getMonthlyFee());
         student.setFeeFrequency(request.getFeeFrequency() != null ? request.getFeeFrequency().toUpperCase() : "MONTHLY");
         student.setFeeStatus(request.getFeeStatus() != null ? request.getFeeStatus().toUpperCase() : "PENDING");
-        student.setStatus("ACTIVE");
+        student.setStatus(request.getStatus() != null ? request.getStatus().toUpperCase() : "ACTIVE");
 
         AcademyStudent saved = studentRepository.save(student);
         return mapToStudentResponse(saved);
@@ -319,9 +327,30 @@ public class AcademyStudentService {
         batch.setBatchName(request.getBatchName().trim());
         batch.setSportType(request.getSportType());
         batch.setLevel(request.getLevel() != null ? request.getLevel().toUpperCase() : "ALL");
+        batch.setAgeCategory(request.getAgeCategory());
+        batch.setProgramFocus(request.getProgramFocus());
+        batch.setCentreUuid(request.getCentreUuid());
+        batch.setCentreName(request.getCentreName());
+        batch.setFacilityUuid(request.getFacilityUuid());
 
-        // Court Assignment
-        if (request.getCourtUuid() != null) {
+        // Resolve centre and court/facility if provided
+        if (request.getCentreUuid() != null && request.getCentreName() == null) {
+            centreRepository.findByCentreUuid(request.getCentreUuid()).ifPresent(c -> {
+                batch.setCentreName(c.getName());
+            });
+        }
+
+        if (request.getFacilityUuid() != null) {
+            facilityRepository.findByFacilityUuid(request.getFacilityUuid()).ifPresent(f -> {
+                batch.setFacilityUuid(f.getFacilityUuid());
+                batch.setCourtUuid(f.getFacilityUuid());
+                batch.setCourtName(f.getName());
+                if (batch.getCentreUuid() == null && f.getCentreUuid() != null) {
+                    batch.setCentreUuid(f.getCentreUuid());
+                    batch.setCentreName(f.getCentreName());
+                }
+            });
+        } else if (request.getCourtUuid() != null) {
             courtRepository.findByCourtUuid(request.getCourtUuid()).ifPresent(c -> {
                 batch.setCourtUuid(c.getCourtUuid());
                 batch.setCourtName(c.getName());
@@ -351,8 +380,23 @@ public class AcademyStudentService {
         if (request.getBatchName() != null) batch.setBatchName(request.getBatchName().trim());
         if (request.getSportType() != null) batch.setSportType(request.getSportType());
         if (request.getLevel() != null) batch.setLevel(request.getLevel().toUpperCase());
+        if (request.getAgeCategory() != null) batch.setAgeCategory(request.getAgeCategory());
+        if (request.getProgramFocus() != null) batch.setProgramFocus(request.getProgramFocus());
+        if (request.getCentreUuid() != null) batch.setCentreUuid(request.getCentreUuid());
+        if (request.getCentreName() != null) batch.setCentreName(request.getCentreName());
+        if (request.getFacilityUuid() != null) batch.setFacilityUuid(request.getFacilityUuid());
 
-        if (request.getCourtUuid() != null) {
+        if (request.getFacilityUuid() != null) {
+            facilityRepository.findByFacilityUuid(request.getFacilityUuid()).ifPresent(f -> {
+                batch.setFacilityUuid(f.getFacilityUuid());
+                batch.setCourtUuid(f.getFacilityUuid());
+                batch.setCourtName(f.getName());
+                if (batch.getCentreUuid() == null && f.getCentreUuid() != null) {
+                    batch.setCentreUuid(f.getCentreUuid());
+                    batch.setCentreName(f.getCentreName());
+                }
+            });
+        } else if (request.getCourtUuid() != null) {
             courtRepository.findByCourtUuid(request.getCourtUuid()).ifPresent(c -> {
                 batch.setCourtUuid(c.getCourtUuid());
                 batch.setCourtName(c.getName());
@@ -485,11 +529,16 @@ public class AcademyStudentService {
         r.setBatchUuid(b.getBatchUuid());
         r.setOrganizationId(b.getOrganizationId());
         r.setOrganizationUuid(b.getOrganizationUuid());
+        r.setCentreUuid(b.getCentreUuid());
+        r.setCentreName(b.getCentreName());
+        r.setFacilityUuid(b.getFacilityUuid());
         r.setCourtUuid(b.getCourtUuid());
         r.setCourtName(b.getCourtName());
         r.setBatchName(b.getBatchName());
         r.setSportType(b.getSportType());
         r.setLevel(b.getLevel());
+        r.setAgeCategory(b.getAgeCategory());
+        r.setProgramFocus(b.getProgramFocus());
         r.setCoachUuid(b.getCoachUuid());
         r.setCoachName(b.getCoachName());
         r.setDaysOfWeek(b.getDaysOfWeek());

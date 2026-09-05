@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─── Tailwind v4 Theme Token Bindings ───────────────────────────────────── */
 @theme {
   /* Backgrounds & Surfaces */
@@ -292,4 +294,206 @@ body {
 .ant-select-selector {
   background-color: var(--athlon-input) !important;
   border-color: var(--athlon-input-border) !important;
+}
+
+/* ─── Light Mode Text, Contrast & Semantic Adaptations ─────────────────────── */
+html.light,
+:root.light {
+  color-scheme: light;
+}
+
+/* Ensure headings & section titles in cards and pages are crisp and dark in light theme */
+html.light h1:not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]):not([class*="text-white"]),
+html.light h2:not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]):not([class*="text-white"]),
+html.light h3:not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]):not([class*="text-white"]),
+html.light h4:not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]):not([class*="text-white"]),
+html.light h5:not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]):not([class*="text-white"]),
+html.light h6:not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]):not([class*="text-white"]) {
+  color: var(--athlon-text) !important;
+}
+
+/* Section titles and uppercase section headers */
+html.light [class*="tracking-widest"]:is(h1, h2, h3, h4, h5, h6, span, div, p):not([class*="bg-"]):not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]) {
+  color: var(--athlon-text);
+  opacity: 0.9;
+}
+
+/* Card titles and bold elements in light mode */
+html.light [class*="card"] h1,
+html.light [class*="card"] h2,
+html.light [class*="card"] h3,
+html.light [class*="card"] h4,
+html.light [class*="card"] h5,
+html.light [class*="card"] h6,
+html.light .font-black:is(h1, h2, h3, h4, h5, h6, span, div):not([class*="text-primary"]):not([class*="text-red-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not([class*="text-blue-"]):not([class*="text-orange-"]):not([class*="text-purple-"]):not([class*="bg-"]):not([class*="text-white"]) {
+  color: var(--athlon-text);
+}
+
+/* ─── Light Mode Color Remapping (High Contrast Tones for Light Backgrounds) ─── */
+html.light .text-amber-400,
+html.light .text-amber-300,
+html.light .text-yellow-400,
+html.light .text-yellow-300,
+html.light .text-yellow-500 {
+  color: #B45309 !important;
+}
+
+html.light .text-emerald-400,
+html.light .text-emerald-300 {
+  color: #047857 !important;
+}
+
+html.light .text-red-400,
+html.light .text-red-300 {
+  color: #DC2626 !important;
+}
+
+html.light .text-blue-400,
+html.light .text-blue-300 {
+  color: #1D4ED8 !important;
+}
+
+html.light .text-purple-400,
+html.light .text-purple-300 {
+  color: #7E22CE !important;
+}
+
+html.light .text-cyan-400,
+html.light .text-cyan-300 {
+  color: #0E7490 !important;
+}
+
+html.light .text-orange-400,
+html.light .text-orange-300 {
+  color: #C2410C !important;
+}
+
+html.light .text-rose-400,
+html.light .text-rose-300 {
+  color: #BE123C !important;
+}
+
+/* Light mode badge backgrounds & borders */
+html.light [class*="bg-amber-500\/"] {
+  background-color: #FEF3C7 !important;
+  border-color: #FCD34D !important;
+}
+html.light [class*="bg-emerald-500\/"] {
+  background-color: #D1FAE5 !important;
+  border-color: #6EE7B7 !important;
+}
+html.light [class*="bg-red-500\/"] {
+  background-color: #FEE2E2 !important;
+  border-color: #FCA5A5 !important;
+}
+html.light [class*="bg-blue-500\/"] {
+  background-color: #DBEAFE !important;
+  border-color: #93C5FD !important;
+}
+html.light [class*="bg-purple-500\/"] {
+  background-color: #F3E8FF !important;
+  border-color: #D8B4FE !important;
+}
+
+/* Boost subtitle and metadata contrast in light mode */
+html.light .text-foreground\/30,
+html.light .text-foreground\/40,
+html.light .text-foreground\/45,
+html.light .text-foreground\/50 {
+  color: color-mix(in srgb, var(--athlon-text) 72%, transparent) !important;
+}
+
+html.light .text-foreground\/60,
+html.light .text-foreground\/70 {
+  color: color-mix(in srgb, var(--athlon-text) 88%, transparent) !important;
+}
+
+html.light .text-text-muted {
+  color: color-mix(in srgb, var(--athlon-text) 75%, transparent) !important;
+}
+
+/* Remap generic text-white opacities in light mode to theme foreground */
+html.light .text-white:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-zinc-9"]):not([class*="bg-slate-9"]):not([class*="bg-gray-9"]):not([class*="bg-gradient-"]),
+html.light [class*="text-white"]:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-zinc-9"]):not([class*="bg-slate-9"]):not([class*="bg-gray-9"]):not([class*="bg-gradient-"]) {
+  color: var(--athlon-text);
+}
+
+html.light .text-white\/90:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 90%, transparent);
+}
+html.light .text-white\/80:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 80%, transparent);
+}
+html.light .text-white\/70:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 70%, transparent);
+}
+html.light .text-white\/60:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 65%, transparent);
+}
+html.light .text-white\/50:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 55%, transparent);
+}
+html.light .text-white\/40:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 50%, transparent);
+}
+html.light .text-white\/30:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 45%, transparent);
+}
+html.light .text-white\/25:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 40%, transparent);
+}
+html.light .text-white\/20:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 35%, transparent);
+}
+html.light .text-white\/15:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 30%, transparent);
+}
+html.light .text-white\/10:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-rose-"]):not([class*="bg-orange-"]):not([class*="bg-black"]):not([class*="bg-gradient-"]) {
+  color: color-mix(in srgb, var(--athlon-text) 25%, transparent);
+}
+
+/* Light mode white border overrides */
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/15,
+html.light .border-white\/20,
+html.light .border-white\/25,
+html.light .border-white\/30 {
+  border-color: var(--athlon-border);
+}
+
+/* Light mode white background overrides */
+html.light .bg-white\/5:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-orange-"]):not([class*="bg-amber-"]) {
+  background-color: color-mix(in srgb, var(--athlon-border) 25%, transparent);
+}
+html.light .bg-white\/10:not([class*="bg-primary"]):not([class*="bg-red-"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-orange-"]):not([class*="bg-amber-"]) {
+  background-color: color-mix(in srgb, var(--athlon-border) 45%, transparent);
+}
+
+/* Light mode placeholder overrides */
+html.light ::placeholder,
+html.light [class*="placeholder:text-white"]::placeholder {
+  color: color-mix(in srgb, var(--athlon-text) 45%, transparent) !important;
+}
+
+/* Explicitly preserve crisp white on filled colored CTA/solid buttons and pills */
+html.light .bg-primary .text-white,
+html.light .bg-primary.text-white,
+html.light [class*="bg-primary"] .text-white,
+html.light [class*="bg-primary"].text-white,
+html.light [class*="bg-red-"] .text-white,
+html.light [class*="bg-red-"].text-white,
+html.light [class*="bg-blue-"] .text-white,
+html.light [class*="bg-blue-"].text-white,
+html.light [class*="bg-emerald-"] .text-white,
+html.light [class*="bg-emerald-"].text-white,
+html.light [class*="bg-rose-"] .text-white,
+html.light [class*="bg-rose-"].text-white,
+html.light [class*="bg-orange-"] .text-white,
+html.light [class*="bg-orange-"].text-white,
+html.light [class*="bg-black"] .text-white,
+html.light [class*="bg-black"].text-white,
+html.light [class*="bg-gradient-"] .text-white,
+html.light [class*="bg-gradient-"].text-white {
+  color: #FFFFFF !important;
 }

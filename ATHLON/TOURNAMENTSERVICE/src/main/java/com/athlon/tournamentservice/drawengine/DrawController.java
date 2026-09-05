@@ -73,6 +73,32 @@ public class DrawController {
         }
     }
 
+    @PostMapping("/pooled-knockout/{tournamentUuid}")
+    public ResponseEntity<?> generatePooledKnockout(
+            @PathVariable("tournamentUuid") UUID tournamentUuid,
+            @org.springframework.web.bind.annotation.RequestBody com.athlon.tournamentservice.dto.request.PooledKnockoutDrawRequest request) {
+        try {
+            Long createdBy = 1L;
+            com.athlon.tournamentservice.drawengine.entity.Draw draw = drawEngineService.orchestratePooledKnockoutDraw(tournamentUuid, request, createdBy);
+            return ResponseEntity.ok(draw);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/pooled-playoffs/{tournamentUuid}")
+    public ResponseEntity<?> generatePooledPlayoffs(
+            @PathVariable("tournamentUuid") UUID tournamentUuid,
+            @org.springframework.web.bind.annotation.RequestBody(required = false) com.athlon.tournamentservice.dto.request.PooledPlayoffsRequest request) {
+        try {
+            Long createdBy = 1L;
+            com.athlon.tournamentservice.drawengine.entity.Draw draw = drawEngineService.orchestratePooledPlayoffs(tournamentUuid, request, createdBy);
+            return ResponseEntity.ok(draw);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/standings/{tournamentUuid}")
     public ResponseEntity<?> getStandings(@PathVariable("tournamentUuid") UUID tournamentUuid) {
         try {
@@ -82,7 +108,7 @@ public class DrawController {
         }
     }
 
-    @DeleteMapping("/{tournamentUuid}")
+    @PostMapping("/delete/{tournamentUuid}")
     public ResponseEntity<?> deleteDraw(@PathVariable("tournamentUuid") UUID tournamentUuid) {
         try {
             drawEngineService.deleteDraw(tournamentUuid);

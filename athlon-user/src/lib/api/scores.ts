@@ -36,3 +36,42 @@ export const ScoreService = {
   getAll: () =>
     api.get<{ data: LiveScore[] }>('/api/tournament/scores/all'),
 };
+
+/** Helper to ensure ONLY genuine official tournament matches are displayed in public live feeds */
+export function isTournamentScore(score: LiveScore): boolean {
+  if (!score) return false;
+  const matchId = String(score.matchUuid || score.matchId || '');
+  if (!matchId || matchId === 'live' || matchId.startsWith('practice-') || matchId.startsWith('match-')) {
+    return false;
+  }
+  const meta = score.scoreMeta || {};
+  const config = meta.config || {};
+
+  // Must belong to an official tournament with an explicit tournamentName or tournamentUuid
+  const tournamentName = (config.tournamentName || meta.tournamentName || '').trim();
+  const tournamentUuid = (config.tournamentUuid || meta.tournamentUuid || '').trim();
+
+  if (!tournamentName && !tournamentUuid) {
+    return false;
+  }
+
+  const lowerName = tournamentName.toLowerCase();
+  if (
+    !lowerName ||
+    lowerName === 'practice match' ||
+    lowerName === 'quick match' ||
+    lowerName === 'local match' ||
+    lowerName === 'live match' ||
+    lowerName.includes('practice') ||
+    lowerName.includes('quick match') ||
+    lowerName.includes('local match')
+  ) {
+    return false;
+  }
+
+  if (config.isPractice === true || meta.isPractice === true) {
+    return false;
+  }
+
+  return true;
+}

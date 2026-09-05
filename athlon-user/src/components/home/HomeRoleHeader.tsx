@@ -137,90 +137,107 @@ export default function HomeRoleHeader({
       )}
 
       {/* ─── 2. SLEEK HORIZONTAL ROLE SEGMENTED DOCK ─── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-1 px-1">
-
-        {/* 👤 PLAYER (ME) PILL */}
-        <button
-          onClick={() => handleRoleClick('PLAYER')}
-          className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 rounded-full border transition-all duration-200 active:scale-95 cursor-pointer ${isPlayerActive
-            ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
-            : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
-            }`}
+      <div className="flex items-center gap-2 w-full relative">
+        {/* Scrollable track for Me & Organizations with smooth curve fade toward Add Org */}
+        <div
+          className="flex-1 flex items-center gap-2 overflow-x-auto pb-1 pr-3 hide-scrollbar -mx-1 px-1 min-w-0"
           style={{
-            backgroundColor: isPlayerActive ? 'var(--athlon-surface)' : 'rgba(255, 255, 255, 0.03)',
+            maskImage: 'linear-gradient(to right, black 0%, black calc(100% - 28px), transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, black 0%, black calc(100% - 28px), transparent 100%)',
           }}
         >
-          <div className="shrink-0 transition-transform duration-200 group-hover:scale-110">
-            <Athlon3DIcon type="profile" size={24} active={isPlayerActive} />
-          </div>
+          {/* 👤 PLAYER (ME) PILL */}
+          <button
+            onClick={() => handleRoleClick('PLAYER')}
+            className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 h-[42px] rounded-full border transition-all duration-200 active:scale-95 cursor-pointer ${isPlayerActive
+              ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)] bg-surface'
+              : 'border-border hover:border-primary/40 bg-card hover:bg-surface text-foreground/80 hover:text-foreground'
+              }`}
+            style={{
+              backgroundColor: isPlayerActive ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+              borderColor: isPlayerActive ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+            }}
+          >
+            <div className="w-6 h-6 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110">
+              <Athlon3DIcon type="profile" size={24} active={isPlayerActive} />
+            </div>
 
-          <div className="flex items-center gap-1.5 leading-none">
-            <span
-              className={`text-xs font-black tracking-tight ${isPlayerActive ? 'text-primary' : 'text-white'
-                }`}
-            >
-              Me
-            </span>
-            <span className="text-[10px] text-white/40 font-medium">
-              • Player
-            </span>
-          </div>
+            <div className="flex items-center gap-1.5 leading-none">
+              <span
+                className={`text-xs font-black tracking-tight ${isPlayerActive ? 'text-primary' : 'text-foreground'
+                  }`}
+              >
+                Me
+              </span>
+              <span className="text-[10px] text-foreground/60 dark:text-foreground/50 font-medium">
+                • Player
+              </span>
+            </div>
 
-          {isPlayerActive && (
-            <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] ml-0.5" />
-          )}
-        </button>
+            {isPlayerActive && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] ml-0.5" />
+            )}
+          </button>
 
-        {/* 🏢 ORGANIZATIONS PILLS */}
-        {orgsList.map((org) => {
-          const isOrgActive = currentActiveRole === org.id;
-          const org3DIconType = getOrg3DType(org.type);
-          const roleLabel = getOrgRoleLabel(org.type);
+          {/* 🏢 ORGANIZATIONS PILLS */}
+          {orgsList.map((org) => {
+            const isOrgActive = currentActiveRole === org.id;
+            const org3DIconType = getOrg3DType(org.type);
+            const roleLabel = getOrgRoleLabel(org.type);
 
-          return (
-            <button
-              key={org.id}
-              onClick={() => handleRoleClick(org.id)}
-              className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 rounded-full border transition-all duration-200 active:scale-95 cursor-pointer max-w-[200px] ${isOrgActive
-                ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)]'
-                : 'border-white/10 hover:border-white/20 hover:bg-white/5 opacity-70 hover:opacity-100'
-                }`}
-              style={{
-                backgroundColor: isOrgActive ? 'var(--athlon-surface)' : 'rgba(255, 255, 255, 0.03)',
-              }}
-            >
-              <div className="shrink-0 transition-transform duration-200">
-                <Athlon3DIcon type={org3DIconType} size={24} active={isOrgActive} />
-              </div>
+            return (
+              <button
+                key={org.id}
+                onClick={() => handleRoleClick(org.id)}
+                className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2 h-[42px] rounded-full border transition-all duration-200 active:scale-95 cursor-pointer max-w-[200px] ${isOrgActive
+                  ? 'border-primary shadow-[0_4px_16px_var(--athlon-primary-glow)] bg-surface'
+                  : 'border-border hover:border-primary/40 bg-card hover:bg-surface text-foreground/80 hover:text-foreground'
+                  }`}
+                style={{
+                  backgroundColor: isOrgActive ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+                  borderColor: isOrgActive ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                }}
+              >
+                <div className="w-6 h-6 flex items-center justify-center shrink-0 transition-transform duration-200">
+                  <Athlon3DIcon type={org3DIconType} size={24} active={isOrgActive} />
+                </div>
 
-              <div className="flex items-center gap-1.5 leading-none min-w-0">
-                <span
-                  className={`text-xs font-black tracking-tight truncate ${isOrgActive ? 'text-primary' : 'text-white'
-                    }`}
-                  title={org.name}
-                >
-                  {org.name}
-                </span>
-                <span className="text-[10px] text-white/40 font-medium shrink-0">
-                  • {roleLabel}
-                </span>
-              </div>
+                <div className="flex items-center gap-1.5 leading-none min-w-0">
+                  <span
+                    className={`text-xs font-black tracking-tight truncate ${isOrgActive ? 'text-primary' : 'text-foreground'
+                      }`}
+                    title={org.name}
+                  >
+                    {org.name}
+                  </span>
+                  <span className="text-[10px] text-foreground/60 dark:text-foreground/50 font-medium shrink-0">
+                    • {roleLabel}
+                  </span>
+                </div>
 
-              {isOrgActive && (
-                <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] ml-0.5 shrink-0" />
-              )}
-            </button>
-          );
-        })}
+                {isOrgActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] ml-0.5 shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-        {/* ➕ ADD NEW HUB BUTTON */}
-        <button
-          onClick={onAddClick || (() => { router.push('/subscription'); })}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full border border-dashed border-white/20 hover:border-primary/50 text-white/50 hover:text-primary hover:bg-primary/5 transition-all duration-200 active:scale-95 text-xs font-bold cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-          <span>Add Org</span>
-        </button>
+        {/* ➕ ADD NEW HUB BUTTON (Stable / Fixed position matching size) */}
+        <div className="shrink-0 pb-1">
+          <button
+            onClick={onAddClick || (() => { router.push('/subscription'); })}
+            className="flex items-center justify-center w-[42px] h-[42px] rounded-full border border-dashed border-border hover:border-primary/50 text-foreground/80 hover:text-primary hover:bg-primary/5 bg-card transition-all duration-200 active:scale-95 text-xs font-bold cursor-pointer shrink-0 shadow-sm"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+            title="Add Organization"
+            aria-label="Add Organization"
+          >
+            <Plus className="w-4 h-4 text-primary" strokeWidth={2.5} />
+          </button>
+        </div>
       </div>
     </div>
   );

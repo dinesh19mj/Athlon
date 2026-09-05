@@ -136,9 +136,13 @@ public class OrganizationService {
         profile.setCountry(request.getCountry());
         profile.setPostalCode(request.getPostalCode());
         profile.setWebsite(request.getWebsite());
-        profile.setLogo(request.getLogo());
-        profile.setBanner(request.getBanner());
-        profile.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : profile.getIsPublic());
+        if (request.getLogo() != null && !request.getLogo().startsWith("blob:")) {
+            profile.setLogo(request.getLogo());
+        }
+        if (request.getBanner() != null && !request.getBanner().startsWith("blob:")) {
+            profile.setBanner(request.getBanner());
+        }
+        profile.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : (profile.getIsPublic() != null ? profile.getIsPublic() : 1));
         profile.setSportsOffered(request.getSportsOffered());
         profile.setAdmissionStatus(request.getAdmissionStatus());
         profile.setAcademyLevels(request.getAcademyLevels());
@@ -166,6 +170,10 @@ public class OrganizationService {
         boolean orgModified = false;
         if (request.getName() != null && !request.getName().trim().isEmpty() && !request.getName().equals(organization.getName())) {
             organization.setName(request.getName().trim());
+            orgModified = true;
+        }
+        if (request.getType() != null && !request.getType().trim().isEmpty() && !request.getType().equalsIgnoreCase(organization.getType())) {
+            organization.setType(request.getType().trim().toUpperCase());
             orgModified = true;
         }
         if (request.getDescription() != null && !request.getDescription().equals(organization.getDescription())) {
@@ -197,12 +205,16 @@ public class OrganizationService {
             String subDir = "organizations" + java.io.File.separator + "logos";
             String savedLogo = fileStorageUtil.saveFile(logoFile, uploadBaseDir, subDir);
             profile.setLogo(savedLogo);
+        } else if (request.getLogo() != null && !request.getLogo().startsWith("blob:")) {
+            profile.setLogo(request.getLogo());
         }
 
         if (bannerFile != null && !bannerFile.isEmpty()) {
             String subDir = "organizations" + java.io.File.separator + "banners";
             String savedBanner = fileStorageUtil.saveFile(bannerFile, uploadBaseDir, subDir);
             profile.setBanner(savedBanner);
+        } else if (request.getBanner() != null && !request.getBanner().startsWith("blob:")) {
+            profile.setBanner(request.getBanner());
         }
 
         profile.setContactEmail(request.getContactEmail());
@@ -214,7 +226,7 @@ public class OrganizationService {
         profile.setCountry(request.getCountry());
         profile.setPostalCode(request.getPostalCode());
         profile.setWebsite(request.getWebsite());
-        profile.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : profile.getIsPublic());
+        profile.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : (profile.getIsPublic() != null ? profile.getIsPublic() : 1));
         profile.setSportsOffered(request.getSportsOffered());
         profile.setAdmissionStatus(request.getAdmissionStatus());
         profile.setAcademyLevels(request.getAcademyLevels());
@@ -242,6 +254,10 @@ public class OrganizationService {
         boolean orgModified = false;
         if (request.getName() != null && !request.getName().trim().isEmpty() && !request.getName().equals(organization.getName())) {
             organization.setName(request.getName().trim());
+            orgModified = true;
+        }
+        if (request.getType() != null && !request.getType().trim().isEmpty() && !request.getType().equalsIgnoreCase(organization.getType())) {
+            organization.setType(request.getType().trim().toUpperCase());
             orgModified = true;
         }
         if (request.getDescription() != null && !request.getDescription().equals(organization.getDescription())) {
@@ -372,6 +388,7 @@ public class OrganizationService {
                     resp.setUserUuid(m.getUserUuid());
                     resp.setUserId(m.getUserId());
                     resp.setRole(m.getRole());
+                    resp.setSportType(m.getSportType());
                     resp.setIsActive(m.getIsActive());
                     resp.setStatus(m.getIsActive() == 1 ? "Active" : "Inactive");
                     resp.setJoinedAt(m.getCreatedAt());
@@ -423,6 +440,7 @@ public class OrganizationService {
             }
             member.setIsActive(1);
             member.setRole(request.getRole() != null ? request.getRole() : "MEMBER");
+            if (request.getSportType() != null) member.setSportType(request.getSportType());
             member.setUpdatedBy(currentUserId);
         } else {
             member = new OrganizationMember(
@@ -433,6 +451,7 @@ public class OrganizationService {
                     request.getRole() != null ? request.getRole() : "MEMBER",
                     currentUserId
             );
+            if (request.getSportType() != null) member.setSportType(request.getSportType());
         }
 
         member = organizationMemberRepository.save(member);
@@ -450,6 +469,7 @@ public class OrganizationService {
         String fullName = ((userProfile.getFirstName() != null ? userProfile.getFirstName() : "") + " " + (userProfile.getLastName() != null ? userProfile.getLastName() : "")).trim();
         resp.setFullName(fullName.isEmpty() ? "Athlon Athlete" : fullName);
         resp.setRole(member.getRole());
+        resp.setSportType(member.getSportType());
         resp.setStatus("Active");
         resp.setIsActive(1);
         resp.setJoinedAt(member.getCreatedAt() != null ? member.getCreatedAt() : java.time.LocalDateTime.now());

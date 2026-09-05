@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { ClubMatchService, ClubMatch } from '@/lib/api/clubMatch';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService } from '@/lib/api/user';
+import AcademyMatchesView from '@/components/academy/AcademyMatchesView';
 import {
   Search,
   Plus,
@@ -198,6 +199,10 @@ export default function MatchesPage() {
   const org = getActiveOrganization();
 
   const orgUuid = org?.id || orgIdParam;
+
+  if (org?.type === 'ACADEMY') {
+    return <AcademyMatchesView orgUuid={orgUuid} orgName={org.name || 'Academy'} />;
+  }
 
   const [matches, setMatches] = useState<ClubMatch[]>([]);
   const [members, setMembers] = useState<OrganizationMemberResponse[]>([]);
@@ -409,8 +414,8 @@ export default function MatchesPage() {
         </div>
       )}
 
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* ── HEADER SECTION (DESKTOP) ── */}
+      <div className="hidden md:flex md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Club Matches</h2>
@@ -447,91 +452,128 @@ export default function MatchesPage() {
         </div>
       </div>
 
-      {/* Date Navigation & Calendar Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 bg-surface border border-foreground/5 rounded-2xl p-3.5 sm:p-4 shadow-sm">
-        {/* Left Side: Day Shifter & Date Picker */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleShiftDate(-1)}
-            className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-            title="Previous Day"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {/* Calendar Date Input Picker */}
-          <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
-            <Calendar className="w-4 h-4 text-primary shrink-0 mr-2" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
-            />
+      {/* ── HEADER SECTION (MOBILE APP-LIKE COMPACT BAR) ── */}
+      <div className="flex md:hidden flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black text-foreground tracking-tight">Club Matches</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/15 text-primary border border-primary/25 shrink-0">
+                {matches.length} Total
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-foreground/50">
+              <span className="inline-flex items-center gap-1 font-bold text-primary">
+                <span>{AVAILABLE_SPORTS_ICONS[clubSport] || '🏅'}</span>
+                <span>{clubSport}</span>
+              </span>
+              <span>•</span>
+              <span className="truncate">{org?.name || 'Club'}</span>
+            </div>
           </div>
 
-          <button
-            onClick={() => handleShiftDate(1)}
-            className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-            title="Next Day"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 rounded-xl bg-surface border border-foreground/10 text-foreground active:scale-95 transition"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── DATE NAVIGATION & CALENDAR FILTER BAR ── */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface border border-foreground/10 rounded-2xl p-3 sm:p-4 shadow-sm">
+        {/* Day Shifter & Date Picker */}
+        <div className="flex items-center justify-between sm:justify-start gap-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handleShiftDate(-1)}
+              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors active:scale-90"
+              title="Previous Day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Calendar Date Input Picker */}
+            <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-1.5 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
+              <Calendar className="w-3.5 h-3.5 text-primary shrink-0 mr-1.5" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+              />
+            </div>
+
+            <button
+              onClick={() => handleShiftDate(1)}
+              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors active:scale-90"
+              title="Next Day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
 
           {selectedDate && (
-            <span className="hidden md:inline-block text-xs font-bold text-foreground/60 ml-2">
-              {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            <span className="text-[11px] font-bold text-foreground/60">
+              {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
             </span>
           )}
         </div>
 
-        {/* Right Side: Quick Filters & Counter */}
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <button
-            onClick={handleSetToday}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === getLocalDateString()
-              ? 'bg-primary text-black shadow-md shadow-primary/20'
-              : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-              }`}
-          >
-            Today
-          </button>
+        {/* Quick Filters & Counter */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0 border-t sm:border-t-0 border-foreground/5">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleSetToday}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === getLocalDateString()
+                ? 'bg-primary text-black shadow-md shadow-primary/20'
+                : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+                }`}
+            >
+              Today
+            </button>
 
-          <button
-            onClick={handleSetAllDates}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === ''
-              ? 'bg-primary text-black shadow-md shadow-primary/20'
-              : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-              }`}
-          >
-            All Dates
-          </button>
+            <button
+              onClick={handleSetAllDates}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${selectedDate === ''
+                ? 'bg-primary text-black shadow-md shadow-primary/20'
+                : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
+                }`}
+            >
+              All Dates
+            </button>
+          </div>
 
-          <div className="px-3 py-1.5 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-black text-foreground/60 ml-1">
+          <div className="px-2.5 py-1 rounded-xl bg-foreground/5 border border-foreground/10 text-[11px] font-black text-foreground/60">
             {filteredMatches.length} {filteredMatches.length === 1 ? 'Match' : 'Matches'}
           </div>
         </div>
       </div>
 
-      {/* MATCHES CONTAINER */}
-      <div className="bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
+      {/* ── MATCHES CONTAINER ── */}
+      <div>
         {loading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-3">
+          <div className="py-20 flex flex-col items-center justify-center gap-3 bg-surface border border-foreground/5 rounded-3xl">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-foreground/50">Loading club matches...</p>
+            <p className="text-xs font-semibold text-foreground/50">Loading club matches...</p>
           </div>
         ) : filteredMatches.length === 0 ? (
-          <div className="py-20 px-6 text-center space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
-              <Calendar className="w-8 h-8" />
+          <div className="py-16 px-6 text-center space-y-3 bg-surface border border-foreground/5 rounded-3xl">
+            <div className="w-14 h-14 rounded-2xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-foreground/40">
+              <Calendar className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-foreground">
+              <h3 className="text-base font-bold text-foreground">
                 {selectedDate
                   ? `No matches recorded on ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
                   : 'No matches recorded yet'}
               </h3>
-              <p className="text-sm text-foreground/50 max-w-md mx-auto mt-1">
+              <p className="text-xs text-foreground/50 max-w-sm mx-auto mt-1">
                 {selectedDate
                   ? 'Switch date or record a new match for this day.'
                   : 'Start recording single friendly match results and scores for your club athletes.'}
@@ -543,97 +585,99 @@ export default function MatchesPage() {
                 setMatchDate(getLocalDateString());
                 setIsAddModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 shadow-lg shadow-primary/20"
             >
-              <Plus className="w-4 h-4" /> Record Match
+              <Plus className="w-3.5 h-3.5" /> Record Match
             </button>
           </div>
         ) : (
           <>
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Date & Sport</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Team A</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-center">Score</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Team B</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Winner</th>
-                    <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-foreground/5">
-                  {filteredMatches.map((match) => (
-                    <tr key={match.matchId} className="hover:bg-foreground/[0.02] transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <div className="text-xs font-bold text-foreground">
-                            {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent'}
-                          </div>
-                          <div className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-primary">
-                            <span>{AVAILABLE_SPORTS_ICONS[match.sportType] || '🏅'}</span>
-                            <span>{match.matchType || 'Match'}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 font-black text-xs flex items-center justify-center shrink-0 border border-blue-500/20">
-                            A
-                          </div>
-                          <span className={`font-bold text-sm ${match.winner === match.teamAPlayers ? 'text-primary font-black' : 'text-foreground'}`}>
-                            {match.teamAPlayers}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-background border font-mono font-black text-xs text-foreground tracking-wider shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
-                          {match.score || 'VS'}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 font-black text-xs flex items-center justify-center shrink-0 border border-purple-500/20">
-                            B
-                          </div>
-                          <span className={`font-bold text-sm ${match.winner === match.teamBPlayers ? 'text-primary font-black' : 'text-foreground'}`}>
-                            {match.teamBPlayers}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {match.winner ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <Trophy className="w-3 h-3 text-emerald-400" />
-                            {match.winner}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-foreground/40">-</span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleDeleteMatch(match.matchId)}
-                          className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
-                          title="Delete match record"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+            {/* Desktop Table View (Untouched) */}
+            <div className="hidden md:block bg-surface border border-foreground/5 rounded-[24px] overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Date &amp; Sport</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Team A</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-center">Score</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Team B</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest">Winner</th>
+                      <th className="px-6 py-4 text-xs font-black text-foreground/50 uppercase tracking-widest text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-foreground/5">
+                    {filteredMatches.map((match) => (
+                      <tr key={match.matchId} className="hover:bg-foreground/[0.02] transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <div className="text-xs font-bold text-foreground">
+                              {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent'}
+                            </div>
+                            <div className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-primary">
+                              <span>{AVAILABLE_SPORTS_ICONS[match.sportType] || '🏅'}</span>
+                              <span>{match.matchType || 'Match'}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 font-black text-xs flex items-center justify-center shrink-0 border border-blue-500/20">
+                              A
+                            </div>
+                            <span className={`font-bold text-sm ${match.winner === match.teamAPlayers ? 'text-primary font-black' : 'text-foreground'}`}>
+                              {match.teamAPlayers}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 text-center">
+                          <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-background border font-mono font-black text-xs text-foreground tracking-wider shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+                            {match.score || 'VS'}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 font-black text-xs flex items-center justify-center shrink-0 border border-purple-500/20">
+                              B
+                            </div>
+                            <span className={`font-bold text-sm ${match.winner === match.teamBPlayers ? 'text-primary font-black' : 'text-foreground'}`}>
+                              {match.teamBPlayers}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {match.winner ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <Trophy className="w-3 h-3 text-emerald-400" />
+                              {match.winner}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-foreground/40">-</span>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteMatch(match.matchId)}
+                            className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-80 group-hover:opacity-100"
+                            title="Delete match record"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Mobile Stylish Match Cards View */}
-            <div className="block md:hidden divide-y divide-foreground/5">
+            {/* ── MOBILE VIEW: ULTRA-STYLISH APP-LIKE MATCH CARDS ── */}
+            <div className="block md:hidden space-y-3">
               {filteredMatches.map((match) => {
                 const scoreParts = (match.score || '').split('-').map((s) => s.trim());
                 const scoreA = scoreParts[0] || (match.score ? match.score : '-');
@@ -642,84 +686,86 @@ export default function MatchesPage() {
                 const isTeamBWinner = match.winner && match.winner === match.teamBPlayers;
 
                 return (
-                  <div key={match.matchId} className="p-4 space-y-3 hover:bg-foreground/[0.02] transition-colors">
-                    {/* Top Bar: Date, Sport, Match Format, Actions */}
+                  <div
+                    key={match.matchId}
+                    className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-3 transition-all hover:border-primary/40"
+                  >
+                    {/* Top Row: Date + Sport + Match Format + Delete */}
                     <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{AVAILABLE_SPORTS_ICONS[match.sportType] || '🏅'}</span>
-                        <span className="font-extrabold text-foreground">
-                          {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent'}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{AVAILABLE_SPORTS_ICONS[match.sportType] || '🏅'}</span>
+                        <span className="font-extrabold text-foreground text-xs">
+                          {match.matchDate ? new Date(match.matchDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Recent'}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                        <span className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
                           {match.matchType || 'SINGLES'}
                         </span>
                       </div>
 
                       <button
                         onClick={() => handleDeleteMatch(match.matchId)}
-                        className="p-2 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        className="p-1.5 rounded-xl text-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition active:scale-90"
                         title="Delete match"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    {/* Full-Width Match Scoreboard */}
-                    <div
-                      className="rounded-2xl bg-background border p-3.5 space-y-2.5 shadow-inner"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    >
-                      {/* Team A Row */}
+                    {/* Scoreboard Card Box */}
+                    <div className="rounded-xl bg-surface border border-border p-3 space-y-2.5">
+                      {/* Team A */}
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-grow">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <span className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 font-black text-[10px] flex items-center justify-center shrink-0">
                             A
                           </span>
-                          <div className="min-w-0 flex-grow">
-                            <div className={`text-xs sm:text-sm font-extrabold leading-snug break-words ${isTeamAWinner ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-xs font-extrabold truncate ${isTeamAWinner ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
                               {match.teamAPlayers}
                             </div>
                             {isTeamAWinner && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-400 mt-0.5">
-                                <Crown className="w-3 h-3" /> Winner
+                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-emerald-400">
+                                <Crown className="w-2.5 h-2.5" /> Winner
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${isTeamAWinner
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                          : 'bg-surface text-foreground/80 border-foreground/10'
-                          }`}>
+                        <div className={`px-2.5 py-1 rounded-lg font-mono font-black text-xs shrink-0 border ${
+                          isTeamAWinner
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-background text-foreground/80 border-border'
+                        }`}>
                           {scoreA}
                         </div>
                       </div>
 
                       {/* Divider */}
-                      <div className="border-t border-foreground/5" />
+                      <div className="border-t border-border/60" />
 
-                      {/* Team B Row */}
+                      {/* Team B */}
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-grow">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 font-black text-[10px] flex items-center justify-center shrink-0">
                             B
                           </span>
-                          <div className="min-w-0 flex-grow">
-                            <div className={`text-xs sm:text-sm font-extrabold leading-snug break-words ${isTeamBWinner ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-xs font-extrabold truncate ${isTeamBWinner ? 'text-emerald-400 font-black' : 'text-foreground'}`}>
                               {match.teamBPlayers}
                             </div>
                             {isTeamBWinner && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-400 mt-0.5">
-                                <Crown className="w-3 h-3" /> Winner
+                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-emerald-400">
+                                <Crown className="w-2.5 h-2.5" /> Winner
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-sm shrink-0 border ${isTeamBWinner
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                          : 'bg-surface text-foreground/80 border-foreground/10'
-                          }`}>
+                        <div className={`px-2.5 py-1 rounded-lg font-mono font-black text-xs shrink-0 border ${
+                          isTeamBWinner
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-background text-foreground/80 border-border'
+                        }`}>
                           {scoreB}
                         </div>
                       </div>
@@ -996,6 +1042,21 @@ export default function MatchesPage() {
           </div>
         </div>
       )}
+
+      {/* ── MOBILE FLOATING ACTION BUTTON (FAB) ── */}
+      <div className="fixed bottom-24 right-5 md:hidden z-40">
+        <button
+          onClick={() => {
+            resetModal();
+            setMatchDate(getLocalDateString());
+            setIsAddModalOpen(true);
+          }}
+          className="w-13 h-13 rounded-full bg-primary text-black flex items-center justify-center shadow-[0_8px_25px_rgba(255,200,0,0.4)] border border-primary/50 active:scale-90 transition-transform hover:scale-105"
+          title="Record Match"
+        >
+          <Plus className="w-6 h-6 stroke-[3]" />
+        </button>
+      </div>
     </div>
   );
 }

@@ -42,6 +42,7 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { OrganizationService } from '@/lib/api/organization';
 import { AcademyStudentService, AcademyBatch, AcademyCourt } from '@/lib/api/academyStudent';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
 
 interface AcademyListing {
   id: string | number;
@@ -60,6 +61,10 @@ interface AcademyListing {
   openTiming: string;
   phone: string;
   isLiveOrg?: boolean;
+  logo?: string;
+  banner?: string;
+  description?: string;
+  profile?: any;
 }
 
 const DEFAULT_ACADEMIES: AcademyListing[] = [
@@ -206,6 +211,10 @@ export default function AcademiesPage() {
               openTiming: prof?.openingTime && prof?.closingTime ? `${prof.openingTime} - ${prof.closingTime}` : '6:00 AM - 10:00 PM',
               phone: prof?.contactPhone || '+91 98765 43210',
               isLiveOrg: true,
+              logo: org.logo || prof?.logo,
+              banner: org.banner || prof?.banner,
+              description: org.description || prof?.description || prof?.bio,
+              profile: prof || org,
             };
           });
           setLiveAcademies(mapped);
@@ -221,6 +230,23 @@ export default function AcademiesPage() {
     };
 
     fetchAcademies();
+
+    const handleOrgSync = () => {
+      fetchAcademies();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('athlon-org-updated', handleOrgSync);
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'athlon_org_updated_time') fetchAcademies();
+      });
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('athlon-org-updated', handleOrgSync);
+      }
+    };
   }, []);
 
   const allAcademies = useMemo(() => {
@@ -306,13 +332,11 @@ export default function AcademiesPage() {
           parentPhone: enrollForm.phone,
           parentEmail: enrollForm.email,
           emergencyContact: enrollForm.emergencyContact,
-          monthlyFee: selectedB?.monthlyFee || 1500,
-          feeFrequency: 'MONTHLY',
-          feeStatus: 'PENDING',
+          status: 'ENQUIRY',
         });
       }
 
-      showToast(`🎉 Enrolled successfully into ${selectedAcademyForEnroll.name}!`);
+      showToast(`🎉 Application submitted to ${selectedAcademyForEnroll.name}! The academy will review and confirm your admission.`);
       setSelectedAcademyForEnroll(null);
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Failed to submit enrollment. Please try again.');
@@ -428,100 +452,13 @@ export default function AcademiesPage() {
             <p className="text-xs text-foreground/50">Try broadening your search query or removing active filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAcademies.map((academy) => (
-              <div
+              <AcademyMarketplaceCard
                 key={academy.id}
-                className="rounded-3xl border border-white/10 bg-surface/80 hover:border-primary/40 transition-all overflow-hidden shadow-xl flex flex-col justify-between group backdrop-blur-xl"
-              >
-                {/* Academy Banner Image */}
-                <div className="relative h-44 w-full overflow-hidden bg-black/40">
-                  <img
-                    src={academy.image}
-                    alt={academy.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-
-                  {/* Top Badges */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary text-black shadow-md flex items-center gap-1">
-                      <span>🏸</span>
-                      <span>{academy.sportType || 'Badminton'}</span>
-                    </span>
-
-                    <div className="flex items-center gap-1 bg-black/70 px-2 py-0.5 rounded-full text-[11px] font-bold text-white backdrop-blur-sm border border-white/10">
-                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                      <span>{academy.rating}</span>
-                    </div>
-                  </div>
-
-                  {/* Bottom Image Info */}
-                  <div className="absolute bottom-3 left-3 right-3 z-10">
-                    <h3 className="text-base font-black text-white leading-tight truncate drop-shadow-md">
-                      {academy.name}
-                    </h3>
-                    <div className="flex items-center gap-1 text-[11px] text-white/80 font-medium mt-0.5">
-                      <MapPin className="w-3 h-3 text-primary shrink-0" />
-                      <span className="truncate">{academy.location}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Academy Details Body */}
-                <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between">
-                  {/* Courts, Batches & Amenities */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-foreground/70 bg-background/60 p-2.5 rounded-2xl border border-white/5">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <Building2 className="w-3.5 h-3.5 text-blue-400" />
-                        <span>{academy.courts} Training Courts</span>
-                      </div>
-                      <div className="flex items-center gap-1 font-bold text-primary">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{academy.openTiming}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {academy.tags.slice(0, 3).map((tag, tIdx) => (
-                        <span
-                          key={tIdx}
-                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/5 border border-white/10 text-foreground/70"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Fee & Action Buttons */}
-                  <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-foreground/40 block">Training Fee</span>
-                      <span className="text-sm font-black font-mono text-emerald-400">{academy.price}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`tel:${academy.phone}`}
-                        title="Call Academy"
-                        className="p-2 rounded-xl bg-surface border border-white/10 hover:bg-white/10 text-foreground/70 transition-colors"
-                      >
-                        <Phone className="w-4 h-4 text-primary" />
-                      </a>
-
-                      <button
-                        onClick={() => handleOpenEnrollModal(academy)}
-                        className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs hover:brightness-110 transition-all shadow-md shadow-primary/20 cursor-pointer flex items-center gap-1.5 active:scale-95"
-                      >
-                        <UserPlus className="w-3.5 h-3.5" />
-                        <span>Enroll Now</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                academy={academy}
+                className="h-full hover:scale-[1.02] transition-transform duration-300"
+              />
             ))}
           </div>
         )}

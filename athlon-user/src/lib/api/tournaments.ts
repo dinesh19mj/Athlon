@@ -22,6 +22,8 @@ export interface Tournament {
   location?: string;
   mapLink: string;
   contactPhone: string;
+  gpayNumber?: string;
+  upiQrCode?: string;
   registrationFees: number;
   poster: string;
   registrationClosingDate?: string;
@@ -46,13 +48,21 @@ export const TournamentService = {
       .get<{ data: Tournament[] }>('/api/tournament/tournaments/getAllActiveTournaments')
       .then((res) => ({ ...res, data: sortTournamentsDesc(res.data) })),
 
-  getById: (uuid: string) =>
-    api.get<{ data: Tournament }>(`/api/tournament/tournaments/getTournamentByUuid/${uuid}`),
+  getById: (uuid: string) => {
+    if (!uuid || !uuid.trim()) {
+      return Promise.reject(new Error('Tournament UUID is required'));
+    }
+    return api.get<{ data: Tournament }>(`/api/tournament/tournaments/getTournamentByUuid/${uuid}`);
+  },
 
-  getByOrg: (orgUuid: string) =>
-    api
+  getByOrg: (orgUuid: string) => {
+    if (!orgUuid || !orgUuid.trim()) {
+      return Promise.resolve({ data: [] as Tournament[], success: true, message: '', timestamp: '' });
+    }
+    return api
       .get<{ data: Tournament[] }>(`/api/tournament/tournaments/getTournamentsByOrganizationUuid/${orgUuid}`)
-      .then((res) => ({ ...res, data: sortTournamentsDesc(res.data) })),
+      .then((res) => ({ ...res, data: sortTournamentsDesc(res.data) }));
+  },
 
   updateStatus: (uuid: string, status: string) =>
     api.post<{ data: Tournament }>(`/api/tournament/tournaments/updateStatus/${uuid}?status=${encodeURIComponent(status)}`, {}),
@@ -111,22 +121,27 @@ export interface Match {
 
 export const MatchService = {
   getByTournament: async (tournamentUuid: string): Promise<Match[]> => {
-    const res = await api.get<{ data: Match[] }>(`/api/tournament/matches/tournament/${tournamentUuid}`);
-    return res.data || [];
+    if (!tournamentUuid || !tournamentUuid.trim()) return [];
+    try {
+      const res = await api.get<{ data: Match[] }>(`/api/tournament/matches/tournament/${tournamentUuid}`);
+      return res.data || [];
+    } catch {
+      return [];
+    }
   },
 
   updateCourt: async (matchUuid: string, courtId: number) => {
-    const res = await api.put<{ data: Match }>(`/api/tournament/matches/${matchUuid}/court?courtId=${courtId}`, {});
+    const res = await api.post<{ data: Match }>(`/api/tournament/matches/${matchUuid}/court?courtId=${courtId}`, {});
     return res.data;
   },
 
   updateUmpire: async (matchUuid: string, umpirePhone: string) => {
-    const res = await api.put<{ data: Match }>(`/api/tournament/matches/${matchUuid}/umpire?umpirePhone=${encodeURIComponent(umpirePhone)}`, {});
+    const res = await api.post<{ data: Match }>(`/api/tournament/matches/${matchUuid}/umpire?umpirePhone=${encodeURIComponent(umpirePhone)}`, {});
     return res.data;
   },
 
   updateSchedule: async (matchUuid: string, scheduledTime: string) => {
-    const res = await api.put<{ data: Match }>(`/api/tournament/matches/${matchUuid}/schedule?scheduledTime=${encodeURIComponent(scheduledTime)}`, {});
+    const res = await api.post<{ data: Match }>(`/api/tournament/matches/${matchUuid}/schedule?scheduledTime=${encodeURIComponent(scheduledTime)}`, {});
     return res.data;
   }
 };
@@ -153,6 +168,12 @@ export interface RegistrationPlayer {
   playerUuid?: string;
   playerName: string;
   phoneNumber?: string;
+  photo?: string;
+  photoUrl?: string;
+  avatar?: string;
+  profilePic?: string;
+  userPhoto?: string;
+  idProofUrl?: string;
 }
 
 export interface Registration {
@@ -164,6 +185,8 @@ export interface Registration {
   categoryId: number;
   primaryContactId?: number;
   teamName: string;
+  place?: string;
+  category?: string;
   status: string;
   paymentStatus?: string;
   createdAt: string;
@@ -214,10 +237,14 @@ export const DrawService = {
         api.post<{ data: any }>(`/api/tournament/draws/league/${tournamentUuid}`, requestBody),
     generateLeaguePlayoffs: (tournamentUuid: string) =>
         api.post<{ data: any }>(`/api/tournament/draws/league-playoffs/${tournamentUuid}`, {}),
+    generatePooledKnockoutDraw: (tournamentUuid: string, requestBody: any) =>
+        api.post<{ data: any }>(`/api/tournament/draws/pooled-knockout/${tournamentUuid}`, requestBody),
+    generatePooledPlayoffs: (tournamentUuid: string, requestBody?: any) =>
+        api.post<{ data: any }>(`/api/tournament/draws/pooled-playoffs/${tournamentUuid}`, requestBody || {}),
     getStandings: (tournamentUuid: string) =>
         api.get<any>(`/api/tournament/draws/standings/${tournamentUuid}`),
     deleteDraw: (tournamentUuid: string) =>
-        api.delete<{ data: any }>(`/api/tournament/draws/${tournamentUuid}`),
+        api.post<{ data: any }>(`/api/tournament/draws/delete/${tournamentUuid}`, {}),
 };
 
 export interface CourtConfig {

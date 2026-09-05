@@ -175,7 +175,7 @@ export default function OrganizationLayout({ children }: { children: React.React
             { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
             { name: 'Centres & Campuses', href: `/org/${orgId}/centres`, icon: MapPin, badge: null, isLive: false },
             { name: 'Facilities & Courts', href: `/org/${orgId}/facilities`, icon: Building, badge: null, isLive: false },
-            { name: 'Coaching & Batches', href: `/org/${orgId}/admissions`, icon: Sparkles, badge: null, isLive: false },
+            { name: 'Coaching & Batches', href: `/org/${orgId}/batches`, icon: Sparkles, badge: null, isLive: false },
             { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays, badge: null, isLive: false },
           ],
         },
@@ -184,7 +184,7 @@ export default function OrganizationLayout({ children }: { children: React.React
           items: [
             { name: 'Students', href: `/org/${orgId}/students`, icon: Users, badge: null, isLive: false },
             { name: 'Coaches', href: `/org/${orgId}/coaches`, icon: User, badge: null, isLive: false },
-            { name: 'Staff & Members', href: `/org/${orgId}/members`, icon: Shield, badge: null, isLive: false },
+            { name: 'Staff', href: `/org/${orgId}/staff`, icon: Shield, badge: null, isLive: false },
           ],
         },
         {
@@ -493,7 +493,7 @@ export default function OrganizationLayout({ children }: { children: React.React
         {/* 3D Circular Elevated Umpire Button */}
         <div className="relative -top-5 flex items-center justify-center">
           <Link
-            href="/match-setup"
+            href="/practice"
             className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
             style={{
               backgroundColor: 'var(--athlon-primary)',

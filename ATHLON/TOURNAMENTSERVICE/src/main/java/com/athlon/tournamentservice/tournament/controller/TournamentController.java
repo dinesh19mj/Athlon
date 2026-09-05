@@ -35,9 +35,10 @@ public class TournamentController {
 
     @PostMapping(value = "/createTournament", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<TournamentResponse>> createTournament(TournamentCreateRequest request,
-            @RequestParam(value = "poster", required = false) MultipartFile poster) throws IOException {
+            @RequestParam(value = "poster", required = false) MultipartFile poster,
+            @RequestParam(value = "upiQrCode", required = false) MultipartFile upiQrCode) throws IOException {
         
-        TournamentResponse response = tournamentService.createTournament(request, poster);
+        TournamentResponse response = tournamentService.createTournament(request, poster, upiQrCode);
         return new ResponseEntity<>(ApiResponse.success("Tournament created successfully", response), HttpStatus.CREATED);
     }
 

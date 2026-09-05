@@ -46,6 +46,12 @@ public class TournamentService {
 	@Transactional
 	public TournamentResponse createTournament(TournamentCreateRequest request, MultipartFile poster)
 			throws IOException {
+		return createTournament(request, poster, null);
+	}
+
+	@Transactional
+	public TournamentResponse createTournament(TournamentCreateRequest request, MultipartFile poster, MultipartFile upiQrCode)
+			throws IOException {
 		Tournament tournament = new Tournament(
 				request.getName(), 
 				request.getDescription(), 
@@ -71,11 +77,16 @@ public class TournamentService {
 		);
 
 		tournament.setRegistrationClosingDate(request.getRegistrationClosingDate());
+		tournament.setGpayNumber(request.getGpayNumber());
 
 		if (poster != null && !poster.isEmpty()) {
 			String fileName = fileStorageUtil.saveFileToDir(poster, System.getProperty("tournament"), posterUploadDir);
-
 			tournament.setPoster("/" + posterUploadDir + "/" + fileName);
+		}
+
+		if (upiQrCode != null && !upiQrCode.isEmpty()) {
+			String qrFileName = fileStorageUtil.saveFileToDir(upiQrCode, System.getProperty("tournament"), posterUploadDir);
+			tournament.setUpiQrCode("/" + posterUploadDir + "/" + qrFileName);
 		}
 
 		Tournament saved = tournamentRepository.save(tournament);

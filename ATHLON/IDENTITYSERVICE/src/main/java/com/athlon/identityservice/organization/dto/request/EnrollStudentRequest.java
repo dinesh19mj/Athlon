@@ -41,6 +41,7 @@ public class EnrollStudentRequest {
     private BigDecimal monthlyFee;
     private String feeFrequency;
     private String feeStatus; // PAID, PENDING, OVERDUE
+    private String status; // ACTIVE, ENQUIRY, PENDING_APPROVAL, etc.
 
     public UUID getOrganizationUuid() {
         return organizationUuid;
@@ -232,5 +233,13 @@ public class EnrollStudentRequest {
 
     public void setFeeStatus(String feeStatus) {
         this.feeStatus = feeStatus;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

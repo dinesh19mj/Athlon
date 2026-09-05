@@ -4,11 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -68,7 +66,7 @@ public class AcademyStudentController {
         return ResponseEntity.ok(ApiResponse.success("Academy court created successfully", court));
     }
 
-    @PutMapping("/courts/update")
+    @PostMapping("/courts/update")
     public ResponseEntity<ApiResponse<AcademyCourtResponse>> updateCourt(
             @Valid @RequestBody UpdateCourtRequest request) {
 
@@ -76,7 +74,7 @@ public class AcademyStudentController {
         return ResponseEntity.ok(ApiResponse.success("Academy court updated successfully", court));
     }
 
-    @DeleteMapping("/courts/{courtUuid}")
+    @PostMapping("/courts/delete/{courtUuid}")
     public ResponseEntity<ApiResponse<Void>> deleteCourt(
             @PathVariable("courtUuid") UUID courtUuid) {
 
@@ -118,7 +116,7 @@ public class AcademyStudentController {
         return ResponseEntity.ok(ApiResponse.success("Student enrolled successfully", student));
     }
 
-    @PutMapping("/students/update")
+    @PostMapping("/students/update")
     public ResponseEntity<ApiResponse<AcademyStudentResponse>> updateStudent(
             @Valid @RequestBody UpdateStudentRequest request) {
 
@@ -126,7 +124,7 @@ public class AcademyStudentController {
         return ResponseEntity.ok(ApiResponse.success("Student updated successfully", student));
     }
 
-    @DeleteMapping("/students/{studentUuid}")
+    @PostMapping("/students/delete/{studentUuid}")
     public ResponseEntity<ApiResponse<Void>> deleteStudent(
             @PathVariable("studentUuid") UUID studentUuid) {
 
@@ -163,7 +161,7 @@ public class AcademyStudentController {
         return ResponseEntity.ok(ApiResponse.success("Batch created successfully", batch));
     }
 
-    @PutMapping("/batches/update")
+    @PostMapping("/batches/update")
     public ResponseEntity<ApiResponse<AcademyBatchResponse>> updateBatch(
             @Valid @RequestBody UpdateBatchRequest request) {
 
@@ -171,7 +169,7 @@ public class AcademyStudentController {
         return ResponseEntity.ok(ApiResponse.success("Batch updated successfully", batch));
     }
 
-    @DeleteMapping("/batches/{batchUuid}")
+    @PostMapping("/batches/delete/{batchUuid}")
     public ResponseEntity<ApiResponse<Void>> deleteBatch(
             @PathVariable("batchUuid") UUID batchUuid) {
 

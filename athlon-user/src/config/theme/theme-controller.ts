@@ -1,12 +1,13 @@
-import type { AthlonTheme, ThemeKey } from './theme-types';
-import { ATHLON_THEMES, THEME_ORDER } from './athlon-themes';
-import { DEFAULT_THEME_KEY, THEME_STORAGE_KEY } from './theme-constants';
+import type { AthlonTheme, ThemeKey, ThemeMode } from './theme-types';
+import { ATHLON_THEMES, ATHLON_LIGHT_THEMES, THEME_ORDER, getAthlonTheme } from './athlon-themes';
+import { DEFAULT_THEME_KEY, DEFAULT_THEME_MODE, THEME_STORAGE_KEY, THEME_MODE_STORAGE_KEY } from './theme-constants';
 
-type ThemeListener = (theme: AthlonTheme) => void;
+type ThemeListener = (theme: AthlonTheme, mode: ThemeMode) => void;
 
 class ThemeController {
   private static instance: ThemeController;
   private currentTheme: AthlonTheme;
+  private currentMode: ThemeMode = DEFAULT_THEME_MODE;
   private listeners: Set<ThemeListener> = new Set();
 
   private constructor() {
@@ -24,22 +25,32 @@ class ThemeController {
     return this.currentTheme;
   }
 
-  getAvailableThemes(): AthlonTheme[] {
-    return THEME_ORDER.map((k) => ATHLON_THEMES[k]);
+  getMode(): ThemeMode {
+    return this.currentMode;
   }
 
-  setTheme(key: ThemeKey): void {
-    const theme = ATHLON_THEMES[key];
+  getAvailableThemes(mode: ThemeMode = this.currentMode): AthlonTheme[] {
+    return THEME_ORDER.map((k) => getAthlonTheme(k, mode));
+  }
+
+  setTheme(key: ThemeKey, mode: ThemeMode = this.currentMode): void {
+    this.currentMode = mode;
+    const theme = getAthlonTheme(key, mode);
     if (!theme) return;
     this.currentTheme = theme;
-    this.applyThemeCSSVariables(theme);
+    this.applyThemeCSSVariables(theme, mode);
     if (typeof window !== 'undefined') {
       localStorage.setItem(THEME_STORAGE_KEY, key);
+      localStorage.setItem(THEME_MODE_STORAGE_KEY, mode);
     }
-    this.listeners.forEach((fn) => fn(theme));
+    this.listeners.forEach((fn) => fn(theme, mode));
   }
 
-  applyThemeCSSVariables(theme: AthlonTheme): void {
+  setMode(mode: ThemeMode): void {
+    this.setTheme(this.currentTheme.key, mode);
+  }
+
+  applyThemeCSSVariables(theme: AthlonTheme, mode: ThemeMode = this.currentMode): void {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
     const c = theme.colors;
@@ -116,16 +127,24 @@ class ThemeController {
     root.style.setProperty('--athlon-error', s.error);
     root.style.setProperty('--athlon-live', s.live);
 
-    root.classList.add('dark');
-    root.classList.remove('light');
+    if (mode === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    } else {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    }
   }
 
   initializeTheme(): void {
     if (typeof window === 'undefined') return;
     const saved = localStorage.getItem(THEME_STORAGE_KEY) as ThemeKey | null;
+    const savedMode = localStorage.getItem(THEME_MODE_STORAGE_KEY) as ThemeMode | null;
     const key = saved && ATHLON_THEMES[saved] ? saved : DEFAULT_THEME_KEY;
-    this.currentTheme = ATHLON_THEMES[key];
-    this.applyThemeCSSVariables(this.currentTheme);
+    const mode = savedMode === 'light' ? 'light' : 'dark';
+    this.currentMode = mode;
+    this.currentTheme = getAthlonTheme(key, mode);
+    this.applyThemeCSSVariables(this.currentTheme, mode);
   }
 
   subscribe(fn: ThemeListener): () => void {

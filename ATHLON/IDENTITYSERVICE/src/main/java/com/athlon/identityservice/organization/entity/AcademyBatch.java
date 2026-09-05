@@ -33,6 +33,15 @@ public class AcademyBatch {
     @Column(name = "organization_uuid", nullable = false)
     private UUID organizationUuid;
 
+    @Column(name = "centre_uuid")
+    private UUID centreUuid;
+
+    @Column(name = "centre_name", length = 150)
+    private String centreName;
+
+    @Column(name = "facility_uuid")
+    private UUID facilityUuid;
+
     @Column(name = "court_uuid")
     private UUID courtUuid;
 
@@ -43,10 +52,16 @@ public class AcademyBatch {
     private String batchName;
 
     @Column(name = "sport_type", length = 50)
-    private String sportType; // Badminton, Tennis, Football, etc.
+    private String sportType; // Badminton, Tennis, Football, Cricket, etc.
 
     @Column(name = "skill_level", length = 50)
     private String level; // BEGINNER, INTERMEDIATE, ADVANCED, ELITE, PRO
+
+    @Column(name = "age_category", length = 50)
+    private String ageCategory; // U9, U11, U13, U15, U17, U19, OPEN, ADULTS
+
+    @Column(name = "program_focus", length = 150)
+    private String programFocus; // Grassroots Foundation, Tournament Circuit, High Performance
 
     @Column(name = "coach_uuid")
     private UUID coachUuid;
@@ -129,6 +144,46 @@ public class AcademyBatch {
 
     public void setOrganizationUuid(UUID organizationUuid) {
         this.organizationUuid = organizationUuid;
+    }
+
+    public UUID getCentreUuid() {
+        return centreUuid;
+    }
+
+    public void setCentreUuid(UUID centreUuid) {
+        this.centreUuid = centreUuid;
+    }
+
+    public String getCentreName() {
+        return centreName;
+    }
+
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
+    }
+
+    public UUID getFacilityUuid() {
+        return facilityUuid;
+    }
+
+    public void setFacilityUuid(UUID facilityUuid) {
+        this.facilityUuid = facilityUuid;
+    }
+
+    public String getAgeCategory() {
+        return ageCategory;
+    }
+
+    public void setAgeCategory(String ageCategory) {
+        this.ageCategory = ageCategory;
+    }
+
+    public String getProgramFocus() {
+        return programFocus;
+    }
+
+    public void setProgramFocus(String programFocus) {
+        this.programFocus = programFocus;
     }
 
     public UUID getCourtUuid() {

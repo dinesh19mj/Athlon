@@ -19,6 +19,7 @@ public class CreateCentreRequest {
     private String address;
     private String city;
     private String state;
+    private String district;
     private String postalCode;
     private String country;
     private String contactPhone;
@@ -76,6 +77,14 @@ public class CreateCentreRequest {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
     }
 
     public String getPostalCode() {
