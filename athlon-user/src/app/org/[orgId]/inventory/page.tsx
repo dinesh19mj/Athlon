@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/clubInventory';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService } from '@/lib/api/user';
+import AcademyInventoryView from '@/components/academy/AcademyInventoryView';
 import {
   Package,
   Plus,
@@ -65,6 +66,11 @@ export default function InventoryPage() {
   const org = getActiveOrganization();
 
   const orgUuid = (org?.id || orgIdParam) as string;
+
+  if (org?.type === 'ACADEMY') {
+    return <AcademyInventoryView orgUuid={orgUuid} orgName={org.name || 'Academy'} />;
+  }
+
   const { role, isAdmin, canManage } = useOrgRole(orgUuid);
 
   const [items, setItems] = useState<ClubInventoryItem[]>([]);

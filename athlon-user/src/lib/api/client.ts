@@ -102,26 +102,32 @@ export const api = {
   get: <T>(endpoint: string, options?: RequestInit) => 
     fetchClient<T>(endpoint, { ...options, method: 'GET' }),
     
-  post: <T>(endpoint: string, data: any, options?: RequestInit) => 
-    fetchClient<T>(endpoint, { 
+  post: <T>(endpoint: string, data: any, options?: RequestInit) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return fetchClient<T>(endpoint, { 
       ...options, 
       method: 'POST', 
-      body: JSON.stringify(data) 
-    }),
+      body: isFormData ? data : JSON.stringify(data) 
+    });
+  },
     
-  put: <T>(endpoint: string, data: any, options?: RequestInit) => 
-    fetchClient<T>(endpoint, { 
+  put: <T>(endpoint: string, data: any, options?: RequestInit) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return fetchClient<T>(endpoint, { 
       ...options, 
       method: 'PUT', 
-      body: JSON.stringify(data) 
-    }),
+      body: isFormData ? data : JSON.stringify(data) 
+    });
+  },
     
-  patch: <T>(endpoint: string, data: any, options?: RequestInit) => 
-    fetchClient<T>(endpoint, { 
+  patch: <T>(endpoint: string, data: any, options?: RequestInit) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return fetchClient<T>(endpoint, { 
       ...options, 
       method: 'PATCH', 
-      body: JSON.stringify(data) 
-    }),
+      body: isFormData ? data : JSON.stringify(data) 
+    });
+  },
     
   delete: <T>(endpoint: string, options?: RequestInit) => 
     fetchClient<T>(endpoint, { ...options, method: 'DELETE' }),

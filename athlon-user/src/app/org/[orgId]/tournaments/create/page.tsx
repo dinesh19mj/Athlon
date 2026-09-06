@@ -33,6 +33,8 @@ import Link from 'next/link';
 import { TournamentService, CategoryService } from '@/lib/api/tournaments';
 import { TeamEventCategoryConfig } from '@/components/tournaments/teamevent/TeamEventCategoryBuilder';
 import { OrganizationService } from '@/lib/api/organization';
+import { AcademyService, AcademyCentre } from '@/lib/api/academy';
+import { AcademyStudentService, AcademyBatch } from '@/lib/api/academyStudent';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgSports } from '@/lib/hooks/useOrgSports';
@@ -61,6 +63,13 @@ export default function CreateTournamentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orgCategories, setOrgCategories] = useState<any[]>([]);
 
+  // Academy venue & batch targeting states
+  const [academyCentres, setAcademyCentres] = useState<AcademyCentre[]>([]);
+  const [academyBatches, setAcademyBatches] = useState<AcademyBatch[]>([]);
+  const [targetCentreUuid, setTargetCentreUuid] = useState<string>('ALL');
+  const [targetBatchUuids, setTargetBatchUuids] = useState<string[]>([]);
+  const [targetLevels, setTargetLevels] = useState<string[]>([]);
+
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -77,7 +86,23 @@ export default function CreateTournamentPage() {
       }
     };
     loadCategories();
-  }, [orgUuid]);
+
+    if (activeOrg.type === 'ACADEMY') {
+      const loadAcademyDetails = async () => {
+        try {
+          const [centres, batches] = await Promise.allSettled([
+            AcademyService.getCentres(orgUuid),
+            AcademyStudentService.getBatches(orgUuid),
+          ]);
+          if (centres.status === 'fulfilled') setAcademyCentres(centres.value || []);
+          if (batches.status === 'fulfilled') setAcademyBatches(batches.value || []);
+        } catch (e) {
+          console.warn('Failed to load academy details', e);
+        }
+      };
+      loadAcademyDetails();
+    }
+  }, [orgUuid, activeOrg.type]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -157,6 +182,23 @@ export default function CreateTournamentPage() {
     reader.readAsDataURL(file);
   };
 
+  const isFormValid = !!(
+    formData.name.trim() &&
+    formData.startDate &&
+    formData.endDate
+  );
+
+  const filledCount = [
+    formData.name.trim(),
+    formData.startDate,
+    formData.endDate,
+    formData.sport,
+    formData.location,
+    formData.contactPhone,
+    formData.registrationFees,
+  ].filter(Boolean).length;
+  const progressPercent = Math.min(100, Math.round((filledCount / 7) * 100));
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
@@ -168,9 +210,29 @@ export default function CreateTournamentPage() {
         throw new Error('Could not load organization details.');
       }
 
+      let finalDescription = formData.description || '';
+      let finalLocation = formData.location;
+      if (activeOrg.type === 'ACADEMY') {
+        const selectedCentre = academyCentres.find((c) => c.centreUuid === targetCentreUuid);
+        if (selectedCentre && !finalLocation) {
+          finalLocation = selectedCentre.name;
+        }
+        const metadata = {
+          academyOrgUuid: orgUuid,
+          centreUuid: targetCentreUuid,
+          centreName: selectedCentre ? selectedCentre.name : 'All Venues',
+          targetBatchUuids,
+          targetBatchNames: academyBatches
+            .filter((b) => targetBatchUuids.includes(b.batchUuid))
+            .map((b) => b.batchName),
+          targetLevels,
+        };
+        finalDescription = `${finalDescription}\n\n[ACADEMY_INTERNAL_CONFIG:${JSON.stringify(metadata)}]`.trim();
+      }
+
       const form = new FormData();
       form.append('name', formData.name);
-      form.append('description', formData.description);
+      form.append('description', finalDescription);
 
       const startDateTime = formData.startDate
         ? `${formData.startDate}T${formData.startTime || '00:00'}:00`
@@ -206,8 +268,8 @@ export default function CreateTournamentPage() {
           form.append('playersCount', formData.playersCount.toString());
         }
       }
-      form.append('visibility', formData.type);
-      form.append('location', formData.location);
+      form.append('visibility', activeOrg.type === 'ACADEMY' ? 'PRIVATE' : formData.type);
+      form.append('location', finalLocation);
       if (formData.mapLink) form.append('mapLink', formData.mapLink);
       if (formData.contactPhone) form.append('contactPhone', formData.contactPhone);
       if (formData.gpayNumber) form.append('gpayNumber', formData.gpayNumber.trim());
@@ -239,14 +301,8 @@ export default function CreateTournamentPage() {
     }
   };
 
-  // Form validity & completeness
-  const requiredFields = [formData.name.trim(), formData.location.trim(), formData.startDate, formData.endDate];
-  const filledCount = requiredFields.filter(Boolean).length;
-  const progressPercent = Math.round((filledCount / requiredFields.length) * 100);
-  const isFormValid = formData.name.trim() !== '' && formData.location.trim() !== '';
-
   const inputClass =
-    'w-full bg-card border border-foreground/15 rounded-2xl px-4 py-4 text-foreground text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-foreground/35 font-medium';
+    'w-full px-4 py-3 rounded-xl border border-foreground/15 text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-card placeholder:text-foreground/30';
   const labelClass = 'block text-[10px] font-black text-foreground/60 uppercase tracking-widest mb-2';
 
   const desktopInputClass =
@@ -272,37 +328,177 @@ export default function CreateTournamentPage() {
 
         <div className="px-5 pt-6 space-y-7 max-w-2xl mx-auto">
           {/* VISIBILITY */}
-          <div>
-            <label className={labelClass}>Visibility</label>
-            <div className="space-y-2">
-              {[
-                { value: 'PRIVATE', label: 'Private', desc: 'Me and players I invite can see this Tournament' },
-                { value: 'PUBLIC', label: 'Public', desc: 'Anyone can discover and view this Tournament' },
-              ].map((opt) => (
-                <div
-                  key={opt.value}
-                  onClick={() => setFormData({ ...formData, type: opt.value })}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-all ${
-                    formData.type === opt.value ? 'border-primary bg-primary/10' : 'border-foreground/10 bg-card hover:border-foreground/20'
-                  }`}
-                >
+          {activeOrg.type !== 'ACADEMY' ? (
+            <div>
+              <label className={labelClass}>Visibility</label>
+              <div className="space-y-2">
+                {[
+                  {
+                    value: 'PRIVATE',
+                    label: 'Private',
+                    desc: 'Me and players I invite can see this Tournament',
+                  },
+                  { value: 'PUBLIC', label: 'Public Open', desc: 'Anyone can discover and view this Tournament' },
+                ].map((opt) => (
                   <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      formData.type === opt.value ? 'border-primary' : 'border-foreground/30'
+                    key={opt.value}
+                    onClick={() => setFormData({ ...formData, type: opt.value })}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      formData.type === opt.value ? 'border-primary bg-primary/10' : 'border-foreground/10 bg-card hover:border-foreground/20'
                     }`}
                   >
-                    {formData.type === opt.value && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  <div>
-                    <div className={`font-bold text-sm ${formData.type === opt.value ? 'text-primary font-black' : 'text-foreground'}`}>
-                      {opt.label}
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        formData.type === opt.value ? 'border-primary' : 'border-foreground/30'
+                      }`}
+                    >
+                      {formData.type === opt.value && <div className="w-2 h-2 rounded-full bg-primary" />}
                     </div>
-                    <div className="text-[10px] text-foreground/50 mt-0.5">{opt.desc}</div>
+                    <div>
+                      <div className={`font-bold text-sm ${formData.type === opt.value ? 'text-primary font-black' : 'text-foreground'}`}>
+                        {opt.label}
+                      </div>
+                      <div className="text-[10px] text-foreground/50 mt-0.5">{opt.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className={labelClass}>Event Scope</label>
+              <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border-2 border-primary/30 bg-primary/10">
+                <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Lock className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <div className="font-black text-sm text-primary flex items-center gap-1.5">
+                    <span>Internal Academy Tournament</span>
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-primary/20 text-primary uppercase">
+                      Private
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-foreground/60 mt-0.5">
+                    Exclusively for enrolled academy students &amp; coaches in this academy
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* ACADEMY TARGETING (VENUE & BATCH) */}
+          {activeOrg.type === 'ACADEMY' && (
+            <div className="p-4 rounded-2xl border bg-primary/5 border-primary/20 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-black text-xs">
+                  🎯
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-foreground">Academy Venue & Batch Targeting</h4>
+                  <p className="text-[10px] text-foreground/50">Restricts poster view and registration to specific cohorts</p>
+                </div>
+              </div>
+
+              {/* Venue / Campus */}
+              <div>
+                <label className={labelClass}>Target Campus / Venue</label>
+                <select
+                  value={targetCentreUuid}
+                  onChange={(e) => {
+                    setTargetCentreUuid(e.target.value);
+                    const sel = academyCentres.find((c) => c.centreUuid === e.target.value);
+                    if (sel && !formData.location) {
+                      setFormData({ ...formData, location: sel.name });
+                    }
+                  }}
+                  className={inputClass}
+                >
+                  <option value="ALL">All Academy Campuses ({academyCentres.length})</option>
+                  {academyCentres.map((c) => (
+                    <option key={c.centreUuid} value={c.centreUuid}>
+                      {c.name} {c.city ? `(${c.city})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Batches */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelClass}>Target Batches</label>
+                  <span className="text-[9px] text-primary font-bold">
+                    {targetBatchUuids.length === 0 ? 'All Batches' : `${targetBatchUuids.length} Selected`}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setTargetBatchUuids([])}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                      targetBatchUuids.length === 0
+                        ? 'bg-primary text-primary-foreground border-primary font-black'
+                        : 'border-foreground/15 bg-background text-foreground/70'
+                    }`}
+                  >
+                    All Batches
+                  </button>
+                  {academyBatches.map((b) => {
+                    const isSel = targetBatchUuids.includes(b.batchUuid);
+                    return (
+                      <button
+                        key={b.batchUuid}
+                        type="button"
+                        onClick={() => {
+                          if (isSel) {
+                            setTargetBatchUuids((prev) => prev.filter((id) => id !== b.batchUuid));
+                          } else {
+                            setTargetBatchUuids((prev) => [...prev, b.batchUuid]);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                          isSel
+                            ? 'bg-primary text-primary-foreground border-primary font-black'
+                            : 'border-foreground/15 bg-background text-foreground/70'
+                        }`}
+                      >
+                        {b.batchName}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Skill Levels */}
+              <div>
+                <label className={labelClass}>Eligible Skill Levels</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'ELITE'].map((lvl) => {
+                    const isSel = targetLevels.includes(lvl);
+                    return (
+                      <button
+                        key={lvl}
+                        type="button"
+                        onClick={() => {
+                          if (isSel) {
+                            setTargetLevels((prev) => prev.filter((l) => l !== lvl));
+                          } else {
+                            setTargetLevels((prev) => [...prev, lvl]);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                          isSel
+                            ? 'bg-primary text-primary-foreground border-primary font-black'
+                            : 'border-foreground/15 bg-background text-foreground/70'
+                        }`}
+                      >
+                        {lvl}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* TOURNAMENT NAME */}
           <div>
@@ -971,33 +1167,193 @@ export default function CreateTournamentPage() {
                   {/* Visibility */}
                   <div>
                     <label className={desktopLabelClass}>Event Visibility</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { value: 'PRIVATE', label: 'Private', icon: Lock },
-                        { value: 'PUBLIC', label: 'Public', icon: Globe },
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, type: opt.value })}
-                          className={`py-3 px-2 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
-                            formData.type === opt.value
-                              ? 'bg-primary/15 text-primary border-primary shadow-sm'
-                              : 'text-foreground/60 hover:text-foreground'
-                          }`}
-                          style={{
-                            backgroundColor:
-                              formData.type === opt.value ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
-                            borderColor: formData.type === opt.value ? 'var(--athlon-primary)' : 'var(--athlon-border)',
-                          }}
-                        >
-                          <opt.icon className="w-3.5 h-3.5" />
-                          <span>{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
+                    {activeOrg.type !== 'ACADEMY' ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          {
+                            value: 'PRIVATE',
+                            label: 'Private',
+                            icon: Lock,
+                          },
+                          { value: 'PUBLIC', label: 'Public Open', icon: Globe },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, type: opt.value })}
+                            className={`py-3 px-2 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+                              formData.type === opt.value
+                                ? 'bg-primary/15 text-primary border-primary shadow-sm'
+                                : 'text-foreground/60 hover:text-foreground'
+                            }`}
+                            style={{
+                              backgroundColor:
+                                formData.type === opt.value ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
+                              borderColor: formData.type === opt.value ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                            }}
+                          >
+                            <opt.icon className="w-3.5 h-3.5" />
+                            <span>{opt.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div
+                        className="py-3 px-4 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-between text-primary bg-primary/10 border-primary/30"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-primary" />
+                          <span>Internal Academy Only</span>
+                        </div>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-black">
+                          Private Cohort
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Academy Cohort Targeting (Desktop) */}
+                {activeOrg.type === 'ACADEMY' && (
+                  <div
+                    className="p-5 rounded-3xl border shadow-sm space-y-4"
+                    style={{
+                      backgroundColor: 'rgba(27, 156, 86, 0.04)',
+                      borderColor: 'rgba(27, 156, 86, 0.25)',
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-black text-sm">
+                          🎯
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black text-foreground">Academy Cohort & Venue Targeting</h4>
+                          <p className="text-xs text-foreground/50">
+                            Tournament poster and registration will be scoped to enrolled students of the selected venue &amp; batches.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-wider">
+                        Internal Academy Event
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                      {/* Venue / Campus */}
+                      <div>
+                        <label className={desktopLabelClass}>Target Campus / Venue</label>
+                        <select
+                          value={targetCentreUuid}
+                          onChange={(e) => {
+                            setTargetCentreUuid(e.target.value);
+                            const sel = academyCentres.find((c) => c.centreUuid === e.target.value);
+                            if (sel && !formData.location) {
+                              setFormData({ ...formData, location: sel.name });
+                            }
+                          }}
+                          className={`${desktopInputClass} appearance-none cursor-pointer`}
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        >
+                          <option value="ALL">All Academy Campuses ({academyCentres.length})</option>
+                          {academyCentres.map((c) => (
+                            <option key={c.centreUuid} value={c.centreUuid}>
+                              {c.name} {c.city ? `(${c.city})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Batches Selection */}
+                      <div className="md:col-span-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className={desktopLabelClass}>Target Batches</label>
+                          <span className="text-[10px] font-black text-primary uppercase">
+                            {targetBatchUuids.length === 0 ? 'All Batches Eligible' : `${targetBatchUuids.length} Batches Selected`}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setTargetBatchUuids([])}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                              targetBatchUuids.length === 0
+                                ? 'bg-primary text-primary-foreground border-primary font-black shadow-sm'
+                                : 'text-foreground/70 hover:text-foreground'
+                            }`}
+                            style={{
+                              backgroundColor: targetBatchUuids.length === 0 ? undefined : 'var(--athlon-surface)',
+                              borderColor: targetBatchUuids.length === 0 ? undefined : 'var(--athlon-border)',
+                            }}
+                          >
+                            All Batches
+                          </button>
+                          {academyBatches.map((b) => {
+                            const isSel = targetBatchUuids.includes(b.batchUuid);
+                            return (
+                              <button
+                                key={b.batchUuid}
+                                type="button"
+                                onClick={() => {
+                                  if (isSel) {
+                                    setTargetBatchUuids((prev) => prev.filter((id) => id !== b.batchUuid));
+                                  } else {
+                                    setTargetBatchUuids((prev) => [...prev, b.batchUuid]);
+                                  }
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                                  isSel
+                                    ? 'bg-primary text-primary-foreground border-primary font-black shadow-sm'
+                                    : 'text-foreground/70 hover:text-foreground'
+                                }`}
+                                style={{
+                                  backgroundColor: isSel ? undefined : 'var(--athlon-surface)',
+                                  borderColor: isSel ? undefined : 'var(--athlon-border)',
+                                }}
+                              >
+                                {b.batchName} {b.level ? `(${b.level})` : ''}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Skill Levels */}
+                    <div>
+                      <label className={desktopLabelClass}>Eligible Coaching Levels</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'ELITE'].map((lvl) => {
+                          const isSel = targetLevels.includes(lvl);
+                          return (
+                            <button
+                              key={lvl}
+                              type="button"
+                              onClick={() => {
+                                if (isSel) {
+                                  setTargetLevels((prev) => prev.filter((l) => l !== lvl));
+                                } else {
+                                  setTargetLevels((prev) => [...prev, lvl]);
+                                }
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                                isSel
+                                  ? 'bg-primary text-primary-foreground border-primary font-black shadow-sm'
+                                  : 'text-foreground/70 hover:text-foreground'
+                              }`}
+                              style={{
+                                backgroundColor: isSel ? undefined : 'var(--athlon-surface)',
+                                borderColor: isSel ? undefined : 'var(--athlon-border)',
+                              }}
+                            >
+                              {lvl}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Category Configuration Area */}
                 <div className="space-y-4 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>

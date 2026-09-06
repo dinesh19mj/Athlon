@@ -16,6 +16,7 @@ import {
   FALLBACK_INDIAN_STATES,
   FALLBACK_STATE_DISTRICTS,
 } from '@/lib/api/location';
+import { usePermissions } from '@/hooks/use-permissions';
 
 import { useOrgSports, getSportEmoji } from '@/lib/hooks/useOrgSports';
 
@@ -54,6 +55,8 @@ export default function AcademyCentresPage() {
   const { getActiveOrganization } = useWorkspaceStore();
   const org = getActiveOrganization();
   const { sports: orgSports, sportOptions: orgSportOptions } = useOrgSports(orgId);
+  const { canManageModule } = usePermissions(orgId);
+  const canManage = canManageModule('centres');
 
   const [centres, setCentres] = useState<AcademyCentre[]>([]);
   const [loading, setLoading] = useState(true);
@@ -374,7 +377,7 @@ export default function AcademyCentresPage() {
                 {searchQuery ? 'Try a different search.' : 'Tap + to add your first campus.'}
               </p>
             </div>
-            {!searchQuery && (
+            {!searchQuery && canManage && (
               <button
                 onClick={openCreate}
                 className="px-5 py-2.5 bg-primary text-black text-xs font-extrabold rounded-2xl shadow-lg shadow-primary/25 active:scale-95 transition"
@@ -553,22 +556,24 @@ export default function AcademyCentresPage() {
                           <ArrowRight className="w-3 h-3" />
                         </Link>
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openEdit(centre)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/60 hover:text-foreground border border-transparent hover:border-white/10 transition active:scale-95"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(centre.centreUuid, centre.name)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-red-400/70 hover:text-red-400 border border-transparent hover:border-red-500/20 transition active:scale-95"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Remove
-                          </button>
-                        </div>
+                        {canManage && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openEdit(centre)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/60 hover:text-foreground border border-transparent hover:border-white/10 transition active:scale-95"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(centre.centreUuid, centre.name)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-red-400/70 hover:text-red-400 border border-transparent hover:border-red-500/20 transition active:scale-95"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Remove
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -580,17 +585,19 @@ export default function AcademyCentresPage() {
       </div>
 
       {/* ── FLOATING ACTION BUTTON ── */}
-      <button
-        onClick={openCreate}
-        className="fixed bottom-24 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-all"
-        style={{
-          backgroundColor: 'var(--athlon-primary)',
-          boxShadow: '0 8px 24px var(--athlon-primary-glow), 0 4px 10px rgba(0,0,0,0.5)',
-        }}
-        aria-label="Add Campus"
-      >
-        <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
-      </button>
+      {canManage && (
+        <button
+          onClick={openCreate}
+          className="fixed bottom-24 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-primary)',
+            boxShadow: '0 8px 24px var(--athlon-primary-glow), 0 4px 10px rgba(0,0,0,0.5)',
+          }}
+          aria-label="Add Campus"
+        >
+          <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
+        </button>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════
           BOTTOM SHEET MODAL

@@ -195,6 +195,8 @@ export interface Registration {
 }
 
 export const RegistrationService = {
+  createRegistration: (data: any) =>
+    api.post<{ data: Registration }>('/api/tournament/registrations/create', data),
   getByTournament: (tournamentId: number) =>
     api.get<{ data: Registration[] }>(`/api/tournament/registrations/get-by-tournament?tournamentId=${tournamentId}`),
   getByUser: (userId: string) =>

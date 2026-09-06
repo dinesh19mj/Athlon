@@ -29,6 +29,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   AcademyAttendanceService,
   AcademyAttendanceRecord,
@@ -53,8 +54,8 @@ interface Props {
 }
 
 export default function AcademyAttendanceView({ orgUuid, orgName }: Props) {
-  const { isAdmin, isCoach } = useOrgRole(orgUuid);
-  const canTakeAttendance = isAdmin || isCoach;
+  const { canManageModule } = usePermissions(orgUuid);
+  const canTakeAttendance = canManageModule('attendance');
 
   // Active Channel: STUDENTS | COACHES | STAFF
   const [activeTab, setActiveTab] = useState<'STUDENTS' | 'COACHES' | 'STAFF'>('STUDENTS');
@@ -669,64 +670,84 @@ export default function AcademyAttendanceView({ orgUuid, orgName }: Props) {
 
                   {/* Right: Status Toggle Chips & Actions */}
                   <div className="flex items-center justify-between sm:justify-end gap-1.5 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                    {/* Status Buttons */}
-                    <div className="flex items-center gap-1">
-                      {/* PRESENT */}
-                      <button
-                        disabled={isUpdating || !canTakeAttendance}
-                        onClick={() => handleMarkStatus(attendee, 'PRESENT')}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
-                          currentStatus === 'PRESENT'
-                            ? 'bg-emerald-500 text-black border-emerald-500 font-black shadow-sm'
-                            : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-                        }`}
-                        title="Mark Present"
-                      >
-                        P
-                      </button>
+                    {/* Status Buttons or Read-Only Badge */}
+                    {canTakeAttendance ? (
+                      <div className="flex items-center gap-1">
+                        {/* PRESENT */}
+                        <button
+                          disabled={isUpdating}
+                          onClick={() => handleMarkStatus(attendee, 'PRESENT')}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
+                            currentStatus === 'PRESENT'
+                              ? 'bg-emerald-500 text-black border-emerald-500 font-black shadow-sm'
+                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                          }`}
+                          title="Mark Present"
+                        >
+                          P
+                        </button>
 
-                      {/* ABSENT */}
-                      <button
-                        disabled={isUpdating || !canTakeAttendance}
-                        onClick={() => handleMarkStatus(attendee, 'ABSENT')}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
-                          currentStatus === 'ABSENT'
-                            ? 'bg-red-500 text-white border-red-500 font-black shadow-sm'
-                            : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
-                        }`}
-                        title="Mark Absent"
-                      >
-                        A
-                      </button>
+                        {/* ABSENT */}
+                        <button
+                          disabled={isUpdating}
+                          onClick={() => handleMarkStatus(attendee, 'ABSENT')}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
+                            currentStatus === 'ABSENT'
+                              ? 'bg-red-500 text-white border-red-500 font-black shadow-sm'
+                              : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                          }`}
+                          title="Mark Absent"
+                        >
+                          A
+                        </button>
 
-                      {/* LATE */}
-                      <button
-                        disabled={isUpdating || !canTakeAttendance}
-                        onClick={() => handleMarkStatus(attendee, 'LATE')}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
-                          currentStatus === 'LATE'
-                            ? 'bg-amber-500 text-black border-amber-500 font-black shadow-sm'
-                            : 'bg-amber-500/10 text-amber-300 border-amber-500/20 hover:bg-amber-500/20'
-                        }`}
-                        title="Mark Late"
-                      >
-                        L
-                      </button>
+                        {/* LATE */}
+                        <button
+                          disabled={isUpdating}
+                          onClick={() => handleMarkStatus(attendee, 'LATE')}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
+                            currentStatus === 'LATE'
+                              ? 'bg-amber-500 text-black border-amber-500 font-black shadow-sm'
+                              : 'bg-amber-500/10 text-amber-300 border-amber-500/20 hover:bg-amber-500/20'
+                          }`}
+                          title="Mark Late"
+                        >
+                          L
+                        </button>
 
-                      {/* EXCUSED */}
-                      <button
-                        disabled={isUpdating || !canTakeAttendance}
-                        onClick={() => handleMarkStatus(attendee, 'EXCUSED')}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
-                          currentStatus === 'EXCUSED'
-                            ? 'bg-cyan-500 text-black border-cyan-500 font-black shadow-sm'
-                            : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 hover:bg-cyan-500/20'
-                        }`}
-                        title="Mark Excused"
-                      >
-                        E
-                      </button>
-                    </div>
+                        {/* EXCUSED */}
+                        <button
+                          disabled={isUpdating}
+                          onClick={() => handleMarkStatus(attendee, 'EXCUSED')}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 cursor-pointer border ${
+                            currentStatus === 'EXCUSED'
+                              ? 'bg-cyan-500 text-black border-cyan-500 font-black shadow-sm'
+                              : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 hover:bg-cyan-500/20'
+                          }`}
+                          title="Mark Excused"
+                        >
+                          E
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase ${
+                            currentStatus === 'PRESENT'
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              : currentStatus === 'ABSENT'
+                              ? 'bg-red-500/15 text-red-400 border-red-500/30'
+                              : currentStatus === 'LATE'
+                              ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                              : currentStatus === 'EXCUSED'
+                              ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                              : 'bg-white/5 text-foreground/40 border-white/10'
+                          }`}
+                        >
+                          {currentStatus || 'UNMARKED'}
+                        </span>
+                      </div>
+                    )}
 
                     {/* WhatsApp Alert for Absentee/Guardian */}
                     {cleanPhone && (

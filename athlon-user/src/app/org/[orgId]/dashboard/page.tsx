@@ -33,6 +33,7 @@ import {
   SlidersHorizontal,
   UserCheck,
   Building2,
+  Newspaper,
 } from 'lucide-react';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
@@ -44,13 +45,15 @@ import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organ
 import { ClubInventoryService, InventorySummary } from '@/lib/api/clubInventory';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { usePermissions } from '@/hooks/use-permissions';
 
 function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
   if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
   if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
+  if (n.includes('post') || n.includes('blog') || n.includes('gallery') || n.includes('feed') || n.includes('media') || n.includes('article')) return 'posts';
   if (n.includes('student') || n.includes('pupil')) return 'students';
-  if (n.includes('batch') || n.includes('group') || n.includes('coaching')) return 'schedule';
+  if (n.includes('batch') || n.includes('group') || n.includes('coaching')) return 'batches';
   if (n.includes('coach') || n.includes('trainer')) return 'coaches';
   if (n.includes('member') || n.includes('staff') || n.includes('squad') || n.includes('team')) return 'members';
   if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
@@ -80,6 +83,7 @@ export default function OrganizationDashboard() {
   const backgroundVideo = getThemeVideo(themeKey);
   const org = getActiveOrganization() || organizations.find((o) => o.id === orgId);
   const { role, isAdmin, isCoach, isMember, canManage } = useOrgRole(org?.id);
+  const { canAccessModule } = usePermissions(org?.id);
 
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null);
   const [members, setMembers] = useState<OrganizationMemberResponse[]>([]);
@@ -147,97 +151,169 @@ export default function OrganizationDashboard() {
 
   if (!org) return null;
 
-  // Determine quick actions based on organization type
+  // Determine quick actions based on organization type and role permissions
   const getQuickActions = () => {
     const actions = [];
 
     if (org.type === 'ACADEMY') {
-      // ── 1. Infrastructure ──────────────────────────────────────
-      actions.push({
-        id: `/org/${org.id}/centres`,
-        label: 'Centres',
-        description: 'Campus branches & locations',
-        icon: Building2,
-        color: 'text-violet-400',
-        bg: 'bg-violet-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/facilities`,
-        label: 'Facilities',
-        description: 'Courts, turfs & arenas',
-        icon: MapPin,
-        color: 'text-cyan-400',
-        bg: 'bg-cyan-500/10',
-      });
-      // ── 2. People ──────────────────────────────────────────────
-      actions.push({
-        id: `/org/${org.id}/students`,
-        label: 'Students',
-        description: 'Enrollments & active roster',
-        icon: GraduationCap,
-        color: 'text-blue-400',
-        bg: 'bg-blue-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/coaches`,
-        label: 'Coaches',
-        description: 'Coaching staff & roster',
-        icon: UserCheck,
-        color: 'text-purple-400',
-        bg: 'bg-purple-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/staff`,
-        label: 'Staff',
-        description: 'Administration & roles',
-        icon: ShieldCheck,
-        color: 'text-slate-400',
-        bg: 'bg-white/5',
-      });
-      // ── 3. Training Operations ─────────────────────────────────
-      actions.push({
-        id: `/org/${org.id}/batches`,
-        label: 'Batches',
-        description: 'Coaching groups & schedules',
-        icon: Sparkles,
-        color: 'text-indigo-400',
-        bg: 'bg-indigo-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/schedule`,
-        label: 'Schedule',
-        description: 'Training calendars & slots',
-        icon: Calendar,
-        color: 'text-orange-400',
-        bg: 'bg-orange-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/attendance`,
-        label: 'Attendance',
-        description: 'Daily check-ins & roll call',
-        icon: ClipboardList,
-        color: 'text-emerald-400',
-        bg: 'bg-emerald-500/10',
-      });
-      // ── 4. Performance & Competition ───────────────────────────
-      actions.push({
-        id: `/org/${org.id}/performance`,
-        label: 'Performance',
-        description: 'Telemetry & analytics',
-        icon: TrendingUp,
-        color: 'text-blue-400',
-        bg: 'bg-blue-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/matches`,
-        label: 'Matches',
-        description: 'Internal academy sparring',
-        icon: Activity,
-        color: 'text-red-400',
-        bg: 'bg-red-500/10',
-      });
-      // ── 5. Finances & Settings handled by common section below ─
+      const allAcademyTools = [
+        {
+          key: 'tournaments',
+          id: `/org/${org.id}/tournaments`,
+          label: 'Tournaments',
+          description: 'Internal leagues & draws',
+          icon: Trophy,
+          color: 'text-amber-400',
+          bg: 'bg-amber-500/10',
+        },
+        {
+          key: 'students',
+          id: `/org/${org.id}/students`,
+          label: 'Students',
+          description: 'Enrollments & active roster',
+          icon: GraduationCap,
+          color: 'text-blue-400',
+          bg: 'bg-blue-500/10',
+        },
+        {
+          key: 'batches',
+          id: `/org/${org.id}/batches`,
+          label: 'Batches',
+          description: 'Coaching groups & schedules',
+          icon: Layers,
+          color: 'text-indigo-400',
+          bg: 'bg-indigo-500/10',
+        },
+        {
+          key: 'schedule',
+          id: `/org/${org.id}/schedule`,
+          label: 'Schedule',
+          description: 'Training calendars & slots',
+          icon: Calendar,
+          color: 'text-orange-400',
+          bg: 'bg-orange-500/10',
+        },
+        {
+          key: 'attendance',
+          id: `/org/${org.id}/attendance`,
+          label: 'Attendance',
+          description: 'Daily check-ins & roll call',
+          icon: ClipboardList,
+          color: 'text-emerald-400',
+          bg: 'bg-emerald-500/10',
+        },
+        {
+          key: 'centres',
+          id: `/org/${org.id}/centres`,
+          label: 'Centres',
+          description: 'Campus branches & locations',
+          icon: Building2,
+          color: 'text-violet-400',
+          bg: 'bg-violet-500/10',
+        },
+        {
+          key: 'facilities',
+          id: `/org/${org.id}/facilities`,
+          label: 'Facilities',
+          description: 'Courts, turfs & arenas',
+          icon: MapPin,
+          color: 'text-cyan-400',
+          bg: 'bg-cyan-500/10',
+        },
+        {
+          key: 'coaches',
+          id: `/org/${org.id}/coaches`,
+          label: 'Coaches',
+          description: 'Coaching staff & roster',
+          icon: UserCheck,
+          color: 'text-purple-400',
+          bg: 'bg-purple-500/10',
+        },
+        {
+          key: 'staff',
+          id: `/org/${org.id}/staff`,
+          label: 'Staff',
+          description: 'Administration & roles',
+          icon: ShieldCheck,
+          color: 'text-slate-400',
+          bg: 'bg-white/5',
+        },
+        {
+          key: 'performance',
+          id: `/org/${org.id}/performance`,
+          label: 'Performance',
+          description: 'Telemetry & analytics',
+          icon: TrendingUp,
+          color: 'text-blue-400',
+          bg: 'bg-blue-500/10',
+        },
+        {
+          key: 'matches',
+          id: `/org/${org.id}/matches`,
+          label: 'Matches',
+          description: 'Internal academy sparring',
+          icon: Activity,
+          color: 'text-red-400',
+          bg: 'bg-red-500/10',
+        },
+        {
+          key: 'inventory',
+          id: `/org/${org.id}/inventory`,
+          label: 'Inventory',
+          description: 'Shuttles & equipment stock',
+          icon: Package,
+          color: 'text-orange-400',
+          bg: 'bg-orange-500/10',
+        },
+        {
+          key: 'posts',
+          id: `/org/${org.id}/posts`,
+          label: 'Feed & Gallery',
+          description: 'Blogs, YouTube drills & photos',
+          icon: Newspaper,
+          color: 'text-pink-400',
+          bg: 'bg-pink-500/10',
+        },
+        {
+          key: 'finances',
+          id: `/org/${org.id}/finances`,
+          label: 'Finances',
+          description: 'Fee collection & ledgers',
+          icon: CreditCard,
+          color: 'text-emerald-400',
+          bg: 'bg-emerald-500/10',
+        },
+        {
+          key: 'settings',
+          id: `/org/${org.id}/settings`,
+          label: 'Settings',
+          description: 'Academy configuration & preferences',
+          icon: Settings,
+          color: 'text-neutral-400',
+          bg: 'bg-neutral-500/10',
+        },
+      ];
+
+      // Filter tools based on dynamic role permissions
+      const permitted = allAcademyTools.filter((tool) => canAccessModule(tool.key));
+      return permitted;
     } else if (org.type === 'CLUB') {
+      actions.push({
+        id: `/org/${org.id}/tournaments`,
+        label: 'Tournaments',
+        description: 'Club tournaments & draws',
+        icon: Trophy,
+        color: 'text-amber-400',
+        bg: 'bg-amber-500/10',
+      });
+      actions.push({
+        id: `/org/${org.id}/livestream`,
+        label: 'Live Stream',
+        description: 'Live broadcast & scoring',
+        icon: Video,
+        color: 'text-rose-400',
+        bg: 'bg-rose-500/10',
+      });
       actions.push({
         id: `/org/${org.id}/members`,
         label: 'Members',
@@ -298,14 +374,6 @@ export default function OrganizationDashboard() {
         bg: 'bg-yellow-500/10',
       });
       actions.push({
-        id: `/org/${org.id}/match-setup`,
-        label: 'Setup',
-        description: 'Digital Umpire Console',
-        icon: SlidersHorizontal,
-        color: 'text-amber-500',
-        bg: 'bg-amber-500/10',
-      });
-      actions.push({
         id: `/org/${org.id}/livestream`,
         label: 'Live Stream',
         description: 'HD Multi-court Broadcast',
@@ -313,9 +381,33 @@ export default function OrganizationDashboard() {
         color: 'text-red-400',
         bg: 'bg-red-500/10',
       });
+      actions.push({
+        id: `/org/${org.id}/match-setup`,
+        label: 'Setup',
+        description: 'Digital Umpire Console',
+        icon: SlidersHorizontal,
+        color: 'text-amber-500',
+        bg: 'bg-amber-500/10',
+      });
     }
 
     if (org.type === 'COURT') {
+      actions.push({
+        id: `/org/${org.id}/tournaments`,
+        label: 'Tournaments',
+        description: 'Court tournaments & leagues',
+        icon: Trophy,
+        color: 'text-amber-400',
+        bg: 'bg-amber-500/10',
+      });
+      actions.push({
+        id: `/org/${org.id}/livestream`,
+        label: 'Live Stream',
+        description: 'Court match broadcast',
+        icon: Video,
+        color: 'text-rose-400',
+        bg: 'bg-rose-500/10',
+      });
       actions.push({
         id: `/org/${org.id}/bookings`,
         label: 'Bookings',
@@ -334,7 +426,7 @@ export default function OrganizationDashboard() {
       });
     }
 
-    // Common actions
+    // Common actions for non-academy org types
     actions.push({
       id: `/org/${org.id}/finances`,
       label: 'Finances',
@@ -600,19 +692,31 @@ export default function OrganizationDashboard() {
           </div>
         </div>
 
-        {/* Horizontal Quick Actions */}
-        <div className="px-6 max-w-7xl mx-auto mt-4 space-y-6">
-          <div className="flex items-center justify-between gap-3 overflow-x-auto pb-2 hide-scrollbar">
+        {/* Management Tools & Modules (Mobile) */}
+        <div className="px-6 max-w-7xl mx-auto mt-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h2 className="text-xs font-black uppercase tracking-wider text-foreground">
+                Management Tools &amp; Modules
+              </h2>
+            </div>
+            <span className="text-[10px] font-bold text-foreground/50">
+              {quickActions.length} Tools
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">
             {quickActions.map((action) => (
               <Link key={action.id} href={action.id} className="flex flex-col items-center gap-1.5 shrink-0 group">
                 <div
-                  className="w-[68px] h-[68px] rounded-[18px] flex flex-col items-center justify-center transition-all shadow-lg cursor-pointer hover:scale-105 active:scale-95 border"
+                  className="w-[72px] h-[72px] rounded-[20px] flex flex-col items-center justify-center transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95 border"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Athlon3DIcon type={getOrg3DIconType(action.label)} size={38} active={true} />
+                  <Athlon3DIcon type={getOrg3DIconType(action.label)} size={40} active={true} />
                 </div>
                 <span
-                  className="text-[10px] font-semibold text-center transition-colors group-hover:text-primary"
+                  className="text-[10px] font-bold text-center transition-colors group-hover:text-primary max-w-[76px] truncate"
                   style={{ color: 'var(--athlon-text-secondary)' }}
                 >
                   {action.label}
@@ -621,6 +725,329 @@ export default function OrganizationDashboard() {
             ))}
           </div>
         </div>
+
+        {/* ACADEMY SPECIFIC MOBILE SECTIONS */}
+        {org.type === 'ACADEMY' && (
+          <>
+            {/* 1. Today's Scheduled Coaching Sessions (Mobile) */}
+            <div className="px-6 max-w-7xl mx-auto mt-6">
+              <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                    Today's Scheduled Coaching Sessions
+                  </h2>
+                </div>
+                <span className="text-[10px] font-bold text-primary tracking-wider">
+                  {academyDashboard?.upcomingBatches?.length || 3} Batches
+                </span>
+              </div>
+
+              <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                {(academyDashboard?.upcomingBatches || [
+                  {
+                    batchUuid: 'b-1',
+                    batchName: 'Weekend Batch',
+                    level: 'BEGINNER',
+                    sportType: 'Badminton',
+                    startTime: '18:00:00',
+                    endTime: '20:00:00',
+                    daysOfWeek: 'Sat, Sun',
+                    enrolledCount: 14,
+                    maxCapacity: 20,
+                    coachName: 'Irshad',
+                    courtName: 'Court 1 (Main Campus)',
+                  },
+                  {
+                    batchUuid: 'b-2',
+                    batchName: 'Morning Elite Shuttlers',
+                    level: 'ADVANCED',
+                    sportType: 'Badminton',
+                    startTime: '06:00:00',
+                    endTime: '07:30:00',
+                    daysOfWeek: 'Mon, Wed, Fri',
+                    enrolledCount: 12,
+                    maxCapacity: 14,
+                    coachName: 'Rajesh Kumar',
+                    courtName: 'Court 1 (Main Campus)',
+                  },
+                  {
+                    batchUuid: 'b-3',
+                    batchName: 'Junior Development Squad',
+                    level: 'INTERMEDIATE',
+                    sportType: 'Badminton',
+                    startTime: '16:30:00',
+                    endTime: '18:00:00',
+                    daysOfWeek: 'Daily',
+                    enrolledCount: 15,
+                    maxCapacity: 16,
+                    coachName: 'Vikram Singh',
+                    courtName: 'Court 2 (North Campus)',
+                  },
+                ]).map((batch) => {
+                  const enrolled = Number(batch.enrolledCount || 0);
+                  const max = Number(batch.maxCapacity || 1);
+                  const capacityPercent = Math.min(100, Math.round((enrolled / max) * 100));
+
+                  return (
+                    <div
+                      key={batch.batchUuid}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                    >
+                      <div
+                        className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
+                        {/* Top Theme Primary Accent Line */}
+                        <div className="h-[3px] w-full bg-primary" />
+
+                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                          {/* Header Row: Level Badge, Sport & Capacity Tag */}
+                          <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
+                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                <Sparkles className="w-2.5 h-2.5 text-primary" />
+                                {batch.level || 'INTERMEDIATE'}
+                              </span>
+
+                              <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-surface border border-foreground/10 text-foreground/70 shrink-0">
+                                {batch.sportType || 'Badminton'}
+                              </span>
+                            </div>
+
+                            {/* Slot Tag */}
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black tracking-tight text-primary bg-primary/10 border border-primary/25 shrink-0">
+                              {enrolled} / {max} Enrolled
+                            </span>
+                          </div>
+
+                          {/* Batch Name & Time */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
+                              <Calendar className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3
+                                className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug"
+                                title={batch.batchName}
+                              >
+                                {batch.batchName}
+                              </h3>
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/50 truncate mt-0.5">
+                                <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span className="truncate">
+                                  {batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} ({batch.daysOfWeek})
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bento Detail Bar: Coach, Court & Fill Progress */}
+                          <div
+                            className="rounded-xl p-2.5 border space-y-2.5 text-[11px]"
+                            style={{
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border)',
+                            }}
+                          >
+                            <div className="grid grid-cols-2 gap-2">
+                              {/* Coach Info */}
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[9px] shrink-0">
+                                  {(batch.coachName || 'Coach').charAt(0)}
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Coach</span>
+                                  <span className="text-[11px] font-black text-primary truncate block mt-0.5">
+                                    {batch.coachName || 'Rajesh Kumar'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Court Location */}
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <div className="min-w-0">
+                                  <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Court</span>
+                                  <span className="text-[10.5px] font-bold text-foreground/80 truncate block mt-0.5">
+                                    {batch.courtName?.split('(')[0]?.trim() || 'Court 1'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Batch Capacity Bar */}
+                            <div className="space-y-1 pt-1 border-t border-foreground/5">
+                              <div className="flex items-center justify-between text-[9px] font-bold text-foreground/50">
+                                <span>Batch Capacity</span>
+                                <span className="font-mono text-primary">{capacityPercent}% full</span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-foreground/10 overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all duration-500"
+                                  style={{ width: `${capacityPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Footer Action Buttons */}
+                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-foreground/5">
+                            <Link
+                              href={`/org/${org.id}/attendance`}
+                              className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 active:scale-95 transition-all text-center"
+                            >
+                              <ClipboardList className="w-3.5 h-3.5" />
+                              <span>Roll Call</span>
+                            </Link>
+
+                            <Link
+                              href={`/org/${org.id}/batches`}
+                              className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 active:scale-95 transition-all text-center"
+                              style={{ borderColor: 'var(--athlon-border)' }}
+                            >
+                              <span>Batch Info</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Academy Campuses & Training Arenas (Mobile) */}
+            <div className="px-6 max-w-7xl mx-auto mt-6">
+              <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-primary" />
+                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                    Academy Campuses &amp; Training Arenas
+                  </h2>
+                </div>
+                <Link
+                  href={`/org/${org.id}/centres`}
+                  className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                >
+                  <span>Explore</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                {(academyDashboard?.centres || [
+                  {
+                    centreUuid: 'c-1',
+                    name: 'Main Sports Arena Campus',
+                    city: 'Bangalore',
+                    operatingHours: '06:00 AM - 10:00 PM',
+                    status: 'ACTIVE',
+                    facilitiesCount: 4,
+                    activeBatchesCount: 8,
+                    activeStudentsCount: 240,
+                    sportsAvailable: 'Badminton, Tennis, Squash',
+                  },
+                  {
+                    centreUuid: 'c-2',
+                    name: 'North City Training Hub',
+                    city: 'Bangalore',
+                    operatingHours: '06:00 AM - 09:30 PM',
+                    status: 'ACTIVE',
+                    facilitiesCount: 2,
+                    activeBatchesCount: 6,
+                    activeStudentsCount: 188,
+                    sportsAvailable: 'Badminton, Table Tennis',
+                  },
+                ]).map((centre) => (
+                  <div
+                    key={centre.centreUuid}
+                    className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                  >
+                    <div
+                      className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
+                      style={{
+                        backgroundColor: 'var(--athlon-card)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      {/* Top Theme Primary Accent Line */}
+                      <div className="h-[3px] w-full bg-primary" />
+
+                      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                        {/* Header Row */}
+                        <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
+                            <Building className="w-2.5 h-2.5 text-primary" />
+                            Campus Arena
+                          </span>
+
+                          <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            {centre.status || 'Active'}
+                          </span>
+                        </div>
+
+                        {/* Centre Name & Location */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
+                            <Building className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug">
+                              {centre.name}
+                            </h3>
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/45 truncate mt-0.5">
+                              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span className="truncate">{centre.city || 'Bangalore'} • {centre.operatingHours || '06:00 AM - 10:00 PM'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bento Metric Strip */}
+                        <div
+                          className="grid grid-cols-3 gap-2 p-2.5 rounded-xl border text-center"
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        >
+                          <div>
+                            <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Courts</span>
+                            <span className="text-xs font-black text-foreground font-mono">{centre.facilitiesCount || 4}</span>
+                          </div>
+                          <div>
+                            <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Batches</span>
+                            <span className="text-xs font-black text-foreground font-mono">{centre.activeBatchesCount || 8}</span>
+                          </div>
+                          <div>
+                            <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Students</span>
+                            <span className="text-xs font-black text-primary font-mono">{centre.activeStudentsCount || 240}</span>
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-1 border-t border-foreground/5">
+                          <span className="text-[9.5px] text-foreground/50 truncate max-w-[65%]">
+                            Sports: <span className="text-foreground font-bold">{centre.sportsAvailable || 'Badminton, Tennis'}</span>
+                          </span>
+
+                          <Link
+                            href={`/org/${org.id}/facilities?centreUuid=${centre.centreUuid}`}
+                            className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-0.5 hover:underline shrink-0"
+                          >
+                            <span>Courts</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

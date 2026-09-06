@@ -32,7 +32,13 @@ import {
   Compass,
   Zap,
   Activity,
-  Navigation
+  Navigation,
+  Trophy,
+  Video,
+  Radio,
+  Eye,
+  Lock,
+  Tag
 } from 'lucide-react';
 import { OrganizationService, Organization, OrganizationProfile } from '@/lib/api/organization';
 import {
@@ -41,8 +47,30 @@ import {
   AcademyCourt,
   EnrollStudentPayload
 } from '@/lib/api/academyStudent';
+import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+
+interface AcademyInternalConfig {
+  centreUuid?: string;
+  centreName?: string;
+  targetBatchUuids?: string[];
+  targetBatchNames?: string[];
+  targetLevels?: string[];
+}
+
+function parseAcademyTargetConfig(desc?: string): AcademyInternalConfig | null {
+  if (!desc) return null;
+  const match = desc.match(/\[ACADEMY_INTERNAL_CONFIG:\s*(\{.*?\})\s*\]/);
+  if (match && match[1]) {
+    try {
+      return JSON.parse(match[1]);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 export default function AcademyDetailPage() {
   const params = useParams();
@@ -57,8 +85,9 @@ export default function AcademyDetailPage() {
   const [batches, setBatches] = useState<AcademyBatch[]>([]);
   const [courts, setCourts] = useState<AcademyCourt[]>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'batches' | 'facilities' | 'pricing'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'batches' | 'facilities' | 'pricing' | 'tournaments'>('overview');
 
   // Direct Self-Enrollment Modal State
   const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -85,12 +114,13 @@ export default function AcademyDetailPage() {
     const loadAcademyDetails = async () => {
       setLoading(true);
       try {
-        const [allOrgsRes, profileRes, batchesRes, courtsRes, membersRes] = await Promise.allSettled([
+        const [allOrgsRes, profileRes, batchesRes, courtsRes, membersRes, tournamentsRes] = await Promise.allSettled([
           OrganizationService.getAll(),
           OrganizationService.getProfileByOrgUuid(academyId),
           AcademyStudentService.getBatches(academyId),
           AcademyStudentService.getCourts(academyId),
           OrganizationService.getMembers(academyId),
+          TournamentService.getByOrg(academyId),
         ]);
 
         let matchedOrg: any = null;
@@ -122,6 +152,9 @@ export default function AcademyDetailPage() {
         if (membersRes.status === 'fulfilled') {
           const mList = Array.isArray(membersRes.value) ? membersRes.value : (membersRes.value as any)?.data || [];
           setMembers(mList.filter((m: any) => m.role === 'COACH' || m.role === 'ADMIN'));
+        }
+        if (tournamentsRes.status === 'fulfilled' && tournamentsRes.value?.data) {
+          setTournaments(tournamentsRes.value.data || []);
         }
       } catch (err) {
         console.error('Failed to load academy details:', err);
@@ -475,6 +508,7 @@ export default function AcademyDetailPage() {
           <div className="p-1 rounded-2xl bg-surface border border-border flex items-center gap-1 overflow-x-auto hide-scrollbar">
             {[
               { id: 'overview', label: 'About' },
+              { id: 'tournaments', label: `Events (${tournaments.length})` },
               { id: 'batches', label: `Batches (${displayBatches.length})` },
               { id: 'facilities', label: `Courts (${displayCourts.length})` },
               { id: 'pricing', label: 'Fees' },
@@ -566,6 +600,159 @@ export default function AcademyDetailPage() {
                     </a>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Tournaments & Events Tab (Mobile) */}
+            {activeTab === 'tournaments' && (
+              <div className="space-y-3">
+                {tournaments.length === 0 ? (
+                  <div className="p-8 rounded-2xl border border-dashed border-border bg-card/50 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-foreground">No Tournaments Scheduled</h4>
+                      <p className="text-xs text-text-secondary mt-1">
+                        There are currently no internal or open tournaments scheduled. Check back soon!
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  tournaments.map((t) => {
+                    const cfg = parseAcademyTargetConfig(t.description);
+                    const isPrivate = t.visibility === 'PRIVATE';
+                    const hasLiveMatch = t.status === 'ONGOING' || t.status === 'LIVE';
+                    const banner = t.poster;
+
+                    return (
+                      <div
+                        key={t.tournamentUuid}
+                        className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm space-y-3 p-3.5 hover:border-primary/40 transition-all"
+                      >
+                        {/* Poster / Header */}
+                        {banner ? (
+                          <div className="relative h-32 w-full rounded-xl overflow-hidden bg-black/40 border border-border">
+                            <img src={banner} alt={t.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                            
+                            <div className="absolute top-2 left-2 flex items-center gap-1.5 flex-wrap">
+                              {isPrivate ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-primary text-black shadow-md">
+                                  <Lock className="w-2.5 h-2.5" />
+                                  Internal Tournament
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-500 text-black shadow-md">
+                                  Open
+                                </span>
+                              )}
+                              {hasLiveMatch && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-500 text-white animate-pulse shadow-md">
+                                  <Radio className="w-2.5 h-2.5" />
+                                  Live Score
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <span className="text-[10px] font-extrabold text-primary uppercase block">
+                                {t.sport || 'Badminton'}
+                              </span>
+                              <h4 className="text-sm font-black text-white truncate drop-shadow">
+                                {t.name}
+                              </h4>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                {isPrivate ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20">
+                                    <Lock className="w-2.5 h-2.5" />
+                                    Internal Academy
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    Open Tournament
+                                  </span>
+                                )}
+                                {hasLiveMatch && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse">
+                                    <Radio className="w-2.5 h-2.5" />
+                                    Live
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="text-sm font-black text-foreground">{t.name}</h4>
+                            </div>
+                            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                              <Trophy className="w-4 h-4" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Venue & Batch Target Badges */}
+                        {cfg && (cfg.centreName || (cfg.targetBatchNames && cfg.targetBatchNames.length > 0)) && (
+                          <div className="p-2.5 rounded-xl bg-surface border border-border/80 space-y-1.5 text-[11px]">
+                            {cfg.centreName && (
+                              <div className="flex items-center gap-1 text-foreground font-semibold">
+                                <MapPin className="w-3 h-3 text-primary shrink-0" />
+                                <span className="text-text-muted">Target Venue:</span>
+                                <span className="text-primary font-bold">{cfg.centreName}</span>
+                              </div>
+                            )}
+                            {cfg.targetBatchNames && cfg.targetBatchNames.length > 0 && (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Users className="w-3 h-3 text-primary shrink-0" />
+                                <span className="text-text-muted">Batches:</span>
+                                {cfg.targetBatchNames.map((bn, i) => (
+                                  <span key={i} className="px-1.5 py-0.5 rounded bg-card border border-border text-[9px] font-bold text-foreground">
+                                    {bn}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="p-2 rounded-xl bg-surface border border-border">
+                            <span className="text-[9px] font-extrabold uppercase text-text-muted block">Dates</span>
+                            <span className="font-bold text-foreground flex items-center gap-1 mt-0.5">
+                              <Calendar className="w-3 h-3 text-primary" />
+                              {t.startDate ? new Date(t.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'TBD'}
+                            </span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-surface border border-border">
+                            <span className="text-[9px] font-extrabold uppercase text-text-muted block">Entry Fee</span>
+                            <span className="font-mono font-black text-emerald-400 block mt-0.5">
+                              {t.registrationFees ? `₹${t.registrationFees}` : 'Free / Included'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <Link
+                            href={`/home/tournaments/${t.tournamentUuid}/register`}
+                            className="flex-1 py-2 px-3 rounded-xl bg-primary text-black font-black text-xs text-center shadow-md shadow-primary/20 active:scale-95 transition"
+                          >
+                            Register
+                          </Link>
+                          <Link
+                            href={`/tournaments/${t.tournamentUuid}`}
+                            className="py-2 px-3 rounded-xl bg-surface hover:bg-surface-hover border border-border text-foreground font-bold text-xs text-center active:scale-95 transition"
+                          >
+                            Draw / Fixture
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
 
@@ -914,6 +1101,7 @@ export default function AcademyDetailPage() {
           <div className="flex items-center gap-2 border-b border-border pb-3">
             {[
               { id: 'overview', label: 'Overview & About', icon: Info },
+              { id: 'tournaments', label: `Tournaments & Events (${tournaments.length})`, icon: Trophy },
               { id: 'batches', label: `Batches & Timings (${displayBatches.length})`, icon: Calendar },
               { id: 'facilities', label: `Courts & Facilities (${displayCourts.length})`, icon: Building2 },
               { id: 'pricing', label: 'Fees & Pricing', icon: DollarSign },
@@ -1344,6 +1532,163 @@ export default function AcademyDetailPage() {
                   </a>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 5: TOURNAMENTS & EVENTS */}
+          {activeTab === 'tournaments' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-foreground">Academy Tournaments &amp; Events</h2>
+                  <p className="text-xs text-text-secondary">
+                    Internal championship draws, inter-batch leagues, and open athletic tournaments
+                  </p>
+                </div>
+              </div>
+
+              {tournaments.length === 0 ? (
+                <div className="p-12 rounded-3xl border border-dashed border-border bg-card/40 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary shadow-lg">
+                    <Trophy className="w-8 h-8" />
+                  </div>
+                  <div className="max-w-md mx-auto">
+                    <h3 className="text-base font-black text-foreground">No Tournaments Currently Scheduled</h3>
+                    <p className="text-xs text-text-secondary mt-1">
+                      This academy hasn&apos;t announced any upcoming internal leagues or tournaments yet. Please check back later or contact the academy coaches.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-6">
+                  {tournaments.map((t) => {
+                    const cfg = parseAcademyTargetConfig(t.description);
+                    const isPrivate = t.visibility === 'PRIVATE';
+                    const hasLiveMatch = t.status === 'ONGOING' || t.status === 'LIVE';
+                    const banner = t.poster;
+
+                    return (
+                      <div
+                        key={t.tournamentUuid}
+                        className="rounded-3xl border border-border bg-card overflow-hidden shadow-xl hover:border-primary/50 transition-all flex flex-col group"
+                      >
+                        {/* Poster / Cover Image */}
+                        <div className="relative h-44 w-full bg-gradient-to-br from-card via-surface to-surface-hover overflow-hidden">
+                          {banner ? (
+                            <img
+                              src={banner}
+                              alt={t.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-primary/15 via-background to-card">
+                              <Trophy className="w-12 h-12 text-primary mb-2 opacity-80" />
+                              <span className="text-xs font-black text-primary uppercase tracking-wider">
+                                {t.sport || 'Badminton'}
+                              </span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+
+                          {/* Badges Overlay */}
+                          <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2">
+                            {isPrivate ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary text-black shadow-lg">
+                                <Lock className="w-3 h-3" />
+                                Internal Academy
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-black shadow-lg">
+                                Open Tournament
+                              </span>
+                            )}
+
+                            {hasLiveMatch && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500 text-white shadow-lg animate-pulse">
+                                <Radio className="w-3 h-3" />
+                                Live Score
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="absolute bottom-3 inset-x-3">
+                            <span className="text-[10px] font-extrabold uppercase text-primary tracking-wider block">
+                              {t.sport || 'Badminton'}
+                            </span>
+                            <h3 className="text-base font-black text-white truncate drop-shadow">
+                              {t.name}
+                            </h3>
+                          </div>
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                          {/* Target Venue & Batch Badges */}
+                          {cfg && (cfg.centreName || (cfg.targetBatchNames && cfg.targetBatchNames.length > 0)) && (
+                            <div className="p-3 rounded-2xl bg-surface border border-border space-y-2 text-xs">
+                              {cfg.centreName && (
+                                <div className="flex items-center gap-1.5 text-foreground">
+                                  <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                                  <span className="text-text-muted text-[11px]">Venue:</span>
+                                  <span className="text-primary font-bold text-[11px] truncate">{cfg.centreName}</span>
+                                </div>
+                              )}
+                              {cfg.targetBatchNames && cfg.targetBatchNames.length > 0 && (
+                                <div className="flex items-start gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                  <div className="flex flex-wrap gap-1">
+                                    {cfg.targetBatchNames.map((bn, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-0.5 rounded-md bg-card border border-border text-[10px] font-bold text-foreground"
+                                      >
+                                        {bn}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Metadata Metrics */}
+                          <div className="grid grid-cols-2 gap-2.5 text-xs">
+                            <div className="p-2.5 rounded-2xl bg-surface border border-border">
+                              <span className="text-[10px] font-extrabold uppercase text-text-muted block">Tournament Date</span>
+                              <span className="font-bold text-foreground flex items-center gap-1.5 mt-1">
+                                <Calendar className="w-3.5 h-3.5 text-primary" />
+                                {t.startDate ? new Date(t.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'}
+                              </span>
+                            </div>
+                            <div className="p-2.5 rounded-2xl bg-surface border border-border">
+                              <span className="text-[10px] font-extrabold uppercase text-text-muted block">Entry Fee</span>
+                              <span className="font-mono font-black text-emerald-400 block mt-1 text-sm">
+                                {t.registrationFees ? `₹${t.registrationFees.toLocaleString()}` : 'Free / Included'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-border">
+                            <Link
+                              href={`/home/tournaments/${t.tournamentUuid}/register`}
+                              className="flex-1 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-black font-black text-xs text-center transition shadow-lg shadow-primary/20 active:scale-95"
+                            >
+                              Register Now
+                            </Link>
+                            <Link
+                              href={`/tournaments/${t.tournamentUuid}`}
+                              className="py-2.5 px-3.5 rounded-xl bg-surface hover:bg-surface-hover border border-border text-foreground font-bold text-xs text-center transition active:scale-95"
+                            >
+                              View Fixtures
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </main>

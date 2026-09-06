@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgSports, getSportEmoji } from '@/lib/hooks/useOrgSports';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { usePermissions } from '@/hooks/use-permissions';
 import { UserService, UserResponse } from '@/lib/api/user';
 import {
   AcademyStudentService,
@@ -106,8 +107,9 @@ export default function StudentsPage() {
   const orgUuid = activeOrg?.id || orgIdParam;
   const orgName = activeOrg?.name ?? 'Academy Workspace';
 
-  const { isAdmin, isCoach } = useOrgRole();
-  const canManage = isAdmin || isCoach;
+  const { role, isAdmin } = useOrgRole();
+  const { canManageModule } = usePermissions(orgUuid);
+  const canManage = canManageModule('students');
   const { sports: orgSports } = useOrgSports(orgUuid);
 
   // Data states

@@ -24,6 +24,9 @@ import {
   Settings,
   Video,
   SlidersHorizontal,
+  Layers,
+  Newspaper,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 
@@ -49,7 +52,10 @@ export type Athlon3DIconType =
   | 'facilities'
   | 'settings'
   | 'livestream'
-  | 'setup';
+  | 'setup'
+  | 'batches'
+  | 'posts'
+  | 'gallery';
 
 export interface Athlon3DIconProps {
   type: Athlon3DIconType;
@@ -116,6 +122,12 @@ function render2DIcon(type: Athlon3DIconType, active: boolean, size: number) {
       return <Video style={style} strokeWidth={strokeWidth} />;
     case 'setup':
       return <SlidersHorizontal style={style} strokeWidth={strokeWidth} />;
+    case 'batches':
+      return <Layers style={style} strokeWidth={strokeWidth} />;
+    case 'posts':
+      return <Newspaper style={style} strokeWidth={strokeWidth} />;
+    case 'gallery':
+      return <ImageIcon style={style} strokeWidth={strokeWidth} />;
     default:
       return <Shield style={style} strokeWidth={strokeWidth} />;
   }
@@ -1362,6 +1374,127 @@ export function Athlon3DIcon({ type, className = '', size = 38, active = true, f
 
             {/* Top Indicator Status Light */}
             <circle cx="24" cy="11" r="2" fill="var(--athlon-primary)" filter="drop-shadow(0 0 5px var(--athlon-primary))" />
+          </svg>
+        </div>
+      );
+
+    case 'batches':
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_rgba(99,102,241,0.45)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          <svg
+            viewBox="0 0 48 48"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full overflow-visible transition-transform duration-300 group-hover:scale-110"
+          >
+            <defs>
+              <linearGradient id="batchTop" x1="12" y1="8" x2="36" y2="24" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="30%" stopColor="#818CF8" />
+                <stop offset="70%" stopColor="#4F46E5" />
+                <stop offset="100%" stopColor="#1E1B4B" />
+              </linearGradient>
+              <linearGradient id="batchMid" x1="12" y1="18" x2="36" y2="34" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#A5B4FC" />
+                <stop offset="40%" stopColor="var(--athlon-primary)" />
+                <stop offset="100%" stopColor="#0B1E19" />
+              </linearGradient>
+              <linearGradient id="batchBot" x1="12" y1="28" x2="36" y2="44" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="var(--athlon-surface-hover, #334155)" />
+                <stop offset="50%" stopColor="var(--athlon-card, #1E293B)" />
+                <stop offset="100%" stopColor="#0F172A" />
+              </linearGradient>
+            </defs>
+
+            {/* Base Drop Shadow */}
+            <ellipse cx="24" cy="44" rx="14" ry="2.5" fill="rgba(0,0,0,0.45)" />
+
+            {/* Bottom Layer */}
+            <path
+              d="M24 38L10 31L12 28L24 34L36 28L38 31L24 38Z"
+              fill="url(#batchBot)"
+              stroke="var(--athlon-border)"
+              strokeWidth="0.8"
+            />
+
+            {/* Middle Layer */}
+            <path
+              d="M24 28L10 21L12 18L24 24L36 18L38 21L24 28Z"
+              fill="url(#batchMid)"
+              stroke="#FFFFFF"
+              strokeWidth="0.8"
+              opacity="0.9"
+            />
+
+            {/* Top Layer Diamond */}
+            <path
+              d="M24 8L38 15L24 22L10 15L24 8Z"
+              fill="url(#batchTop)"
+              stroke="#FFFFFF"
+              strokeWidth="1"
+            />
+
+            {/* Top Specular Edge */}
+            <path
+              d="M10 15L24 8L38 15"
+              stroke="#FFFFFF"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              opacity="0.9"
+            />
+
+            {/* Center Athlon Apex Dot */}
+            <circle cx="24" cy="15" r="2.2" fill="#FFFFFF" filter="drop-shadow(0 0 4px rgba(255,255,255,0.8))" />
+          </svg>
+        </div>
+      );
+
+    case 'posts':
+    case 'gallery':
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_var(--athlon-primary-glow)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          <svg
+            viewBox="0 0 48 48"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full overflow-visible transition-transform duration-300 group-hover:scale-110"
+          >
+            <defs>
+              <linearGradient id="postCard" x1="10" y1="8" x2="38" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="35%" stopColor="var(--athlon-primary)" />
+                <stop offset="85%" stopColor="var(--athlon-primary-dark, #008770)" />
+                <stop offset="100%" stopColor="#041E17" />
+              </linearGradient>
+              <linearGradient id="postBg" x1="8" y1="12" x2="36" y2="42" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="var(--athlon-surface-hover, #334155)" />
+                <stop offset="50%" stopColor="var(--athlon-card, #1E293B)" />
+                <stop offset="100%" stopColor="#0F172A" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="24" cy="44" rx="14" ry="2.5" fill="rgba(0,0,0,0.45)" />
+            {/* Back Card */}
+            <rect x="12" y="7" width="26" height="32" rx="4" fill="url(#postCard)" opacity="0.4" transform="rotate(6 25 23)" />
+            {/* Front Card */}
+            <rect x="8" y="9" width="28" height="32" rx="4" fill="url(#postBg)" stroke="var(--athlon-border)" strokeWidth="1" />
+            {/* Media thumbnail box */}
+            <rect x="11" y="12" width="22" height="13" rx="2.5" fill="url(#postCard)" />
+            {/* Play/Star icon in box */}
+            <polygon points="21,16 26,18.5 21,21" fill="#FFFFFF" />
+            {/* Text lines */}
+            <rect x="11" y="28" width="16" height="2" rx="1" fill="var(--athlon-primary)" />
+            <rect x="11" y="32" width="22" height="1.8" rx="0.9" fill="rgba(255,255,255,0.4)" />
+            <rect x="11" y="36" width="12" height="1.8" rx="0.9" fill="rgba(255,255,255,0.25)" />
           </svg>
         </div>
       );

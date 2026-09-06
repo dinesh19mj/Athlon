@@ -25,6 +25,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useOrgSports } from '@/lib/hooks/useOrgSports';
 import { AcademyMatchService, AcademyMatch, MatchType } from '@/lib/api/academyMatch';
 import { AcademyStudentService, AcademyStudent, AcademyBatch } from '@/lib/api/academyStudent';
@@ -253,8 +254,9 @@ interface Props {
 }
 
 export default function AcademyMatchesView({ orgUuid, orgName }: Props) {
-  const { isAdmin, isCoach } = useOrgRole(orgUuid);
-  const canManageMatches = isAdmin || isCoach;
+  const { role, isAdmin } = useOrgRole(orgUuid);
+  const { canManageModule } = usePermissions(orgUuid);
+  const canManageMatches = canManageModule('matches');
   const { sports: orgSports } = useOrgSports(orgUuid);
 
   // Data States

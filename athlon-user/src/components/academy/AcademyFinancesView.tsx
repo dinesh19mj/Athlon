@@ -41,6 +41,7 @@ import {
 } from '@/lib/api/academyFinance';
 import { AcademyStudentService, AcademyStudent, AcademyBatch } from '@/lib/api/academyStudent';
 import { UserService } from '@/lib/api/user';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface AcademyFinancesViewProps {
   orgUuid: string;
@@ -80,6 +81,9 @@ const PAYMENT_METHODS = [
 ];
 
 export default function AcademyFinancesView({ orgUuid, orgName }: AcademyFinancesViewProps) {
+  const { canManageModule } = usePermissions(orgUuid);
+  const canManage = canManageModule('finances');
+
   const [finances, setFinances] = useState<AcademyFinance[]>([]);
   const [summary, setSummary] = useState<AcademyFinanceSummary | null>(null);
   const [students, setStudents] = useState<AcademyStudent[]>([]);
@@ -411,17 +415,19 @@ export default function AcademyFinancesView({ orgUuid, orgName }: AcademyFinance
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
 
-            <button
-              onClick={() => {
-                resetForm();
-                setIsRecordModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] shrink-0"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span className="hidden sm:inline">Record Transaction</span>
-              <span className="sm:hidden">Add Entry</span>
-            </button>
+            {canManage && (
+              <button
+                onClick={() => {
+                  resetForm();
+                  setIsRecordModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl bg-primary text-black text-xs sm:text-sm font-black tracking-wide hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] shrink-0"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span className="hidden sm:inline">Record Transaction</span>
+                <span className="sm:hidden">Add Entry</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

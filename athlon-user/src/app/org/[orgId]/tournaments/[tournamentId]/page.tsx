@@ -72,6 +72,7 @@ import { LiveStreamSettings } from '@/components/tournaments/LiveStreamSettings'
 import { MatchSetupSettings } from '@/components/tournaments/MatchSetupSettings';
 import { TeamEventControlRoom } from '@/components/tournaments/teamevent/TeamEventControlRoom';
 import { TournamentWinnersPodium } from '@/components/tournaments/TournamentWinnersPodium';
+import { AcademyStudentSelectorModal } from '@/components/academy/AcademyStudentSelectorModal';
 import * as htmlToImage from 'html-to-image';
 
 interface TournamentDashboardPageProps {
@@ -108,6 +109,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   const [showPlayoffModal, setShowPlayoffModal] = useState(false);
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('ALL');
   const [isGeneratingPlayoffs, setIsGeneratingPlayoffs] = useState(false);
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [assigningCourt, setAssigningCourt] = useState<number | null>(null);
   const [selectedTeamEventMatch, setSelectedTeamEventMatch] = useState<Match | null>(null);
@@ -765,6 +767,22 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
 
   const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT';
 
+  const academyTargetConfig = useMemo(() => {
+    if (!tournament?.description) return null;
+    const match = tournament.description.match(/\[ACADEMY_INTERNAL_CONFIG:(.*?)\]/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[1]);
+    } catch {
+      return null;
+    }
+  }, [tournament?.description]);
+
+  const availableCategories = useMemo(() => {
+    if (!tournament?.category) return ['Open Category'];
+    return tournament.category.split(',').map((c) => c.trim()).filter(Boolean);
+  }, [tournament?.category]);
+
   const navTabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'registrations', label: 'Registrations', icon: Users, badge: validRegistrations.length },
@@ -842,8 +860,22 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                     : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
                     }`}
                 >
-                  {tournament.visibility || 'PRIVATE'}
+                  {tournament.visibility === 'PRIVATE' ? 'Internal Academy' : tournament.visibility || 'PRIVATE'}
                 </span>
+
+                {academyTargetConfig?.centreName && (
+                  <span className="px-2.5 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    Venue: {academyTargetConfig.centreName}
+                  </span>
+                )}
+
+                {academyTargetConfig?.targetBatchNames && academyTargetConfig.targetBatchNames.length > 0 && (
+                  <span className="px-2.5 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/30 text-purple-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Batches: {academyTargetConfig.targetBatchNames.join(', ')}
+                  </span>
+                )}
 
                 {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
                   <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 bg-primary/20 text-primary border-primary/30">
@@ -1483,7 +1515,16 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setIsEnrollModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-primary/30 bg-primary/10 text-primary font-black text-xs uppercase tracking-wider hover:bg-primary/20 active:scale-95 transition-all shadow-sm"
+                  title="Directly enroll academy students from batches"
+                >
+                  <Users className="w-4 h-4 text-primary" />
+                  <span>Enroll Academy Students</span>
+                </button>
                 <Link
                   href={`/home/tournaments/${tournament.tournamentUuid || tournamentId}/register`}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
@@ -1502,6 +1543,22 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 </button>
               </div>
             </div>
+
+            {/* Academy Student Enrollment Modal */}
+            {isEnrollModalOpen && (
+              <AcademyStudentSelectorModal
+                orgUuid={orgId}
+                tournamentId={tournament.tournamentUuid || tournamentId}
+                tournamentName={tournament.name}
+                categories={availableCategories}
+                onClose={() => setIsEnrollModalOpen(false)}
+                onSuccess={() => {
+                  if (tournament.tournamentId) {
+                    RegistrationService.getByTournament(tournament.tournamentId).then((r) => setRegistrations(r.data || []));
+                  }
+                }}
+              />
+            )}
 
             {/* Filter & Search Controls */}
             <div

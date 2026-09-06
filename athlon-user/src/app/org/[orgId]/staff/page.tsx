@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { usePermissions } from '@/hooks/use-permissions';
 import { AcademyStaffService, AcademyStaffResponse } from '@/lib/api/academyStaff';
 import { OrganizationService } from '@/lib/api/organization';
 import { AcademyService, AcademyCentre } from '@/lib/api/academy';
@@ -61,8 +62,9 @@ export default function StaffPage() {
   const orgUuid = activeOrg?.id || orgIdParam;
   const orgName = activeOrg?.name ?? 'Academy';
 
-  const { isAdmin } = useOrgRole();
-  const canManage = isAdmin;
+  const { role, isAdmin } = useOrgRole();
+  const { canManageModule } = usePermissions(orgUuid);
+  const canManage = canManageModule('staff');
 
   // States
   const [staffList, setStaffList] = useState<AcademyStaffResponse[]>([]);

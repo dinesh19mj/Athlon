@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useOrgSports, getSportEmoji } from '@/lib/hooks/useOrgSports';
 import {
   AcademyStudentService,
@@ -51,8 +52,9 @@ export default function AcademyAdmissionsPage() {
   const orgUuid = activeOrg?.id || orgIdParam;
   const orgName = activeOrg?.name ?? 'Academy Workspace';
 
-  const { isAdmin, isCoach } = useOrgRole();
-  const canManage = isAdmin || isCoach;
+  const { role, isAdmin } = useOrgRole();
+  const { canManageModule } = usePermissions(orgUuid);
+  const canManage = canManageModule('students');
   const { sports: orgSports } = useOrgSports(orgUuid);
 
   // Data States

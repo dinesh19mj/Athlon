@@ -29,14 +29,18 @@ import {
 import Link from 'next/link';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
+import { OrganizationService } from '@/lib/api/organization';
+import { useAuthStore } from '@/lib/store/useAuthStore';
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
 
 export default function TournamentsPage() {
+  const { userUuid } = useAuthStore();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [selectedSport, setSelectedSport] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'carousel'>('grid');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [academyTournaments, setAcademyTournaments] = useState<Tournament[]>([]);
   const [championships, setChampionships] = useState<TeamChampionship[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,9 +58,10 @@ export default function TournamentsPage() {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const [res, champRes] = await Promise.allSettled([
+        const [res, champRes, userOrgsRes] = await Promise.allSettled([
           TournamentService.getAll(),
           TeamChampionshipService.getAllPublic(),
+          userUuid ? OrganizationService.getByUserUuid(userUuid) : Promise.resolve(null as any),
         ]);
         if (res.status === 'fulfilled' && res.value?.data) {
           const activePublic = (res.value.data || []).filter((t: Tournament) => t.visibility === 'PUBLIC');
@@ -67,6 +72,28 @@ export default function TournamentsPage() {
           const list = Array.isArray(val) ? val : Array.isArray(val?.data) ? val.data : [];
           setChampionships(list);
         }
+        if (userOrgsRes.status === 'fulfilled' && userOrgsRes.value) {
+          const orgVal = userOrgsRes.value as any;
+          const orgList = Array.isArray(orgVal) ? orgVal : Array.isArray(orgVal?.data) ? orgVal.data : [];
+          const academyOrgs = orgList.filter((o: any) => o.type === 'ACADEMY' || !o.type);
+          if (academyOrgs.length > 0) {
+            const orgTournsResults = await Promise.allSettled(
+              academyOrgs.map((o: any) => TournamentService.getByOrg(o.uuid || o.organizationUuid))
+            );
+            const internalTourns: Tournament[] = [];
+            orgTournsResults.forEach((r) => {
+              if (r.status === 'fulfilled' && r.value?.data) {
+                const list = r.value.data as Tournament[];
+                list.forEach((t) => {
+                  if (t.visibility === 'PRIVATE' && !internalTourns.some((it) => it.tournamentUuid === t.tournamentUuid)) {
+                    internalTourns.push(t);
+                  }
+                });
+              }
+            });
+            setAcademyTournaments(internalTourns);
+          }
+        }
       } catch (err) {
         console.error('Failed to load tournaments and championships', err);
       } finally {
@@ -74,10 +101,11 @@ export default function TournamentsPage() {
       }
     };
     fetchTournaments();
-  }, []);
+  }, [userUuid]);
 
   const tabs = [
-    { id: 'all', label: 'All Events', count: tournaments.length + championships.length },
+    { id: 'all', label: 'All Events', count: tournaments.length + championships.length + academyTournaments.length },
+    ...(academyTournaments.length > 0 ? [{ id: 'academy', label: 'My Academy Events', count: academyTournaments.length }] : []),
     { id: 'championships', label: 'Team Championships', count: championships.length },
     { id: 'tournaments', label: 'Tournaments', count: tournaments.length },
     { id: 'live', label: 'Live Now' },
@@ -87,6 +115,7 @@ export default function TournamentsPage() {
 
   const mobileTabs = [
     { id: 'all', label: 'All' },
+    ...(academyTournaments.length > 0 ? [{ id: 'academy', label: 'Academy' }] : []),
     { id: 'upcoming', label: 'Upcoming' },
     { id: 'championships', label: 'Championships' },
     { id: 'live', label: 'Live' },
@@ -96,8 +125,10 @@ export default function TournamentsPage() {
   const sports = ['ALL', 'Badminton', 'Pickleball', 'Tennis', 'Table Tennis', 'Squash'];
   const sportsList = ['all', 'Badminton', 'Cricket', 'Football', 'Volleyball'];
 
+  const combinedTournaments = activeTab === 'academy' ? academyTournaments : [...tournaments, ...academyTournaments];
+
   // Mobile filtered tournaments
-  const mobileFilteredTournaments = tournaments.filter((t) => {
+  const mobileFilteredTournaments = combinedTournaments.filter((t) => {
     const now = new Date().getTime();
     const start = new Date(t.startDate).getTime();
     const end = new Date(t.endDate).getTime();
@@ -182,7 +213,7 @@ export default function TournamentsPage() {
   const totalCount = totalTournaments + totalChampionships;
 
   // Desktop Filter Tournaments
-  const filteredTournaments = tournaments.filter((t) => {
+  const filteredTournaments = combinedTournaments.filter((t) => {
     const now = new Date().getTime();
     const start = new Date(t.startDate).getTime();
     const end = new Date(t.endDate).getTime();
@@ -190,7 +221,9 @@ export default function TournamentsPage() {
     let matchesTab = true;
     if (activeTab === 'championships') {
       return false;
-    } else if (activeTab === 'tournaments') {
+    } else if (activeTab === 'academy') {
+      matchesTab = t.visibility === 'PRIVATE';
+    } else if (activeTab === 'tournaments' || activeTab === 'all') {
       matchesTab = true;
     } else if (activeTab === 'live') {
       matchesTab = t.status === 'LIVE' || (!isNaN(start) && !isNaN(end) && now >= start && now <= end);
@@ -222,7 +255,7 @@ export default function TournamentsPage() {
     const end = c.endDate ? new Date(c.endDate).getTime() : NaN;
 
     let matchesTab = true;
-    if (activeTab === 'tournaments') {
+    if (activeTab === 'tournaments' || activeTab === 'academy') {
       return false;
     } else if (activeTab === 'championships' || activeTab === 'all') {
       matchesTab = true;

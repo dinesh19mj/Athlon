@@ -36,11 +36,18 @@ import {
 } from 'lucide-react';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
+import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { usePermissions } from '@/hooks/use-permissions';
 
 export default function TournamentsPage() {
   const params = useParams();
   const orgId = params.orgId as string;
   const router = useRouter();
+  const { organizations, getActiveOrganization } = useWorkspaceStore();
+  const currentOrg = organizations.find((o) => o.id === orgId) || getActiveOrganization();
+  const isAcademy = currentOrg?.type === 'ACADEMY';
+  const { canManageModule } = usePermissions(orgId);
+  const canManage = canManageModule('tournaments');
 
   const championshipsTrackRef = useRef<HTMLDivElement>(null);
   const tournamentsTrackRef = useRef<HTMLDivElement>(null);
@@ -84,15 +91,17 @@ export default function TournamentsPage() {
         setIsLoading(true);
         const [tRes, cRes] = await Promise.allSettled([
           TournamentService.getByOrg(orgId),
-          TeamChampionshipService.getByOrganizer(orgId),
+          !isAcademy ? TeamChampionshipService.getByOrganizer(orgId) : Promise.resolve([] as any),
         ]);
 
         if (tRes.status === 'fulfilled' && tRes.value?.data) {
           setTournaments(tRes.value.data as Tournament[]);
         }
-        if (cRes.status === 'fulfilled' && cRes.value) {
+        if (!isAcademy && cRes.status === 'fulfilled' && cRes.value) {
           const list = Array.isArray(cRes.value) ? cRes.value : ((cRes.value as any)?.data || []);
           setChampionships(list);
+        } else {
+          setChampionships([]);
         }
       } catch (error) {
         console.error('Failed to fetch events:', error);
@@ -101,12 +110,12 @@ export default function TournamentsPage() {
       }
     };
     fetchAll();
-  }, [orgId]);
+  }, [orgId, isAcademy]);
 
   // Compute metrics
   const totalTournaments = tournaments.length;
-  const totalChampionships = championships.length;
-  const totalCount = totalTournaments + totalChampionships;
+  const totalChampionships = isAcademy ? 0 : championships.length;
+  const totalCount = isAcademy ? totalTournaments : totalTournaments + totalChampionships;
 
   const publicCount =
     tournaments.filter((t) => (t.visibility || 'PRIVATE').toUpperCase() === 'PUBLIC').length +
@@ -190,7 +199,9 @@ export default function TournamentsPage() {
     }
   };
 
-  const hasEvents = filteredTournaments.length > 0 || filteredChampionships.length > 0;
+  const hasEvents = isAcademy
+    ? filteredTournaments.length > 0
+    : filteredTournaments.length > 0 || filteredChampionships.length > 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 md:pb-16 selection:bg-primary selection:text-black">
@@ -211,10 +222,12 @@ export default function TournamentsPage() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Organizer Hub</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  {isAcademy ? 'Academy Arena' : 'Organizer Hub'}
+                </span>
               </div>
               <h1 className="text-base font-black text-foreground tracking-tight truncate">
-                Tournaments & Championships
+                {isAcademy ? 'Academy Tournaments' : 'Tournaments & Championships'}
               </h1>
             </div>
           </div>
@@ -223,47 +236,90 @@ export default function TournamentsPage() {
         {/* Hero Banner & Summary Metrics Bar */}
         <div className="p-4 space-y-3.5">
           {/* Action Cards / Hero Quick Launch */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
-              className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
-              style={{
-                backgroundColor: 'var(--athlon-card)',
-                borderColor: 'var(--athlon-border)',
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  <Trophy className="w-4 h-4" />
+          {isAcademy ? (
+            canManage ? (
+              <button
+                onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+                className="w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-foreground group-hover:text-primary transition-colors">+ Host Academy Tournament</div>
+                    <div className="text-[10px] text-foreground/50 font-medium">Internal inter-batch & open knockout draws</div>
+                  </div>
                 </div>
-                <span className="text-xs font-mono font-black text-foreground">{totalTournaments}</span>
+                <span className="text-sm font-mono font-black text-foreground">{totalTournaments}</span>
+              </button>
+            ) : (
+              <div
+                className="w-full p-4 rounded-2xl border text-left flex items-center justify-between shadow-sm relative overflow-hidden"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-foreground">Academy Tournaments</div>
+                    <div className="text-[10px] text-foreground/50 font-medium">Internal inter-batch & open knockout draws</div>
+                  </div>
+                </div>
+                <span className="text-sm font-mono font-black text-foreground">{totalTournaments}</span>
               </div>
-              <div>
-                <div className="text-xs font-black text-foreground group-hover:text-primary transition-colors">+ Tournament</div>
-                <div className="text-[9.5px] text-foreground/50 font-medium">Knockout & Groups</div>
-              </div>
-            </button>
+            )
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+                className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-mono font-black text-foreground">{totalTournaments}</span>
+                </div>
+                <div>
+                  <div className="text-xs font-black text-foreground group-hover:text-primary transition-colors">+ Tournament</div>
+                  <div className="text-[9.5px] text-foreground/50 font-medium">Knockout & Groups</div>
+                </div>
+              </button>
 
-            <button
-              onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
-              className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
-              style={{
-                backgroundColor: 'var(--athlon-card)',
-                borderColor: 'var(--athlon-border)',
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-                  <Shield className="w-4 h-4" />
+              <button
+                onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-mono font-black text-amber-500">{totalChampionships}</span>
                 </div>
-                <span className="text-xs font-mono font-black text-amber-500">{totalChampionships}</span>
-              </div>
-              <div>
-                <div className="text-xs font-black text-foreground group-hover:text-amber-500 transition-colors">+ Championship</div>
-                <div className="text-[9.5px] text-foreground/50 font-medium">Franchise & Auctions</div>
-              </div>
-            </button>
-          </div>
+                <div>
+                  <div className="text-xs font-black text-foreground group-hover:text-amber-500 transition-colors">+ Championship</div>
+                  <div className="text-[9.5px] text-foreground/50 font-medium">Franchise & Auctions</div>
+                </div>
+              </button>
+            </div>
+          )}
 
           {/* Quick Metrics Strip */}
           <div
@@ -277,16 +333,31 @@ export default function TournamentsPage() {
               <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Total</div>
               <div className="text-xs font-black font-mono text-foreground">{totalCount}</div>
             </div>
+            {!isAcademy && (
+              <>
+                <div className="w-[1px] h-5 bg-foreground/10" />
+                <div>
+                  <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Public</div>
+                  <div className="text-xs font-black font-mono text-primary">{publicCount}</div>
+                </div>
+              </>
+            )}
             <div className="w-[1px] h-5 bg-foreground/10" />
             <div>
-              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Public</div>
-              <div className="text-xs font-black font-mono text-primary">{publicCount}</div>
+              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">{isAcademy ? 'Internal' : 'Private'}</div>
+              <div className="text-xs font-black font-mono text-primary">{isAcademy ? totalTournaments : privateCount}</div>
             </div>
-            <div className="w-[1px] h-5 bg-foreground/10" />
-            <div>
-              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Private</div>
-              <div className="text-xs font-black font-mono text-foreground/70">{privateCount}</div>
-            </div>
+            {isAcademy && (
+              <>
+                <div className="w-[1px] h-5 bg-foreground/10" />
+                <div>
+                  <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Active</div>
+                  <div className="text-xs font-black font-mono text-emerald-500">
+                    {tournaments.filter(t => t.status === 'LIVE' || t.status === 'IN_PROGRESS' || t.status === 'REGISTRATION_OPEN').length}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -296,67 +367,71 @@ export default function TournamentsPage() {
             className="p-2 rounded-[20px] border space-y-2"
             style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
           >
-            {/* Row 1: Primary Segmented Type Selector */}
-            <div
-              className="p-1 rounded-xl border flex items-center gap-1"
-              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-            >
-              {[
-                { id: 'all', label: 'All', count: totalCount },
-                { id: 'championships', label: 'Championships', count: totalChampionships },
-                { id: 'tournaments', label: 'Tournaments', count: totalTournaments },
-              ].map((tab) => {
-                const isSelected = eventType === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setEventType(tab.id as any)}
-                    className={`flex-1 flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-[11px] font-black transition-all ${
-                      isSelected
-                        ? 'bg-primary text-black shadow-sm'
-                        : 'text-foreground/60 hover:text-foreground'
-                    }`}
-                  >
-                    <span className="truncate">{tab.label}</span>
-                    <span
-                      className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-mono shrink-0 ${
-                        isSelected ? 'bg-black/20 text-black font-black' : 'bg-white/10 text-foreground/40'
-                      }`}
-                    >
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Row 2: Visibility Filter & Search Bar */}
-            <div className="flex items-center justify-between gap-2">
+            {/* Row 1: Primary Segmented Type Selector (Only for non-academy) */}
+            {!isAcademy && (
               <div
-                className="p-0.5 rounded-xl border flex items-center gap-1 shrink-0"
+                className="p-1 rounded-xl border flex items-center gap-1"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
                 {[
-                  { id: 'all', label: 'All' },
-                  { id: 'public', label: 'Public' },
-                  { id: 'private', label: 'Private' },
+                  { id: 'all', label: 'All', count: totalCount },
+                  { id: 'championships', label: 'Championships', count: totalChampionships },
+                  { id: 'tournaments', label: 'Tournaments', count: totalTournaments },
                 ].map((tab) => {
-                  const isSelected = activeTab === tab.id;
+                  const isSelected = eventType === tab.id;
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all text-center ${
+                      onClick={() => setEventType(tab.id as any)}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-[11px] font-black transition-all ${
                         isSelected
-                          ? 'bg-foreground/15 text-foreground font-black'
-                          : 'text-foreground/50'
+                          ? 'bg-primary text-black shadow-sm'
+                          : 'text-foreground/60 hover:text-foreground'
                       }`}
                     >
-                      {tab.label}
+                      <span className="truncate">{tab.label}</span>
+                      <span
+                        className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-mono shrink-0 ${
+                          isSelected ? 'bg-black/20 text-black font-black' : 'bg-white/10 text-foreground/40'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
                     </button>
                   );
                 })}
               </div>
+            )}
+
+            {/* Row 2: Visibility Filter & Search Bar */}
+            <div className="flex items-center justify-between gap-2">
+              {!isAcademy && (
+                <div
+                  className="p-0.5 rounded-xl border flex items-center gap-1 shrink-0"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  {[
+                    { id: 'all', label: 'All' },
+                    { id: 'public', label: 'Public' },
+                    { id: 'private', label: 'Private' },
+                  ].map((tab) => {
+                    const isSelected = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all text-center ${
+                          isSelected
+                            ? 'bg-foreground/15 text-foreground font-black'
+                            : 'text-foreground/50'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="relative flex-1">
                 <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -392,8 +467,8 @@ export default function TournamentsPage() {
             </div>
           ) : hasEvents ? (
             <div className="space-y-6">
-              {/* Championships */}
-              {filteredChampionships.length > 0 && (
+              {/* Championships (Only for non-academy) */}
+              {!isAcademy && filteredChampionships.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--athlon-border)' }}>
                     <Shield className="w-4 h-4 text-primary" />
@@ -552,19 +627,29 @@ export default function TournamentsPage() {
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
             >
               <Trophy className="w-8 h-8 text-primary mb-3" />
-              <h3 className="text-base font-black text-foreground mb-1">No Matching Events</h3>
-              <p className="text-xs text-foreground/60 mb-5">Create a championship or tournament to get started.</p>
+              <h3 className="text-base font-black text-foreground mb-1">
+                {isAcademy ? 'No Tournaments Scheduled' : 'No Matching Events'}
+              </h3>
+              <p className="text-xs text-foreground/60 mb-5">
+                {isAcademy
+                  ? 'Create an internal inter-batch tournament or open draw to get started.'
+                  : 'Create a championship or tournament to get started.'}
+              </p>
               <div className="flex flex-col gap-2 w-full max-w-xs">
-                <button
-                  onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
-                  className="w-full py-2.5 rounded-xl bg-primary text-black font-black text-xs"
-                >
-                  + Create Team Championship
-                </button>
+                {!isAcademy && (
+                  <button
+                    onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                    className="w-full py-2.5 rounded-xl bg-primary text-black font-black text-xs"
+                  >
+                    + Create Team Championship
+                  </button>
+                )}
                 <button
                   onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
-                  className="w-full py-2.5 rounded-xl border text-foreground font-bold text-xs"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                  className={`w-full py-2.5 rounded-xl font-bold text-xs ${
+                    isAcademy ? 'bg-primary text-black font-black shadow-lg shadow-primary/20' : 'border text-foreground'
+                  }`}
+                  style={!isAcademy ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' } : undefined}
                 >
                   + Create Tournament
                 </button>
@@ -582,24 +667,26 @@ export default function TournamentsPage() {
           }}
         >
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl border font-black text-xs text-primary shadow-sm active:scale-95 transition-all"
-              style={{
-                backgroundColor: 'var(--athlon-surface)',
-                borderColor: 'var(--athlon-primary)',
-              }}
-            >
-              <Shield className="w-4 h-4 text-primary" />
-              <span>+ Championship</span>
-            </button>
+            {!isAcademy && (
+              <button
+                onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl border font-black text-xs text-primary shadow-sm active:scale-95 transition-all"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-primary)',
+                }}
+              >
+                <Shield className="w-4 h-4 text-primary" />
+                <span>+ Championship</span>
+              </button>
+            )}
 
             <button
               onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
               className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-primary text-black font-black text-xs shadow-xl shadow-primary/25 active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>+ Tournament</span>
+              <span>+ Create Tournament</span>
             </button>
           </div>
         </div>
@@ -621,13 +708,6 @@ export default function TournamentsPage() {
           <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
             <div className="absolute top-0 right-1/4 w-[500px] h-[300px] bg-primary/10 rounded-full blur-[100px]" />
             <div className="absolute bottom-0 left-1/4 w-[450px] h-[250px] bg-emerald-500/10 rounded-full blur-[90px]" />
-            <div
-              className="absolute inset-0 opacity-[0.02]"
-              style={{
-                backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
-                backgroundSize: '40px 40px',
-              }}
-            />
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-10 lg:py-12 space-y-8">
@@ -636,32 +716,36 @@ export default function TournamentsPage() {
               <div className="space-y-3 max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary/10 border border-primary/25 text-primary">
                   <Trophy className="w-4 h-4" />
-                  <span>Competition Command Center</span>
+                  <span>{isAcademy ? 'Academy Competition Center' : 'Competition Command Center'}</span>
                 </div>
 
                 <h1 className="text-3xl lg:text-4xl font-black text-foreground tracking-tight leading-tight">
-                  Tournaments & Championships
+                  {isAcademy ? 'Academy Tournaments' : 'Tournaments & Championships'}
                 </h1>
 
                 <p className="text-sm text-foreground/75 leading-relaxed">
-                  Manage sports tournaments, franchise team championships, live auction bidding arenas, knockout brackets, pool leagues, and referee scoresheets in one unified console.
+                  {isAcademy
+                    ? 'Host internal academy leagues, inter-batch competitions, knockout brackets, live scoring, and live streams for your athletes and coaches.'
+                    : 'Manage sports tournaments, franchise team championships, live auction bidding arenas, knockout brackets, pool leagues, and referee scoresheets in one unified console.'}
                 </p>
               </div>
 
               {/* Top Quick Actions */}
               <div className="flex items-center gap-3.5 shrink-0">
-                <button
-                  onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
-                  className="flex items-center gap-2.5 px-5 py-3 rounded-2xl text-sm font-black border transition-all hover:scale-105 active:scale-95 shadow-md"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    borderColor: 'var(--athlon-primary)',
-                    color: 'var(--athlon-primary)',
-                  }}
-                >
-                  <Shield className="w-4 h-4 text-primary" />
-                  <span>Create Team Championship</span>
-                </button>
+                {!isAcademy && (
+                  <button
+                    onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                    className="flex items-center gap-2.5 px-5 py-3 rounded-2xl text-sm font-black border transition-all hover:scale-105 active:scale-95 shadow-md"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-primary)',
+                      color: 'var(--athlon-primary)',
+                    }}
+                  >
+                    <Shield className="w-4 h-4 text-primary" />
+                    <span>Create Team Championship</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
@@ -669,7 +753,7 @@ export default function TournamentsPage() {
                   style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
                 >
                   <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>Create Tournament</span>
+                  <span>{isAcademy ? 'Create Tournament' : 'Create Tournament'}</span>
                 </button>
               </div>
             </div>
@@ -685,7 +769,7 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    Total Competitions
+                    {isAcademy ? 'Total Tournaments' : 'Total Competitions'}
                   </span>
                   <div className="text-2xl font-black text-foreground font-mono tabular-nums">
                     {totalCount}
@@ -705,14 +789,14 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    Team Championships
+                    {isAcademy ? 'Internal Tournaments' : 'Team Championships'}
                   </span>
                   <div className="text-2xl font-black text-emerald-400 font-mono tabular-nums">
-                    {totalChampionships}
+                    {isAcademy ? privateCount : totalChampionships}
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <Shield className="w-6 h-6" />
+                  {isAcademy ? <Lock className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
                 </div>
               </div>
 
@@ -725,14 +809,16 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    Public Discoverable
+                    {isAcademy ? 'Active / Live Draws' : 'Public Discoverable'}
                   </span>
                   <div className="text-2xl font-black text-blue-400 font-mono tabular-nums">
-                    {publicCount}
+                    {isAcademy
+                      ? tournaments.filter((t) => t.status === 'ONGOING' || t.status === 'LIVE').length
+                      : publicCount}
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                  <Globe className="w-6 h-6" />
+                  {isAcademy ? <Activity className="w-6 h-6" /> : <Globe className="w-6 h-6" />}
                 </div>
               </div>
 
@@ -745,14 +831,16 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    Private / Internal
+                    {isAcademy ? 'Completed Events' : 'Private (Internal)'}
                   </span>
                   <div className="text-2xl font-black text-amber-400 font-mono tabular-nums">
-                    {privateCount}
+                    {isAcademy
+                      ? tournaments.filter((t) => t.status === 'COMPLETED').length
+                      : privateCount}
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                  <Lock className="w-6 h-6" />
+                  {isAcademy ? <CheckCircle2 className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
                 </div>
               </div>
             </div>
@@ -768,69 +856,83 @@ export default function TournamentsPage() {
               borderColor: 'var(--athlon-border)',
             }}
           >
-            {/* Left: Primary Segmented Type Selector */}
-            <div
-              className="p-1 rounded-2xl border flex items-center gap-1.5"
-              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-            >
-              {[
-                { id: 'all', label: 'All Competitions', count: totalCount, icon: Layers },
-                { id: 'championships', label: 'Team Championships', count: totalChampionships, icon: Shield },
-                { id: 'tournaments', label: 'Tournaments & Draws', count: totalTournaments, icon: Trophy },
-              ].map((tab) => {
-                const isSelected = eventType === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setEventType(tab.id as any)}
-                    className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition-all ${
-                      isSelected
-                        ? 'bg-primary text-black shadow-md'
-                        : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <tab.icon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0 ${
-                        isSelected ? 'bg-black/20 text-black font-black' : 'bg-white/10 text-foreground/50'
-                      }`}
-                    >
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Right: Visibility Pills & Search Box */}
-            <div className="flex items-center gap-3">
-              {/* Visibility Switcher */}
+            {/* Left: Primary Segmented Type Selector (Only for non-academy) */}
+            {!isAcademy ? (
               <div
-                className="p-1 rounded-2xl border flex items-center gap-1"
+                className="p-1 rounded-2xl border flex items-center gap-1.5"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
                 {[
-                  { id: 'all', label: 'All' },
-                  { id: 'public', label: 'Public' },
-                  { id: 'private', label: 'Private' },
+                  { id: 'all', label: 'All Competitions', count: totalCount, icon: Layers },
+                  { id: 'championships', label: 'Team Championships', count: totalChampionships, icon: Shield },
+                  { id: 'tournaments', label: 'Tournaments & Draws', count: totalTournaments, icon: Trophy },
                 ].map((tab) => {
-                  const isSelected = activeTab === tab.id;
+                  const isSelected = eventType === tab.id;
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      onClick={() => setEventType(tab.id as any)}
+                      className={`flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black transition-all ${
                         isSelected
-                          ? 'bg-foreground/15 text-foreground font-black'
-                          : 'text-foreground/50 hover:text-foreground hover:bg-white/[0.04]'
+                          ? 'bg-primary text-black shadow-md'
+                          : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
                       }`}
                     >
-                      {tab.label}
+                      <tab.icon className="w-3.5 h-3.5" />
+                      <span>{tab.label}</span>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0 ${
+                          isSelected ? 'bg-black/20 text-black font-black' : 'bg-white/10 text-foreground/50'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
                     </button>
                   );
                 })}
               </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Trophy className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <span className="text-xs font-black text-foreground block">Academy Tournaments</span>
+                  <span className="text-[10px] text-foreground/50">{totalTournaments} Total Competitions</span>
+                </div>
+              </div>
+            )}
+
+            {/* Right: Visibility Pills & Search Box */}
+            <div className="flex items-center gap-3">
+              {/* Visibility Switcher (Only for non-academy) */}
+              {!isAcademy && (
+                <div
+                  className="p-1 rounded-2xl border flex items-center gap-1"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  {[
+                    { id: 'all', label: 'All' },
+                    { id: 'public', label: 'Public' },
+                    { id: 'private', label: 'Private' },
+                  ].map((tab) => {
+                    const isSelected = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          isSelected
+                            ? 'bg-foreground/15 text-foreground font-black'
+                            : 'text-foreground/50 hover:text-foreground hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Desktop Search Input */}
               <div className="relative w-80">
@@ -869,8 +971,8 @@ export default function TournamentsPage() {
             </div>
           ) : hasEvents ? (
             <div className="space-y-12">
-              {/* 1. Team Championships Section */}
-              {filteredChampionships.length > 0 && (
+              {/* 1. Team Championships Section (Only for non-academy) */}
+              {!isAcademy && filteredChampionships.length > 0 && (
                 <section className="space-y-4">
                   <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
                     <div className="flex items-center gap-2.5">
@@ -1219,12 +1321,18 @@ export default function TournamentsPage() {
               </div>
 
               <h3 className="text-2xl font-black text-foreground mb-2">
-                {searchQuery ? 'No Matching Events Found' : 'Launch Your First Competition'}
+                {searchQuery
+                  ? 'No Matching Events Found'
+                  : isAcademy
+                  ? 'Host Your First Academy Tournament'
+                  : 'Launch Your First Competition'}
               </h3>
 
               <p className="text-sm font-medium max-w-lg mb-8 leading-relaxed text-foreground/70">
                 {searchQuery
                   ? `No competitions matched "${searchQuery}". Try searching with a different keyword or reset filters.`
+                  : isAcademy
+                  ? 'Create internal inter-batch leagues, skill-level draws, or open knockout tournaments with automated brackets and live scoreboards.'
                   : 'Create franchise team championships with live player auctions and pool leagues, or knockout tournaments with automated draws.'}
               </p>
 
@@ -1238,24 +1346,34 @@ export default function TournamentsPage() {
                   </button>
                 ) : (
                   <>
-                    <button
-                      onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
-                      className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-black font-black text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                    >
-                      <Shield className="w-4 h-4" />
-                      <span>Create Team Championship</span>
-                    </button>
+                    {!isAcademy && (
+                      <button
+                        onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                        className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-black font-black text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        <Shield className="w-4 h-4" />
+                        <span>Create Team Championship</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
-                      className="flex items-center gap-2 px-6 py-3.5 rounded-2xl border text-foreground font-bold text-sm hover:bg-white/5 active:scale-95 transition-all"
-                      style={{
-                        backgroundColor: 'var(--athlon-surface)',
-                        borderColor: 'var(--athlon-border)',
-                      }}
+                      className={`flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all ${
+                        isAcademy
+                          ? 'bg-primary text-black font-black shadow-xl shadow-primary/20 hover:scale-105 active:scale-95'
+                          : 'border text-foreground hover:bg-white/5 active:scale-95'
+                      }`}
+                      style={
+                        !isAcademy
+                          ? {
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border)',
+                            }
+                          : undefined
+                      }
                     >
-                      <Plus className="w-4 h-4 text-primary" />
-                      <span>Create Tournament</span>
+                      <Plus className={`w-4 h-4 ${isAcademy ? 'stroke-[3]' : 'text-primary'}`} />
+                      <span>{isAcademy ? 'Create Academy Tournament' : 'Create Tournament'}</span>
                     </button>
                   </>
                 )}

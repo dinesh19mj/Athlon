@@ -26,6 +26,8 @@ import {
   ChevronRight,
   TrendingUp,
   Sparkles,
+  Layers,
+  Newspaper,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -36,8 +38,10 @@ function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
   if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
   if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
+  if (n.includes('post') || n.includes('blog') || n.includes('gallery') || n.includes('feed') || n.includes('media') || n.includes('article')) return 'posts';
   if (n.includes('admission') || n.includes('intake') || n.includes('enroll')) return 'registered';
   if (n.includes('student') || n.includes('pupil')) return 'students';
+  if (n.includes('batch') || n.includes('group') || n.includes('coaching')) return 'batches';
   if (n.includes('coach') || n.includes('trainer')) return 'coaches';
   if (n.includes('member') || n.includes('staff') || n.includes('squad') || n.includes('team')) return 'members';
   if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
@@ -131,16 +135,20 @@ export default function OrganizationLayout({ children }: { children: React.React
     if (activeOrg.type === 'ACADEMY') {
       return [
         ...base,
+        { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays },
+        { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
+        { name: 'Inventory', href: `/org/${orgId}/inventory`, icon: Grid },
+        { name: 'Feed & Gallery', href: `/org/${orgId}/posts`, icon: Newspaper },
         { name: 'Admissions', href: `/org/${orgId}/admissions`, icon: Sparkles },
         { name: 'Students', href: `/org/${orgId}/students`, icon: Users },
         { name: 'Coaches', href: `/org/${orgId}/coaches`, icon: User },
-        { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays },
         { name: 'Fees', href: `/org/${orgId}/fees`, icon: CreditCard },
       ];
     }
     if (activeOrg.type === 'ASSOCIATION') {
       return [
         ...base,
+        { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
         { name: 'Districts', href: `/org/${orgId}/districts`, icon: MapPin },
         { name: 'Academies', href: `/org/${orgId}/academies`, icon: Building },
         { name: 'Approvals', href: `/org/${orgId}/approvals`, icon: Bell },
@@ -149,12 +157,22 @@ export default function OrganizationLayout({ children }: { children: React.React
     if (activeOrg.type === 'CLUB') {
       return [
         ...base,
+        { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
         { name: 'Members', href: `/org/${orgId}/members`, icon: Users },
         { name: 'Matches', href: `/org/${orgId}/matches`, icon: Activity },
         { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays },
         { name: 'Inventory', href: `/org/${orgId}/inventory`, icon: Grid },
         { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
         { name: 'Analytics', href: `/org/${orgId}/analytics`, icon: TrendingUp },
+      ];
+    }
+    if (activeOrg.type === 'COURT') {
+      return [
+        ...base,
+        { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
+        { name: 'Bookings', href: `/org/${orgId}/bookings`, icon: CalendarDays },
+        { name: 'Facilities', href: `/org/${orgId}/facilities`, icon: Building },
+        { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
       ];
     }
     return base;
@@ -175,7 +193,7 @@ export default function OrganizationLayout({ children }: { children: React.React
             { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
             { name: 'Centres & Campuses', href: `/org/${orgId}/centres`, icon: MapPin, badge: null, isLive: false },
             { name: 'Facilities & Courts', href: `/org/${orgId}/facilities`, icon: Building, badge: null, isLive: false },
-            { name: 'Coaching & Batches', href: `/org/${orgId}/batches`, icon: Sparkles, badge: null, isLive: false },
+            { name: 'Coaching & Batches', href: `/org/${orgId}/batches`, icon: Layers, badge: null, isLive: false },
             { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays, badge: null, isLive: false },
           ],
         },
@@ -185,6 +203,19 @@ export default function OrganizationLayout({ children }: { children: React.React
             { name: 'Students', href: `/org/${orgId}/students`, icon: Users, badge: null, isLive: false },
             { name: 'Coaches', href: `/org/${orgId}/coaches`, icon: User, badge: null, isLive: false },
             { name: 'Staff', href: `/org/${orgId}/staff`, icon: Shield, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Competitions & Events',
+          items: [
+            { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy, badge: null, isLive: false },
+            { name: 'Match Setup', href: `/org/${orgId}/match-setup`, icon: Activity, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Community & Media',
+          items: [
+            { name: 'Feed & Gallery', href: `/org/${orgId}/posts`, icon: Newspaper, badge: null, isLive: false },
           ],
         },
         {

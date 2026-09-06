@@ -3,9 +3,8 @@
 import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
-import { useAuthStore } from '@/lib/store/useAuthStore';
 
-export type UserOrgRole = 'ADMIN' | 'OWNER' | 'MANAGER' | 'MEMBER' | 'COACH' | 'STUDENT' | 'ATHLETE';
+export type UserOrgRole = 'ADMIN' | 'OWNER' | 'MANAGER' | 'COACH' | 'STAFF' | 'STUDENT' | 'ATHLETE' | 'PARENT' | 'MEMBER';
 
 export function useOrgRole(customOrgId?: string) {
   const params = useParams();
@@ -18,7 +17,7 @@ export function useOrgRole(customOrgId?: string) {
   const role: UserOrgRole = useMemo(() => {
     if (!org) return 'MEMBER';
     const r = (org.role || 'ADMIN').toUpperCase();
-    if (['ADMIN', 'OWNER', 'MANAGER', 'COACH', 'STUDENT', 'ATHLETE'].includes(r)) {
+    if (['ADMIN', 'OWNER', 'MANAGER', 'COACH', 'STAFF', 'STUDENT', 'ATHLETE', 'PARENT'].includes(r)) {
       return r as UserOrgRole;
     }
     return 'MEMBER';
@@ -32,9 +31,21 @@ export function useOrgRole(customOrgId?: string) {
     return role === 'COACH';
   }, [role]);
 
-  const isMember = useMemo(() => {
-    return role === 'MEMBER' || role === 'STUDENT' || role === 'ATHLETE';
+  const isStaff = useMemo(() => {
+    return role === 'STAFF';
   }, [role]);
+
+  const isStudent = useMemo(() => {
+    return role === 'STUDENT' || role === 'ATHLETE';
+  }, [role]);
+
+  const isParent = useMemo(() => {
+    return role === 'PARENT';
+  }, [role]);
+
+  const isMember = useMemo(() => {
+    return role === 'MEMBER' || isStudent || isParent;
+  }, [role, isStudent, isParent]);
 
   const canManage = isAdmin;
 
@@ -43,6 +54,9 @@ export function useOrgRole(customOrgId?: string) {
     role,
     isAdmin,
     isCoach,
+    isStaff,
+    isStudent,
+    isParent,
     isMember,
     canManage,
   };
