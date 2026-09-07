@@ -649,21 +649,25 @@ export default function OrganizationDashboard() {
                   <CreditCard className="w-3 h-3" />
                   <span>MONTHLY REVENUE</span>
                 </div>
-                <div
-                  className="font-bold text-xs leading-tight flex items-baseline gap-1"
-                  style={{ color: 'var(--athlon-text)' }}
-                >
-                  <span>₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}</span>
-                  {financeSummary && Number(financeSummary.netBalance) !== 0 ? (
-                    <span className={`text-[8px] font-semibold ${
-                      Number(financeSummary.netBalance) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                    }`}>
-                      {Number(financeSummary.netBalance) >= 0 ? `+₹${Number(financeSummary.netBalance).toLocaleString('en-IN')}` : `-₹${Math.abs(Number(financeSummary.netBalance)).toLocaleString('en-IN')}`}
-                    </span>
-                  ) : (
-                    <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">+0%</span>
-                  )}
-                </div>
+                {loadingMetrics ? (
+                  <div className="h-4 w-16 bg-foreground/10 rounded animate-pulse my-0.5" />
+                ) : (
+                  <div
+                    className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                    style={{ color: 'var(--athlon-text)' }}
+                  >
+                    <span>₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}</span>
+                    {financeSummary && Number(financeSummary.netBalance) !== 0 ? (
+                      <span className={`text-[8px] font-semibold ${
+                        Number(financeSummary.netBalance) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {Number(financeSummary.netBalance) >= 0 ? `+₹${Number(financeSummary.netBalance).toLocaleString('en-IN')}` : `-₹${Math.abs(Number(financeSummary.netBalance)).toLocaleString('en-IN')}`}
+                      </span>
+                    ) : (
+                      <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">+0%</span>
+                    )}
+                  </div>
+                )}
               </Link>
 
               <Link
@@ -678,15 +682,19 @@ export default function OrganizationDashboard() {
                   <Users className="w-3 h-3" />
                   <span>{org.type === 'ACADEMY' ? 'STAFF ROSTER' : 'ACTIVE MEMBERS'}</span>
                 </div>
-                <div
-                  className="font-bold text-xs leading-tight flex items-baseline gap-1"
-                  style={{ color: 'var(--athlon-text)' }}
-                >
-                  <span>{members.length}</span>
-                  <span className="text-[8px] text-blue-600 dark:text-blue-400 font-semibold">
-                    {org.type === 'ACADEMY' ? 'Staff' : (newMembersThisWeek > 0 ? `+${newMembersThisWeek} new` : 'Roster')}
-                  </span>
-                </div>
+                {loadingMetrics ? (
+                  <div className="h-4 w-12 bg-foreground/10 rounded animate-pulse my-0.5" />
+                ) : (
+                  <div
+                    className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                    style={{ color: 'var(--athlon-text)' }}
+                  >
+                    <span>{members.length}</span>
+                    <span className="text-[8px] text-blue-600 dark:text-blue-400 font-semibold">
+                      {org.type === 'ACADEMY' ? 'Staff' : (newMembersThisWeek > 0 ? `+${newMembersThisWeek} new` : 'Roster')}
+                    </span>
+                  </div>
+                )}
               </Link>
             </div>
           </div>
@@ -739,186 +747,165 @@ export default function OrganizationDashboard() {
                   </h2>
                 </div>
                 <span className="text-[10px] font-bold text-primary tracking-wider">
-                  {academyDashboard?.upcomingBatches?.length || 3} Batches
+                  {loadingMetrics ? 'Loading...' : `${academyDashboard?.upcomingBatches?.length ?? 0} ${(academyDashboard?.upcomingBatches?.length ?? 0) === 1 ? 'Batch' : 'Batches'}`}
                 </span>
               </div>
 
-              <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
-                {(academyDashboard?.upcomingBatches || [
-                  {
-                    batchUuid: 'b-1',
-                    batchName: 'Weekend Batch',
-                    level: 'BEGINNER',
-                    sportType: 'Badminton',
-                    startTime: '18:00:00',
-                    endTime: '20:00:00',
-                    daysOfWeek: 'Sat, Sun',
-                    enrolledCount: 14,
-                    maxCapacity: 20,
-                    coachName: 'Irshad',
-                    courtName: 'Court 1 (Main Campus)',
-                  },
-                  {
-                    batchUuid: 'b-2',
-                    batchName: 'Morning Elite Shuttlers',
-                    level: 'ADVANCED',
-                    sportType: 'Badminton',
-                    startTime: '06:00:00',
-                    endTime: '07:30:00',
-                    daysOfWeek: 'Mon, Wed, Fri',
-                    enrolledCount: 12,
-                    maxCapacity: 14,
-                    coachName: 'Rajesh Kumar',
-                    courtName: 'Court 1 (Main Campus)',
-                  },
-                  {
-                    batchUuid: 'b-3',
-                    batchName: 'Junior Development Squad',
-                    level: 'INTERMEDIATE',
-                    sportType: 'Badminton',
-                    startTime: '16:30:00',
-                    endTime: '18:00:00',
-                    daysOfWeek: 'Daily',
-                    enrolledCount: 15,
-                    maxCapacity: 16,
-                    coachName: 'Vikram Singh',
-                    courtName: 'Court 2 (North Campus)',
-                  },
-                ]).map((batch) => {
-                  const enrolled = Number(batch.enrolledCount || 0);
-                  const max = Number(batch.maxCapacity || 1);
-                  const capacityPercent = Math.min(100, Math.round((enrolled / max) * 100));
+              {loadingMetrics ? (
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] h-[180px] rounded-[22px] border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                  ))}
+                </div>
+              ) : (academyDashboard?.upcomingBatches && academyDashboard.upcomingBatches.length > 0) ? (
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                  {academyDashboard.upcomingBatches.map((batch) => {
+                    const enrolled = Number(batch.enrolledCount || 0);
+                    const max = Number(batch.maxCapacity || 1);
+                    const capacityPercent = Math.min(100, Math.round((enrolled / max) * 100));
 
-                  return (
-                    <div
-                      key={batch.batchUuid}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
-                    >
+                    return (
                       <div
-                        className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
-                        style={{
-                          backgroundColor: 'var(--athlon-card)',
-                          borderColor: 'var(--athlon-border)',
-                        }}
+                        key={batch.batchUuid}
+                        className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
                       >
-                        {/* Top Theme Primary Accent Line */}
-                        <div className="h-[3px] w-full bg-primary" />
+                        <div
+                          className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
+                          {/* Top Theme Primary Accent Line */}
+                          <div className="h-[3px] w-full bg-primary" />
 
-                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                          {/* Header Row: Level Badge, Sport & Capacity Tag */}
-                          <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
-                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
-                                <Sparkles className="w-2.5 h-2.5 text-primary" />
-                                {batch.level || 'INTERMEDIATE'}
-                              </span>
+                          <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                            {/* Header Row: Level Badge, Sport & Capacity Tag */}
+                            <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
+                              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                  <Sparkles className="w-2.5 h-2.5 text-primary" />
+                                  {batch.level || 'COACHING'}
+                                </span>
 
-                              <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-surface border border-foreground/10 text-foreground/70 shrink-0">
-                                {batch.sportType || 'Badminton'}
-                              </span>
-                            </div>
-
-                            {/* Slot Tag */}
-                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black tracking-tight text-primary bg-primary/10 border border-primary/25 shrink-0">
-                              {enrolled} / {max} Enrolled
-                            </span>
-                          </div>
-
-                          {/* Batch Name & Time */}
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
-                              <Calendar className="w-4 h-4 text-primary" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h3
-                                className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug"
-                                title={batch.batchName}
-                              >
-                                {batch.batchName}
-                              </h3>
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/50 truncate mt-0.5">
-                                <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                                <span className="truncate">
-                                  {batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} ({batch.daysOfWeek})
+                                <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-surface border border-foreground/10 text-foreground/70 shrink-0">
+                                  {batch.sportType || 'Badminton'}
                                 </span>
                               </div>
+
+                              {/* Slot Tag */}
+                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black tracking-tight text-primary bg-primary/10 border border-primary/25 shrink-0">
+                                {enrolled} / {max} Enrolled
+                              </span>
                             </div>
-                          </div>
 
-                          {/* Bento Detail Bar: Coach, Court & Fill Progress */}
-                          <div
-                            className="rounded-xl p-2.5 border space-y-2.5 text-[11px]"
-                            style={{
-                              backgroundColor: 'var(--athlon-surface)',
-                              borderColor: 'var(--athlon-border)',
-                            }}
-                          >
-                            <div className="grid grid-cols-2 gap-2">
-                              {/* Coach Info */}
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[9px] shrink-0">
-                                  {(batch.coachName || 'Coach').charAt(0)}
-                                </div>
-                                <div className="min-w-0">
-                                  <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Coach</span>
-                                  <span className="text-[11px] font-black text-primary truncate block mt-0.5">
-                                    {batch.coachName || 'Rajesh Kumar'}
-                                  </span>
-                                </div>
+                            {/* Batch Name & Time */}
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
+                                <Calendar className="w-4 h-4 text-primary" />
                               </div>
-
-                              {/* Court Location */}
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                <div className="min-w-0">
-                                  <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Court</span>
-                                  <span className="text-[10.5px] font-bold text-foreground/80 truncate block mt-0.5">
-                                    {batch.courtName?.split('(')[0]?.trim() || 'Court 1'}
+                              <div className="min-w-0 flex-1">
+                                <h3
+                                  className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug"
+                                  title={batch.batchName}
+                                >
+                                  {batch.batchName}
+                                </h3>
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/50 truncate mt-0.5">
+                                  <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                                  <span className="truncate">
+                                    {batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} {batch.daysOfWeek ? `(${batch.daysOfWeek})` : ''}
                                   </span>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Batch Capacity Bar */}
-                            <div className="space-y-1 pt-1 border-t border-foreground/5">
-                              <div className="flex items-center justify-between text-[9px] font-bold text-foreground/50">
-                                <span>Batch Capacity</span>
-                                <span className="font-mono text-primary">{capacityPercent}% full</span>
+                            {/* Bento Detail Bar: Coach, Court & Fill Progress */}
+                            <div
+                              className="rounded-xl p-2.5 border space-y-2.5 text-[11px]"
+                              style={{
+                                backgroundColor: 'var(--athlon-surface)',
+                                borderColor: 'var(--athlon-border)',
+                              }}
+                            >
+                              <div className="grid grid-cols-2 gap-2">
+                                {/* Coach Info */}
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[9px] shrink-0">
+                                    {(batch.coachName || 'C').charAt(0)}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Coach</span>
+                                    <span className="text-[11px] font-black text-primary truncate block mt-0.5">
+                                      {batch.coachName || 'Unassigned'}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Court Location */}
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  <div className="min-w-0">
+                                    <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Court</span>
+                                    <span className="text-[10.5px] font-bold text-foreground/80 truncate block mt-0.5">
+                                      {batch.courtName?.split('(')[0]?.trim() || 'Court 1'}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="h-1.5 w-full rounded-full bg-foreground/10 overflow-hidden">
-                                <div
-                                  className="h-full bg-primary rounded-full transition-all duration-500"
-                                  style={{ width: `${capacityPercent}%` }}
-                                />
+
+                              {/* Batch Capacity Bar */}
+                              <div className="space-y-1 pt-1 border-t border-foreground/5">
+                                <div className="flex items-center justify-between text-[9px] font-bold text-foreground/50">
+                                  <span>Batch Capacity</span>
+                                  <span className="font-mono text-primary">{capacityPercent}% full</span>
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-foreground/10 overflow-hidden">
+                                  <div
+                                    className="h-full bg-primary rounded-full transition-all duration-500"
+                                    style={{ width: `${capacityPercent}%` }}
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Footer Action Buttons */}
-                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-foreground/5">
-                            <Link
-                              href={`/org/${org.id}/attendance`}
-                              className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 active:scale-95 transition-all text-center"
-                            >
-                              <ClipboardList className="w-3.5 h-3.5" />
-                              <span>Roll Call</span>
-                            </Link>
+                            {/* Footer Action Buttons */}
+                            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-foreground/5">
+                              <Link
+                                href={`/org/${org.id}/attendance`}
+                                className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 active:scale-95 transition-all text-center"
+                              >
+                                <ClipboardList className="w-3.5 h-3.5" />
+                                <span>Roll Call</span>
+                              </Link>
 
-                            <Link
-                              href={`/org/${org.id}/batches`}
-                              className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 active:scale-95 transition-all text-center"
-                              style={{ borderColor: 'var(--athlon-border)' }}
-                            >
-                              <span>Batch Info</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </Link>
+                              <Link
+                                href={`/org/${org.id}/batches`}
+                                className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 active:scale-95 transition-all text-center"
+                                style={{ borderColor: 'var(--athlon-border)' }}
+                              >
+                                <span>Batch Info</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </Link>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  className="rounded-[22px] border p-6 text-center space-y-2"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <Calendar className="w-8 h-8 text-foreground/30 mx-auto" />
+                  <p className="text-xs font-bold text-foreground/70">No coaching batches scheduled today</p>
+                  <Link href={`/org/${org.id}/batches`} className="text-[11px] font-bold text-primary hover:underline inline-block">
+                    Create / Manage Batches &rarr;
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* 2. Academy Campuses & Training Arenas (Mobile) */}
@@ -939,112 +926,108 @@ export default function OrganizationDashboard() {
                 </Link>
               </div>
 
-              <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
-                {(academyDashboard?.centres || [
-                  {
-                    centreUuid: 'c-1',
-                    name: 'Main Sports Arena Campus',
-                    city: 'Bangalore',
-                    operatingHours: '06:00 AM - 10:00 PM',
-                    status: 'ACTIVE',
-                    facilitiesCount: 4,
-                    activeBatchesCount: 8,
-                    activeStudentsCount: 240,
-                    sportsAvailable: 'Badminton, Tennis, Squash',
-                  },
-                  {
-                    centreUuid: 'c-2',
-                    name: 'North City Training Hub',
-                    city: 'Bangalore',
-                    operatingHours: '06:00 AM - 09:30 PM',
-                    status: 'ACTIVE',
-                    facilitiesCount: 2,
-                    activeBatchesCount: 6,
-                    activeStudentsCount: 188,
-                    sportsAvailable: 'Badminton, Table Tennis',
-                  },
-                ]).map((centre) => (
-                  <div
-                    key={centre.centreUuid}
-                    className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
-                  >
+              {loadingMetrics ? (
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] h-[180px] rounded-[22px] border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                  ))}
+                </div>
+              ) : (academyDashboard?.centres && academyDashboard.centres.length > 0) ? (
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                  {academyDashboard.centres.map((centre) => (
                     <div
-                      className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
-                      style={{
-                        backgroundColor: 'var(--athlon-card)',
-                        borderColor: 'var(--athlon-border)',
-                      }}
+                      key={centre.centreUuid}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
                     >
-                      {/* Top Theme Primary Accent Line */}
-                      <div className="h-[3px] w-full bg-primary" />
+                      <div
+                        className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
+                        {/* Top Theme Primary Accent Line */}
+                        <div className="h-[3px] w-full bg-primary" />
 
-                      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                        {/* Header Row */}
-                        <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
-                            <Building className="w-2.5 h-2.5 text-primary" />
-                            Campus Arena
-                          </span>
+                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                          {/* Header Row */}
+                          <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
+                              <Building className="w-2.5 h-2.5 text-primary" />
+                              Campus Arena
+                            </span>
 
-                          <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                            {centre.status || 'Active'}
-                          </span>
-                        </div>
-
-                        {/* Centre Name & Location */}
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
-                            <Building className="w-4 h-4 text-primary" />
+                            <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                              {centre.status || 'Active'}
+                            </span>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug">
-                              {centre.name}
-                            </h3>
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/45 truncate mt-0.5">
-                              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                              <span className="truncate">{centre.city || 'Bangalore'} • {centre.operatingHours || '06:00 AM - 10:00 PM'}</span>
+
+                          {/* Centre Name & Location */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
+                              <Building className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug">
+                                {centre.name}
+                              </h3>
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/45 truncate mt-0.5">
+                                <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span className="truncate">{centre.city || 'Campus'}{centre.operatingHours ? ` • ${centre.operatingHours}` : ''}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Bento Metric Strip */}
-                        <div
-                          className="grid grid-cols-3 gap-2 p-2.5 rounded-xl border text-center"
-                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                        >
-                          <div>
-                            <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Courts</span>
-                            <span className="text-xs font-black text-foreground font-mono">{centre.facilitiesCount || 4}</span>
-                          </div>
-                          <div>
-                            <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Batches</span>
-                            <span className="text-xs font-black text-foreground font-mono">{centre.activeBatchesCount || 8}</span>
-                          </div>
-                          <div>
-                            <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Students</span>
-                            <span className="text-xs font-black text-primary font-mono">{centre.activeStudentsCount || 240}</span>
-                          </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-between pt-1 border-t border-foreground/5">
-                          <span className="text-[9.5px] text-foreground/50 truncate max-w-[65%]">
-                            Sports: <span className="text-foreground font-bold">{centre.sportsAvailable || 'Badminton, Tennis'}</span>
-                          </span>
-
-                          <Link
-                            href={`/org/${org.id}/facilities?centreUuid=${centre.centreUuid}`}
-                            className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-0.5 hover:underline shrink-0"
+                          {/* Bento Metric Strip */}
+                          <div
+                            className="grid grid-cols-3 gap-2 p-2.5 rounded-xl border text-center"
+                            style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
-                            <span>Courts</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </Link>
+                            <div>
+                              <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Courts</span>
+                              <span className="text-xs font-black text-foreground font-mono">{centre.facilitiesCount ?? 0}</span>
+                            </div>
+                            <div>
+                              <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Batches</span>
+                              <span className="text-xs font-black text-foreground font-mono">{centre.activeBatchesCount ?? 0}</span>
+                            </div>
+                            <div>
+                              <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Students</span>
+                              <span className="text-xs font-black text-primary font-mono">{centre.activeStudentsCount ?? 0}</span>
+                            </div>
+                          </div>
+
+                          {/* Footer */}
+                          <div className="flex items-center justify-between pt-1 border-t border-foreground/5">
+                            <span className="text-[9.5px] text-foreground/50 truncate max-w-[65%]">
+                              Sports: <span className="text-foreground font-bold">{centre.sportsAvailable || 'Badminton'}</span>
+                            </span>
+
+                            <Link
+                              href={`/org/${org.id}/facilities?centreUuid=${centre.centreUuid}`}
+                              className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-0.5 hover:underline shrink-0"
+                            >
+                              <span>Courts</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  className="rounded-[22px] border p-6 text-center space-y-2"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <Building className="w-8 h-8 text-foreground/30 mx-auto" />
+                  <p className="text-xs font-bold text-foreground/70">No campus locations registered</p>
+                  <Link href={`/org/${org.id}/centres`} className="text-[11px] font-bold text-primary hover:underline inline-block">
+                    Add Campus Centre &rarr;
+                  </Link>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -1143,14 +1126,18 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Active Students</span>
                     <GraduationCap className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-foreground font-mono">
-                      {academyDashboard?.activeStudents || 428}
-                    </span>
-                    <span className="text-xs font-bold text-blue-400 font-mono">
-                      {academyDashboard?.activeBatches || 14} Batches
-                    </span>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">
+                        {academyDashboard?.activeStudents ?? 0}
+                      </span>
+                      <span className="text-xs font-bold text-blue-400 font-mono">
+                        {academyDashboard?.activeBatches ?? 0} Batches
+                      </span>
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">Grassroots to Elite Training Roster</span>
                 </Link>
 
@@ -1163,14 +1150,18 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Today's Attendance</span>
                     <ClipboardList className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-emerald-400 font-mono">
-                      {academyDashboard?.todaysAttendancePercentage || 91.5}%
-                    </span>
-                    <span className="text-xs font-bold text-emerald-500 font-mono">
-                      {academyDashboard?.todaysSessionsCount || 8} Slots
-                    </span>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-emerald-400 font-mono">
+                        {academyDashboard?.todaysAttendancePercentage != null ? `${academyDashboard.todaysAttendancePercentage}%` : '0%'}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-500 font-mono">
+                        {academyDashboard?.todaysSessionsCount ?? 0} Slots
+                      </span>
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">Live QR &amp; Coach Digital Roll Call</span>
                 </Link>
 
@@ -1183,14 +1174,18 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Coaching Fees</span>
                     <CreditCard className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-foreground font-mono">
-                      ₹{Number(academyDashboard?.feesCollected || financeSummary?.totalIncome || 482000).toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-xs font-bold text-rose-400 font-mono">
-                      ₹{Number(academyDashboard?.pendingFees || 68000).toLocaleString('en-IN')} Due
-                    </span>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-28 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">
+                        ₹{Number(academyDashboard?.feesCollected || financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xs font-bold text-rose-400 font-mono">
+                        ₹{Number(academyDashboard?.pendingFees || 0).toLocaleString('en-IN')} Due
+                      </span>
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">Monthly coaching billing cycle</span>
                 </Link>
 
@@ -1203,16 +1198,20 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Campuses &amp; Courts</span>
                     <Building className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-foreground font-mono">
-                      {academyDashboard?.totalCentres || 2} Campuses
-                    </span>
-                    <span className="text-xs font-bold text-purple-400 font-mono">
-                      {academyDashboard?.totalFacilities || 6} Courts
-                    </span>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">
+                        {academyDashboard?.totalCentres ?? 0} Campuses
+                      </span>
+                      <span className="text-xs font-bold text-purple-400 font-mono">
+                        {academyDashboard?.totalFacilities ?? 0} Courts
+                      </span>
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">
-                    {academyDashboard?.facilityUtilizationPercentage || 82}% Arena Utilization Rate
+                    {academyDashboard?.facilityUtilizationPercentage != null ? `${academyDashboard.facilityUtilizationPercentage}%` : '0%'} Arena Utilization Rate
                   </span>
                 </Link>
               </div>
@@ -1227,20 +1226,24 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Monthly Revenue</span>
                     <CreditCard className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-foreground font-mono">
-                      ₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
-                    </span>
-                    {financeSummary && (
-                      <span className={`text-xs font-bold font-mono ${
-                        Number(financeSummary.netBalance || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                      }`}>
-                        {Number(financeSummary.netBalance || 0) >= 0
-                          ? `+₹${Number(financeSummary.netBalance || 0).toLocaleString('en-IN')} Net`
-                          : `-₹${Math.abs(Number(financeSummary.netBalance || 0)).toLocaleString('en-IN')} Net`}
+                  {loadingMetrics ? (
+                    <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">
+                        ₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
                       </span>
-                    )}
-                  </div>
+                      {financeSummary && (
+                        <span className={`text-xs font-bold font-mono ${
+                          Number(financeSummary.netBalance || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}>
+                          {Number(financeSummary.netBalance || 0) >= 0
+                            ? `+₹${Number(financeSummary.netBalance || 0).toLocaleString('en-IN')} Net`
+                            : `-₹${Math.abs(Number(financeSummary.netBalance || 0)).toLocaleString('en-IN')} Net`}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">
                     {financeSummary ? `${financeSummary.transactionCount} transactions recorded` : 'Verified payouts & fee collections'}
                   </span>
@@ -1255,12 +1258,16 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Active Members</span>
                     <Users className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-foreground font-mono">{members.length}</span>
-                    <span className="text-xs font-bold text-blue-400 font-mono">
-                      {newMembersThisWeek > 0 ? `+${newMembersThisWeek} this week` : 'Active Roster'}
-                    </span>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-16 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">{members.length}</span>
+                      <span className="text-xs font-bold text-blue-400 font-mono">
+                        {newMembersThisWeek > 0 ? `+${newMembersThisWeek} this week` : 'Active Roster'}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">Registered athlete roster</span>
                 </Link>
 
@@ -1273,14 +1280,18 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Tournaments Active</span>
                     <Trophy className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-yellow-400 font-mono">{tournaments.length} Events</span>
-                    <span className="text-xs font-bold text-yellow-500 font-mono">
-                      {tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length > 0
-                        ? `${tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length} Live`
-                        : 'Scheduled'}
-                    </span>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-20 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-yellow-400 font-mono">{tournaments.length} Events</span>
+                      <span className="text-xs font-bold text-yellow-500 font-mono">
+                        {tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length > 0
+                          ? `${tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length} Live`
+                          : 'Scheduled'}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">Championships &amp; Opens</span>
                 </Link>
 
@@ -1293,14 +1304,18 @@ export default function OrganizationDashboard() {
                     <span className="text-[10px] font-black uppercase tracking-wider">Club Supplies &amp; Gear</span>
                     <Package className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-primary font-mono">
-                      {inventorySummary?.totalQuantity || 0} Units
-                    </span>
-                    <span className="text-xs font-bold text-emerald-400 font-mono">
-                      {inventorySummary?.inStockCount || 0} In Stock
-                    </span>
-                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-20 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-primary font-mono">
+                        {inventorySummary?.totalQuantity || 0} Units
+                      </span>
+                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                        {inventorySummary?.inStockCount || 0} In Stock
+                      </span>
+                    </div>
+                  )}
                   <span className="text-[11px] text-foreground/45 block">
                     {inventorySummary?.lowStockCount ? `${inventorySummary.lowStockCount} low stock alerts` : 'Shuttles & equipment ready'}
                   </span>
@@ -1393,7 +1408,7 @@ export default function OrganizationDashboard() {
                     <div>
                       <h2 className="text-lg font-black text-foreground">Today's Scheduled Coaching Sessions</h2>
                       <p className="text-xs text-foreground/50">
-                        {academyDashboard?.upcomingBatches?.length || 3} Batches active today • Real-time student check-in
+                        {loadingMetrics ? 'Loading sessions...' : `${academyDashboard?.upcomingBatches?.length ?? 0} ${(academyDashboard?.upcomingBatches?.length ?? 0) === 1 ? 'Batch' : 'Batches'} active today • Real-time student check-in`}
                       </p>
                     </div>
                   </div>
@@ -1416,85 +1431,105 @@ export default function OrganizationDashboard() {
                   </div>
                 </div>
 
-                <div
-                  ref={sessionsTrackRef}
-                  className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                >
-                  {(academyDashboard?.upcomingBatches || []).map((batch) => (
-                    <div key={batch.batchUuid} className="snap-start shrink-0 w-[360px]">
-                      <div
-                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-primary/40 transition-all group"
-                        style={{
-                          backgroundColor: 'var(--athlon-card)',
-                          borderColor: 'var(--athlon-border)',
-                        }}
-                      >
-                        <div className="h-1 w-full bg-gradient-to-r from-primary via-emerald-400 to-blue-500 absolute top-0 left-0 right-0" />
+                {loadingMetrics ? (
+                  <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="snap-start shrink-0 w-[360px] h-[260px] rounded-[28px] border bg-card/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                    ))}
+                  </div>
+                ) : (academyDashboard?.upcomingBatches && academyDashboard.upcomingBatches.length > 0) ? (
+                  <div
+                    ref={sessionsTrackRef}
+                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+                  >
+                    {academyDashboard.upcomingBatches.map((batch) => (
+                      <div key={batch.batchUuid} className="snap-start shrink-0 w-[360px]">
+                        <div
+                          className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-primary/40 transition-all group"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="h-1 w-full bg-gradient-to-r from-primary via-emerald-400 to-blue-500 absolute top-0 left-0 right-0" />
 
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
-                              {batch.level || 'INTERMEDIATE'}
-                            </span>
-                            <span className="text-xs text-foreground/50 font-bold">{batch.sportType || 'Badminton'}</span>
-                          </div>
-
-                          <div>
-                            <h3 className="text-base font-black text-foreground truncate group-hover:text-primary transition-colors">
-                              {batch.batchName}
-                            </h3>
-                            <p className="text-xs text-foreground/50 flex items-center gap-1.5 mt-0.5">
-                              <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                              <span>{batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} ({batch.daysOfWeek})</span>
-                            </p>
-                          </div>
-
-                          <div
-                            className="grid grid-cols-2 gap-2 p-3 rounded-2xl border text-center"
-                            style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                          >
-                            <div>
-                              <span className="text-[9px] uppercase font-bold text-foreground/40 block">Enrolled</span>
-                              <span className="text-sm font-black text-foreground font-mono">
-                                {batch.enrolledCount || 14} / {batch.maxCapacity || 16}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                                {batch.level || 'COACHING'}
                               </span>
+                              <span className="text-xs text-foreground/50 font-bold">{batch.sportType || 'Badminton'}</span>
                             </div>
+
                             <div>
-                              <span className="text-[9px] uppercase font-bold text-foreground/40 block">Coach</span>
-                              <span className="text-sm font-black text-primary truncate block">
-                                {batch.coachName || 'Rajesh Kumar'}
-                              </span>
+                              <h3 className="text-base font-black text-foreground truncate group-hover:text-primary transition-colors">
+                                {batch.batchName}
+                              </h3>
+                              <p className="text-xs text-foreground/50 flex items-center gap-1.5 mt-0.5">
+                                <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span>{batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} {batch.daysOfWeek ? `(${batch.daysOfWeek})` : ''}</span>
+                              </p>
+                            </div>
+
+                            <div
+                              className="grid grid-cols-2 gap-2 p-3 rounded-2xl border text-center"
+                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <div>
+                                <span className="text-[9px] uppercase font-bold text-foreground/40 block">Enrolled</span>
+                                <span className="text-sm font-black text-foreground font-mono">
+                                  {batch.enrolledCount ?? 0} / {batch.maxCapacity ?? 0}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] uppercase font-bold text-foreground/40 block">Coach</span>
+                                <span className="text-sm font-black text-primary truncate block">
+                                  {batch.coachName || 'Unassigned'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-xs text-foreground/50">
+                              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span className="truncate">{batch.courtName || 'Court'}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-xs text-foreground/50">
-                            <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span className="truncate">{batch.courtName || 'Badminton Court 1 (Main Campus)'}</span>
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                            <Link
+                              href={`/org/${org.id}/attendance`}
+                              className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-center"
+                            >
+                              <ClipboardList className="w-3.5 h-3.5" />
+                              <span>Roll Call</span>
+                            </Link>
+
+                            <Link
+                              href={`/org/${org.id}/batches`}
+                              className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 transition-all text-center"
+                              style={{ borderColor: 'var(--athlon-border)' }}
+                            >
+                              <span>Batch Info</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
                           </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
-                          <Link
-                            href={`/org/${org.id}/attendance`}
-                            className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-center"
-                          >
-                            <ClipboardList className="w-3.5 h-3.5" />
-                            <span>Roll Call</span>
-                          </Link>
-
-                          <Link
-                            href={`/org/${org.id}/admissions`}
-                            className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 transition-all text-center"
-                            style={{ borderColor: 'var(--athlon-border)' }}
-                          >
-                            <span>Batch Info</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </Link>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="p-8 rounded-[28px] border text-center space-y-2 max-w-xl"
+                    style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  >
+                    <Calendar className="w-8 h-8 text-foreground/30 mx-auto" />
+                    <h3 className="text-sm font-bold text-foreground/80">No coaching sessions scheduled today</h3>
+                    <p className="text-xs text-foreground/50">Configure your batch roster, timings, and court allocations.</p>
+                    <Link href={`/org/${org.id}/batches`} className="text-xs font-bold text-primary hover:underline inline-block pt-1">
+                      Manage Batches &rarr;
+                    </Link>
+                  </div>
+                )}
               </section>
 
               {/* Campus Centres & Arenas Track */}
@@ -1505,7 +1540,7 @@ export default function OrganizationDashboard() {
                     <div>
                       <h2 className="text-lg font-black text-foreground">Academy Campuses &amp; Training Arenas</h2>
                       <p className="text-xs text-foreground/50">
-                        {academyDashboard?.centres?.length || 2} Campus locations • Multi-court sports infrastructure
+                        {loadingMetrics ? 'Loading campuses...' : `${academyDashboard?.centres?.length ?? 0} Campus ${(academyDashboard?.centres?.length ?? 0) === 1 ? 'location' : 'locations'} • Multi-court sports infrastructure`}
                       </p>
                     </div>
                   </div>
@@ -1519,71 +1554,91 @@ export default function OrganizationDashboard() {
                   </Link>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {(academyDashboard?.centres || []).map((centre) => (
-                    <div
-                      key={centre.centreUuid}
-                      className="p-6 rounded-[28px] border bg-card space-y-4 shadow-xl hover:border-purple-500/40 transition-all group"
-                      style={{
-                        backgroundColor: 'var(--athlon-card)',
-                        borderColor: 'var(--athlon-border)',
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-surface border border-white/10 flex items-center justify-center text-primary shrink-0 shadow-md">
-                            <Building className="w-6 h-6" />
+                {loadingMetrics ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="p-6 rounded-[28px] border bg-card/50 h-[220px] animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                    ))}
+                  </div>
+                ) : (academyDashboard?.centres && academyDashboard.centres.length > 0) ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {academyDashboard.centres.map((centre) => (
+                      <div
+                        key={centre.centreUuid}
+                        className="p-6 rounded-[28px] border bg-card space-y-4 shadow-xl hover:border-purple-500/40 transition-all group"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-surface border border-white/10 flex items-center justify-center text-primary shrink-0 shadow-md">
+                              <Building className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-extrabold text-foreground group-hover:text-purple-400 transition-colors">
+                                {centre.name}
+                              </h3>
+                              <p className="text-xs text-foreground/50 flex items-center gap-1 mt-1">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>{centre.city || 'Campus'}{centre.operatingHours ? ` • ${centre.operatingHours}` : ''}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                            {centre.status || 'ACTIVE'}
+                          </span>
+                        </div>
+
+                        <div
+                          className="grid grid-cols-3 gap-2 p-3 rounded-2xl border text-center"
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        >
+                          <div>
+                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Courts / Units</span>
+                            <span className="text-sm font-black text-foreground font-mono">{centre.facilitiesCount ?? 0}</span>
                           </div>
                           <div>
-                            <h3 className="text-base font-extrabold text-foreground group-hover:text-purple-400 transition-colors">
-                              {centre.name}
-                            </h3>
-                            <p className="text-xs text-foreground/50 flex items-center gap-1 mt-1">
-                              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span>{centre.city || 'Bangalore'} • {centre.operatingHours || '06:00 AM - 10:00 PM'}</span>
-                            </p>
+                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Active Batches</span>
+                            <span className="text-sm font-black text-foreground font-mono">{centre.activeBatchesCount ?? 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Students</span>
+                            <span className="text-sm font-black text-primary font-mono">{centre.activeStudentsCount ?? 0}</span>
                           </div>
                         </div>
 
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                          {centre.status}
-                        </span>
-                      </div>
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                          <span className="text-xs text-foreground/50 truncate">
+                            Sports: <span className="text-foreground font-semibold">{centre.sportsAvailable || 'Badminton'}</span>
+                          </span>
 
-                      <div
-                        className="grid grid-cols-3 gap-2 p-3 rounded-2xl border text-center"
-                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                      >
-                        <div>
-                          <span className="text-[9px] uppercase font-bold text-foreground/40 block">Courts / Units</span>
-                          <span className="text-sm font-black text-foreground font-mono">{centre.facilitiesCount || 4}</span>
-                        </div>
-                        <div>
-                          <span className="text-[9px] uppercase font-bold text-foreground/40 block">Active Batches</span>
-                          <span className="text-sm font-black text-foreground font-mono">{centre.activeBatchesCount || 8}</span>
-                        </div>
-                        <div>
-                          <span className="text-[9px] uppercase font-bold text-foreground/40 block">Students</span>
-                          <span className="text-sm font-black text-primary font-mono">{centre.activeStudentsCount || 240}</span>
+                          <Link
+                            href={`/org/${org.id}/facilities?centreUuid=${centre.centreUuid}`}
+                            className="text-xs font-bold text-primary hover:underline shrink-0 flex items-center gap-1"
+                          >
+                            <span>Courts</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
                         </div>
                       </div>
-
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
-                        <span className="text-xs text-foreground/50 truncate">
-                          Sports: <span className="text-foreground font-semibold">{centre.sportsAvailable || 'Badminton, Cricket, Football'}</span>
-                        </span>
-
-                        <Link
-                          href={`/org/${org.id}/facilities?centreUuid=${centre.centreUuid}`}
-                          className="text-xs font-bold text-primary hover:underline shrink-0 flex items-center gap-1"
-                        >
-                          <span>Courts</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="p-8 rounded-[28px] border text-center space-y-2 max-w-xl"
+                    style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  >
+                    <Building className="w-8 h-8 text-foreground/30 mx-auto" />
+                    <h3 className="text-sm font-bold text-foreground/80">No campus locations registered</h3>
+                    <p className="text-xs text-foreground/50">Add sports campuses, training arenas, and courts.</p>
+                    <Link href={`/org/${org.id}/centres`} className="text-xs font-bold text-primary hover:underline inline-block pt-1">
+                      Add Campus Centre &rarr;
+                    </Link>
+                  </div>
+                )}
               </section>
             </>
           ) : (

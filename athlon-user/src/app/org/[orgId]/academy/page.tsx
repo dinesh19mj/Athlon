@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { 
   Users, 
   BookOpen, 
@@ -11,9 +12,13 @@ import {
   Package,
   Activity,
   ArrowRight,
-  TrendingDown
+  TrendingDown,
+  Building2,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
+import { AcademyService, AcademyDashboardSummary } from '@/lib/api/academy';
 
 const bgImages = [
   'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=800&auto=format&fit=crop',
@@ -21,21 +26,15 @@ const bgImages = [
   'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=800&auto=format&fit=crop',
 ];
 
-const quickActions = [
-  { id: '/academy/students', label: 'Students', icon: Users, color: 'text-blue-400' },
-  { id: '/academy/batches', label: 'Batches', icon: BookOpen, color: 'text-green-400' },
-  { id: '/academy/fees', label: 'Fees', icon: CreditCard, color: 'text-emerald-400' },
-  { id: '/academy/attendance', label: 'Attendance', icon: CalendarCheck, color: 'text-orange-400' },
-  { id: '/academy/inventory', label: 'Inventory', icon: Package, color: 'text-pink-400' },
-  { id: '/academy/progress', label: 'Progress', icon: TrendingUp, color: 'text-cyan-400' },
-  { id: '/academy/coaches', label: 'Coaches', icon: Activity, color: 'text-red-400' },
-];
-
 export default function AcademyDashboardPage() {
+  const params = useParams();
+  const orgId = (params?.orgId as string) || '';
   const { userEmail } = useAuthStore();
   const displayName = userEmail ? userEmail.split('@')[0] : 'Admin';
   
   const [currentBg, setCurrentBg] = useState(0);
+  const [dashboard, setDashboard] = useState<AcademyDashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,6 +42,33 @@ export default function AcademyDashboardPage() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (orgId) {
+      setLoading(true);
+      AcademyService.getDashboard(orgId)
+        .then((data) => {
+          setDashboard(data);
+        })
+        .catch((err) => {
+          console.error('Error fetching academy dashboard:', err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [orgId]);
+
+  const quickActions = [
+    { id: `/org/${orgId}/students`, label: 'Students', icon: Users },
+    { id: `/org/${orgId}/batches`, label: 'Batches', icon: BookOpen },
+    { id: `/org/${orgId}/finances`, label: 'Fees', icon: CreditCard },
+    { id: `/org/${orgId}/attendance`, label: 'Attendance', icon: CalendarCheck },
+    { id: `/org/${orgId}/inventory`, label: 'Inventory', icon: Package },
+    { id: `/org/${orgId}/performance`, label: 'Progress', icon: TrendingUp },
+    { id: `/org/${orgId}/coaches`, label: 'Coaches', icon: Activity },
+    { id: `/org/${orgId}/centres`, label: 'Centres', icon: Building2 },
+  ];
 
   return (
     <div className="h-[calc(100vh-156px)] md:h-[calc(100vh-64px)] overflow-hidden bg-background text-foreground flex flex-col relative">
@@ -87,18 +113,32 @@ export default function AcademyDashboardPage() {
           <div className="flex gap-3 relative z-10">
             <div className="flex-1 bg-black/40 border border-foreground/10 backdrop-blur-md rounded-2xl p-4 flex flex-col justify-center shadow-lg">
               <span className="text-[10px] font-black text-foreground/60 uppercase tracking-widest mb-1">Students</span>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl font-black text-foreground">155</span>
-                <span className="text-xs font-bold text-green-500 mb-1 flex items-center"><TrendingUp className="w-3 h-3" /> 12</span>
-              </div>
+              {loading ? (
+                <div className="h-7 w-16 bg-foreground/20 rounded animate-pulse my-0.5" />
+              ) : (
+                <div className="flex items-end gap-2">
+                  <span className="text-2xl font-black text-foreground">{dashboard?.activeStudents ?? 0}</span>
+                  <span className="text-xs font-bold text-blue-400 mb-1 flex items-center">
+                    {dashboard?.activeBatches ?? 0} Batches
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex-1 bg-[#F97316]/10 border border-[#F97316]/30 backdrop-blur-md rounded-2xl p-4 flex flex-col justify-center shadow-lg relative overflow-hidden">
               <div className="absolute inset-0 bg-[#F97316]/10 pointer-events-none" />
-              <span className="text-[10px] font-black text-[#F97316]/80 uppercase tracking-widest mb-1">Revenue</span>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl font-black text-[#F97316]">$12.4k</span>
-                <span className="text-xs font-bold text-red-500 mb-1 flex items-center"><TrendingDown className="w-3 h-3" /> 4%</span>
-              </div>
+              <span className="text-[10px] font-black text-[#F97316]/80 uppercase tracking-widest mb-1">Fees Collected</span>
+              {loading ? (
+                <div className="h-7 w-20 bg-[#F97316]/20 rounded animate-pulse my-0.5" />
+              ) : (
+                <div className="flex items-end gap-2">
+                  <span className="text-2xl font-black text-[#F97316]">
+                    ₹{Number(dashboard?.feesCollected ?? 0).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-xs font-bold text-rose-400 mb-1 flex items-center">
+                    ₹{Number(dashboard?.pendingFees ?? 0).toLocaleString('en-IN')} Due
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -110,43 +150,54 @@ export default function AcademyDashboardPage() {
             {quickActions.map((action) => (
               <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0 snap-start">
                 <div className="w-[68px] h-[68px] rounded-[16px] bg-surface border border-foreground/5 hover:border-foreground/20 flex flex-col items-center justify-center transition-colors shadow-lg cursor-pointer">
-                  <action.icon className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} strokeWidth={1.5} />
+                  <action.icon className="w-6 h-6 text-primary" strokeWidth={1.5} />
                 </div>
                 <span className="text-[10px] font-medium text-foreground/80">{action.label}</span>
               </Link>
             ))}
-            
-            {/* Quick action to add a new batch */}
-            <Link href="/academy/batches" className="flex flex-col items-center gap-1.5 shrink-0 snap-start">
-              <div className="w-[68px] h-[68px] rounded-[16px] bg-surface border border-[#F97316]/30 hover:border-[#F97316] flex flex-col items-center justify-center transition-colors shadow-lg cursor-pointer">
-                <BookOpen className="w-6 h-6 text-[#F97316]" strokeWidth={1.5} />
-              </div>
-              <span className="text-[10px] font-medium text-foreground/80">New Batch</span>
-            </Link>
           </section>
         </div>
 
-        {/* RECENT ACTIVITY */}
+        {/* RECENT ACTIVITY / SESSIONS */}
         <div className="px-6 pb-8">
           <div className="flex items-center justify-between mb-4 pl-1 pr-2">
-            <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Recent Activity</h2>
+            <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">Active Coaching Sessions</h2>
+            <Link href={`/org/${orgId}/batches`} className="text-[10px] font-bold text-primary hover:underline">
+              View All &rarr;
+            </Link>
           </div>
           
-          <div className="space-y-3">
-            {[
-              { id: 1, text: 'Coach Vikram started Morning Batch', time: '10 mins ago', color: 'bg-blue-500' },
-              { id: 2, text: 'New player Arjun enrolled', time: '2 hours ago', color: 'bg-[#F97316]' },
-              { id: 3, text: 'Shuttle stock alert: < 5 barrels', time: '5 hours ago', color: 'bg-red-500' },
-            ].map((activity, i) => (
-              <div key={activity.id} className="bg-surface/80 backdrop-blur-md border border-foreground/5 rounded-2xl p-4 shadow-xl flex items-center gap-4">
-                <div className={`w-2 h-2 rounded-full ${activity.color} shrink-0`} />
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-foreground">{activity.text}</p>
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-16 rounded-2xl bg-surface/50 border border-foreground/5 animate-pulse" />
+              ))}
+            </div>
+          ) : (dashboard?.upcomingBatches && dashboard.upcomingBatches.length > 0) ? (
+            <div className="space-y-3">
+              {dashboard.upcomingBatches.map((batch) => (
+                <div key={batch.batchUuid} className="bg-surface/80 backdrop-blur-md border border-foreground/5 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">{batch.batchName}</p>
+                      <p className="text-[10px] text-foreground/50 truncate">
+                        Coach: {batch.coachName || 'Unassigned'} • {batch.enrolledCount ?? 0}/{batch.maxCapacity ?? 0} Enrolled
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-primary shrink-0">
+                    {batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)}
+                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest whitespace-nowrap">{activity.time}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-surface/50 border border-foreground/5 rounded-2xl p-6 text-center space-y-1">
+              <Calendar className="w-6 h-6 text-foreground/30 mx-auto" />
+              <p className="text-xs font-medium text-foreground/60">No active batches scheduled today</p>
+            </div>
+          )}
         </div>
       </div>
 
