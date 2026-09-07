@@ -72,11 +72,20 @@ public class AcademyPostService {
             UUID batchUuid,
             UUID centreUuid,
             String search,
+            String approvalStatus,
             UUID currentUserUuid) {
 
         List<AcademyPost> list;
 
-        if (batchUuid != null) {
+        if (approvalStatus != null && !approvalStatus.trim().isEmpty() && !"ALL".equalsIgnoreCase(approvalStatus)) {
+            String statusUpper = approvalStatus.trim().toUpperCase();
+            if (postType != null && !postType.trim().isEmpty() && !"ALL".equalsIgnoreCase(postType)) {
+                list = postRepository.findByOrganizationUuidAndApprovalStatusAndPostTypeOrderByIsPinnedDescCreatedAtDesc(
+                        organizationUuid, statusUpper, postType.trim().toUpperCase());
+            } else {
+                list = postRepository.findByOrganizationUuidAndApprovalStatusOrderByIsPinnedDescCreatedAtDesc(organizationUuid, statusUpper);
+            }
+        } else if (batchUuid != null) {
             list = postRepository.findByOrganizationUuidAndBatchUuidOrderByIsPinnedDescCreatedAtDesc(organizationUuid, batchUuid);
         } else if (centreUuid != null) {
             list = postRepository.findByOrganizationUuidAndCentreUuidOrderByIsPinnedDescCreatedAtDesc(organizationUuid, centreUuid);
@@ -86,6 +95,20 @@ public class AcademyPostService {
             list = postRepository.findByOrganizationUuidAndTargetScopeOrderByIsPinnedDescCreatedAtDesc(organizationUuid, targetScope.trim().toUpperCase());
         } else {
             list = postRepository.findByOrganizationUuidOrderByIsPinnedDescCreatedAtDesc(organizationUuid);
+        }
+
+        // If approvalStatus is not explicitly specified or "ALL", standard feed should show APPROVED posts + current user's own submissions
+        if (approvalStatus == null || approvalStatus.trim().isEmpty()) {
+            list = list.stream().filter(p -> {
+                if ("APPROVED".equalsIgnoreCase(p.getApprovalStatus())) {
+                    return true;
+                }
+                // Allow the author to see their own pending/rejected posts
+                if (currentUserUuid != null && currentUserUuid.equals(p.getAuthorUserUuid())) {
+                    return true;
+                }
+                return false;
+            }).collect(Collectors.toList());
         }
 
         if (search != null && !search.trim().isEmpty()) {
@@ -124,16 +147,25 @@ public class AcademyPostService {
         post.setOrganizationUuid(org.getOrganizationUuid());
         post.setTitle(request.getTitle().trim());
         post.setContent(request.getContent().trim());
-        post.setPostType(request.getPostType() != null ? request.getPostType().trim().toUpperCase() : "BLOG");
+
+        String authorRole = request.getAuthorRole() != null ? request.getAuthorRole().trim().toUpperCase() : "STUDENT";
+        
+        // Students can only post BLOG posts - restriction rule
+        if ("STUDENT".equalsIgnoreCase(authorRole)) {
+            post.setPostType("BLOG");
+            post.setYoutubeVideoUrl(null);
+            post.setYoutubeVideoId(null);
+        } else {
+            post.setPostType(request.getPostType() != null ? request.getPostType().trim().toUpperCase() : "BLOG");
+            if (request.getYoutubeVideoUrl() != null && !request.getYoutubeVideoUrl().trim().isEmpty()) {
+                String videoUrl = request.getYoutubeVideoUrl().trim();
+                post.setYoutubeVideoUrl(videoUrl);
+                post.setYoutubeVideoId(extractYouTubeId(videoUrl));
+            }
+        }
+
         post.setMediaUrls(request.getMediaUrls());
         post.setCoverImageUrl(request.getCoverImageUrl());
-
-        // YouTube video parsing
-        if (request.getYoutubeVideoUrl() != null && !request.getYoutubeVideoUrl().trim().isEmpty()) {
-            String videoUrl = request.getYoutubeVideoUrl().trim();
-            post.setYoutubeVideoUrl(videoUrl);
-            post.setYoutubeVideoId(extractYouTubeId(videoUrl));
-        }
 
         post.setTargetScope(request.getTargetScope() != null ? request.getTargetScope().trim().toUpperCase() : "ALL");
         post.setCentreUuid(request.getCentreUuid());
@@ -148,7 +180,6 @@ public class AcademyPostService {
         post.setAuthorUserUuid(currentUserUuid);
 
         String authorName = request.getAuthorName();
-        String authorRole = request.getAuthorRole();
         String authorAvatar = request.getAuthorAvatar();
 
         if (currentUserId != null) {
@@ -164,9 +195,20 @@ public class AcademyPostService {
             }
         }
 
-        post.setAuthorName(authorName != null && !authorName.isEmpty() ? authorName : "Academy Staff");
-        post.setAuthorRole(authorRole != null && !authorRole.isEmpty() ? authorRole.toUpperCase() : "COACH");
+        post.setAuthorName(authorName != null && !authorName.isEmpty() ? authorName : "Academy Member");
+        post.setAuthorRole(authorRole);
         post.setAuthorAvatar(authorAvatar);
+
+        // Approval workflow: Admin, Owner, Manager are automatically approved.
+        // Coach, Staff, Student require Admin approval before public listing.
+        if ("ADMIN".equalsIgnoreCase(authorRole) || "OWNER".equalsIgnoreCase(authorRole) || "MANAGER".equalsIgnoreCase(authorRole) || "SUPER_ADMIN".equalsIgnoreCase(authorRole)) {
+            post.setApprovalStatus("APPROVED");
+            post.setApprovedByUserUuid(currentUserUuid);
+            post.setApprovedByName(post.getAuthorName());
+            post.setApprovedAt(LocalDateTime.now());
+        } else {
+            post.setApprovalStatus("PENDING_APPROVAL");
+        }
 
         AcademyPost saved = postRepository.save(post);
         return mapToResponse(saved, currentUserUuid);
@@ -383,6 +425,36 @@ public class AcademyPostService {
         return mapToResponse(saved, currentUserUuid);
     }
 
+    @Transactional
+    public AcademyPostResponse approvePost(UUID postUuid, UUID approverUserUuid, String approverName) {
+        AcademyPost post = postRepository.findByPostUuid(postUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Academy post not found"));
+
+        post.setApprovalStatus("APPROVED");
+        post.setApprovedByUserUuid(approverUserUuid);
+        post.setApprovedByName(approverName != null && !approverName.trim().isEmpty() ? approverName : "Academy Admin");
+        post.setApprovedAt(LocalDateTime.now());
+        post.setRejectionReason(null);
+
+        AcademyPost saved = postRepository.save(post);
+        return mapToResponse(saved, approverUserUuid);
+    }
+
+    @Transactional
+    public AcademyPostResponse rejectPost(UUID postUuid, UUID approverUserUuid, String approverName, String reason) {
+        AcademyPost post = postRepository.findByPostUuid(postUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Academy post not found"));
+
+        post.setApprovalStatus("REJECTED");
+        post.setApprovedByUserUuid(approverUserUuid);
+        post.setApprovedByName(approverName != null && !approverName.trim().isEmpty() ? approverName : "Academy Admin");
+        post.setApprovedAt(LocalDateTime.now());
+        post.setRejectionReason(reason != null && !reason.trim().isEmpty() ? reason : "Post rejected by admin");
+
+        AcademyPost saved = postRepository.save(post);
+        return mapToResponse(saved, approverUserUuid);
+    }
+
     private String extractYouTubeId(String url) {
         if (url == null || url.trim().isEmpty()) return null;
         Matcher matcher = YOUTUBE_PATTERN.matcher(url.trim());
@@ -422,6 +494,10 @@ public class AcademyPostService {
         resp.setCommentsCount(post.getCommentsCount() != null ? post.getCommentsCount() : 0);
         resp.setViewsCount(post.getViewsCount() != null ? post.getViewsCount() : 0);
         resp.setStatus(post.getStatus());
+        resp.setApprovalStatus(post.getApprovalStatus());
+        resp.setApprovedByName(post.getApprovedByName());
+        resp.setApprovedAt(post.getApprovedAt());
+        resp.setRejectionReason(post.getRejectionReason());
         resp.setCreatedAt(post.getCreatedAt());
         resp.setUpdatedAt(post.getUpdatedAt());
 

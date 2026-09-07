@@ -102,6 +102,21 @@ public class AcademyPost {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "PUBLISHED"; // PUBLISHED, DRAFT, ARCHIVED
 
+    @Column(name = "approval_status", nullable = false, length = 30)
+    private String approvalStatus = "APPROVED"; // APPROVED, PENDING_APPROVAL, REJECTED
+
+    @Column(name = "approved_by_user_uuid")
+    private UUID approvedByUserUuid;
+
+    @Column(name = "approved_by_name", length = 150)
+    private String approvedByName;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -130,6 +145,9 @@ public class AcademyPost {
         }
         if (this.status == null) {
             this.status = "PUBLISHED";
+        }
+        if (this.approvalStatus == null) {
+            this.approvalStatus = "APPROVED";
         }
         if (this.targetScope == null) {
             this.targetScope = "ALL";
@@ -367,6 +385,46 @@ public class AcademyPost {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public UUID getApprovedByUserUuid() {
+        return approvedByUserUuid;
+    }
+
+    public void setApprovedByUserUuid(UUID approvedByUserUuid) {
+        this.approvedByUserUuid = approvedByUserUuid;
+    }
+
+    public String getApprovedByName() {
+        return approvedByName;
+    }
+
+    public void setApprovedByName(String approvedByName) {
+        this.approvedByName = approvedByName;
+    }
+
+    public LocalDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(LocalDateTime approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -16,11 +16,17 @@ public interface AcademyPostRepository extends JpaRepository<AcademyPost, Long> 
 
     List<AcademyPost> findByOrganizationUuidOrderByIsPinnedDescCreatedAtDesc(UUID organizationUuid);
 
+    List<AcademyPost> findByOrganizationUuidAndApprovalStatusOrderByIsPinnedDescCreatedAtDesc(UUID organizationUuid, String approvalStatus);
+
     List<AcademyPost> findByOrganizationUuidAndPostTypeOrderByIsPinnedDescCreatedAtDesc(UUID organizationUuid, String postType);
+
+    List<AcademyPost> findByOrganizationUuidAndApprovalStatusAndPostTypeOrderByIsPinnedDescCreatedAtDesc(UUID organizationUuid, String approvalStatus, String postType);
 
     List<AcademyPost> findByOrganizationUuidAndTargetScopeOrderByIsPinnedDescCreatedAtDesc(UUID organizationUuid, String targetScope);
 
     List<AcademyPost> findByOrganizationUuidAndBatchUuidOrderByIsPinnedDescCreatedAtDesc(UUID organizationUuid, UUID batchUuid);
 
     List<AcademyPost> findByOrganizationUuidAndCentreUuidOrderByIsPinnedDescCreatedAtDesc(UUID organizationUuid, UUID centreUuid);
+
+    long countByOrganizationUuidAndApprovalStatus(UUID organizationUuid, String approvalStatus);
 }

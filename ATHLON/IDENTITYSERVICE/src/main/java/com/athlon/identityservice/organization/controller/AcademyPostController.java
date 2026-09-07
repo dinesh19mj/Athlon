@@ -71,12 +71,36 @@ public class AcademyPostController {
             @RequestParam(value = "batchUuid", required = false) UUID batchUuid,
             @RequestParam(value = "centreUuid", required = false) UUID centreUuid,
             @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "approvalStatus", required = false) String approvalStatus,
             @RequestHeader(value = "X-User-Uuid", required = false) String currentUserUuidStr) {
 
         UUID currentUserUuid = parseUserUuid(currentUserUuidStr);
         List<AcademyPostResponse> list = postService.getPosts(
-                organizationUuid, postType, targetScope, batchUuid, centreUuid, search, currentUserUuid);
+                organizationUuid, postType, targetScope, batchUuid, centreUuid, search, approvalStatus, currentUserUuid);
         return ResponseEntity.ok(ApiResponse.success("Academy posts retrieved successfully", list));
+    }
+
+    @PostMapping("/{postUuid}/approve")
+    public ResponseEntity<ApiResponse<AcademyPostResponse>> approvePost(
+            @PathVariable("postUuid") UUID postUuid,
+            @RequestHeader(value = "X-User-Uuid", required = false) String currentUserUuidStr,
+            @RequestParam(value = "approverName", required = false) String approverName) {
+
+        UUID currentUserUuid = parseUserUuid(currentUserUuidStr);
+        AcademyPostResponse response = postService.approvePost(postUuid, currentUserUuid, approverName);
+        return ResponseEntity.ok(ApiResponse.success("Post approved and published successfully", response));
+    }
+
+    @PostMapping("/{postUuid}/reject")
+    public ResponseEntity<ApiResponse<AcademyPostResponse>> rejectPost(
+            @PathVariable("postUuid") UUID postUuid,
+            @RequestHeader(value = "X-User-Uuid", required = false) String currentUserUuidStr,
+            @RequestParam(value = "approverName", required = false) String approverName,
+            @RequestParam(value = "reason", required = false) String reason) {
+
+        UUID currentUserUuid = parseUserUuid(currentUserUuidStr);
+        AcademyPostResponse response = postService.rejectPost(postUuid, currentUserUuid, approverName, reason);
+        return ResponseEntity.ok(ApiResponse.success("Post rejected successfully", response));
     }
 
     @GetMapping("/{postUuid}")

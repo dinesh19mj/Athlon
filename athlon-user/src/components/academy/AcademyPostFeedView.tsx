@@ -83,6 +83,11 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
   const { canManageModule } = usePermissions(orgUuid);
   const canManage = canManageModule('posts');
 
+  const isOwnerOrAdmin = isAdmin || role === 'ADMIN' || role === 'OWNER' || role === 'MANAGER';
+  const isCoachOrStaff = isCoach || role === 'COACH' || role === 'STAFF';
+  const isStudent = !isOwnerOrAdmin && !isCoachOrStaff;
+  const canCreate = isOwnerOrAdmin || isCoachOrStaff || isStudent || canManage;
+
   const [posts, setPosts] = useState<AcademyPost[]>([]);
   const [centres, setCentres] = useState<AcademyCentre[]>([]);
   const [batches, setBatches] = useState<AcademyBatchItem[]>([]);
@@ -93,6 +98,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
   const [selectedScope, setSelectedScope] = useState<string>('ALL');
   const [selectedBatchUuid, setSelectedBatchUuid] = useState<string>('ALL');
   const [selectedCentreUuid, setSelectedCentreUuid] = useState<string>('ALL');
+  const [selectedApprovalFilter, setSelectedApprovalFilter] = useState<string>('ALL');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modals & Drawers
@@ -127,6 +133,55 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
   const [formCategory, setFormCategory] = useState('General');
   const [formTags, setFormTags] = useState('');
   const [submittingPost, setSubmittingPost] = useState(false);
+
+  // When opening create modal, if user is a student, ensure formType is locked to BLOG
+  const handleOpenCreateModal = () => {
+    if (isStudent) {
+      setFormType('BLOG');
+    }
+    setIsCreateModalOpen(true);
+  };
+
+  const handleApprovePost = async (postUuid: string) => {
+    try {
+      const approverName = personalProfile?.name || userEmail?.split('@')[0] || 'Academy Admin';
+      await AcademyPostService.approvePost(postUuid, approverName);
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.postUuid === postUuid
+            ? { ...p, approvalStatus: 'APPROVED', approvedByName: approverName }
+            : p
+        )
+      );
+      if (selectedPostDetail && selectedPostDetail.postUuid === postUuid) {
+        setSelectedPostDetail((prev) => (prev ? { ...prev, approvalStatus: 'APPROVED', approvedByName: approverName } : null));
+      }
+      showToast('Post approved and published to Academy Feed! 🎉');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to approve post');
+    }
+  };
+
+  const handleRejectPost = async (postUuid: string) => {
+    const reason = window.prompt('Please enter reason for rejection (optional):') || 'Post does not meet guidelines';
+    try {
+      const approverName = personalProfile?.name || userEmail?.split('@')[0] || 'Academy Admin';
+      await AcademyPostService.rejectPost(postUuid, reason, approverName);
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.postUuid === postUuid
+            ? { ...p, approvalStatus: 'REJECTED', rejectionReason: reason, approvedByName: approverName }
+            : p
+        )
+      );
+      if (selectedPostDetail && selectedPostDetail.postUuid === postUuid) {
+        setSelectedPostDetail((prev) => (prev ? { ...prev, approvalStatus: 'REJECTED', rejectionReason: reason } : null));
+      }
+      showToast('Post marked as rejected');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to reject post');
+    }
+  };
 
   // File Upload State (Multipart Images from Device)
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -197,7 +252,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
         selectedScope,
         selectedBatchUuid,
         selectedCentreUuid,
-        searchTerm
+        searchTerm,
+        selectedApprovalFilter !== 'ALL' ? selectedApprovalFilter : undefined
       );
       setPosts(Array.isArray(res) ? res : []);
     } catch (err) {
@@ -212,7 +268,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
     if (orgUuid) {
       loadPosts();
     }
-  }, [orgUuid, selectedType, selectedScope, selectedBatchUuid, selectedCentreUuid]);
+  }, [orgUuid, selectedType, selectedScope, selectedBatchUuid, selectedCentreUuid, selectedApprovalFilter]);
 
   // Load Academy Centres & Batches for scoping selector
   useEffect(() => {
@@ -248,20 +304,23 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
       const selectedCentre = centres.find((c) => c.centreUuid === formCentreUuid);
       const selectedBatch = batches.find((b) => b.batchUuid === formBatchUuid);
 
-      const userRole = isAdmin ? 'ADMIN' : isCoach ? 'COACH' : 'STUDENT';
+      const userRole = isOwnerOrAdmin ? 'ADMIN' : isCoach ? 'COACH' : role === 'STAFF' ? 'STAFF' : 'STUDENT';
       const authorName =
         personalProfile?.name ||
         userEmail?.split('@')[0] ||
-        (isAdmin ? 'Academy Admin' : isCoach ? 'Coach' : 'Athlete');
+        (isOwnerOrAdmin ? 'Academy Admin' : isCoach ? 'Coach' : 'Athlete');
+
+      // Students are strictly restricted to BLOG only
+      const actualPostType = isStudent ? 'BLOG' : formType;
 
       const payload: CreateAcademyPostPayload = {
         organizationUuid: orgUuid,
         title: formTitle.trim(),
         content: formContent.trim(),
-        postType: formType,
-        youtubeVideoUrl: formType === 'VIDEO' ? formYoutubeUrl.trim() : undefined,
+        postType: actualPostType,
+        youtubeVideoUrl: (!isStudent && actualPostType === 'VIDEO') ? formYoutubeUrl.trim() : undefined,
         coverImageUrl: formCoverImageUrl.trim() || undefined,
-        mediaUrls: formType === 'GALLERY' ? formMediaUrls.trim() : undefined,
+        mediaUrls: (!isStudent && actualPostType === 'GALLERY') ? formMediaUrls.trim() : undefined,
         targetScope: formTargetScope,
         centreUuid: formTargetScope === 'CENTRE' ? formCentreUuid : undefined,
         centreName: formTargetScope === 'CENTRE' ? selectedCentre?.name : undefined,
@@ -273,13 +332,19 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
         authorRole: userRole,
       };
 
-      if (coverFile || galleryFiles.length > 0) {
+      if (!isStudent && (coverFile || galleryFiles.length > 0)) {
         await AcademyPostService.createPostMultipart(payload, coverFile, galleryFiles);
+      } else if (isStudent && coverFile) {
+        await AcademyPostService.createPostMultipart(payload, coverFile, []);
       } else {
         await AcademyPostService.createPost(payload);
       }
 
-      showToast('Content published to Academy Feed!');
+      if (isOwnerOrAdmin) {
+        showToast('Content published to Academy Feed! 🚀');
+      } else {
+        showToast('Post submitted! Awaiting Admin approval before appearing on feed. ⏳');
+      }
       setIsCreateModalOpen(false);
 
       // Reset Form
@@ -638,13 +703,34 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
           {/* Horizontal Scrolling Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+            {isOwnerOrAdmin && (
+              <button
+                onClick={() => setSelectedApprovalFilter(selectedApprovalFilter === 'PENDING_APPROVAL' ? 'ALL' : 'PENDING_APPROVAL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 border ${
+                  selectedApprovalFilter === 'PENDING_APPROVAL'
+                    ? 'bg-amber-500 text-black border-amber-500 shadow-md ring-2 ring-amber-500/30'
+                    : 'bg-amber-500/10 border-amber-500/25 text-amber-500 hover:bg-amber-500/20'
+                }`}
+              >
+                <span>⏳ Approvals</span>
+                {posts.filter((p) => p.approvalStatus === 'PENDING_APPROVAL').length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[9px] font-mono">
+                    {posts.filter((p) => p.approvalStatus === 'PENDING_APPROVAL').length}
+                  </span>
+                )}
+              </button>
+            )}
+
             {POST_TYPES.map((t) => {
-              const isSelected = selectedType === t.id;
+              const isSelected = selectedType === t.id && selectedApprovalFilter === 'ALL';
               const IconComp = t.icon;
               return (
                 <button
                   key={`mob-tab-${t.id}`}
-                  onClick={() => setSelectedType(t.id)}
+                  onClick={() => {
+                    setSelectedType(t.id);
+                    setSelectedApprovalFilter('ALL');
+                  }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 border ${
                     isSelected
                       ? 'bg-primary text-black border-primary/30 shadow-sm'
@@ -719,12 +805,14 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                   Share sports articles, training YouTube drills, or photo galleries with your academy.
                 </p>
               </div>
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black shadow-md shadow-primary/20"
-              >
-                <Plus className="w-3.5 h-3.5" /> Publish First Post
-              </button>
+              {canCreate && (
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black shadow-md shadow-primary/20"
+                >
+                  <Plus className="w-3.5 h-3.5" /> {isStudent ? 'Write First Article' : 'Publish First Post'}
+                </button>
+              )}
             </div>
           ) : (
             filteredPosts.map((post) => {
@@ -736,20 +824,34 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                     .map((s) => s.trim())
                     .filter(Boolean)
                 : [];
+              const isPending = post.approvalStatus === 'PENDING_APPROVAL';
+              const isRejected = post.approvalStatus === 'REJECTED';
 
               return (
                 <div
                   key={`mob-card-${post.postUuid}`}
                   className={`rounded-[26px] bg-surface border border-foreground/10 shadow-sm overflow-hidden space-y-3 relative ${
-                    post.isPinned ? 'ring-1 ring-primary/40' : ''
+                    isPending ? 'border-amber-500/40 bg-amber-500/[0.02]' : isRejected ? 'border-rose-500/40 opacity-75' : post.isPinned ? 'ring-1 ring-primary/40' : ''
                   }`}
                 >
-                  {/* Pin Tag */}
-                  {post.isPinned && (
-                    <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-primary text-black font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md">
-                      <Pin className="w-3 h-3" /> Pinned
-                    </div>
-                  )}
+                  {/* Pin & Status Tags */}
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+                    {isPending && (
+                      <div className="px-2.5 py-1 rounded-full bg-amber-500 text-black font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md animate-pulse">
+                        ⏳ Pending Approval
+                      </div>
+                    )}
+                    {isRejected && (
+                      <div className="px-2.5 py-1 rounded-full bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md">
+                        ❌ Rejected
+                      </div>
+                    )}
+                    {post.isPinned && (
+                      <div className="px-2.5 py-1 rounded-full bg-primary text-black font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md">
+                        <Pin className="w-3 h-3" /> Pinned
+                      </div>
+                    )}
+                  </div>
 
                   {/* Media Banner */}
                   {isVideo && (
@@ -867,6 +969,31 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                       </p>
                     </div>
 
+                    {/* Admin Moderation Strip for Pending Posts on Mobile */}
+                    {isOwnerOrAdmin && isPending && (
+                      <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2">
+                        <div className="text-[10px] font-bold text-amber-500 flex items-center gap-1">
+                          <span>Review Submission</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleApprovePost(post.postUuid)}
+                            className="px-3 py-1 rounded-xl bg-emerald-600 text-white text-[10px] font-black flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+                          >
+                            <Check className="w-3 h-3 stroke-[3]" /> Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectPost(post.postUuid)}
+                            className="px-2.5 py-1 rounded-xl bg-rose-600/90 text-white text-[10px] font-black flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+                          >
+                            <X className="w-3 h-3" /> Reject
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Author & Footer Actions */}
                     <div className="pt-2 border-t border-foreground/10 flex items-center justify-between">
                       <div
@@ -877,8 +1004,11 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                           {post.authorName ? post.authorName.charAt(0).toUpperCase() : 'A'}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[11px] font-black text-foreground truncate">
-                            {post.authorName}
+                          <div className="text-[11px] font-black text-foreground truncate flex items-center gap-1">
+                            <span>{post.authorName}</span>
+                            <span className="text-[8px] font-bold uppercase text-foreground/40 px-1 rounded bg-foreground/5">
+                              {post.authorRole}
+                            </span>
                           </div>
                           <div className="text-[9px] text-foreground/40">
                             {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}
@@ -943,12 +1073,12 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
         </div>
 
         {/* Floating Action Button (FAB) on Mobile */}
-        {canManage && (
+        {canCreate && (
           <div className="fixed bottom-24 right-4 z-40">
             <button
-              onClick={() => setIsCreateModalOpen(true)}
+              onClick={handleOpenCreateModal}
               className="w-14 h-14 rounded-full bg-primary text-black flex items-center justify-center shadow-2xl shadow-primary/50 hover:scale-105 active:scale-90 transition-all border border-black/10 group"
-              title="Create Post"
+              title={isStudent ? 'Write an Article / Blog' : 'Create Post'}
             >
               <Plus className="w-7 h-7 stroke-[3] transition-transform group-hover:rotate-90 duration-200" />
             </button>
@@ -991,13 +1121,13 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                   <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
                 </button>
 
-                {canManage && (
+                {canCreate && (
                   <button
-                    onClick={() => setIsCreateModalOpen(true)}
+                    onClick={handleOpenCreateModal}
                     className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs flex items-center gap-2 shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Create Post / Video</span>
+                    <span>{isStudent ? 'Write Article / Blog' : 'Create Post / Video'}</span>
                   </button>
                 )}
               </div>
@@ -1005,13 +1135,34 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
             {/* Post Type Selector Tabs */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 mt-6 hide-scrollbar">
+              {isOwnerOrAdmin && (
+                <button
+                  onClick={() => setSelectedApprovalFilter(selectedApprovalFilter === 'PENDING_APPROVAL' ? 'ALL' : 'PENDING_APPROVAL')}
+                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all shrink-0 border ${
+                    selectedApprovalFilter === 'PENDING_APPROVAL'
+                      ? 'bg-amber-500 text-black border-amber-500 shadow-md ring-2 ring-amber-500/30'
+                      : 'bg-amber-500/10 border-amber-500/25 text-amber-500 hover:bg-amber-500/20'
+                  }`}
+                >
+                  <span>⏳ Approvals Queue</span>
+                  {posts.filter((p) => p.approvalStatus === 'PENDING_APPROVAL').length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-600 text-white text-[10px] font-mono font-bold">
+                      {posts.filter((p) => p.approvalStatus === 'PENDING_APPROVAL').length}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {POST_TYPES.map((t) => {
-                const isSelected = selectedType === t.id;
+                const isSelected = selectedType === t.id && selectedApprovalFilter === 'ALL';
                 const IconComp = t.icon;
                 return (
                   <button
                     key={t.id}
-                    onClick={() => setSelectedType(t.id)}
+                    onClick={() => {
+                      setSelectedType(t.id);
+                      setSelectedApprovalFilter('ALL');
+                    }}
                     className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 border ${
                       isSelected
                         ? 'bg-primary text-primary-foreground border-primary shadow-md'
@@ -1107,13 +1258,15 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                   Share the first sports tutorial, training drill video, or tournament photo gallery for your academy athletes.
                 </p>
               </div>
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="mt-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs flex items-center gap-2 shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Publish First Post</span>
-              </button>
+              {canCreate && (
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="mt-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs flex items-center gap-2 shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{isStudent ? 'Write First Article' : 'Publish First Post'}</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1126,20 +1279,35 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                       .map((s) => s.trim())
                       .filter(Boolean)
                   : [];
+                const isPending = post.approvalStatus === 'PENDING_APPROVAL';
+                const isRejected = post.approvalStatus === 'REJECTED';
 
                 return (
                   <div
                     key={post.postUuid}
                     className={`rounded-[28px] border bg-card/70 flex flex-col justify-between overflow-hidden shadow-lg transition-all group relative hover:border-primary/40 ${
-                      post.isPinned ? 'ring-1 ring-primary/40' : ''
+                      isPending ? 'border-amber-500/40 bg-amber-500/[0.02]' : isRejected ? 'border-rose-500/40 opacity-75' : post.isPinned ? 'ring-1 ring-primary/40' : ''
                     }`}
-                    style={{ borderColor: 'var(--athlon-border)' }}
+                    style={{ borderColor: isPending ? undefined : isRejected ? undefined : 'var(--athlon-border)' }}
                   >
-                    {post.isPinned && (
-                      <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md">
-                        <Pin className="w-3 h-3" /> Pinned
-                      </div>
-                    )}
+                    {/* Status & Pin Badges */}
+                    <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+                      {isPending && (
+                        <div className="px-2.5 py-1 rounded-full bg-amber-500 text-black font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md animate-pulse">
+                          ⏳ Pending Approval
+                        </div>
+                      )}
+                      {isRejected && (
+                        <div className="px-2.5 py-1 rounded-full bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md">
+                          ❌ Rejected
+                        </div>
+                      )}
+                      {post.isPinned && (
+                        <div className="px-2.5 py-1 rounded-full bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-wider flex items-center gap-1 shadow-md">
+                          <Pin className="w-3 h-3" /> Pinned
+                        </div>
+                      )}
+                    </div>
 
                     <div>
                       {isVideo && (
@@ -1258,6 +1426,31 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                       </div>
                     </div>
 
+                    {/* Admin Moderation Bar for Pending Approvals */}
+                    {isOwnerOrAdmin && isPending && (
+                      <div className="p-3 mx-4 mb-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2">
+                        <div className="text-[11px] font-bold text-amber-500">
+                          Pending Admin Verification
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleApprovePost(post.postUuid)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                          >
+                            <Check className="w-3.5 h-3.5 stroke-[3]" /> Approve &amp; Publish
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectPost(post.postUuid)}
+                            className="px-3 py-1.5 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-black flex items-center gap-1 shadow-md active:scale-95 transition-all"
+                          >
+                            <X className="w-3.5 h-3.5" /> Reject
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div
                       className="p-5 pt-3 border-t flex items-center justify-between"
                       style={{ borderColor: 'var(--athlon-border)' }}
@@ -1270,8 +1463,11 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                           {post.authorName ? post.authorName.charAt(0).toUpperCase() : 'A'}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-bold text-foreground truncate">
-                            {post.authorName || 'Coach'}
+                          <div className="text-xs font-bold text-foreground truncate flex items-center gap-1">
+                            <span>{post.authorName || 'Coach'}</span>
+                            <span className="text-[8px] font-bold uppercase text-foreground/40 px-1 rounded bg-foreground/5">
+                              {post.authorRole}
+                            </span>
                           </div>
                           <div className="text-[10px] text-foreground/40">
                             {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}
@@ -1380,105 +1576,119 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
             {/* Mobile Form Fields */}
             <form onSubmit={handleCreatePost} className="space-y-4 flex-1">
-              {/* 1. Visual Post Format Selector (Grid of 4 styled cards) */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1">
-                  <span>1. Choose Content Type</span>
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormType('BLOG')}
-                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
-                      formType === 'BLOG'
-                        ? 'bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30'
-                        : 'bg-surface border-foreground/10 text-foreground/70'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base">
-                        📝
-                      </div>
-                      {formType === 'BLOG' && (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      )}
+              {/* 1. Visual Post Format Selector */}
+              {isStudent ? (
+                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg shrink-0">
+                    📝
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-foreground">Student Blog Submission</div>
+                    <div className="text-[10px] text-foreground/60 leading-tight">
+                      Share your tournament experiences, fitness notes and badminton tips. Submissions will be verified by academy admins before publication.
                     </div>
-                    <div className="mt-2">
-                      <div className="text-xs font-black text-foreground">Article / Blog</div>
-                      <div className="text-[10px] text-foreground/50">Tactics, fitness &amp; tips</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormType('VIDEO')}
-                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
-                      formType === 'VIDEO'
-                        ? 'bg-red-500/15 border-red-500 ring-2 ring-red-500/30'
-                        : 'bg-surface border-foreground/10 text-foreground/70'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-base">
-                        🎥
-                      </div>
-                      {formType === 'VIDEO' && (
-                        <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-xs font-black text-foreground">YouTube Drill</div>
-                      <div className="text-[10px] text-foreground/50">Drill videos &amp; shorts</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormType('GALLERY')}
-                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
-                      formType === 'GALLERY'
-                        ? 'bg-blue-500/15 border-blue-500 ring-2 ring-blue-500/30'
-                        : 'bg-surface border-foreground/10 text-foreground/70'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-base">
-                        📸
-                      </div>
-                      {formType === 'GALLERY' && (
-                        <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-xs font-black text-foreground">Photo Gallery</div>
-                      <div className="text-[10px] text-foreground/50">Events &amp; tournament pics</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormType('ANNOUNCEMENT')}
-                    className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
-                      formType === 'ANNOUNCEMENT'
-                        ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30'
-                        : 'bg-surface border-foreground/10 text-foreground/70'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-base">
-                        📢
-                      </div>
-                      {formType === 'ANNOUNCEMENT' && (
-                        <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-xs font-black text-foreground">Notice &amp; Alert</div>
-                      <div className="text-[10px] text-foreground/50">Academy announcements</div>
-                    </div>
-                  </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1">
+                    <span>1. Choose Content Type</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormType('BLOG')}
+                      className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                        formType === 'BLOG'
+                          ? 'bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30'
+                          : 'bg-surface border-foreground/10 text-foreground/70'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base">
+                          📝
+                        </div>
+                        {formType === 'BLOG' && (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-xs font-black text-foreground">Article / Blog</div>
+                        <div className="text-[10px] text-foreground/50">Tactics, fitness &amp; tips</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormType('VIDEO')}
+                      className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                        formType === 'VIDEO'
+                          ? 'bg-red-500/15 border-red-500 ring-2 ring-red-500/30'
+                          : 'bg-surface border-foreground/10 text-foreground/70'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-base">
+                          🎥
+                        </div>
+                        {formType === 'VIDEO' && (
+                          <CheckCircle2 className="w-4 h-4 text-red-400 shrink-0" />
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-xs font-black text-foreground">YouTube Drill</div>
+                        <div className="text-[10px] text-foreground/50">Drill videos &amp; shorts</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormType('GALLERY')}
+                      className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                        formType === 'GALLERY'
+                          ? 'bg-blue-500/15 border-blue-500 ring-2 ring-blue-500/30'
+                          : 'bg-surface border-foreground/10 text-foreground/70'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-base">
+                          📸
+                        </div>
+                        {formType === 'GALLERY' && (
+                          <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-xs font-black text-foreground">Photo Gallery</div>
+                        <div className="text-[10px] text-foreground/50">Events &amp; tournament pics</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormType('ANNOUNCEMENT')}
+                      className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                        formType === 'ANNOUNCEMENT'
+                          ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30'
+                          : 'bg-surface border-foreground/10 text-foreground/70'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-base">
+                          📢
+                        </div>
+                        {formType === 'ANNOUNCEMENT' && (
+                          <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-xs font-black text-foreground">Notice &amp; Alert</div>
+                        <div className="text-[10px] text-foreground/50">Academy announcements</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* 2. Post Title */}
               <div className="space-y-1.5">
@@ -1495,8 +1705,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                 />
               </div>
 
-              {/* 3. Conditional YouTube / Media URL inputs */}
-              {formType === 'VIDEO' && (
+              {/* 3. Conditional YouTube / Media URL inputs (Hidden for Students) */}
+              {!isStudent && formType === 'VIDEO' && (
                 <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 space-y-2 animate-in fade-in duration-200">
                   <div className="flex items-center gap-1.5 text-xs font-black text-red-400">
                     <Video className="w-4 h-4" />
@@ -1516,8 +1726,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                 </div>
               )}
 
-              {/* 4. Photo Gallery Selector (Upload Photos from Device) */}
-              {formType === 'GALLERY' && (
+              {/* 4. Photo Gallery Selector (Hidden for Students) */}
+              {!isStudent && formType === 'GALLERY' && (
                 <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-xs font-black text-blue-400">
@@ -1798,52 +2008,66 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
             </div>
 
             <form onSubmit={handleCreatePost} className="space-y-4">
-              {/* Type Switcher */}
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/60 block mb-2">
-                  Post Type
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormType('BLOG')}
-                    className={`py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      formType === 'BLOG'
-                        ? 'bg-primary/20 border-primary text-primary shadow-sm'
-                        : 'bg-surface border-transparent text-foreground/60 hover:text-foreground'
-                    }`}
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Article / Blog</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormType('VIDEO')}
-                    className={`py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      formType === 'VIDEO'
-                        ? 'bg-red-500/20 border-red-500 text-red-400 shadow-sm'
-                        : 'bg-surface border-transparent text-foreground/60 hover:text-foreground'
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    <span>YouTube Drill</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormType('GALLERY')}
-                    className={`py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      formType === 'GALLERY'
-                        ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-sm'
-                        : 'bg-surface border-transparent text-foreground/60 hover:text-foreground'
-                    }`}
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Photo Gallery</span>
-                  </button>
+              {/* Type Switcher / Student Banner */}
+              {isStudent ? (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                    📝
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-foreground">Student Blog Submission</div>
+                    <div className="text-[11px] text-foreground/60 leading-relaxed">
+                      Athletes and students can author badminton articles and training blogs. Once submitted, academy administrators will review and approve your post for the public feed.
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/60 block mb-2">
+                    Post Type
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormType('BLOG')}
+                      className={`py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                        formType === 'BLOG'
+                          ? 'bg-primary/20 border-primary text-primary shadow-sm'
+                          : 'bg-surface border-transparent text-foreground/60 hover:text-foreground'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Article / Blog</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormType('VIDEO')}
+                      className={`py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                        formType === 'VIDEO'
+                          ? 'bg-red-500/20 border-red-500 text-red-400 shadow-sm'
+                          : 'bg-surface border-transparent text-foreground/60 hover:text-foreground'
+                      }`}
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      <span>YouTube Drill</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormType('GALLERY')}
+                      className={`py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                        formType === 'GALLERY'
+                          ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-sm'
+                          : 'bg-surface border-transparent text-foreground/60 hover:text-foreground'
+                      }`}
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Photo Gallery</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Title */}
               <div>
@@ -1861,8 +2085,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                 />
               </div>
 
-              {/* YouTube Video Link Input */}
-              {formType === 'VIDEO' && (
+              {/* YouTube Video Link Input (Hidden for Students) */}
+              {!isStudent && formType === 'VIDEO' && (
                 <div>
                   <label className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-1.5 flex items-center gap-1">
                     <Video className="w-3.5 h-3.5" /> YouTube Video URL *
@@ -1879,8 +2103,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                 </div>
               )}
 
-              {/* Gallery Image Chooser / Upload */}
-              {formType === 'GALLERY' && (
+              {/* Gallery Image Chooser / Upload (Hidden for Students) */}
+              {!isStudent && formType === 'GALLERY' && (
                 <div className="space-y-2 p-4 rounded-2xl border bg-blue-500/5 border-blue-500/25">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
@@ -2198,6 +2422,16 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                   <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
                     {selectedPostDetail.postType}
                   </span>
+                  {selectedPostDetail.approvalStatus === 'PENDING_APPROVAL' && (
+                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      ⏳ Pending Approval
+                    </span>
+                  )}
+                  {selectedPostDetail.approvalStatus === 'REJECTED' && (
+                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                      ❌ Rejected
+                    </span>
+                  )}
                   {selectedPostDetail.category && (
                     <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-foreground/70 bg-background border border-foreground/10">
                       {selectedPostDetail.category}
@@ -2248,6 +2482,47 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
             {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 hide-scrollbar">
+              {/* Admin Moderation Strip in Detail View */}
+              {isOwnerOrAdmin && selectedPostDetail.approvalStatus === 'PENDING_APPROVAL' && (
+                <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">⏳</span>
+                    <div>
+                      <div className="text-xs font-black text-amber-400">Review Required</div>
+                      <div className="text-[11px] text-foreground/60">This post is awaiting admin approval before going live to athletes.</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => handleApprovePost(selectedPostDetail.postUuid)}
+                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" /> Approve &amp; Publish
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRejectPost(selectedPostDetail.postUuid)}
+                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+                    >
+                      <X className="w-4 h-4" /> Reject
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Rejection Note */}
+              {selectedPostDetail.approvalStatus === 'REJECTED' && selectedPostDetail.rejectionReason && (
+                <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 space-y-1">
+                  <div className="text-xs font-black text-rose-400 flex items-center gap-1.5">
+                    <X className="w-4 h-4" /> Post Rejected
+                  </div>
+                  <div className="text-xs text-foreground/80">
+                    Reason: {selectedPostDetail.rejectionReason}
+                  </div>
+                </div>
+              )}
+
               {/* Media Section */}
               {selectedPostDetail.postType === 'VIDEO' && selectedPostDetail.youtubeVideoId && (
                 <div className="relative pb-[56.25%] h-0 rounded-2xl overflow-hidden bg-black shadow-lg border border-red-500/20">

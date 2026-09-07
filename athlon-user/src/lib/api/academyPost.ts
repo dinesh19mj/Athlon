@@ -30,6 +30,10 @@ export interface AcademyPost {
   viewsCount: number;
   isLikedByCurrentUser?: boolean;
   status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
+  approvalStatus?: 'APPROVED' | 'PENDING_APPROVAL' | 'REJECTED';
+  approvedByName?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -103,13 +107,15 @@ export const AcademyPostService = {
     scope?: string,
     batchUuid?: string,
     centreUuid?: string,
-    search?: string
+    search?: string,
+    approvalStatus?: string
   ): Promise<AcademyPost[]> => {
     let url = `/api/identity/academy/posts/org/${orgUuid}?`;
     if (type && type !== 'ALL') url += `type=${type}&`;
     if (scope && scope !== 'ALL') url += `scope=${scope}&`;
     if (batchUuid && batchUuid !== 'ALL') url += `batchUuid=${batchUuid}&`;
     if (centreUuid && centreUuid !== 'ALL') url += `centreUuid=${centreUuid}&`;
+    if (approvalStatus && approvalStatus !== 'ALL') url += `approvalStatus=${approvalStatus}&`;
     if (search && search.trim()) url += `search=${encodeURIComponent(search.trim())}&`;
 
     const res = await api.get<any>(url);
@@ -121,6 +127,23 @@ export const AcademyPostService = {
   getPostByUuid: async (postUuid: string): Promise<AcademyPost | null> => {
     const res = await api.get<any>(`/api/identity/academy/posts/${postUuid}`);
     return res?.data || res || null;
+  },
+
+  approvePost: async (postUuid: string, approverName?: string): Promise<AcademyPost> => {
+    let url = `/api/identity/academy/posts/${postUuid}/approve`;
+    if (approverName && approverName.trim()) {
+      url += `?approverName=${encodeURIComponent(approverName.trim())}`;
+    }
+    const res = await api.post<any>(url, {});
+    return res?.data || res;
+  },
+
+  rejectPost: async (postUuid: string, reason?: string, approverName?: string): Promise<AcademyPost> => {
+    let url = `/api/identity/academy/posts/${postUuid}/reject?`;
+    if (reason && reason.trim()) url += `reason=${encodeURIComponent(reason.trim())}&`;
+    if (approverName && approverName.trim()) url += `approverName=${encodeURIComponent(approverName.trim())}&`;
+    const res = await api.post<any>(url, {});
+    return res?.data || res;
   },
 
   createPost: async (payload: CreateAcademyPostPayload): Promise<AcademyPost> => {

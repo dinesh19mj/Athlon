@@ -34,6 +34,10 @@ public class AcademyPostResponse {
     private Integer viewsCount;
     private Boolean isLikedByCurrentUser;
     private String status;
+    private String approvalStatus;
+    private String approvedByName;
+    private LocalDateTime approvedAt;
+    private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -270,6 +274,38 @@ public class AcademyPostResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public String getApprovedByName() {
+        return approvedByName;
+    }
+
+    public void setApprovedByName(String approvedByName) {
+        this.approvedByName = approvedByName;
+    }
+
+    public LocalDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(LocalDateTime approvedAt) {
+        this.approvedAt = approvedAt;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 
     public LocalDateTime getCreatedAt() {
