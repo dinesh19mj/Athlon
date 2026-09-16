@@ -46,6 +46,7 @@ import {
   User,
   ZoomIn,
   X,
+  Edit2,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -73,6 +74,7 @@ import { MatchSetupSettings } from '@/components/tournaments/MatchSetupSettings'
 import { TeamEventControlRoom } from '@/components/tournaments/teamevent/TeamEventControlRoom';
 import { TournamentWinnersPodium } from '@/components/tournaments/TournamentWinnersPodium';
 import { AcademyStudentSelectorModal } from '@/components/academy/AcademyStudentSelectorModal';
+import { ManualParticipantModal } from '@/components/tournaments/ManualParticipantModal';
 import * as htmlToImage from 'html-to-image';
 
 interface TournamentDashboardPageProps {
@@ -128,6 +130,10 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
     regUuid: string;
     status: string;
   } | null>(null);
+
+  const [isManualParticipantModalOpen, setIsManualParticipantModalOpen] = useState(false);
+  const [manualParticipantMode, setManualParticipantMode] = useState<'INDIVIDUAL' | 'TEAM'>('INDIVIDUAL');
+  const [editingRegistration, setEditingRegistration] = useState<Registration | null>(null);
 
   // ── In-page modal dialog (replaces browser alert / confirm) ────────────────
   type ModalKind = 'alert-error' | 'alert-info' | 'confirm-danger' | 'confirm-info';
@@ -535,6 +541,33 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
     }
   };
 
+  const handleDeleteRegistration = async (reg: Registration) => {
+    const regUuid = reg.registrationUuid || reg.uuid;
+    const teamName = resolveCleanTeamName(reg);
+
+    const confirmed = await showConfirm(
+      'Remove Participant',
+      `Are you sure you want to remove "${teamName}"? This action cannot be undone.`,
+      'Remove',
+      'confirm-danger'
+    );
+    if (!confirmed) return;
+
+    try {
+      await RegistrationService.deleteRegistration(regUuid, Number(userId));
+      setRegistrations((prev) =>
+        prev.filter((r) => r.registrationUuid !== regUuid && r.uuid !== regUuid)
+      );
+    } catch (err: any) {
+      console.error('Failed to delete registration', err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Cannot remove participant. They may already be assigned to active match fixtures.';
+      await showAlert('Cannot Remove Participant', msg, 'alert-error');
+    }
+  };
+
   const handleGenerateDraw = async () => {
     try {
       setIsGeneratingDraw(true);
@@ -740,6 +773,30 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
     });
   }, [approvedAndPaidTeams, teamSearch]);
 
+  const academyTargetConfig = useMemo(() => {
+    if (!tournament?.description) return null;
+    const match = tournament.description.match(/\[ACADEMY_INTERNAL_CONFIG:(.*?)\]/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[1]);
+    } catch {
+      return null;
+    }
+  }, [tournament?.description]);
+
+  const availableCategories = useMemo(() => {
+    if (!tournament?.category) return ['Open Category'];
+    return tournament.category.split(',').map((c) => c.trim()).filter(Boolean);
+  }, [tournament?.category]);
+
+  const manualModalCategories = useMemo(() => {
+    if (!tournament?.category) return [{ id: 1, name: 'Open Category', categoryName: 'Open Category' }];
+    return tournament.category
+      .split(',')
+      .map((c, idx) => ({ id: idx + 1, categoryId: idx + 1, name: c.trim(), categoryName: c.trim() }))
+      .filter((c) => Boolean(c.name));
+  }, [tournament?.category]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen bg-background text-foreground">
@@ -766,22 +823,6 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   }
 
   const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT';
-
-  const academyTargetConfig = useMemo(() => {
-    if (!tournament?.description) return null;
-    const match = tournament.description.match(/\[ACADEMY_INTERNAL_CONFIG:(.*?)\]/);
-    if (!match) return null;
-    try {
-      return JSON.parse(match[1]);
-    } catch {
-      return null;
-    }
-  }, [tournament?.description]);
-
-  const availableCategories = useMemo(() => {
-    if (!tournament?.category) return ['Open Category'];
-    return tournament.category.split(',').map((c) => c.trim()).filter(Boolean);
-  }, [tournament?.category]);
 
   const navTabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -1516,22 +1557,58 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
               </div>
 
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                {/* Manual Participant Add Buttons */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingRegistration(null);
+                    setManualParticipantMode('INDIVIDUAL');
+                    setIsManualParticipantModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                  title="Manually add a player"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add Player</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingRegistration(null);
+                    setManualParticipantMode('TEAM');
+                    setIsManualParticipantModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-primary/30 bg-primary/10 text-primary font-black text-xs uppercase tracking-wider hover:bg-primary/20 active:scale-95 transition-all shadow-sm"
+                  title="Manually add a team or doubles pair"
+                >
+                  <Users className="w-4 h-4 text-primary" />
+                  <span>+ Add Team</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsEnrollModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-primary/30 bg-primary/10 text-primary font-black text-xs uppercase tracking-wider hover:bg-primary/20 active:scale-95 transition-all shadow-sm"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-foreground/70 font-black text-xs uppercase tracking-wider hover:text-foreground hover:bg-white/5 active:scale-95 transition-all shadow-sm"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                   title="Directly enroll academy students from batches"
                 >
                   <Users className="w-4 h-4 text-primary" />
-                  <span>Enroll Academy Students</span>
+                  <span className="hidden sm:inline">Enroll Students</span>
                 </button>
-                <Link
-                  href={`/home/tournaments/${tournament.tournamentUuid || tournamentId}/register`}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>{isTeamEvent ? '+ Register a Team' : '+ Add Registration'}</span>
-                </Link>
+
+                {tournament.registrationMode !== 'ORGANIZER_MANAGED' && (
+                  <Link
+                    href={`/home/tournaments/${tournament.tournamentUuid || tournamentId}/register`}
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-foreground/80 font-bold text-xs uppercase tracking-wider hover:text-foreground hover:bg-white/5 transition-all"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    title="Public registration portal"
+                  >
+                    <UserPlus className="w-4 h-4 text-foreground/60" />
+                    <span className="hidden sm:inline">Public Link</span>
+                  </Link>
+                )}
+
                 <button
                   onClick={handleShare}
                   className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all"
@@ -1543,6 +1620,30 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 </button>
               </div>
             </div>
+
+            {/* Manual Participant Modal */}
+            {isManualParticipantModalOpen && (
+              <ManualParticipantModal
+                isOpen={isManualParticipantModalOpen}
+                onClose={() => {
+                  setIsManualParticipantModalOpen(false);
+                  setEditingRegistration(null);
+                }}
+                onSuccess={(newReg) => {
+                  if (tournament.tournamentId) {
+                    RegistrationService.getByTournament(tournament.tournamentId).then((r) =>
+                      setRegistrations(r.data || [])
+                    );
+                  }
+                }}
+                tournamentId={tournament.tournamentId}
+                tournamentUuid={tournament.tournamentUuid || tournamentId}
+                categories={manualModalCategories}
+                editingRegistration={editingRegistration}
+                currentUserId={Number(userId)}
+                initialMode={manualParticipantMode}
+              />
+            )}
 
             {/* Academy Student Enrollment Modal */}
             {isEnrollModalOpen && (
@@ -1763,7 +1864,16 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                           </div>
 
                           {/* Status Badges in flex row */}
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                            {reg.registrationSource === 'ORGANIZER_MANUAL' ? (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-500 dark:text-purple-400 border border-purple-500/30">
+                                Manual
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-500 dark:text-blue-400 border border-blue-500/30">
+                                Online
+                              </span>
+                            )}
                             <span
                               className={`px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider border ${isApproved
                                 ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
@@ -1929,6 +2039,31 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                             <span>Reject</span>
                           </button>
                         )}
+
+                        {/* 4. Edit Manual Action */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingRegistration(reg);
+                            setManualParticipantMode(reg.players && reg.players.length > 1 ? 'TEAM' : 'INDIVIDUAL');
+                            setIsManualParticipantModalOpen(true);
+                          }}
+                          className="p-1.5 rounded-xl border text-foreground/60 hover:text-primary hover:border-primary/40 transition-all shrink-0"
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                          title="Edit Participant"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* 5. Delete Action */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRegistration(reg)}
+                          className="p-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 transition-all shrink-0"
+                          title="Remove Participant"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   );

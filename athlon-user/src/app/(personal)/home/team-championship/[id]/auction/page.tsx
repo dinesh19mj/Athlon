@@ -40,6 +40,9 @@ import {
   Send,
   Sliders,
   Tv,
+  Palette,
+  Sun,
+  Moon,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -58,7 +61,8 @@ export default function TeamOwnerAuctionArenaPage() {
   const championshipUuid = params.id as string;
   const router = useRouter();
   const { userId, userUuid, userEmail, isAuthenticated } = useAuthStore();
-  const { theme: currentTheme } = useAthlonTheme();
+  const { theme: currentTheme, themeKey, mode, setMode, setTheme, availableThemes } = useAthlonTheme();
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
 
   const [championship, setChampionship] = useState<TeamChampionship | null>(null);
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
@@ -629,6 +633,18 @@ export default function TeamOwnerAuctionArenaPage() {
               <LogIn className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Log In</span>
             </Link>
+          )}
+
+          {/* Theme Selector Trigger - In Maximize / Fullscreen Screen */}
+          {isFullscreen && (
+            <button
+              type="button"
+              onClick={() => setIsThemeModalOpen(true)}
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl border border-primary/40 bg-primary/10 hover:bg-primary/25 hover:border-primary text-primary transition-all flex items-center justify-center shadow-sm cursor-pointer active:scale-95 group shrink-0"
+              title={`Select Arena Theme (Current: ${currentTheme?.name || "Default"} • ${mode === 'dark' ? 'Dark' : 'Light'})`}
+            >
+              <Palette className="w-4 h-4 transition-transform group-hover:rotate-12" />
+            </button>
           )}
 
           {/* Maximize to Fullscreen for Big Screens & Projectors (Desktop Only) */}
@@ -2120,6 +2136,251 @@ export default function TeamOwnerAuctionArenaPage() {
           </div>
         );
       })()}
+      {/* ─── 4. ARENA THEME & DISPLAY MODE SELECTOR MODAL (EXCLUSIVE TO MAXIMIZE / FULLSCREEN SCREEN) ─── */}
+      {isFullscreen && isThemeModalOpen && (
+        <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-lg flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+          <div
+            className="max-w-2xl w-full p-6 sm:p-7 rounded-3xl border shadow-2xl space-y-6 animate-scaleIn max-h-[90vh] overflow-y-auto hide-scrollbar"
+            style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: "var(--athlon-border)" }}>
+              <div className="flex items-center gap-3.5">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-primary shadow-inner shrink-0"
+                  style={{ backgroundColor: "rgba(var(--athlon-primary-rgb, 99, 102, 241), 0.15)", border: "1px solid var(--athlon-primary)" }}
+                >
+                  <Palette className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-foreground uppercase tracking-tight flex items-center gap-2">
+                    <span>Arena Broadcast Theme</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
+                      {currentTheme.name}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 text-foreground/80 border border-white/15">
+                      {mode}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-foreground/60 mt-0.5">
+                    Customize display mode (Dark/Light) and accent color for the live auction big-screen broadcast.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsThemeModalOpen(false)}
+                className="p-2.5 rounded-2xl border border-foreground/15 hover:bg-foreground/10 text-foreground/70 hover:text-foreground transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 1. Theme Display Mode (Dark vs Light) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {mode === 'dark' ? (
+                    <Moon className="w-4 h-4 text-primary" />
+                  ) : (
+                    <Sun className="w-4 h-4 text-primary" />
+                  )}
+                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
+                    Display Mode
+                  </h4>
+                </div>
+                <span className="text-[11px] font-bold text-foreground/60">
+                  Active: <span className="uppercase text-primary font-black">{mode}</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Dark Mode Card */}
+                <button
+                  type="button"
+                  onClick={() => setMode('dark')}
+                  className={`p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden flex items-center justify-between cursor-pointer group active:scale-[0.98] ${
+                    mode === 'dark' ? 'shadow-lg ring-2 ring-primary/40' : 'hover:bg-white/[0.04]'
+                  }`}
+                  style={{
+                    backgroundColor: mode === 'dark' ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+                    borderColor: mode === 'dark' ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-transform group-hover:scale-105"
+                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                    >
+                      <Moon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm font-black text-foreground">Deep Dark</span>
+                        <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/15">Default</span>
+                      </div>
+                      <p className="text-[10.5px] font-medium text-foreground/60 truncate mt-0.5">
+                        Deep slate navy with radiant accent glow
+                      </p>
+                    </div>
+                  </div>
+                  {mode === 'dark' && (
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm ml-2 bg-primary text-black"
+                    >
+                      <Check className="w-3 h-3" strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+
+                {/* Light Mode Card */}
+                <button
+                  type="button"
+                  onClick={() => setMode('light')}
+                  className={`p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden flex items-center justify-between cursor-pointer group active:scale-[0.98] ${
+                    mode === 'light' ? 'shadow-lg ring-2 ring-primary/40' : 'hover:bg-white/[0.04]'
+                  }`}
+                  style={{
+                    backgroundColor: mode === 'light' ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+                    borderColor: mode === 'light' ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-transform group-hover:scale-105"
+                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                    >
+                      <Sun className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm font-black text-foreground">Daylight Light</span>
+                        <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">Crisp</span>
+                      </div>
+                      <p className="text-[10.5px] font-medium text-foreground/60 truncate mt-0.5">
+                        Pure white cards with tinted ambient page
+                      </p>
+                    </div>
+                  </div>
+                  {mode === 'light' && (
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm ml-2 bg-primary text-black"
+                    >
+                      <Check className="w-3 h-3" strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Theme Accent Palettes */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-primary" />
+                  <span>Color Theme Accent</span>
+                </h4>
+                <span className="text-[11px] font-bold text-primary">
+                  {currentTheme.name}
+                </span>
+              </div>
+
+              {/* Theme Cards Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {availableThemes.map((t) => {
+                  const isSelected = t.key === themeKey;
+                  const tc = t.colors;
+
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTheme(t.key)}
+                      className={`p-3 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden group active:scale-[0.97] cursor-pointer flex flex-col justify-between gap-3 ${
+                        isSelected ? 'shadow-xl ring-2' : 'hover:bg-white/[0.04]'
+                      }`}
+                      style={{
+                        backgroundColor: isSelected ? tc.surface : 'var(--athlon-surface)',
+                        borderColor: isSelected ? tc.primary : 'var(--athlon-border)',
+                        outlineColor: tc.primary,
+                        boxShadow: isSelected ? `0 6px 20px -4px ${tc.glow}` : 'none',
+                      }}
+                    >
+                      {/* Top: Swatch Orb + Check Icon */}
+                      <div className="flex items-center justify-between">
+                        <div className="relative">
+                          <div
+                            className="w-8 h-8 rounded-full shadow-md transition-transform duration-200 group-hover:scale-110 flex items-center justify-center"
+                            style={{
+                              backgroundColor: tc.primary,
+                              boxShadow: `0 0 14px ${tc.primaryGlow}`,
+                            }}
+                          >
+                            <div className="w-2.5 h-2.5 rounded-full bg-white/40 blur-[1px]" />
+                          </div>
+                        </div>
+
+                        {isSelected ? (
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm"
+                            style={{ backgroundColor: tc.primary, color: tc.primaryForeground }}
+                          >
+                            <Check className="w-3 h-3" strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <span className="w-2.5 h-2.5 rounded-full bg-foreground/10 group-hover:bg-primary/40 transition-colors" />
+                        )}
+                      </div>
+
+                      {/* Bottom: Theme Name & Details */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="text-xs font-black tracking-tight truncate" style={{ color: isSelected ? tc.text : 'inherit' }}>
+                            {t.name.replace('Athlon ', '')}
+                          </div>
+                          {t.key === 'algae' && (
+                            <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white/10 text-white/60 shrink-0">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 pt-0.5">
+                          <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: tc.primary }} />
+                          <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: tc.surface }} />
+                          <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: tc.card }} />
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "var(--athlon-border)" }}>
+              <span className="text-xs text-foreground/50 font-bold hidden sm:inline">
+                Theme changes are applied immediately across the entire auction screen.
+              </span>
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => {
+                    setTheme('algae', 'dark');
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-foreground/15 hover:bg-foreground/5 text-foreground/70 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Reset Defaults
+                </button>
+                <button
+                  onClick={() => setIsThemeModalOpen(false)}
+                  className="px-7 py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

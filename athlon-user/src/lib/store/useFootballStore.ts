@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Player } from './useMatchStore';
 import { ScoringService } from '../api/scoring';
+import { usePracticeMatchStore } from './usePracticeMatchStore';
 
 export type Team = 'A' | 'B';
 export type FootballHalf = 1 | 2 | 3 | 4; // 1, 2, 3 (ET1), 4 (ET2)
@@ -11,6 +12,12 @@ export interface MatchEvent {
   team: Team | null;
   type: 'Goal' | 'Yellow' | 'Red' | 'Sub' | 'Foul' | 'Corner' | 'Offside' | 'Penalty' | 'Half' | 'VAR' | 'Match End';
   details: string;
+  scorerName?: string;
+  assistName?: string;
+  goalType?: 'Open Play' | 'Penalty' | 'Own Goal';
+  penaltyOutcome?: 'Scored' | 'Missed' | 'Saved' | 'Awarded';
+  foulingPlayerName?: string;
+  penaltyReason?: string;
 }
 
 export interface PausePeriod {
@@ -45,12 +52,16 @@ export interface FootballState {
   currentHalf: FootballHalf;
   isMatchOver: boolean;
   winner: Team | 'Draw' | null;
+  isHalftimeBreak: boolean;
+  addedStoppageMinutes: number;
 
   matchEvents: MatchEvent[];
   
   // Timer State
   matchStartTime: number | null; 
   isTimerRunning: boolean;
+  accumulatedActiveSeconds: number;
+  lastResumedTimestamp: number | null;
   pausePeriods: PausePeriod[]; 
   elapsedSecondsAtStart: number; 
 }
@@ -76,13 +87,32 @@ export interface FootballStore extends FootballState {
   // Actions
   setupMatch: (config: FootballConfig) => void;
   
-  // Timer
+  // Timer & Halves
   startHalf: () => void;
   togglePause: () => void;
   endHalf: () => void;
+  setHalftimeBreak: (isBreak: boolean) => void;
+  setAddedStoppageMinutes: (mins: number) => void;
+  resumePreviousHalf: () => void;
   
   // Events
-  addGoalDetailed: (team: Team, scorerId?: string, assistId?: string, type?: 'Open Play' | 'Penalty' | 'Own Goal', timeStr?: string) => void;
+  addGoalDetailed: (
+    team: Team, 
+    scorerId?: string, 
+    assistId?: string, 
+    type?: 'Open Play' | 'Penalty' | 'Own Goal', 
+    timeStr?: string,
+    foulingPlayerId?: string,
+    penaltyReason?: string
+  ) => void;
+  recordPenaltyAttempt: (
+    team: Team, 
+    takerId: string, 
+    outcome: 'Scored' | 'Missed' | 'Saved', 
+    timeStr: string, 
+    foulingPlayerId?: string,
+    penaltyReason?: string
+  ) => void;
   addCardDetailed: (team: Team, playerId: string, cardType: 'Yellow' | '2nd Yellow' | 'Red', reason?: string, timeStr?: string) => void;
   addSubstitutionDetailed: (team: Team, playerOutId: string, playerInId: string, timeStr?: string) => void;
   addMatchEvent: (event: Omit<MatchEvent, 'id'>) => void;
@@ -129,11 +159,15 @@ const getInitialState = (): FootballState => ({
   currentHalf: 1,
   isMatchOver: false,
   winner: null,
+  isHalftimeBreak: false,
+  addedStoppageMinutes: 0,
   
   matchEvents: [],
   
   matchStartTime: null,
   isTimerRunning: false,
+  accumulatedActiveSeconds: 0,
+  lastResumedTimestamp: null,
   pausePeriods: [],
   elapsedSecondsAtStart: 0,
 });
@@ -156,14 +190,25 @@ export const useFootballStore = create<FootballStore>((set, get) => ({
   // TIMER LOGIC
   startHalf: () => set((state) => {
     if (state.isMatchOver || state.isTimerRunning) return state;
+    const halfLenSecs = (state.config?.halfLengthMinutes || 45) * 60;
+    const startSecs = (state.currentHalf - 1) * halfLenSecs;
+    const m = Math.floor(startSecs / 60);
+    const s = startSecs % 60;
+    const initialTimeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
     return {
       history: [...state.history, state],
       isTimerRunning: true,
+      isHalftimeBreak: false,
+      addedStoppageMinutes: 0,
+      accumulatedActiveSeconds: startSecs,
+      lastResumedTimestamp: Date.now(),
       matchStartTime: Date.now(),
       pausePeriods: [],
+      elapsedSecondsAtStart: startSecs,
       matchEvents: [...state.matchEvents, {
         id: generateId(),
-        timeStr: state.currentHalf === 1 ? '00:00' : state.currentHalf === 2 ? '45:00' : '90:00',
+        timeStr: initialTimeStr,
         team: null,
         type: 'Half',
         details: `Half ${state.currentHalf} started`
@@ -172,74 +217,118 @@ export const useFootballStore = create<FootballStore>((set, get) => ({
   }),
 
   togglePause: () => set((state) => {
-    if (!state.matchStartTime || state.isMatchOver) return state;
+    if (state.isMatchOver) return state;
     
     const now = Date.now();
-    const isCurrentlyPaused = !state.isTimerRunning;
-    const newPausePeriods = [...state.pausePeriods];
-    
-    if (isCurrentlyPaused) {
-      // Resume: close the last pause period
-      if (newPausePeriods.length > 0) {
-        newPausePeriods[newPausePeriods.length - 1].end = now;
-      }
+    const isCurrentlyRunning = state.isTimerRunning;
+
+    if (isCurrentlyRunning) {
+      // Pause: snapshot accumulated active seconds
+      const runningSessionSeconds = state.lastResumedTimestamp
+        ? Math.floor((now - state.lastResumedTimestamp) / 1000)
+        : 0;
+      const updatedAccumulated = (state.accumulatedActiveSeconds ?? state.elapsedSecondsAtStart ?? 0) + runningSessionSeconds;
+
+      return {
+        history: [...state.history, state],
+        isTimerRunning: false,
+        accumulatedActiveSeconds: updatedAccumulated,
+        lastResumedTimestamp: null
+      };
     } else {
-      // Pause: start a new pause period
-      newPausePeriods.push({ start: now });
+      // Resume: start running
+      return {
+        history: [...state.history, state],
+        isTimerRunning: true,
+        matchStartTime: state.matchStartTime || now,
+        lastResumedTimestamp: now
+      };
     }
-    
-    return {
-      history: [...state.history, state],
-      isTimerRunning: !isCurrentlyPaused,
-      pausePeriods: newPausePeriods
-    };
   }),
 
   endHalf: () => set((state) => {
     if (state.isMatchOver) return state;
     
-    // Auto-pause if running
-    const newPausePeriods = [...state.pausePeriods];
-    if (state.isTimerRunning) {
-      newPausePeriods.push({ start: Date.now(), end: Date.now() });
-    }
-    
+    const completedHalf = state.currentHalf;
     const nextHalf = (state.currentHalf + 1) as FootballHalf;
-    
-    // Save elapsed time for next half
     const halfLenSecs = (state.config?.halfLengthMinutes || 45) * 60;
-    const newElapsed = state.currentHalf * halfLenSecs;
+    const newHalfStartSecs = completedHalf * halfLenSecs;
     
     return {
       history: [...state.history, state],
       isTimerRunning: false,
+      isHalftimeBreak: true,
+      addedStoppageMinutes: 0,
+      accumulatedActiveSeconds: newHalfStartSecs,
+      lastResumedTimestamp: null,
       matchStartTime: null,
       pausePeriods: [],
-      elapsedSecondsAtStart: newElapsed,
+      elapsedSecondsAtStart: newHalfStartSecs,
       currentHalf: nextHalf > 4 ? 4 : nextHalf,
       matchEvents: [...state.matchEvents, {
         id: generateId(),
         timeStr: 'HT',
         team: null,
         type: 'Half',
-        details: `Half ${state.currentHalf} ended`
+        details: `Half ${completedHalf} ended`
       }]
     };
   }),
 
+  setHalftimeBreak: (isBreak: boolean) => set({ isHalftimeBreak: isBreak }),
+
+  setAddedStoppageMinutes: (mins: number) => set((state) => ({
+    history: [...state.history, state],
+    addedStoppageMinutes: mins
+  })),
+
+  resumePreviousHalf: () => set((state) => {
+    if (state.currentHalf <= 1) return state;
+    const prevHalf = (state.currentHalf - 1) as FootballHalf;
+    const halfLenSecs = (state.config?.halfLengthMinutes || 45) * 60;
+    const prevHalfTargetSecs = prevHalf * halfLenSecs;
+
+    return {
+      history: [...state.history, state],
+      currentHalf: prevHalf,
+      isHalftimeBreak: false,
+      isTimerRunning: false,
+      accumulatedActiveSeconds: prevHalfTargetSecs,
+      lastResumedTimestamp: null,
+      matchStartTime: Date.now(),
+      pausePeriods: [],
+      elapsedSecondsAtStart: (prevHalf - 1) * halfLenSecs
+    };
+  }),
+
   // DETAILED EVENTS
-  addGoalDetailed: (team, scorerId, assistId, type = 'Open Play', timeStr = "00:00") => set((state) => {
+  addGoalDetailed: (team, scorerId, assistId, type = 'Open Play', timeStr = "00:00", foulingPlayerId, penaltyReason) => set((state) => {
     if (state.isMatchOver) return state;
     
-    const playersKey = team === 'A' ? 'playersA' : 'playersB';
+    // For Own Goal, points go to 'team', but scorer is from opposing team
+    const playersKey = type === 'Own Goal'
+      ? (team === 'A' ? 'playersB' : 'playersA')
+      : (team === 'A' ? 'playersA' : 'playersB');
+
     const scorer = state[playersKey].find(p => p.id === scorerId);
-    const assist = assistId ? state[playersKey].find(p => p.id === assistId) : null;
+    const assistTeamKey = team === 'A' ? 'playersA' : 'playersB';
+    const assist = assistId ? state[assistTeamKey].find(p => p.id === assistId) : null;
     
-    let details = scorer ? scorer.name : 'Unknown Player';
+    const oppPlayersKey = team === 'A' ? 'playersB' : 'playersA';
+    const foulingPlayer = foulingPlayerId ? state[oppPlayersKey].find(p => p.id === foulingPlayerId) : null;
+    const foulingPlayerName = foulingPlayer ? foulingPlayer.name : undefined;
+
+    const scorerName = scorer ? scorer.name : 'Unknown Player';
+    const assistName = assist ? assist.name : undefined;
+
+    let details = scorerName;
     if (type === 'Own Goal') details += ' (OG)';
-    else if (type === 'Penalty') details += ' (PEN)';
-    
-    if (assist) details += ` (Ast: ${assist.name})`;
+    else if (type === 'Penalty') {
+      details += ' (PEN)';
+      if (foulingPlayerName) details += ` (Fouled by: ${foulingPlayerName})`;
+      if (penaltyReason) details += ` [${penaltyReason}]`;
+    }
+    if (assistName) details += ` (Ast: ${assistName})`;
     
     return {
       history: [...state.history, state],
@@ -250,9 +339,102 @@ export const useFootballStore = create<FootballStore>((set, get) => ({
         timeStr,
         team,
         type: 'Goal',
-        details
+        details,
+        scorerName,
+        assistName,
+        goalType: type,
+        penaltyOutcome: type === 'Penalty' ? 'Scored' : undefined,
+        foulingPlayerName,
+        penaltyReason
       }]
     };
+  }),
+
+  recordPenaltyAttempt: (team: Team, takerId: string, outcome: 'Scored' | 'Missed' | 'Saved', timeStr: string, foulingPlayerId, penaltyReason) => set((state) => {
+    if (state.isMatchOver) return state;
+    const playersKey = team === 'A' ? 'playersA' : 'playersB';
+    const taker = state[playersKey].find(p => p.id === takerId);
+    const takerName = taker ? taker.name : 'Unknown Player';
+
+    const oppPlayersKey = team === 'A' ? 'playersB' : 'playersA';
+    const foulingPlayer = foulingPlayerId ? state[oppPlayersKey].find(p => p.id === foulingPlayerId) : null;
+    const foulingPlayerName = foulingPlayer ? foulingPlayer.name : undefined;
+
+    let detailStr = '';
+    if (outcome === 'Scored') {
+      detailStr = `${takerName} (PEN)`;
+      if (foulingPlayerName) detailStr += ` (Fouled by ${foulingPlayerName})`;
+      if (penaltyReason) detailStr += ` [${penaltyReason}]`;
+
+      return {
+        history: [...state.history, state],
+        goalsA: team === 'A' ? state.goalsA + 1 : state.goalsA,
+        goalsB: team === 'B' ? state.goalsB + 1 : state.goalsB,
+        shotsA: team === 'A' ? state.shotsA + 1 : state.shotsA,
+        shotsB: team === 'B' ? state.shotsB + 1 : state.shotsB,
+        shotsOnTargetA: team === 'A' ? state.shotsOnTargetA + 1 : state.shotsOnTargetA,
+        shotsOnTargetB: team === 'B' ? state.shotsOnTargetB + 1 : state.shotsOnTargetB,
+        matchEvents: [...state.matchEvents, {
+          id: generateId(),
+          timeStr,
+          team,
+          type: 'Goal',
+          details: detailStr,
+          scorerName: takerName,
+          goalType: 'Penalty',
+          penaltyOutcome: 'Scored',
+          foulingPlayerName,
+          penaltyReason
+        }]
+      };
+    } else if (outcome === 'Saved') {
+      detailStr = `Penalty saved (${takerName})`;
+      if (foulingPlayerName) detailStr += ` (Fouled by ${foulingPlayerName})`;
+      if (penaltyReason) detailStr += ` [${penaltyReason}]`;
+
+      return {
+        history: [...state.history, state],
+        shotsA: team === 'A' ? state.shotsA + 1 : state.shotsA,
+        shotsB: team === 'B' ? state.shotsB + 1 : state.shotsB,
+        shotsOnTargetA: team === 'A' ? state.shotsOnTargetA + 1 : state.shotsOnTargetA,
+        shotsOnTargetB: team === 'B' ? state.shotsOnTargetB + 1 : state.shotsOnTargetB,
+        matchEvents: [...state.matchEvents, {
+          id: generateId(),
+          timeStr,
+          team,
+          type: 'Penalty',
+          details: detailStr,
+          scorerName: takerName,
+          goalType: 'Penalty',
+          penaltyOutcome: 'Saved',
+          foulingPlayerName,
+          penaltyReason
+        }]
+      };
+    } else {
+      // Missed
+      detailStr = `Penalty missed (${takerName})`;
+      if (foulingPlayerName) detailStr += ` (Fouled by ${foulingPlayerName})`;
+      if (penaltyReason) detailStr += ` [${penaltyReason}]`;
+
+      return {
+        history: [...state.history, state],
+        shotsA: team === 'A' ? state.shotsA + 1 : state.shotsA,
+        shotsB: team === 'B' ? state.shotsB + 1 : state.shotsB,
+        matchEvents: [...state.matchEvents, {
+          id: generateId(),
+          timeStr,
+          team,
+          type: 'Penalty',
+          details: detailStr,
+          scorerName: takerName,
+          goalType: 'Penalty',
+          penaltyOutcome: 'Missed',
+          foulingPlayerName,
+          penaltyReason
+        }]
+      };
+    }
   }),
 
   addCardDetailed: (team, playerId, cardType, reason = '', timeStr = '00:00') => set((state) => {
@@ -449,8 +631,40 @@ export const useFootballStore = create<FootballStore>((set, get) => ({
 
 if (typeof window !== 'undefined') {
   useFootballStore.subscribe((state) => {
-    if (!state.config?.id) return;
-    
+    // Sync practice store for offline / device vault
+    if (state.config?.id) {
+      const winnerLabel =
+        state.winner === 'A'
+          ? state.config.teamA
+          : state.winner === 'B'
+          ? state.config.teamB
+          : state.winner === 'Draw'
+          ? 'Draw'
+          : undefined;
+
+      let winReason = '';
+      if (state.isMatchOver) {
+        if (state.goalsA > state.goalsB) {
+          winReason = `${state.config.teamA} won ${state.goalsA} - ${state.goalsB}`;
+        } else if (state.goalsB > state.goalsA) {
+          winReason = `${state.config.teamB} won ${state.goalsB} - ${state.goalsA}`;
+        } else {
+          winReason = `Match Drawn ${state.goalsA} - ${state.goalsB}`;
+        }
+      }
+
+      usePracticeMatchStore.getState().updateRecord(state.config.id, {
+        status: state.isMatchOver ? 'completed' : 'live',
+        scoreA: `${state.goalsA}`,
+        scoreB: `${state.goalsB}`,
+        winner: state.winner === 'A' || state.winner === 'B' ? state.winner : undefined,
+        winnerLabel,
+        winReason,
+      });
+    }
+
+    if (!state.config?.id || state.config.id.startsWith('practice-')) return;
+
     const payload = {
       ...state,
       teamAScore: String(state.goalsA),
@@ -458,9 +672,8 @@ if (typeof window !== 'undefined') {
       isFinal: state.isMatchOver
     };
 
-    // Fire and forget POST to sync state to backend
-    ScoringService.syncState(state.config.id, payload).catch(err => 
-      console.error('Failed to sync football state with backend', err)
-    );
+    ScoringService.syncState(state.config.id, payload).catch(() => {
+      // Silently ignore sync errors for offline mode
+    });
   });
 }

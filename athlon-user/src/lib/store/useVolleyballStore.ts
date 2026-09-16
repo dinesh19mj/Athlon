@@ -295,8 +295,8 @@ export const useVolleyballStore = create<VolleyballStore>((set, get) => ({
 
 if (typeof window !== 'undefined') {
   useVolleyballStore.subscribe((state) => {
-    if (!state.config?.id) return;
-    
+    if (!state.config?.id || state.config.id.startsWith('practice-')) return;
+
     const payload = {
       ...state,
       teamAScore: `${state.setsA} (${state.pointsA})`,
@@ -304,8 +304,8 @@ if (typeof window !== 'undefined') {
       isFinal: state.isMatchOver
     };
 
-    ScoringService.syncState(state.config.id, payload).catch(err => 
-      console.error('Failed to sync volleyball state with backend', err)
-    );
+    ScoringService.syncState(state.config.id, payload).catch(() => {
+      // Silently ignore sync errors for offline mode
+    });
   });
 }

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useRouter, usePathname } from 'next/navigation';
-import { Building, Home, Users, ChevronDown, Check, Plus, Trophy } from 'lucide-react';
+import { Building, Home, Users, ChevronDown, Check, Plus, Trophy, UserCheck } from 'lucide-react';
 
 export default function ContextSwitcher() {
   const router = useRouter();
@@ -41,6 +41,7 @@ export default function ContextSwitcher() {
     if (type === 'ACADEMY') return <Building className="w-4 h-4 text-blue-400" />;
     if (type === 'ASSOCIATION') return <Trophy className="w-4 h-4 text-yellow-500" />;
     if (type === 'CLUB') return <Users className="w-4 h-4 text-green-400" />;
+    if (type === 'COACH') return <UserCheck className="w-4 h-4 text-amber-400" />;
     return <Building className="w-4 h-4 text-gray-400" />;
   };
 

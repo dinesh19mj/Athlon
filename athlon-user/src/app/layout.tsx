@@ -12,6 +12,7 @@ import {
   THEME_MODE_STORAGE_KEY,
   SEMANTIC_COLORS,
 } from "@/config/theme";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,7 +23,22 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Athlon Tournament Portal",
   description: "The tournament experience, elevated.",
+  applicationName: "Athlon",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Athlon",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -154,6 +170,7 @@ export default function RootLayout({
           <AthlonThemeProvider>
             <AntdProvider>
               {children}
+              <PWAInstallPrompt />
             </AntdProvider>
           </AthlonThemeProvider>
         </StoreProvider>

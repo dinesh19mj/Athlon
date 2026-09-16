@@ -466,83 +466,134 @@ export default function MobilePracticeHubPage() {
               </Link>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {filteredRecords.map((m) => {
                 const isLive = m.status === 'live';
+                const isTeamAWinner = m.winner === 'A' || (m.winnerLabel && m.winnerLabel === m.teamALabel);
+                const isTeamBWinner = m.winner === 'B' || (m.winnerLabel && m.winnerLabel === m.teamBLabel);
+
+                let winnerDisplay = m.winnerLabel;
+                if (!winnerDisplay) {
+                  if (m.winner === 'A') winnerDisplay = m.teamALabel;
+                  else if (m.winner === 'B') winnerDisplay = m.teamBLabel;
+                  else if (m.winner === 'TIE') winnerDisplay = 'Tied';
+                  else if (m.winner) winnerDisplay = m.winner;
+                }
+
                 return (
                   <div
                     key={m.id}
-                    className="p-3.5 rounded-2xl bg-surface border border-foreground/10 hover:border-foreground/20 transition-all shadow-sm flex flex-col justify-between gap-2.5 group"
+                    className="p-4 rounded-3xl bg-surface border border-foreground/10 hover:border-foreground/20 transition-all shadow-sm flex flex-col justify-between gap-3 group"
                   >
                     <div>
                       {/* Meta Top Line */}
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.2 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9.5px] font-black uppercase tracking-wider">
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-wider">
                             {m.sport}
                           </span>
-                          <span className="text-[9.5px] font-bold text-foreground/40 font-mono">
+                          <span className="text-[10.5px] font-bold text-foreground/45 font-mono">
                             {formatDate(m.createdAt)} • {formatTime(m.createdAt)}
                           </span>
                         </div>
 
                         {isLive ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-wider border border-rose-500/25 animate-pulse">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-wider border border-rose-500/25 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
                             Live
                           </span>
-                        ) : m.winner ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider border border-emerald-500/25">
-                            <Trophy className="w-2.5 h-2.5" /> Won by Team {m.winner}
+                        ) : winnerDisplay ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/25 truncate max-w-[170px]">
+                            <Trophy className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{winnerDisplay === 'Tied' ? 'Match Tied' : `${winnerDisplay} Won`}</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full bg-foreground/5 text-foreground/60 text-[9px] font-bold uppercase">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-foreground/5 text-foreground/60 text-[10px] font-bold uppercase">
                             Finished
                           </span>
                         )}
                       </div>
 
-                      {/* Teams & Score */}
-                      <div className="space-y-0.5">
-                        <div className="text-sm font-black text-foreground truncate">
-                          {m.teamALabel} <span className="text-foreground/40 font-normal text-xs mx-1">vs</span> {m.teamBLabel}
-                        </div>
-                        <div className="text-[10.5px] text-foreground/50 font-medium">
-                          {m.category}
+                      {/* Teams & Scores Breakdown */}
+                      <div className="bg-background/80 border border-foreground/5 rounded-2xl p-3 space-y-2">
+                        {/* Team A Row */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            {isTeamAWinner && (
+                              <span className="text-emerald-500 text-xs shrink-0 font-bold">🏆</span>
+                            )}
+                            <span className={`text-xs sm:text-sm truncate ${isTeamAWinner ? 'font-black text-foreground' : 'font-bold text-foreground/80'}`}>
+                              {m.teamALabel || 'Team A'}
+                            </span>
+                          </div>
+                          {m.scoreA && (
+                            <span className={`text-xs font-mono shrink-0 ${isTeamAWinner ? 'font-black text-primary' : 'font-bold text-foreground/60'}`}>
+                              {m.scoreA}
+                            </span>
+                          )}
                         </div>
 
-                        {(m.scoreA || m.scoreB) && (
-                          <div className="inline-block mt-1 px-2.5 py-0.5 rounded-lg bg-background border border-foreground/10 text-[11px] font-mono font-black text-primary">
-                            Score: {m.scoreA || '0'} - {m.scoreB || '0'}
+                        {/* Divider */}
+                        <div className="h-[1px] bg-foreground/5 w-full" />
+
+                        {/* Team B Row */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            {isTeamBWinner && (
+                              <span className="text-emerald-500 text-xs shrink-0 font-bold">🏆</span>
+                            )}
+                            <span className={`text-xs sm:text-sm truncate ${isTeamBWinner ? 'font-black text-foreground' : 'font-bold text-foreground/80'}`}>
+                              {m.teamBLabel || 'Team B'}
+                            </span>
                           </div>
+                          {m.scoreB && (
+                            <span className={`text-xs font-mono shrink-0 ${isTeamBWinner ? 'font-black text-primary' : 'font-bold text-foreground/60'}`}>
+                              {m.scoreB}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Category & Win Reason Footer Strip */}
+                      <div className="flex items-center justify-between gap-2 mt-2 px-1">
+                        <span className="text-[10.5px] text-foreground/50 font-medium">
+                          {m.category}
+                        </span>
+                        {m.winReason && (
+                          <span className="text-[10.5px] font-bold text-primary truncate max-w-[200px]">
+                            {m.winReason}
+                          </span>
                         )}
                       </div>
                     </div>
 
                     {/* Bottom Action Line */}
-                    <div className="flex items-center justify-between pt-2 border-t border-foreground/5">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-foreground/5 mt-0.5">
                       {isLive ? (
                         <button
                           onClick={() => handleResumeMatch(m)}
-                          className="px-3 py-1 rounded-xl bg-rose-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-sm active:scale-95"
+                          className="px-3.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-black flex items-center gap-1.5 shadow-sm shadow-rose-500/20 active:scale-95 transition-all"
                         >
-                          <Play className="w-3 h-3 fill-current" /> Resume
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Resume Scoring</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleRematch(m)}
-                          className="px-2.5 py-1 rounded-xl bg-surface hover:bg-foreground/5 border border-foreground/10 text-[11px] font-bold text-foreground/80 flex items-center gap-1 transition-colors active:scale-95"
+                          className="px-3 py-1.5 rounded-xl bg-surface hover:bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/80 flex items-center gap-1.5 transition-colors active:scale-95"
                           title="Rematch"
                         >
-                          <RotateCcw className="w-3 h-3 text-primary" /> Rematch
+                          <RotateCcw className="w-3.5 h-3.5 text-primary" />
+                          <span>Rematch</span>
                         </button>
                       )}
 
                       <button
                         onClick={() => removeRecord(m.id)}
-                        className="p-1 rounded-lg text-foreground/30 hover:text-rose-500 hover:bg-rose-500/10 transition-colors active:scale-95"
-                        title="Delete"
+                        className="p-1.5 rounded-xl text-foreground/30 hover:text-rose-500 hover:bg-rose-500/10 transition-colors active:scale-95"
+                        title="Delete Match"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

@@ -15,6 +15,7 @@ import {
   Activity,
   Users,
   Building,
+  Building2,
   MapPin,
   Grid,
   BarChart3,
@@ -28,6 +29,10 @@ import {
   Sparkles,
   Layers,
   Newspaper,
+  Medal,
+  ClipboardList,
+  Tag,
+  Boxes,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -40,20 +45,20 @@ function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
   if (n.includes('post') || n.includes('blog') || n.includes('gallery') || n.includes('feed') || n.includes('media') || n.includes('article')) return 'posts';
   if (n.includes('admission') || n.includes('intake') || n.includes('enroll')) return 'registered';
-  if (n.includes('student') || n.includes('pupil')) return 'students';
-  if (n.includes('batch') || n.includes('group') || n.includes('coaching')) return 'batches';
-  if (n.includes('coach') || n.includes('trainer')) return 'coaches';
-  if (n.includes('member') || n.includes('staff') || n.includes('squad') || n.includes('team')) return 'members';
+  if (n.includes('trainee') || n.includes('student') || n.includes('pupil') || n.includes('client') || n.includes('athlete')) return 'students';
+  if (n.includes('session') || n.includes('schedule') || n.includes('calendar') || n.includes('slot') || n.includes('booking') || n.includes('timetable')) return 'schedule';
+  if (n.includes('batch') || n.includes('group') || n.includes('squad') || n.includes('package')) return 'batches';
+  if (n.includes('coach') || n.includes('trainer') || n.includes('instructor')) return 'coaches';
+  if (n.includes('member') || n.includes('staff') || n.includes('team')) return 'members';
   if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
-  if (n.includes('schedule') || n.includes('calendar') || n.includes('slot') || n.includes('booking')) return 'schedule';
   if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic')) return 'performance';
   if (n.includes('match') || n.includes('fixture') || n.includes('sparring')) return 'matches';
   if (n.includes('setup') || n.includes('console') || n.includes('officiat')) return 'setup';
   if (n.includes('umpire') || n.includes('referee')) return 'umpire';
   if (n.includes('leaderboard') || n.includes('rank') || n.includes('standing') || n.includes('result')) return 'rankings';
   if (n.includes('inventory') || n.includes('equipment') || n.includes('shuttle') || n.includes('gear')) return 'inventory';
-  if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card')) return 'finances';
-  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('map') || n.includes('venue')) return 'facilities';
+  if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card') || n.includes('ledger')) return 'finances';
+  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('map') || n.includes('venue') || n.includes('centre') || n.includes('campus')) return 'facilities';
   if (n.includes('setting') || n.includes('config')) return 'settings';
   if (n.includes('registration') || n.includes('register') || n.includes('approv') || n.includes('entry') || n.includes('pass')) return 'registered';
   if (n.includes('academ') || n.includes('club')) return 'academies';
@@ -126,9 +131,11 @@ export default function OrganizationLayout({ children }: { children: React.React
     if (activeOrg.type === 'ORGANIZER') {
       return [
         ...base,
-        { name: 'Live Stream', href: `/org/${orgId}/livestream`, icon: Video },
         { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
         { name: 'Registrations', href: `/org/${orgId}/registrations`, icon: Users },
+        { name: 'Inventory & Gear', href: `/org/${orgId}/inventory`, icon: Boxes },
+        { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
+        { name: 'Roles & Officials', href: `/org/${orgId}/roles`, icon: Shield },
         { name: 'Results', href: `/org/${orgId}/results`, icon: Activity },
       ];
     }
@@ -161,9 +168,23 @@ export default function OrganizationLayout({ children }: { children: React.React
         { name: 'Members', href: `/org/${orgId}/members`, icon: Users },
         { name: 'Matches', href: `/org/${orgId}/matches`, icon: Activity },
         { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays },
+        { name: 'Leaderboard', href: `/org/${orgId}/leaderboard`, icon: Medal },
+        { name: 'Feed & Gallery', href: `/org/${orgId}/posts`, icon: Newspaper },
         { name: 'Inventory', href: `/org/${orgId}/inventory`, icon: Grid },
         { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
         { name: 'Analytics', href: `/org/${orgId}/analytics`, icon: TrendingUp },
+      ];
+    }
+    if (activeOrg.type === 'COACH') {
+      return [
+        ...base,
+        { name: 'Trainees', href: `/org/${orgId}/students`, icon: Users },
+        { name: 'Sessions', href: `/org/${orgId}/batches`, icon: CalendarDays },
+        { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: ClipboardList },
+        { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
+        { name: 'Coaching Fees', href: `/org/${orgId}/fees`, icon: Tag },
+        { name: 'Feed & Media', href: `/org/${orgId}/posts`, icon: Newspaper },
+        { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
       ];
     }
     if (activeOrg.type === 'COURT') {
@@ -185,6 +206,40 @@ export default function OrganizationLayout({ children }: { children: React.React
 
   // 2. Desktop Navigation Sections (Structured with categories like Personal Hub)
   const getNavSections = () => {
+    if (activeOrg.type === 'COACH') {
+      return [
+        {
+          title: 'Training & Operations',
+          items: [
+            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Sessions & Schedule', href: `/org/${orgId}/batches`, icon: CalendarDays, badge: null, isLive: false },
+            { name: 'Daily Attendance', href: `/org/${orgId}/attendance`, icon: ClipboardList, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Students & Trainees',
+          items: [
+            { name: 'Trainee Enrolment', href: `/org/${orgId}/students`, icon: Users, badge: null, isLive: false },
+            { name: 'Coach Finances & Treasury', href: `/org/${orgId}/finances`, icon: CreditCard, badge: null, isLive: false },
+            { name: 'Coaching Fee Plans', href: `/org/${orgId}/fees`, icon: Tag, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Competitions & Media',
+          items: [
+            { name: 'Tournaments & Matches', href: `/org/${orgId}/tournaments`, icon: Trophy, badge: null, isLive: false },
+            { name: 'Feed & Highlights', href: `/org/${orgId}/posts`, icon: Newspaper, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Profile & Credentials',
+          items: [
+            { name: 'Coach Profile & Experience', href: `/org/${orgId}/profile`, icon: Building2, badge: null, isLive: false },
+            { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
+          ],
+        },
+      ];
+    }
     if (activeOrg.type === 'ACADEMY') {
       return [
         {
@@ -226,9 +281,10 @@ export default function OrganizationLayout({ children }: { children: React.React
           ],
         },
         {
-          title: 'Settings',
+          title: 'Settings & Profile',
           items: [
-            { name: 'Academy Profile', href: `/org/${orgId}/profile`, icon: Settings, badge: null, isLive: false },
+            { name: 'Academy Profile', href: `/org/${orgId}/profile`, icon: Building2, badge: null, isLive: false },
+            { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
           ],
         },
       ];
@@ -248,9 +304,10 @@ export default function OrganizationLayout({ children }: { children: React.React
         })),
       },
       {
-        title: 'Settings',
+        title: 'Settings & Profile',
         items: [
-          { name: 'Org Profile', href: `/org/${orgId}/profile`, icon: Building, badge: null, isLive: false },
+          { name: 'Org Profile', href: `/org/${orgId}/profile`, icon: Building2, badge: null, isLive: false },
+          { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
         ],
       },
     ];
@@ -259,7 +316,7 @@ export default function OrganizationLayout({ children }: { children: React.React
   const navSections = getNavSections();
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex h-screen h-[100dvh] min-h-[100dvh] bg-background text-foreground overflow-hidden">
       {/* ══════════════════════════════════════════════════════════════════════
           DESKTOP SIDEBAR - MATCHING EXACT PERSONAL / USER DASHBOARD DESIGN
          ══════════════════════════════════════════════════════════════════════ */}
@@ -468,14 +525,19 @@ export default function OrganizationLayout({ children }: { children: React.React
       {/* ══════════════════════════════════════════════════════════════════════
           MAIN CONTENT AREA
          ══════════════════════════════════════════════════════════════════════ */}
-      <main className="flex-1 overflow-auto bg-background md:pb-0 pb-16">{children}</main>
+      <main className="flex-1 overflow-y-auto overscroll-y-contain overflow-x-hidden min-w-0 w-full max-w-full bg-background md:pb-0 pb-28">{children}</main>
 
       {/* ══════════════════════════════════════════════════════════════════════
           MOBILE BOTTOM NAV
          ══════════════════════════════════════════════════════════════════════ */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto"
-        style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
+        className="md:hidden fixed bottom-0 inset-x-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto fixed-bottom-nav"
+        style={{
+          backgroundColor: 'var(--athlon-navigation)',
+          borderColor: 'var(--athlon-border)',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
+        }}
       >
         {/* Item 1 */}
         {navItems[0] && (

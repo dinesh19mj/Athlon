@@ -24,16 +24,9 @@ import {
   Box,
   Building,
   Home,
-  UserPlus,
   DollarSign,
   Settings,
   Search,
-  Check,
-  Sparkles,
-  SlidersHorizontal,
-  X,
-  Lock,
-  Unlock,
 } from 'lucide-react';
 import {
   AcademyPermissionService,
@@ -49,7 +42,7 @@ interface ModuleDef {
   icon: React.ElementType;
 }
 
-const MODULES: ModuleDef[] = [
+const ACADEMY_MODULES: ModuleDef[] = [
   {
     id: 'batches',
     name: 'Batches',
@@ -137,27 +130,27 @@ const MODULES: ModuleDef[] = [
   {
     id: 'staff',
     name: 'Staff',
-    description: 'Operations team & staff administration',
-    category: 'admin',
-    icon: UserPlus,
+    description: 'Front-desk, trainers & facility workers',
+    category: 'operations',
+    icon: Users,
   },
   {
     id: 'finances',
     name: 'Finances',
-    description: 'Fee collection, cash receipts & ledgers',
+    description: 'Fee collection, batch invoices & expenses',
     category: 'admin',
     icon: DollarSign,
   },
   {
     id: 'settings',
     name: 'Settings',
-    description: 'Academy branding, sports configs & preferences',
+    description: 'Academy configuration & operational preferences',
     category: 'admin',
     icon: Settings,
   },
 ];
 
-const ROLES = [
+const ACADEMY_ROLES = [
   {
     id: 'COACH',
     label: 'Coaches',
@@ -200,7 +193,7 @@ const CATEGORIES = [
   { id: 'admin', label: 'Admin' },
 ];
 
-const DEFAULT_FALLBACK_MATRIX: Record<string, Record<string, AccessLevel>> = {
+const ACADEMY_DEFAULT_FALLBACK_MATRIX: Record<string, Record<string, AccessLevel>> = {
   COACH: {
     batches: 'MANAGE',
     schedule: 'MANAGE',
@@ -277,8 +270,8 @@ interface AcademyPermissionMatrixViewProps {
 
 export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrixViewProps) {
   const [selectedRole, setSelectedRole] = useState<string>('COACH');
-  const [matrix, setMatrix] = useState<Record<string, Record<string, AccessLevel>>>(DEFAULT_FALLBACK_MATRIX);
-  const [initialMatrix, setInitialMatrix] = useState<Record<string, Record<string, AccessLevel>>>(DEFAULT_FALLBACK_MATRIX);
+  const [matrix, setMatrix] = useState<Record<string, Record<string, AccessLevel>>>(ACADEMY_DEFAULT_FALLBACK_MATRIX);
+  const [initialMatrix, setInitialMatrix] = useState<Record<string, Record<string, AccessLevel>>>(ACADEMY_DEFAULT_FALLBACK_MATRIX);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -290,7 +283,6 @@ export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrix
     setTimeout(() => setToastMsg(null), 3500);
   };
 
-  // Fetch initial permissions from backend
   const loadData = async () => {
     if (!orgUuid) return;
     try {
@@ -313,13 +305,13 @@ export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrix
         setMatrix(newMatrix);
         setInitialMatrix(JSON.parse(JSON.stringify(newMatrix)));
       } else {
-        setMatrix(DEFAULT_FALLBACK_MATRIX);
-        setInitialMatrix(JSON.parse(JSON.stringify(DEFAULT_FALLBACK_MATRIX)));
+        setMatrix(ACADEMY_DEFAULT_FALLBACK_MATRIX);
+        setInitialMatrix(JSON.parse(JSON.stringify(ACADEMY_DEFAULT_FALLBACK_MATRIX)));
       }
     } catch (err) {
       console.warn('Using default fallback permissions matrix', err);
-      setMatrix(DEFAULT_FALLBACK_MATRIX);
-      setInitialMatrix(JSON.parse(JSON.stringify(DEFAULT_FALLBACK_MATRIX)));
+      setMatrix(ACADEMY_DEFAULT_FALLBACK_MATRIX);
+      setInitialMatrix(JSON.parse(JSON.stringify(ACADEMY_DEFAULT_FALLBACK_MATRIX)));
     } finally {
       setLoading(false);
     }
@@ -329,12 +321,10 @@ export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrix
     loadData();
   }, [orgUuid]);
 
-  // Check if there are unsaved changes
   const hasChanges = useMemo(() => {
     return JSON.stringify(matrix) !== JSON.stringify(initialMatrix);
   }, [matrix, initialMatrix]);
 
-  // Set permission for single module & role
   const handleSetPermission = (role: string, moduleId: string, level: AccessLevel) => {
     setMatrix((prev) => {
       const updated = { ...prev };
@@ -344,23 +334,21 @@ export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrix
     });
   };
 
-  // Bulk set for current role
   const handleBulkSet = (level: AccessLevel) => {
     setMatrix((prev) => {
       const updated = { ...prev };
       if (!updated[selectedRole]) updated[selectedRole] = {};
       const newRoleObj = { ...updated[selectedRole] };
-      MODULES.forEach((m) => {
+      ACADEMY_MODULES.forEach((m) => {
         newRoleObj[m.id] = level;
       });
       updated[selectedRole] = newRoleObj;
       return updated;
     });
     const label = level === 'MANAGE' ? 'Manage' : level === 'VIEW' ? 'View Only' : 'Hidden';
-    showNotification(`Set all tools to ${label} for ${selectedRole}`);
+    showNotification(`Set all modules to ${label} for ${selectedRole}`);
   };
 
-  // Reset to default recommendations
   const handleResetToDefaults = async () => {
     if (!confirm('Reset all role permissions to system recommended defaults?')) {
       return;
@@ -383,28 +371,27 @@ export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrix
         setMatrix(newMatrix);
         setInitialMatrix(JSON.parse(JSON.stringify(newMatrix)));
       } else {
-        setMatrix(DEFAULT_FALLBACK_MATRIX);
-        setInitialMatrix(JSON.parse(JSON.stringify(DEFAULT_FALLBACK_MATRIX)));
+        setMatrix(ACADEMY_DEFAULT_FALLBACK_MATRIX);
+        setInitialMatrix(JSON.parse(JSON.stringify(ACADEMY_DEFAULT_FALLBACK_MATRIX)));
       }
       showNotification('Permissions reset to recommended defaults');
     } catch (err) {
       console.warn('Resetting locally', err);
-      setMatrix(DEFAULT_FALLBACK_MATRIX);
-      setInitialMatrix(JSON.parse(JSON.stringify(DEFAULT_FALLBACK_MATRIX)));
+      setMatrix(ACADEMY_DEFAULT_FALLBACK_MATRIX);
+      setInitialMatrix(JSON.parse(JSON.stringify(ACADEMY_DEFAULT_FALLBACK_MATRIX)));
       showNotification('Permissions reset to recommended defaults');
     } finally {
       setSaving(false);
     }
   };
 
-  // Save changes to backend
   const handleSaveChanges = async () => {
     try {
       setSaving(true);
       const payload: { role: string; moduleId: string; accessLevel: AccessLevel }[] = [];
 
-      Object.entries(matrix).forEach(([r, modules]) => {
-        Object.entries(modules).forEach(([m, level]) => {
+      Object.entries(matrix).forEach(([r, moduleMap]) => {
+        Object.entries(moduleMap).forEach(([m, level]) => {
           payload.push({
             role: r,
             moduleId: m,
@@ -425,9 +412,8 @@ export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrix
     }
   };
 
-  // Filtered Modules by category and search
   const filteredModules = useMemo(() => {
-    return MODULES.filter((m) => {
+    return ACADEMY_MODULES.filter((m) => {
       const matchCat = activeCategory === 'all' || m.category === activeCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchQuery = !q || m.name.toLowerCase().includes(q) || m.description.toLowerCase().includes(q);
@@ -441,398 +427,301 @@ export function AcademyPermissionMatrixView({ orgUuid }: AcademyPermissionMatrix
     let viewCount = 0;
     let hiddenCount = 0;
 
-    MODULES.forEach((m) => {
+    ACADEMY_MODULES.forEach((m) => {
       const lvl = roleObj[m.id] || 'NONE';
       if (lvl === 'MANAGE') manageCount++;
       else if (lvl === 'VIEW') viewCount++;
       else hiddenCount++;
     });
 
-    return { manageCount, viewCount, hiddenCount };
+    return { manageCount, viewCount, hiddenCount, total: ACADEMY_MODULES.length };
   }, [matrix, selectedRole]);
 
+  const activeRoleDef = ACADEMY_ROLES.find((r) => r.id === selectedRole) || ACADEMY_ROLES[0];
+
   return (
-    <div className="space-y-4 max-w-5xl mx-auto pb-28 font-sans text-foreground">
+    <div className="space-y-6 animate-in fade-in duration-300">
       {/* Toast Notification */}
       {toastMsg && (
         <div
-          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl border shadow-2xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-top-3 backdrop-blur-xl ${
+          className={`fixed bottom-20 md:bottom-8 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md animate-in slide-in-from-bottom-3 duration-200 ${
             toastMsg.isError
-              ? 'bg-rose-500/90 text-white border-rose-400'
-              : 'bg-emerald-500/90 text-neutral-950 border-emerald-400'
+              ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+              : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
           }`}
         >
-          {toastMsg.isError ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
-          <span>{toastMsg.text}</span>
+          {toastMsg.isError ? (
+            <AlertCircle className="w-4 h-4 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+          )}
+          <span className="text-xs font-bold text-foreground">{toastMsg.text}</span>
         </div>
       )}
 
-      {/* ── MOBILE-FIRST HERO BANNER ── */}
+      {/* Hero Header Card */}
       <div
-        className="rounded-[22px] p-4 sm:p-6 border relative overflow-hidden shadow-sm transition-all"
+        className="relative overflow-hidden rounded-3xl p-5 sm:p-7 border shadow-sm"
         style={{
-          backgroundColor: 'var(--athlon-card)',
+          backgroundColor: 'var(--athlon-surface)',
           borderColor: 'var(--athlon-border)',
         }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500 shrink-0 shadow-inner">
-              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary">
+              <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h2 className="text-base sm:text-xl font-black text-foreground tracking-tight">
-                  Role Permissions
-                </h2>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                  Admin Control
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-foreground/55 mt-0.5 leading-snug">
-                Configure tool access, manage rights &amp; visibility for each role.
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">
+                Academy Roles &amp; Permissions
+              </h2>
+              <p className="text-xs text-foreground/50 mt-0.5">
+                Manage role access levels across academy modules.
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleResetToDefaults}
-            disabled={saving || loading}
-            className="p-2 sm:px-3 sm:py-1.5 rounded-xl border text-[11px] font-bold text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition active:scale-95 shrink-0 flex items-center gap-1.5"
-            style={{ borderColor: 'var(--athlon-border)' }}
-            title="Reset to recommended defaults"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Reset Defaults</span>
-          </button>
-        </div>
+          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+            <button
+              onClick={handleResetToDefaults}
+              disabled={loading || saving}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-all active:scale-95 disabled:opacity-50"
+              style={{ borderColor: 'var(--athlon-border)' }}
+              title="Reset to recommended matrix"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Defaults</span>
+            </button>
 
-        {/* Access Statistics Chips (Mobile View) */}
-        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-[10px] text-foreground/50 font-bold uppercase leading-none truncate">Manage</div>
-              <div className="text-xs sm:text-sm font-black text-emerald-500 mt-0.5">{currentRoleStats.manageCount} Tools</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-[10px] text-foreground/50 font-bold uppercase leading-none truncate">View Only</div>
-              <div className="text-xs sm:text-sm font-black text-amber-500 mt-0.5">{currentRoleStats.viewCount} Tools</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
-            <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-[10px] text-foreground/50 font-bold uppercase leading-none truncate">Hidden</div>
-              <div className="text-xs sm:text-sm font-black text-rose-500 mt-0.5">{currentRoleStats.hiddenCount} Tools</div>
-            </div>
+            <button
+              onClick={handleSaveChanges}
+              disabled={!hasChanges || saving || loading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
+                hasChanges
+                  ? 'bg-primary text-primary-foreground shadow-primary/25 hover:brightness-110'
+                  : 'bg-foreground/10 text-foreground/40 border cursor-not-allowed'
+              }`}
+              style={{ borderColor: hasChanges ? undefined : 'var(--athlon-border)' }}
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{saving ? 'Saving...' : hasChanges ? 'Save Changes' : 'Saved'}</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── ROLE SWITCHER (Horizontal Touch Scroll on Mobile) ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
-        {ROLES.map((r) => {
-          const Icon = r.icon;
-          const isSelected = selectedRole === r.id;
-          return (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setSelectedRole(r.id)}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border shrink-0 transition-all active:scale-95 ${
-                isSelected
-                  ? 'bg-primary text-primary-foreground font-black shadow-md scale-[1.02]'
-                  : 'text-foreground/70 hover:text-foreground border-transparent'
-              }`}
-              style={{
-                backgroundColor: isSelected ? undefined : 'var(--athlon-card)',
-                borderColor: isSelected ? undefined : 'var(--athlon-border)',
-              }}
-            >
-              <div
-                className={`p-1.5 rounded-xl shrink-0 ${
-                  isSelected ? 'bg-black/15 text-primary-foreground dark:bg-white/15' : r.accentColor
+      {/* Role Switcher Tabs */}
+      <div className="space-y-2">
+        <label className="text-[11px] font-black uppercase tracking-wider text-foreground/50 px-1">
+          Select Role to Configure
+        </label>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {ACADEMY_ROLES.map((r) => {
+            const Icon = r.icon;
+            const isSelected = selectedRole === r.id;
+            return (
+              <button
+                key={r.id}
+                onClick={() => setSelectedRole(r.id)}
+                className={`relative p-4 rounded-2xl border text-left transition-all active:scale-98 ${
+                  isSelected
+                    ? 'ring-2 ring-primary border-primary bg-surface shadow-md'
+                    : 'bg-card hover:bg-surface border-transparent text-foreground/70 hover:text-foreground'
                 }`}
+                style={{
+                  borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                  backgroundColor: isSelected ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+                }}
               >
-                <Icon className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <div className="text-xs font-bold leading-tight">{r.label}</div>
-                <div
-                  className={`text-[9px] line-clamp-1 ${
-                    isSelected ? 'opacity-85 font-semibold' : 'text-foreground/45'
-                  }`}
-                >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className={`p-2 rounded-xl border ${r.accentColor}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  {isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  )}
+                </div>
+
+                <div className="font-bold text-sm text-foreground">{r.label}</div>
+                <div className="text-[11px] text-foreground/50 mt-0.5 line-clamp-1">
                   {r.description}
                 </div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── SEARCH & CATEGORY CHIPS BAR ── */}
+      {/* Active Role Control Bar */}
       <div
-        className="p-3 rounded-2xl border space-y-2.5"
+        className="p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm"
         style={{
-          backgroundColor: 'var(--athlon-card)',
+          backgroundColor: 'var(--athlon-surface)',
           borderColor: 'var(--athlon-border)',
         }}
       >
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tools (e.g. Attendance, Batches, Inventory)..."
-            className="w-full pl-9 pr-8 py-2 rounded-xl text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/40 transition"
-            style={{
-              backgroundColor: 'var(--athlon-surface)',
-              borderColor: 'var(--athlon-border)',
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+        <div className="flex items-center gap-2.5">
+          <div className={`p-2 rounded-xl border ${activeRoleDef.accentColor}`}>
+            <activeRoleDef.icon className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-foreground flex items-center gap-2">
+              <span>{activeRoleDef.label}</span>
+              <span className="text-[10px] font-medium text-foreground/50">
+                ({currentRoleStats.manageCount} Manage • {currentRoleStats.viewCount} View • {currentRoleStats.hiddenCount} None)
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Category Pills & Bulk Quick Actions */}
-        <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pt-0.5">
-          <div className="flex items-center gap-1.5 shrink-0">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all shrink-0 ${
-                  activeCategory === cat.id
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-foreground/60 hover:text-foreground bg-foreground/5'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Quick Bulk Dropdown / Buttons */}
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={() => handleBulkSet('MANAGE')}
-              className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 active:scale-95"
-            >
-              All Manage
-            </button>
-            <button
-              type="button"
-              onClick={() => handleBulkSet('VIEW')}
-              className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20 active:scale-95"
-            >
-              All View
-            </button>
-            <button
-              type="button"
-              onClick={() => handleBulkSet('NONE')}
-              className="px-2 py-1 rounded-lg text-[10px] font-extrabold bg-rose-500/10 text-rose-500 border border-rose-500/20 active:scale-95"
-            >
-              All Hide
-            </button>
-          </div>
+        {/* Bulk Action Buttons */}
+        <div className="flex items-center gap-1.5 self-start sm:self-center">
+          <span className="text-[10px] font-bold text-foreground/40 uppercase mr-1">
+            Bulk:
+          </span>
+          <button
+            onClick={() => handleBulkSet('MANAGE')}
+            className="px-2.5 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20 active:scale-95 transition-all"
+          >
+            All Manage
+          </button>
+          <button
+            onClick={() => handleBulkSet('VIEW')}
+            className="px-2.5 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25 hover:bg-blue-500/20 active:scale-95 transition-all"
+          >
+            All View
+          </button>
+          <button
+            onClick={() => handleBulkSet('NONE')}
+            className="px-2.5 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider bg-foreground/5 text-foreground/50 border-foreground/10 hover:bg-foreground/10 active:scale-95 transition-all"
+          >
+            Hide All
+          </button>
         </div>
       </div>
 
-      {/* ── 15 TOOLS LIST (Mobile Card Stream) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-2.5 justify-between">
+        {/* Category Pills */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setActiveCategory(c.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
+                activeCategory === c.id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-card text-foreground/60 border hover:text-foreground'
+              }`}
+              style={{ borderColor: activeCategory === c.id ? undefined : 'var(--athlon-border)' }}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+          <input
+            type="text"
+            placeholder="Search modules..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 rounded-xl border bg-card text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary"
+            style={{ borderColor: 'var(--athlon-border)' }}
+          />
+        </div>
+      </div>
+
+      {/* Modules Permission List */}
+      <div className="space-y-2.5">
         {filteredModules.map((m) => {
           const Icon = m.icon;
-          const currentLevel: AccessLevel = matrix[selectedRole]?.[m.id] || 'VIEW';
+          const currentLevel = matrix[selectedRole]?.[m.id] || 'NONE';
 
           return (
             <div
               key={m.id}
-              className={`p-3.5 rounded-[20px] border transition-all flex flex-col justify-between gap-3 relative overflow-hidden ${
-                currentLevel === 'MANAGE'
-                  ? 'ring-1 ring-emerald-500/20'
-                  : currentLevel === 'VIEW'
-                  ? 'ring-1 ring-amber-500/15'
-                  : 'opacity-65'
-              }`}
+              className="p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all hover:border-primary/30"
               style={{
-                backgroundColor: 'var(--athlon-card)',
-                borderColor:
-                  currentLevel === 'MANAGE'
-                    ? 'rgba(16, 185, 129, 0.35)'
-                    : currentLevel === 'VIEW'
-                    ? 'rgba(245, 158, 11, 0.3)'
-                    : 'var(--athlon-border)',
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
               }}
             >
-              {/* Tool Header */}
-              <div className="flex items-start justify-between gap-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                      currentLevel === 'MANAGE'
-                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-500'
-                        : currentLevel === 'VIEW'
-                        ? 'bg-amber-500/15 border-amber-500/30 text-amber-500'
-                        : 'bg-foreground/5 border-foreground/10 text-foreground/40'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-extrabold text-xs sm:text-sm text-foreground truncate">
-                      {m.name}
-                    </h3>
-                    <p className="text-[10px] text-foreground/50 line-clamp-1 leading-tight">
-                      {m.description}
-                    </p>
-                  </div>
+              {/* Module Info */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-card border flex items-center justify-center text-foreground shrink-0" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <Icon className="w-4 h-4 text-primary" />
                 </div>
-
-                {/* Status Badge */}
-                <div className="shrink-0">
-                  {currentLevel === 'MANAGE' && (
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
-                      <Edit3 className="w-2.5 h-2.5" /> Manage
-                    </span>
-                  )}
-                  {currentLevel === 'VIEW' && (
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center gap-1">
-                      <Eye className="w-2.5 h-2.5" /> View Only
-                    </span>
-                  )}
-                  {currentLevel === 'NONE' && (
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center gap-1">
-                      <EyeOff className="w-2.5 h-2.5" /> Hidden
-                    </span>
-                  )}
+                <div className="min-w-0">
+                  <div className="font-bold text-xs sm:text-sm text-foreground">
+                    <span className="truncate">{m.name}</span>
+                  </div>
+                  <p className="text-[11px] text-foreground/50 truncate mt-0.5">
+                    {m.description}
+                  </p>
                 </div>
               </div>
 
-              {/* Mobile 3-Way Segmented Control */}
-              <div
-                className="grid grid-cols-3 p-1 rounded-xl border gap-1"
-                style={{
-                  backgroundColor: 'var(--athlon-surface)',
-                  borderColor: 'var(--athlon-border)',
-                }}
-              >
-                {/* 1. MANAGE */}
+              {/* 3-State Access Control Segmented Toggle */}
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-card border shrink-0 self-end sm:self-center" style={{ borderColor: 'var(--athlon-border)' }}>
+                {/* MANAGE */}
                 <button
-                  type="button"
                   onClick={() => handleSetPermission(selectedRole, m.id, 'MANAGE')}
-                  className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-extrabold transition-all active:scale-95 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     currentLevel === 'MANAGE'
-                      ? 'bg-emerald-500 text-neutral-950 shadow-sm'
-                      : 'text-foreground/60 hover:text-foreground'
+                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                      : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
                   }`}
+                  title="Full read & write access"
                 >
                   <Edit3 className="w-3 h-3" />
                   <span>Manage</span>
                 </button>
 
-                {/* 2. VIEW */}
+                {/* VIEW */}
                 <button
-                  type="button"
                   onClick={() => handleSetPermission(selectedRole, m.id, 'VIEW')}
-                  className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-extrabold transition-all active:scale-95 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     currentLevel === 'VIEW'
-                      ? 'bg-amber-500 text-neutral-950 shadow-sm'
-                      : 'text-foreground/60 hover:text-foreground'
+                      ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
+                      : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
                   }`}
+                  title="Read-only access"
                 >
                   <Eye className="w-3 h-3" />
                   <span>View</span>
                 </button>
 
-                {/* 3. HIDE */}
+                {/* NONE */}
                 <button
-                  type="button"
                   onClick={() => handleSetPermission(selectedRole, m.id, 'NONE')}
-                  className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-extrabold transition-all active:scale-95 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     currentLevel === 'NONE'
-                      ? 'bg-rose-500 text-white shadow-sm'
-                      : 'text-foreground/60 hover:text-foreground'
+                      ? 'bg-foreground/20 text-foreground shadow-sm'
+                      : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'
                   }`}
+                  title="Completely hidden / blocked"
                 >
                   <EyeOff className="w-3 h-3" />
-                  <span>Hide</span>
+                  <span>Hidden</span>
                 </button>
               </div>
             </div>
           );
         })}
-      </div>
 
-      {filteredModules.length === 0 && (
-        <div
-          className="text-center py-12 rounded-2xl border"
-          style={{
-            backgroundColor: 'var(--athlon-card)',
-            borderColor: 'var(--athlon-border)',
-          }}
-        >
-          <Search className="w-8 h-8 mx-auto text-foreground/30 mb-2" />
-          <div className="font-bold text-sm text-foreground">No matching tools found</div>
-          <div className="text-xs text-foreground/50 mt-0.5">Try adjusting your search query or category filter</div>
-        </div>
-      )}
-
-      {/* ── STICKY BOTTOM SAVE BAR (Haptic Pulse on Mobile) ── */}
-      {hasChanges && (
-        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 sm:w-auto z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div
-            className="p-3 sm:px-5 sm:py-3 rounded-2xl border shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 max-w-lg mx-auto"
-            style={{
-              backgroundColor: 'var(--athlon-sidebar)',
-              borderColor: 'var(--athlon-border)',
-            }}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="flex h-2.5 w-2.5 relative shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-              </span>
-              <span className="text-xs font-bold text-foreground truncate">
-                Unsaved changes
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setMatrix(initialMatrix)}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-foreground/70 hover:text-foreground bg-foreground/5 transition active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveChanges}
-                disabled={saving}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-black text-xs shadow-lg shadow-primary/25 transition-all active:scale-95"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-              </button>
-            </div>
+        {filteredModules.length === 0 && (
+          <div className="p-8 text-center rounded-2xl border bg-surface" style={{ borderColor: 'var(--athlon-border)' }}>
+            <p className="text-xs text-foreground/50">No modules found matching &quot;{searchQuery}&quot;</p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
+
+export default AcademyPermissionMatrixView;

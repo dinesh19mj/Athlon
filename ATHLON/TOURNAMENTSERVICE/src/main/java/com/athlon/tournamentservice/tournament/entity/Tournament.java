@@ -96,6 +96,9 @@ public class Tournament {
 	@Column(name = "status")
 	private String status;
 
+	@Column(name = "registration_mode")
+	private String registrationMode = "PUBLIC";
+
 	@Column(name = "isactive")
 	private Integer isActive = 1;
 
@@ -142,6 +145,7 @@ public class Tournament {
 		this.poster = poster;
 		this.status = status;
 		this.createdBy = createdBy;
+		this.registrationMode = "PUBLIC";
 		this.isActive = 1;
 	}
 
@@ -154,6 +158,10 @@ public class Tournament {
 
 		if (isActive == null) {
 			isActive = 1;
+		}
+
+		if (registrationMode == null) {
+			registrationMode = "PUBLIC";
 		}
 	}
 
@@ -387,6 +395,14 @@ public class Tournament {
 
 	public LocalDateTime getUpdatedAt() {
 		return updatedAt;
+	}
+
+	public String getRegistrationMode() {
+		return registrationMode;
+	}
+
+	public void setRegistrationMode(String registrationMode) {
+		this.registrationMode = registrationMode;
 	}
 
 	public Long getCreatedBy() {

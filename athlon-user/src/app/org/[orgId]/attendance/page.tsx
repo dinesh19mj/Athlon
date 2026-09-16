@@ -27,6 +27,7 @@ import {
 import { useOrgRole } from '@/hooks/use-org-role';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import AcademyAttendanceView from '@/components/academy/AcademyAttendanceView';
+import CoachAttendanceView from '@/components/coach/CoachAttendanceView';
 
 // Helper to get local date formatted as YYYY-MM-DD (avoiding UTC timezone shift)
 const getLocalDateString = (d: Date = new Date()): string => {
@@ -48,6 +49,11 @@ export default function AttendancePage() {
   if (org?.type === 'ACADEMY') {
     return <AcademyAttendanceView orgUuid={orgUuid} orgName={org.name || 'Academy'} />;
   }
+
+  if (org?.type === 'COACH') {
+    return <CoachAttendanceView orgUuid={orgUuid} orgName={org.name || 'Coach Workspace'} />;
+  }
+
   const { role, isAdmin, isCoach, canManage } = useOrgRole(orgUuid);
   const canTakeAttendance = isAdmin || isCoach;
 

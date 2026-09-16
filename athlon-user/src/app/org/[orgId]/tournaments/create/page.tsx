@@ -60,6 +60,10 @@ export default function CreateTournamentPage() {
     getActiveOrganization() ||
     { id: orgUuid, name: 'Organization', type: 'ORGANIZER' };
 
+  const isAcademy = activeOrg.type === 'ACADEMY';
+  const isClub = activeOrg.type === 'CLUB';
+  const isInternalOrg = isAcademy || isClub;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orgCategories, setOrgCategories] = useState<any[]>([]);
 
@@ -127,6 +131,7 @@ export default function CreateTournamentPage() {
     description: '',
     contactPhone: '',
     teamEventCategories: [] as TeamEventCategoryConfig[],
+    registrationMode: 'PUBLIC',
   });
 
   const [isMultiCategory, setIsMultiCategory] = useState(false);
@@ -268,7 +273,8 @@ export default function CreateTournamentPage() {
           form.append('playersCount', formData.playersCount.toString());
         }
       }
-      form.append('visibility', activeOrg.type === 'ACADEMY' ? 'PRIVATE' : formData.type);
+      form.append('visibility', isInternalOrg ? 'PRIVATE' : formData.type);
+      form.append('registrationMode', formData.registrationMode || 'PUBLIC');
       form.append('location', finalLocation);
       if (formData.mapLink) form.append('mapLink', formData.mapLink);
       if (formData.contactPhone) form.append('contactPhone', formData.contactPhone);
@@ -328,7 +334,7 @@ export default function CreateTournamentPage() {
 
         <div className="px-5 pt-6 space-y-7 max-w-2xl mx-auto">
           {/* VISIBILITY */}
-          {activeOrg.type !== 'ACADEMY' ? (
+          {!isInternalOrg ? (
             <div>
               <label className={labelClass}>Visibility</label>
               <div className="space-y-2">
@@ -373,18 +379,63 @@ export default function CreateTournamentPage() {
                 </div>
                 <div>
                   <div className="font-black text-sm text-primary flex items-center gap-1.5">
-                    <span>Internal Academy Tournament</span>
+                    <span>{isClub ? 'Internal Club Tournament' : 'Internal Academy Tournament'}</span>
                     <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-primary/20 text-primary uppercase">
                       Private
                     </span>
                   </div>
                   <div className="text-[10px] text-foreground/60 mt-0.5">
-                    Exclusively for enrolled academy students &amp; coaches in this academy
+                    {isClub
+                      ? 'Exclusively for registered club members in this club'
+                      : 'Exclusively for enrolled academy students & coaches in this academy'}
                   </div>
                 </div>
               </div>
             </div>
           )}
+
+          {/* PARTICIPANT REGISTRATION MODE */}
+          <div>
+            <label className={labelClass}>Participant Registration Mode</label>
+            <div className="space-y-2">
+              {[
+                {
+                  value: 'PUBLIC',
+                  label: 'Public Registration',
+                  desc: 'Players / teams register themselves online via public link',
+                },
+                {
+                  value: 'ORGANIZER_MANAGED',
+                  label: 'Organizer Managed (Manual Entry)',
+                  desc: 'Organizer manually adds players/teams. No public registration.',
+                },
+              ].map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => setFormData({ ...formData, registrationMode: opt.value })}
+                  className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border-2 cursor-pointer transition-all ${
+                    formData.registrationMode === opt.value
+                      ? 'border-primary bg-primary/10'
+                      : 'border-foreground/10 bg-card hover:border-foreground/20'
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      formData.registrationMode === opt.value ? 'border-primary' : 'border-foreground/30'
+                    }`}
+                  >
+                    {formData.registrationMode === opt.value && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
+                  <div>
+                    <div className={`font-bold text-sm ${formData.registrationMode === opt.value ? 'text-primary font-black' : 'text-foreground'}`}>
+                      {opt.label}
+                    </div>
+                    <div className="text-[10px] text-foreground/50 mt-0.5">{opt.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* ACADEMY TARGETING (VENUE & BATCH) */}
           {activeOrg.type === 'ACADEMY' && (
@@ -1167,7 +1218,7 @@ export default function CreateTournamentPage() {
                   {/* Visibility */}
                   <div>
                     <label className={desktopLabelClass}>Event Visibility</label>
-                    {activeOrg.type !== 'ACADEMY' ? (
+                    {!isInternalOrg ? (
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           {
@@ -1203,13 +1254,56 @@ export default function CreateTournamentPage() {
                       >
                         <div className="flex items-center gap-2">
                           <Lock className="w-4 h-4 text-primary" />
-                          <span>Internal Academy Only</span>
+                          <span>{isClub ? 'Internal Club Only' : 'Internal Academy Only'}</span>
                         </div>
                         <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-black">
-                          Private Cohort
+                          {isClub ? 'Club Members' : 'Private Cohort'}
                         </span>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Participant Registration Mode */}
+                <div>
+                  <label className={desktopLabelClass}>Participant Registration Mode</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      {
+                        value: 'PUBLIC',
+                        label: 'Public Registration',
+                        icon: Globe,
+                        desc: 'Online participant signup',
+                      },
+                      {
+                        value: 'ORGANIZER_MANAGED',
+                        label: 'Organizer Managed',
+                        icon: Layers,
+                        desc: 'Manual participant entry only',
+                      },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, registrationMode: opt.value })}
+                        className={`py-2.5 px-3 rounded-2xl border text-left transition-all ${
+                          formData.registrationMode === opt.value
+                            ? 'bg-primary/15 text-primary border-primary shadow-sm'
+                            : 'text-foreground/60 hover:text-foreground'
+                        }`}
+                        style={{
+                          backgroundColor:
+                            formData.registrationMode === opt.value ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
+                          borderColor: formData.registrationMode === opt.value ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider">
+                          <opt.icon className="w-3.5 h-3.5" />
+                          <span>{opt.label}</span>
+                        </div>
+                        <div className="text-[10px] text-foreground/50 mt-1 font-normal leading-tight">{opt.desc}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
 

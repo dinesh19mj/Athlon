@@ -6,8 +6,8 @@ export type AccessLevel = 'MANAGE' | 'VIEW' | 'NONE';
 export interface AcademyRolePermission {
   permissionUuid?: string;
   organizationUuid: string;
-  role: string;       // ADMIN, COACH, STAFF, STUDENT, PARENT
-  moduleId: string;   // batches, schedule, attendance, students, etc.
+  role: string;       // ADMIN, COACH, STAFF, STUDENT, PARENT (Academy) | ADMIN, MEMBER (Club)
+  moduleId: string;   // batches, schedule, attendance, students, members, etc.
   accessLevel: AccessLevel;
 }
 
@@ -40,5 +40,29 @@ export const AcademyPermissionService = {
   // Reset to default system permissions
   resetPermissions: (orgUuid: string) => {
     return api.post<ApiResponse<AcademyRolePermission[]>>(`/api/identity/academy/permissions/org/${orgUuid}/reset`, {});
+  },
+};
+
+export const ClubPermissionService = {
+  // Get all role permissions for a club
+  getOrgPermissions: (orgUuid: string) => {
+    return api.get<ApiResponse<AcademyRolePermission[]>>(`/api/identity/club/permissions/org/${orgUuid}`);
+  },
+
+  // Get permissions for a specific role in a club
+  getRolePermissions: (orgUuid: string, role: string) => {
+    return api.get<ApiResponse<AcademyRolePermission[]>>(
+      `/api/identity/club/permissions/org/${orgUuid}/role?role=${encodeURIComponent(role)}`
+    );
+  },
+
+  // Save/update custom permissions matrix
+  savePermissions: (orgUuid: string, data: SaveRolePermissionsRequest) => {
+    return api.post<ApiResponse<AcademyRolePermission[]>>(`/api/identity/club/permissions/org/${orgUuid}/save`, data);
+  },
+
+  // Reset to default system permissions
+  resetPermissions: (orgUuid: string) => {
+    return api.post<ApiResponse<AcademyRolePermission[]>>(`/api/identity/club/permissions/org/${orgUuid}/reset`, {});
   },
 };

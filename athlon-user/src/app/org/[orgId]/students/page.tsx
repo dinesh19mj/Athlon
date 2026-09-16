@@ -17,6 +17,7 @@ import {
   EnrollStudentPayload,
   UpdateStudentPayload,
 } from '@/lib/api/academyStudent';
+import { CoachService, CoachTrainee, CoachFeePackage } from '@/lib/api/coach';
 import {
   Search,
   Plus,
@@ -159,6 +160,80 @@ export default function StudentsPage() {
     if (!orgUuid) return;
     try {
       setLoading(true);
+
+      if (activeOrg?.type === 'COACH') {
+        const [traineesRes, pkgsRes, dashRes] = await Promise.allSettled([
+          CoachService.getTrainees(orgUuid),
+          CoachService.getPackages(orgUuid),
+          CoachService.getDashboardSummary(orgUuid),
+        ]);
+
+        if (pkgsRes.status === 'fulfilled') {
+          const pList = Array.isArray(pkgsRes.value) ? pkgsRes.value : ((pkgsRes.value as any)?.data || []);
+          const mappedBatches: AcademyBatch[] = pList.map((p: CoachFeePackage) => ({
+            batchUuid: p.packageUuid,
+            organizationUuid: orgUuid,
+            batchName: p.name,
+            sportType: p.categoryLabel || 'Coaching',
+            courtName: 'Personal Coaching Arena',
+            startTime: '06:00',
+            endTime: '21:00',
+            days: 'Flexible',
+            capacity: p.maxTrainees || 1,
+            enrolledCount: p.enrolledCount || 0,
+            feeMonthly: p.price || 0,
+            active: p.active,
+          }));
+          setBatches(mappedBatches);
+        }
+
+        if (traineesRes.status === 'fulfilled') {
+          const tList = Array.isArray(traineesRes.value) ? traineesRes.value : ((traineesRes.value as any)?.data || []);
+          const mappedStudents: AcademyStudent[] = tList.map((t: CoachTrainee) => ({
+            studentUuid: t.traineeUuid,
+            organizationUuid: orgUuid,
+            fullName: t.fullName,
+            sportType: t.sportType || 'Coaching',
+            gender: t.gender || 'MALE',
+            dob: t.dob,
+            age: t.age,
+            bloodGroup: t.bloodGroup,
+            level: t.skillLevel || 'BEGINNER',
+            batchUuid: t.packageUuid,
+            batchName: t.packageName || 'Personal Coaching',
+            parentName: t.parentName,
+            parentPhone: t.parentPhone || t.phone,
+            parentEmail: t.parentEmail || t.email,
+            emergencyContact: t.emergencyContact,
+            address: t.address,
+            medicalNotes: t.medicalNotes,
+            status: t.status || 'ACTIVE',
+            enrollmentDate: t.enrollmentDate,
+            feeStatus: 'PAID',
+          }));
+          setStudents(mappedStudents);
+        }
+
+        if (dashRes.status === 'fulfilled') {
+          const d = (dashRes.value as any)?.data || dashRes.value;
+          if (d) {
+            setSummary({
+              totalStudents: d.activeTraineesCount || 0,
+              activeStudents: d.activeTraineesCount || 0,
+              totalBatches: d.activePackages?.length || 0,
+              paidCount: d.completedSessionsToday || 0,
+              pendingCount: 0,
+              overdueCount: 0,
+              feeCollectionPercentage: 100,
+              studentsByLevel: {},
+              studentsByBatch: {},
+            });
+          }
+        }
+        setLoading(false);
+        return;
+      }
+
       const [courtsRes, batchesRes, studentsRes, summaryRes] = await Promise.allSettled([
         AcademyStudentService.getCourts(orgUuid),
         AcademyStudentService.getBatches(orgUuid),
@@ -280,6 +355,95 @@ export default function StudentsPage() {
       const selectedB = batches.find((b) => b.batchUuid === batchUuid);
       const selectedC = courts.find((c) => c.courtUuid === courtUuid);
 
+      if (activeOrg?.type === 'COACH') {
+        if (editingStudent) {
+          const res = await CoachService.updateTrainee({
+            traineeUuid: editingStudent.studentUuid,
+            fullName: fullName.trim(),
+            gender,
+            dob: dob || undefined,
+            age: age ? parseInt(age) : undefined,
+            bloodGroup,
+            skillLevel: level,
+            packageUuid: batchUuid || undefined,
+            packageName: selectedB?.batchName,
+            parentName,
+            phone: parentPhone || phoneQuery,
+            email: parentEmail,
+            emergencyContact,
+            address,
+            medicalNotes,
+          });
+          if (res) {
+            const updatedT = res as CoachTrainee;
+            setStudents((prev) =>
+              prev.map((s) => (s.studentUuid === updatedT.traineeUuid ? {
+                ...s,
+                fullName: updatedT.fullName,
+                gender: updatedT.gender || s.gender,
+                age: updatedT.age ?? s.age,
+                level: updatedT.skillLevel || s.level,
+                batchName: updatedT.packageName || s.batchName,
+                parentPhone: updatedT.parentPhone || updatedT.phone || s.parentPhone,
+                parentEmail: updatedT.parentEmail || updatedT.email || s.parentEmail,
+              } : s))
+            );
+            showToast(`"${fullName}" updated!`);
+          }
+        } else {
+          const res = await CoachService.createTrainee({
+            organizationUuid: orgUuid,
+            userUuid: verifiedUser?.uuid,
+            fullName: fullName.trim(),
+            gender,
+            dob: dob || undefined,
+            age: age ? parseInt(age) : undefined,
+            bloodGroup,
+            skillLevel: level,
+            sportType: selectedB?.sportType || sportType || orgSports[0] || 'Badminton',
+            packageUuid: batchUuid || undefined,
+            packageName: selectedB?.batchName,
+            parentName,
+            phone: parentPhone || phoneQuery,
+            email: parentEmail,
+            emergencyContact,
+            address,
+            medicalNotes,
+            enrollmentDate: new Date().toISOString().split('T')[0],
+            status: 'ACTIVE',
+          });
+          if (res) {
+            const createdT = res as CoachTrainee;
+            const createdS: AcademyStudent = {
+              studentUuid: createdT.traineeUuid,
+              organizationUuid: orgUuid,
+              fullName: createdT.fullName,
+              sportType: createdT.sportType || 'Coaching',
+              gender: createdT.gender || 'MALE',
+              dob: createdT.dob,
+              age: createdT.age,
+              bloodGroup: createdT.bloodGroup,
+              level: createdT.skillLevel || 'BEGINNER',
+              batchUuid: createdT.packageUuid,
+              batchName: createdT.packageName || 'Personal Coaching',
+              parentName: createdT.parentName,
+              parentPhone: createdT.parentPhone || createdT.phone,
+              parentEmail: createdT.parentEmail || createdT.email,
+              emergencyContact: createdT.emergencyContact,
+              address: createdT.address,
+              medicalNotes: createdT.medicalNotes,
+              status: createdT.status || 'ACTIVE',
+              enrollmentDate: createdT.enrollmentDate,
+              feeStatus: 'PAID',
+            };
+            setStudents((prev) => [createdS, ...prev]);
+            showToast(`"${fullName}" enrolled successfully!`);
+          }
+        }
+        setShowEnrollModal(false);
+        return;
+      }
+
       if (editingStudent) {
         const payload: UpdateStudentPayload = {
           studentUuid: editingStudent.studentUuid,
@@ -346,6 +510,13 @@ export default function StudentsPage() {
   const handleDeleteStudent = async (student: AcademyStudent) => {
     setDeletingStudent(null);
     try {
+      if (activeOrg?.type === 'COACH') {
+        await CoachService.deleteTrainee(student.studentUuid);
+        setStudents((prev) => prev.filter((s) => s.studentUuid !== student.studentUuid));
+        showToast(`"${student.fullName}" removed.`);
+        return;
+      }
+
       await AcademyStudentService.deleteStudent(student.studentUuid);
       setStudents((prev) => prev.filter((s) => s.studentUuid !== student.studentUuid));
       showToast(`"${student.fullName}" removed.`);
@@ -376,6 +547,8 @@ export default function StudentsPage() {
   const assignedCount = students.filter((s) => !!s.batchUuid).length;
   const unassignedCount = totalStudentsCount - assignedCount;
 
+  const isCoach = activeOrg?.type === 'COACH';
+
   return (
     <div className="min-h-screen bg-background pb-28">
 
@@ -390,9 +563,11 @@ export default function StudentsPage() {
               <GraduationCap className="w-3.5 h-3.5 text-primary" />
             </div>
             <div>
-              <h1 className="text-sm font-black text-foreground leading-none">Student Roster</h1>
+              <h1 className="text-sm font-black text-foreground leading-none">
+                {isCoach ? 'Trainee Roster' : 'Student Roster'}
+              </h1>
               <p className="text-[10px] text-foreground/45 mt-0.5">
-                {totalStudentsCount} athlete{totalStudentsCount !== 1 ? 's' : ''} • {orgName}
+                {totalStudentsCount} {isCoach ? 'trainee' : 'athlete'}{totalStudentsCount !== 1 ? 's' : ''} • {orgName}
               </p>
             </div>
           </div>
@@ -819,7 +994,9 @@ export default function StudentsPage() {
                   <UserPlus className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <span className="text-sm font-extrabold text-foreground">
-                  {editingStudent ? 'Edit Athlete Profile' : 'Enroll Academy Student'}
+                  {editingStudent
+                    ? (isCoach ? 'Edit Trainee Profile' : 'Edit Athlete Profile')
+                    : (isCoach ? 'Enrol Private Trainee / Client' : 'Enroll Academy Student')}
                 </span>
               </div>
               <button

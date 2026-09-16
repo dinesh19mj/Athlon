@@ -7,6 +7,8 @@ import { ClubFinanceService, ClubFinance, FinanceSummary, CreateFinancePayload }
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService } from '@/lib/api/user';
 import AcademyFinancesView from '@/components/academy/AcademyFinancesView';
+import CoachFinancesView from '@/components/coach/CoachFinancesView';
+import OrganizerFinancesView from '@/components/organizer/OrganizerFinancesView';
 import {
   Plus,
   Search,
@@ -83,6 +85,14 @@ export default function FinancesPage() {
 
   if (org?.type === 'ACADEMY') {
     return <AcademyFinancesView orgUuid={orgUuid} orgName={org.name || 'Academy'} />;
+  }
+
+  if (org?.type === 'COACH') {
+    return <CoachFinancesView orgUuid={orgUuid} orgName={org.name || 'Coach Workspace'} />;
+  }
+
+  if (org?.type === 'ORGANIZER' || org?.type === 'ASSOCIATION') {
+    return <OrganizerFinancesView orgUuid={orgUuid} orgName={org.name || 'Organizer Workspace'} />;
   }
 
   const { role, isAdmin, canManage } = useOrgRole(orgUuid);

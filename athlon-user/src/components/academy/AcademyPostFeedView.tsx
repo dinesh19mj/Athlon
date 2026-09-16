@@ -47,6 +47,7 @@ import {
   CreateAcademyPostPayload,
   UpdateAcademyPostPayload,
 } from '@/lib/api/academyPost';
+import { ClubPostService } from '@/lib/api/clubPost';
 import { AcademyService, AcademyCentre, AcademyBatchItem } from '@/lib/api/academy';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -56,6 +57,7 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 interface AcademyPostFeedViewProps {
   orgUuid: string;
   orgName: string;
+  orgType?: string;
 }
 
 const POST_TYPES = [
@@ -76,7 +78,21 @@ const CATEGORIES = [
   'Academy Events',
 ];
 
-export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFeedViewProps) {
+const CLUB_CATEGORIES = [
+  'General',
+  'Match Highlights',
+  'Club News & Updates',
+  'Events & Socials',
+  'Training & Drills',
+  'Photos & Memories',
+  'Tournaments',
+];
+
+export default function AcademyPostFeedView({ orgUuid, orgName, orgType = 'ACADEMY' }: AcademyPostFeedViewProps) {
+  const isClub = (orgType || '').toUpperCase() === 'CLUB';
+  const postService = isClub ? (ClubPostService as any) : AcademyPostService;
+  const activeCategories = isClub ? CLUB_CATEGORIES : CATEGORIES;
+
   const { userUuid, userEmail } = useAuthStore();
   const { personalProfile } = useWorkspaceStore();
   const { role, isAdmin, isCoach } = useOrgRole(orgUuid);
@@ -85,8 +101,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
   const isOwnerOrAdmin = isAdmin || role === 'ADMIN' || role === 'OWNER' || role === 'MANAGER';
   const isCoachOrStaff = isCoach || role === 'COACH' || role === 'STAFF';
-  const isStudent = !isOwnerOrAdmin && !isCoachOrStaff;
-  const canCreate = isOwnerOrAdmin || isCoachOrStaff || isStudent || canManage;
+  const isStudent = !isClub && !isOwnerOrAdmin && !isCoachOrStaff;
+  const canCreate = isOwnerOrAdmin || isCoachOrStaff || isStudent || isClub || canManage;
 
   const [posts, setPosts] = useState<AcademyPost[]>([]);
   const [centres, setCentres] = useState<AcademyCentre[]>([]);
@@ -144,8 +160,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
   const handleApprovePost = async (postUuid: string) => {
     try {
-      const approverName = personalProfile?.name || userEmail?.split('@')[0] || 'Academy Admin';
-      await AcademyPostService.approvePost(postUuid, approverName);
+      const approverName = personalProfile?.name || userEmail?.split('@')[0] || (isClub ? 'Club Admin' : 'Academy Admin');
+      await postService.approvePost(postUuid, approverName);
       setPosts((prev) =>
         prev.map((p) =>
           p.postUuid === postUuid
@@ -156,7 +172,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
       if (selectedPostDetail && selectedPostDetail.postUuid === postUuid) {
         setSelectedPostDetail((prev) => (prev ? { ...prev, approvalStatus: 'APPROVED', approvedByName: approverName } : null));
       }
-      showToast('Post approved and published to Academy Feed! 🎉');
+      showToast(`Post approved and published to ${isClub ? 'Club' : 'Academy'} Feed! 🎉`);
     } catch (err: any) {
       showToast(err?.message || 'Failed to approve post');
     }
@@ -165,8 +181,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
   const handleRejectPost = async (postUuid: string) => {
     const reason = window.prompt('Please enter reason for rejection (optional):') || 'Post does not meet guidelines';
     try {
-      const approverName = personalProfile?.name || userEmail?.split('@')[0] || 'Academy Admin';
-      await AcademyPostService.rejectPost(postUuid, reason, approverName);
+      const approverName = personalProfile?.name || userEmail?.split('@')[0] || (isClub ? 'Club Admin' : 'Academy Admin');
+      await postService.rejectPost(postUuid, reason, approverName);
       setPosts((prev) =>
         prev.map((p) =>
           p.postUuid === postUuid
@@ -246,15 +262,23 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
     else setRefreshing(true);
 
     try {
-      const res = await AcademyPostService.getPosts(
-        orgUuid,
-        selectedType,
-        selectedScope,
-        selectedBatchUuid,
-        selectedCentreUuid,
-        searchTerm,
-        selectedApprovalFilter !== 'ALL' ? selectedApprovalFilter : undefined
-      );
+      const res = isClub
+        ? await postService.getPosts(
+            orgUuid,
+            selectedType,
+            selectedScope,
+            searchTerm,
+            selectedApprovalFilter !== 'ALL' ? selectedApprovalFilter : undefined
+          )
+        : await postService.getPosts(
+            orgUuid,
+            selectedType,
+            selectedScope,
+            selectedBatchUuid,
+            selectedCentreUuid,
+            searchTerm,
+            selectedApprovalFilter !== 'ALL' ? selectedApprovalFilter : undefined
+          );
       setPosts(Array.isArray(res) ? res : []);
     } catch (err) {
       console.error('Failed to load posts:', err);
@@ -272,7 +296,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
   // Load Academy Centres & Batches for scoping selector
   useEffect(() => {
-    if (!orgUuid) return;
+    if (!orgUuid || isClub) return;
     const fetchMetadata = async () => {
       try {
         const [centresRes, batchesRes] = await Promise.allSettled([
@@ -290,7 +314,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
       }
     };
     fetchMetadata();
-  }, [orgUuid]);
+  }, [orgUuid, isClub]);
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,13 +328,27 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
       const selectedCentre = centres.find((c) => c.centreUuid === formCentreUuid);
       const selectedBatch = batches.find((b) => b.batchUuid === formBatchUuid);
 
-      const userRole = isOwnerOrAdmin ? 'ADMIN' : isCoach ? 'COACH' : role === 'STAFF' ? 'STAFF' : 'STUDENT';
+      const userRole = isOwnerOrAdmin
+        ? 'ADMIN'
+        : isCoach
+        ? 'COACH'
+        : role === 'STAFF'
+        ? 'STAFF'
+        : isClub
+        ? 'MEMBER'
+        : 'STUDENT';
       const authorName =
         personalProfile?.name ||
         userEmail?.split('@')[0] ||
-        (isOwnerOrAdmin ? 'Academy Admin' : isCoach ? 'Coach' : 'Athlete');
+        (isOwnerOrAdmin
+          ? `${isClub ? 'Club' : 'Academy'} Admin`
+          : isCoach
+          ? 'Coach'
+          : isClub
+          ? 'Club Member'
+          : 'Athlete');
 
-      // Students are strictly restricted to BLOG only
+      // Students are strictly restricted to BLOG only (in Academy)
       const actualPostType = isStudent ? 'BLOG' : formType;
 
       const payload: CreateAcademyPostPayload = {
@@ -322,10 +360,10 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
         coverImageUrl: formCoverImageUrl.trim() || undefined,
         mediaUrls: (!isStudent && actualPostType === 'GALLERY') ? formMediaUrls.trim() : undefined,
         targetScope: formTargetScope,
-        centreUuid: formTargetScope === 'CENTRE' ? formCentreUuid : undefined,
-        centreName: formTargetScope === 'CENTRE' ? selectedCentre?.name : undefined,
-        batchUuid: formTargetScope === 'BATCH' ? formBatchUuid : undefined,
-        batchName: formTargetScope === 'BATCH' ? selectedBatch?.batchName : undefined,
+        centreUuid: (!isClub && formTargetScope === 'CENTRE') ? formCentreUuid : undefined,
+        centreName: (!isClub && formTargetScope === 'CENTRE') ? selectedCentre?.name : undefined,
+        batchUuid: (!isClub && formTargetScope === 'BATCH') ? formBatchUuid : undefined,
+        batchName: (!isClub && formTargetScope === 'BATCH') ? selectedBatch?.batchName : undefined,
         category: formCategory,
         tags: formTags.trim() || undefined,
         authorName,
@@ -333,15 +371,15 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
       };
 
       if (!isStudent && (coverFile || galleryFiles.length > 0)) {
-        await AcademyPostService.createPostMultipart(payload, coverFile, galleryFiles);
+        await postService.createPostMultipart(payload, coverFile, galleryFiles);
       } else if (isStudent && coverFile) {
-        await AcademyPostService.createPostMultipart(payload, coverFile, []);
+        await postService.createPostMultipart(payload, coverFile, []);
       } else {
-        await AcademyPostService.createPost(payload);
+        await postService.createPost(payload);
       }
 
-      if (isOwnerOrAdmin) {
-        showToast('Content published to Academy Feed! 🚀');
+      if (isOwnerOrAdmin || isClub) {
+        showToast(`Content published to ${isClub ? 'Club' : 'Academy'} Feed! 🚀`);
       } else {
         showToast('Post submitted! Awaiting Admin approval before appearing on feed. ⏳');
       }
@@ -375,7 +413,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
   const handleToggleLike = async (post: AcademyPost) => {
     try {
-      const liked = await AcademyPostService.toggleLike(post.postUuid);
+      const liked = await postService.toggleLike(post.postUuid);
       setPosts((prev) =>
         prev.map((p) => {
           if (p.postUuid === post.postUuid) {
@@ -397,7 +435,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
     setActiveCommentPost(post);
     setIsCommentsDrawerOpen(true);
     try {
-      const list = await AcademyPostService.getComments(post.postUuid);
+      const list = await postService.getComments(post.postUuid);
       setComments(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error('Failed to load comments:', err);
@@ -410,10 +448,10 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
     setSubmittingComment(true);
     try {
-      const authorRole = isAdmin ? 'ADMIN' : isCoach ? 'COACH' : 'STUDENT';
-      const authorName = personalProfile?.name || userEmail?.split('@')[0] || 'Member';
+      const authorRole = isAdmin ? 'ADMIN' : isCoach ? 'COACH' : isClub ? 'MEMBER' : 'STUDENT';
+      const authorName = personalProfile?.name || userEmail?.split('@')[0] || (isClub ? 'Club Member' : 'Member');
 
-      const comment = await AcademyPostService.addComment({
+      const comment = await postService.addComment({
         postUuid: activeCommentPost.postUuid,
         commentText: newCommentText.trim(),
         authorName,
@@ -439,7 +477,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
   const handleDeletePost = async (postUuid: string) => {
     if (!window.confirm('Are you sure you want to delete this post?')) return;
     try {
-      await AcademyPostService.deletePost(postUuid);
+      await postService.deletePost(postUuid);
       showToast('Post removed');
       setPosts((prev) => prev.filter((p) => p.postUuid !== postUuid));
     } catch (err: any) {
@@ -452,8 +490,8 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
     setDetailCommentText('');
     try {
       const [freshPost, commentsList] = await Promise.allSettled([
-        AcademyPostService.getPostByUuid(post.postUuid),
-        AcademyPostService.getComments(post.postUuid),
+        postService.getPostByUuid(post.postUuid),
+        postService.getComments(post.postUuid),
       ]);
       if (freshPost.status === 'fulfilled' && freshPost.value) {
         const fp = freshPost.value;
@@ -476,13 +514,13 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
     setSubmittingDetailComment(true);
     try {
-      const userRole = isAdmin ? 'ADMIN' : isCoach ? 'COACH' : 'STUDENT';
+      const userRole = isAdmin ? 'ADMIN' : isCoach ? 'COACH' : isClub ? 'MEMBER' : 'STUDENT';
       const authorName =
         personalProfile?.name ||
         userEmail?.split('@')[0] ||
-        (isAdmin ? 'Academy Admin' : isCoach ? 'Coach' : 'Athlete');
+        (isAdmin ? `${isClub ? 'Club' : 'Academy'} Admin` : isCoach ? 'Coach' : (isClub ? 'Club Member' : 'Athlete'));
 
-      const comment = await AcademyPostService.addComment({
+      const comment = await postService.addComment({
         postUuid: selectedPostDetail.postUuid,
         commentText: detailCommentText.trim(),
         authorName,
@@ -524,7 +562,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
 
   const handleTogglePin = async (postUuid: string) => {
     try {
-      const updated = await AcademyPostService.togglePin(postUuid);
+      const updated = await postService.togglePin(postUuid);
       setPosts((prev) => prev.map((p) => (p.postUuid === postUuid ? { ...p, isPinned: updated.isPinned } : p)));
       showToast(updated.isPinned ? 'Post pinned to top' : 'Post unpinned');
     } catch (err: any) {
@@ -2212,7 +2250,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                 <textarea
                   rows={4}
                   required
-                  placeholder="Write sports coaching tips, drill descriptions, training schedule notes or tournament summary..."
+                  placeholder="Write post content, match highlights, announcements or training notes..."
                   value={formContent}
                   onChange={(e) => setFormContent(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border bg-surface text-xs text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary resize-none leading-relaxed"
@@ -2220,13 +2258,12 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                 />
               </div>
 
-              {/* Target Scoping: Entire Academy vs Specific Batch vs Specific Campus */}
-              <div className="p-4 rounded-2xl border bg-surface/50 space-y-3" style={{ borderColor: 'var(--athlon-border)' }}>
-                <label className="text-[11px] font-black uppercase tracking-wider text-primary block">
-                  Target Audience Visibility
+              {/* Target Scoping */}
+              <div className="p-3.5 rounded-2xl border bg-surface/50 space-y-2.5" style={{ borderColor: 'var(--athlon-border)' }}>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/60 block">
+                  Target Audience / Scope
                 </label>
-
-                <div className="grid grid-cols-3 gap-2">
+                <div className={`grid ${isClub ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}>
                   <button
                     type="button"
                     onClick={() => setFormTargetScope('ALL')}
@@ -2236,35 +2273,51 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                         : 'bg-card text-foreground/60 border-transparent hover:text-foreground'
                     }`}
                   >
-                    Entire Academy
+                    {isClub ? 'Entire Club' : 'Entire Academy'}
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setFormTargetScope('BATCH')}
-                    className={`py-2 rounded-xl border text-xs font-bold transition-all ${
-                      formTargetScope === 'BATCH'
-                        ? 'bg-indigo-500 text-white border-indigo-500'
-                        : 'bg-card text-foreground/60 border-transparent hover:text-foreground'
-                    }`}
-                  >
-                    Specific Batch
-                  </button>
+                  {!isClub ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setFormTargetScope('BATCH')}
+                        className={`py-2 rounded-xl border text-xs font-bold transition-all ${
+                          formTargetScope === 'BATCH'
+                            ? 'bg-indigo-500 text-white border-indigo-500'
+                            : 'bg-card text-foreground/60 border-transparent hover:text-foreground'
+                        }`}
+                      >
+                        Specific Batch
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setFormTargetScope('CENTRE')}
-                    className={`py-2 rounded-xl border text-xs font-bold transition-all ${
-                      formTargetScope === 'CENTRE'
-                        ? 'bg-violet-500 text-white border-violet-500'
-                        : 'bg-card text-foreground/60 border-transparent hover:text-foreground'
-                    }`}
-                  >
-                    Specific Campus
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormTargetScope('CENTRE')}
+                        className={`py-2 rounded-xl border text-xs font-bold transition-all ${
+                          formTargetScope === 'CENTRE'
+                            ? 'bg-violet-500 text-white border-violet-500'
+                            : 'bg-card text-foreground/60 border-transparent hover:text-foreground'
+                        }`}
+                      >
+                        Specific Campus
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setFormTargetScope('ALL')}
+                      className={`py-2 rounded-xl border text-xs font-bold transition-all ${
+                        formTargetScope === 'ALL'
+                          ? 'bg-indigo-500 text-white border-indigo-500'
+                          : 'bg-card text-foreground/60 border-transparent hover:text-foreground'
+                      }`}
+                    >
+                      Club Members
+                    </button>
+                  )}
                 </div>
 
-                {formTargetScope === 'BATCH' && (
+                {!isClub && formTargetScope === 'BATCH' && (
                   <div>
                     <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">
                       Select Coaching Batch
@@ -2286,7 +2339,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                   </div>
                 )}
 
-                {formTargetScope === 'CENTRE' && (
+                {!isClub && formTargetScope === 'CENTRE' && (
                   <div>
                     <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">
                       Select Academy Campus
@@ -2321,7 +2374,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                     className="w-full px-3 py-2.5 rounded-xl border bg-surface text-xs text-foreground focus:outline-none focus:border-primary"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
-                    {CATEGORIES.map((c) => (
+                    {activeCategories.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>
@@ -2335,7 +2388,7 @@ export default function AcademyPostFeedView({ orgUuid, orgName }: AcademyPostFee
                   </label>
                   <input
                     type="text"
-                    placeholder="smash, footwork, beginner"
+                    placeholder="highlights, league, winners"
                     value={formTags}
                     onChange={(e) => setFormTags(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border bg-surface text-xs text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary"

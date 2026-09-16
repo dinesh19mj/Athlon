@@ -59,6 +59,8 @@ public class TournamentCreateRequest {
 
     private String status;
 
+    private String registrationMode = "PUBLIC";
+
     private Long createdBy;
 
     private String teamEventCategories;
@@ -240,6 +242,14 @@ public class TournamentCreateRequest {
 
     public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getRegistrationMode() {
+        return registrationMode;
+    }
+
+    public void setRegistrationMode(String registrationMode) {
+        this.registrationMode = registrationMode;
     }
 
     public String getTeamEventCategories() {

@@ -211,6 +211,7 @@ export interface TeamChampionshipSubMatch {
   formatId?: number;
   formatName?: string;
   orderSequence: number;
+  pointsWeight?: number;
   matchId?: number;
   teamAPlayers?: string;
   teamBPlayers?: string;

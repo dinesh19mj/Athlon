@@ -35,6 +35,7 @@ import {
   Share2,
   Sparkles,
   Gavel,
+  Award,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore, Organization } from '@/lib/store/useWorkspaceStore';
@@ -43,6 +44,7 @@ import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampio
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
 import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
+import { CoachMarketplaceCard } from '@/components/marketplace/CoachMarketplaceCard';
 import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { MatchService, Match } from '@/lib/api/matches';
 import { OrganizationService } from '@/lib/api/organization';
@@ -98,6 +100,7 @@ export default function PersonalHomePage() {
   const [publicTournaments, setPublicTournaments] = useState<Tournament[]>([]);
   const [publicChampionships, setPublicChampionships] = useState<TeamChampionship[]>([]);
   const [publicAcademies, setPublicAcademies] = useState<any[]>([]);
+  const [publicCoaches, setPublicCoaches] = useState<any[]>([]);
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [finishedScores, setFinishedScores] = useState<LiveScore[]>([]);
   const [userMatches, setUserMatches] = useState<any[]>([]);
@@ -111,6 +114,7 @@ export default function PersonalHomePage() {
   const champsScrollRef = useRef<HTMLDivElement>(null);
   const tournsScrollRef = useRef<HTMLDivElement>(null);
   const academiesScrollRef = useRef<HTMLDivElement>(null);
+  const coachesScrollRef = useRef<HTMLDivElement>(null);
   const resultsScrollRef = useRef<HTMLDivElement>(null);
   const schedScrollRef = useRef<HTMLDivElement>(null);
   const lineupsScrollRef = useRef<HTMLDivElement>(null);
@@ -128,27 +132,28 @@ export default function PersonalHomePage() {
       .then((res) => setPublicTournaments(res.data.filter((t: Tournament) => t.visibility === 'PUBLIC')))
       .catch(() => { });
 
-    // Public Academies with event-driven real-time sync
-    const loadPublicAcademies = () => {
+    // Public Academies & Coaches with event-driven real-time sync
+    const loadPublicTrainingOrgs = () => {
       OrganizationService.getAll()
         .then((res: any) => {
           const list = Array.isArray(res) ? res : res?.data || [];
           setPublicAcademies(list.filter((o: any) => o.type === 'ACADEMY'));
+          setPublicCoaches(list.filter((o: any) => o.type === 'COACH'));
         })
         .catch(() => { });
     };
 
-    loadPublicAcademies();
+    loadPublicTrainingOrgs();
 
     // Listen for publish events across tabs/windows
     const handleOrgSync = () => {
-      loadPublicAcademies();
+      loadPublicTrainingOrgs();
     };
 
     if (typeof window !== 'undefined') {
       window.addEventListener('athlon-org-updated', handleOrgSync);
       window.addEventListener('storage', (e) => {
-        if (e.key === 'athlon_org_updated_time') loadPublicAcademies();
+        if (e.key === 'athlon_org_updated_time') loadPublicTrainingOrgs();
       });
     }
 
@@ -602,7 +607,7 @@ export default function PersonalHomePage() {
                     Training Academies
                   </h2>
                 </div>
-                <Link href="/academies" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                <Link href="/academies?type=ACADEMY" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
                   <span>Explore</span>
                   <ChevronRight className="w-3 h-3" />
                 </Link>
@@ -621,12 +626,52 @@ export default function PersonalHomePage() {
                 ) : (
                   <div className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]">
                     <Link
-                      href="/academies"
+                      href="/academies?type=ACADEMY"
                       className="block p-4 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-1.5"
                     >
                       <GraduationCap className="w-7 h-7 text-primary mx-auto" />
                       <div className="text-xs font-bold text-foreground">Find Sports Academies</div>
                       <p className="text-[10px] text-foreground/40">Browse batches and enroll in coaching</p>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Professional Coaches & Mentors */}
+            <div className="px-6 pb-4 pt-1 overflow-hidden">
+              <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-primary" />
+                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                    Professional Coaches
+                  </h2>
+                </div>
+                <Link href="/coaches" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                  <span>Explore</span>
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                {publicCoaches.length > 0 ? (
+                  publicCoaches.map((coach: any) => (
+                    <div
+                      key={coach.uuid || coach.id}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                    >
+                      <CoachMarketplaceCard coach={coach} className="h-full shadow-md" />
+                    </div>
+                  ))
+                ) : (
+                  <div className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]">
+                    <Link
+                      href="/coaches"
+                      className="block p-4 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-1.5"
+                    >
+                      <Award className="w-7 h-7 text-primary mx-auto" />
+                      <div className="text-xs font-bold text-foreground">Find Certified Coaches</div>
+                      <p className="text-[10px] text-foreground/40">1-on-1 private training, specialized drills & batches</p>
                     </Link>
                   </div>
                 )}
@@ -1997,6 +2042,63 @@ export default function PersonalHomePage() {
                     <GraduationCap className="w-8 h-8 text-primary mx-auto" />
                     <div className="text-sm font-bold text-foreground">Explore Sports Academies</div>
                     <p className="text-xs text-foreground/40">Find certified coaching batches &amp; training centers</p>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* ── SECTION 4.5: 🏅 PROFESSIONAL COACHES & MENTORS (HORIZONTAL SCROLL) ── */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Award className="w-5 h-5 text-primary" />
+                <div>
+                  <h2 className="text-base font-black text-foreground">Professional Coaches &amp; Mentors</h2>
+                  <p className="text-xs text-foreground/50">Personal training, specialized drills, and private sparring sessions</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link href="/coaches" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                  Explore All Coaches →
+                </Link>
+                <button
+                  onClick={() => scrollContainer(coachesScrollRef, 'left')}
+                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scrollContainer(coachesScrollRef, 'right')}
+                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div
+              ref={coachesScrollRef}
+              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+            >
+              {publicCoaches.length > 0 ? (
+                publicCoaches.map((coach: any) => (
+                  <div key={coach.uuid || coach.id} className="snap-start shrink-0 w-[360px]">
+                    <CoachMarketplaceCard coach={coach} className="h-full" />
+                  </div>
+                ))
+              ) : (
+                <div className="snap-start shrink-0 w-[360px]">
+                  <Link
+                    href="/coaches"
+                    className="block p-6 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-2"
+                  >
+                    <Award className="w-8 h-8 text-primary mx-auto" />
+                    <div className="text-sm font-bold text-foreground">Find Certified Coaches</div>
+                    <p className="text-xs text-foreground/40">1-on-1 private training &amp; personalized mentoring</p>
                   </Link>
                 </div>
               )}

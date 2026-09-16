@@ -897,7 +897,13 @@ export default function AcademyDetailPage() {
         </div>
 
         {/* Fixed Mobile Bottom Action Bar */}
-        <div className="fixed bottom-0 inset-x-0 p-3.5 bg-card/95 backdrop-blur-xl border-t border-border z-40 flex items-center justify-between shadow-2xl pb-safe">
+        <div
+          className="fixed bottom-0 inset-x-0 p-3.5 bg-card/95 backdrop-blur-xl border-t border-border z-40 flex items-center justify-between shadow-2xl pb-safe fixed-bottom-nav max-w-lg mx-auto"
+          style={{
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)',
+          }}
+        >
           <div>
             <span className="text-[9px] font-extrabold uppercase tracking-wider text-text-muted block">Coaching Fee</span>
             <div className="font-mono">

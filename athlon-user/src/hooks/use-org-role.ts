@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 
-export type UserOrgRole = 'ADMIN' | 'OWNER' | 'MANAGER' | 'COACH' | 'STAFF' | 'STUDENT' | 'ATHLETE' | 'PARENT' | 'MEMBER';
+export type UserOrgRole = 'ADMIN' | 'OWNER' | 'MANAGER' | 'ORGANIZER' | 'TOURNAMENT_DIRECTOR' | 'COACH' | 'STAFF' | 'STUDENT' | 'ATHLETE' | 'PARENT' | 'MEMBER';
 
 export function useOrgRole(customOrgId?: string) {
   const params = useParams();
@@ -17,14 +17,14 @@ export function useOrgRole(customOrgId?: string) {
   const role: UserOrgRole = useMemo(() => {
     if (!org) return 'MEMBER';
     const r = (org.role || 'ADMIN').toUpperCase();
-    if (['ADMIN', 'OWNER', 'MANAGER', 'COACH', 'STAFF', 'STUDENT', 'ATHLETE', 'PARENT'].includes(r)) {
+    if (['ADMIN', 'OWNER', 'MANAGER', 'ORGANIZER', 'TOURNAMENT_DIRECTOR', 'COACH', 'STAFF', 'STUDENT', 'ATHLETE', 'PARENT'].includes(r)) {
       return r as UserOrgRole;
     }
     return 'MEMBER';
   }, [org]);
 
   const isAdmin = useMemo(() => {
-    return role === 'ADMIN' || role === 'OWNER' || role === 'MANAGER';
+    return role === 'ADMIN' || role === 'OWNER' || role === 'MANAGER' || role === 'ORGANIZER' || role === 'TOURNAMENT_DIRECTOR';
   }, [role]);
 
   const isCoach = useMemo(() => {

@@ -57,9 +57,18 @@ import {
   Target,
   BadgePercent,
   Hash,
+  Sun,
+  Moon,
+  Medal,
+  Video,
+  Sliders,
+  Flag,
 } from "lucide-react";
 import Link from "next/link";
 import { useAthlonTheme } from "@/hooks/use-athlon-theme";
+import { MatchSetupSettings } from "@/components/tournaments/MatchSetupSettings";
+import { LiveStreamSettings } from "@/components/tournaments/LiveStreamSettings";
+import { TournamentWinnersPodium } from "@/components/tournaments/TournamentWinnersPodium";
 import {
   TeamChampionshipService,
   TeamChampionship,
@@ -89,8 +98,23 @@ export default function TeamChampionshipDashboardPage() {
   const { userId } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<
-    "overview" | "teams" | "players" | "auction-players" | "auction" | "squads" | "fixtures" | "lineups" | "standings"
+    | "overview"
+    | "teams"
+    | "players"
+    | "auction-players"
+    | "auction"
+    | "squads"
+    | "match-setup"
+    | "fixtures"
+    | "lineups"
+    | "matches"
+    | "draws"
+    | "standings"
+    | "livestream"
   >("overview");
+
+  const [matchStatusFilter, setMatchStatusFilter] = useState<"ALL" | "LIVE" | "SCHEDULED" | "COMPLETED">("ALL");
+  const [selectedMatchFixtureId, setSelectedMatchFixtureId] = useState<number | null>(null);
 
   const [championship, setChampionship] = useState<TeamChampionship | null>(null);
   const [teams, setTeams] = useState<ChampionshipTeamRegistration[]>([]);
@@ -119,6 +143,7 @@ export default function TeamChampionshipDashboardPage() {
   const [assigningLoading, setAssigningLoading] = useState(false);
   const [isPurseModalOpen, setIsPurseModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isPlayerPreviewModalOpen, setIsPlayerPreviewModalOpen] = useState(false);
   const [highlightedTeamId, setHighlightedTeamId] = useState<number | null>(null);
   const [auctionBiddingMode, setAuctionBiddingMode] = useState<"MANUAL" | "AUTOMATIC">("MANUAL");
   const [availableTimerPresets, setAvailableTimerPresets] = useState<number[]>([15, 30, 45, 60, 90, 120]);
@@ -134,7 +159,7 @@ export default function TeamChampionshipDashboardPage() {
   const [isManualLocked, setIsManualLocked] = useState(false);
   const [displayRemainingSeconds, setDisplayRemainingSeconds] = useState<number>(60);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
-  const { theme: currentTheme, themeKey, setTheme, availableThemes } = useAthlonTheme();
+  const { theme: currentTheme, themeKey, mode, setMode, setTheme, availableThemes } = useAthlonTheme();
 
   // Snipper / Spinner States
   const [isSpinningCategory, setIsSpinningCategory] = useState(false);
@@ -256,6 +281,54 @@ export default function TeamChampionshipDashboardPage() {
     basePrice: 0,
   });
 
+  // Toss Modal State
+  const [isTossModalOpen, setIsTossModalOpen] = useState(false);
+  const [tossSubmitting, setTossSubmitting] = useState(false);
+  const [tossForm, setTossForm] = useState({
+    fixtureId: 0,
+    tossWinnerTeamId: 0,
+    choice: "SERVE" as "SERVE" | "RECEIVE" | "SIDE",
+    notes: "",
+  });
+
+  const handleOpenTossModal = (fixtureId: number, defaultWinnerId?: number) => {
+    const fix = fixtures.find((f) => f.fixtureId === fixtureId);
+    setTossForm({
+      fixtureId,
+      tossWinnerTeamId: defaultWinnerId || fix?.tossWinnerTeamId || fix?.teamAId || 0,
+      choice: ((fix as any)?.tossChoice as any) || "SERVE",
+      notes: (fix as any)?.tossNotes || "",
+    });
+    setIsTossModalOpen(true);
+  };
+
+  const handleRecordTossSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tossForm.fixtureId || !tossForm.tossWinnerTeamId) {
+      alert("Please select the toss winner franchise!");
+      return;
+    }
+    try {
+      setTossSubmitting(true);
+      await TeamChampionshipService.recordToss({
+        fixtureId: tossForm.fixtureId,
+        tossWinnerTeamId: tossForm.tossWinnerTeamId,
+        choice: tossForm.choice,
+        notes: tossForm.notes,
+      });
+      setIsTossModalOpen(false);
+      await loadData();
+      if (selectedFixtureId) {
+        const detail = await TeamChampionshipService.getFixtureDetail(selectedFixtureId, true);
+        setFixtureDetail(detail);
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to record toss");
+    } finally {
+      setTossSubmitting(false);
+    }
+  };
+
   const loadData = async () => {
     const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(championshipUuid);
     if (!isValidUuid) {
@@ -369,6 +442,13 @@ export default function TeamChampionshipDashboardPage() {
         .catch(console.error);
     }
   }, [selectedFixtureId]);
+
+  // Auto-select first fixture if none is selected when viewing lineups
+  useEffect(() => {
+    if (activeTab === "lineups" && !selectedFixtureId && fixtures.length > 0) {
+      setSelectedFixtureId(fixtures[0].fixtureId);
+    }
+  }, [activeTab, fixtures, selectedFixtureId]);
 
   // Auction Actions
   const handleCallPlayer = async (auctionPlayerId: number) => {
@@ -760,7 +840,7 @@ export default function TeamChampionshipDashboardPage() {
   const isAuctionPaused = championship?.stage === "AUCTION_PAUSED";
 
   const handleToggleAuctionStage = async (
-    newStage: "AUCTION_STAGE" | "AUCTION_PAUSED" | "LEAGUE_STAGE" | "REGISTRATION_OPEN"
+    newStage: "AUCTION_STAGE" | "AUCTION_PAUSED" | "LEAGUE_STAGE" | "KNOCKOUT_STAGE" | "COMPLETED" | "REGISTRATION_OPEN"
   ) => {
     if (!championship) return;
     try {
@@ -923,53 +1003,112 @@ export default function TeamChampionshipDashboardPage() {
   }
 
   const currencyLabel = championship.auctionMode !== "NO_AUCTION" ? "pts" : "₹";
+  const isAuctionConcluded =
+    championship.auctionMode === "NO_AUCTION" ||
+    ["LEAGUE_STAGE", "KNOCKOUT_STAGE", "COMPLETED"].includes(championship.stage);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-primary selection:text-black">
+    <div className="min-h-screen bg-background text-foreground pb-36 sm:pb-28 md:pb-24 selection:bg-primary selection:text-black">
       {/* Top Banner */}
       <div
-        className="border-b px-4 sm:px-8 py-6 relative overflow-hidden"
+        className="border-b px-3.5 sm:px-6 md:px-8 py-4 md:py-6 relative overflow-hidden"
         style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
       >
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 relative z-10">
+          <div className="space-y-1.5 md:space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href={`/org/${orgUuid}/tournaments`}
-                className="p-1.5 rounded-lg border border-foreground/10 hover:bg-foreground/5 transition-all text-foreground/70"
+                className="p-1.5 rounded-xl border border-foreground/10 hover:bg-foreground/5 transition-all text-foreground/70 active:scale-95 flex items-center justify-center shrink-0"
               >
                 <ArrowLeft className="w-4 h-4" />
               </Link>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
-                {championship.sport} Championship
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25 flex items-center gap-1">
+                <Trophy className="w-3 h-3 text-primary shrink-0" />
+                <span>{championship.sport} Championship</span>
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-foreground/10 text-foreground/70">
-                {championship.stage}
+                {championship.stage?.replace(/_/g, " ")}
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">{championship.name}</h1>
-            <p className="text-xs text-foreground/60 max-w-xl">{championship.location || "Venue details inside"}</p>
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-foreground line-clamp-2 md:line-clamp-none">
+                {championship.name}
+              </h1>
+              <p className="text-[11px] sm:text-xs text-foreground/60 max-w-xl mt-0.5">
+                {championship.location || "Venue details inside"}
+              </p>
+            </div>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <button
-              onClick={handleGeneratePools}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
-            >
-              <Swords className="w-4 h-4" /> Generate Pool Fixtures
-            </button>
+          {/* Quick Action Buttons: Sleek 2-column mobile grid, desktop horizontal cluster */}
+          <div className="w-full md:w-auto grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3 shrink-0">
+            {isAuctionConcluded ? (
+              <>
+                <button
+                  onClick={handleGeneratePools}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 text-center"
+                >
+                  <Swords className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{fixtures.length > 0 ? "Regenerate Pools" : "Generate Pools"}</span>
+                </button>
+                {fixtures.length > 0 && (
+                  <button
+                    onClick={() => setActiveTab("standings")}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-primary/30 bg-primary/10 text-primary text-xs font-black hover:bg-primary/20 transition-all text-center"
+                  >
+                    <Layers className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Standings</span>
+                  </button>
+                )}
+              </>
+            ) : championship.stage === "AUCTION_STAGE" || championship.stage === "AUCTION_PAUSED" ? (
+              <>
+                <button
+                  onClick={() => setActiveTab("auction")}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 text-center"
+                >
+                  <Gavel className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Auction Floor</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm("Are you sure you want to conclude the auction and proceed to League Stage?")) {
+                      handleToggleAuctionStage("LEAGUE_STAGE");
+                    }
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-500 text-black text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-500/20 text-center"
+                >
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Conclude</span>
+                </button>
+              </>
+            ) : championship.stage === "REGISTRATION_OPEN" ? (
+              <button
+                onClick={() => {
+                  if (championship.auctionMode === "NO_AUCTION") {
+                    handleToggleAuctionStage("LEAGUE_STAGE");
+                  } else {
+                    handleToggleAuctionStage("AUCTION_STAGE");
+                  }
+                }}
+                className="col-span-2 md:col-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+              >
+                <Play className="w-4 h-4 shrink-0" />
+                <span>{championship.auctionMode === "NO_AUCTION" ? "Proceed to League Stage" : "Launch Auction Stage"}</span>
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
       <div
-        className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 sm:px-8"
+        className="sticky top-0 z-30 backdrop-blur-xl border-b px-2 sm:px-6 md:px-8"
         style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
       >
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto hide-scrollbar py-2.5">
+        <div className="max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar py-2 sm:py-2.5 scroll-smooth">
           {(() => {
             const auctionEligiblePlayers = players.filter(
               (p) => p.status === "APPROVED" && p.paymentStatus === "PAID"
@@ -980,10 +1119,15 @@ export default function TeamChampionshipDashboardPage() {
               { id: "teams", label: `Teams (${teams.length})`, icon: Users },
               { id: "players", label: `Player Pool (${players.length})`, icon: UserCheck },
               { id: "auction-players", label: `Auction Players (${auctionEligiblePlayers.length})`, icon: Coins },
-              { id: "auction", label: "Live Auction Arena", icon: Gavel },
-              { id: "squads", label: "Squads & Participation", icon: Shield },
-              { id: "fixtures", label: `Fixtures (${fixtures.length})`, icon: Calendar },
-              { id: "standings", label: "Standings & Knockout", icon: Layers },
+              { id: "auction", label: "Live Auction", icon: Gavel },
+              { id: "squads", label: "Squads", icon: Shield },
+              { id: "match-setup", label: "Match Setup", icon: Settings },
+              { id: "fixtures", label: `Pool Fixtures (${fixtures.length})`, icon: Calendar },
+              { id: "lineups", label: "Lineups & Toss", icon: Swords },
+              { id: "matches", label: "Matches & Scoring", icon: Activity },
+              { id: "standings", label: "Standings", icon: Layers },
+              { id: "draws", label: "Draws & Brackets", icon: LayoutGrid },
+              { id: "livestream", label: "Live Stream", icon: Tv },
             ];
           })().map((tab) => {
             const Icon = tab.icon;
@@ -992,13 +1136,13 @@ export default function TeamChampionshipDashboardPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 border ${isActive
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold sm:font-black transition-all shrink-0 border cursor-pointer active:scale-95 ${isActive
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
                   : "border-transparent text-foreground/60 hover:text-foreground hover:bg-foreground/5"
                   }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="whitespace-nowrap">{tab.label}</span>
               </button>
             );
           })}
@@ -1006,12 +1150,12 @@ export default function TeamChampionshipDashboardPage() {
       </div>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 mt-8">
+      <main className="max-w-7xl mx-auto px-3.5 sm:px-6 md:px-8 mt-4 sm:mt-6 md:mt-8">
         {/* TAB 1: OVERVIEW */}
         {activeTab === "overview" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <div
-              className="md:col-span-2 rounded-3xl border p-6 space-y-6"
+              className="md:col-span-2 rounded-2xl sm:rounded-3xl border p-4 sm:p-6 space-y-4 sm:space-y-6"
               style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
             >
               {championship.posterUrl && (
@@ -1031,8 +1175,8 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
               )}
 
-              <h3 className="text-base font-black uppercase tracking-wider text-foreground">Championship Details</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+              <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-foreground">Championship Details</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4 text-xs">
                 <div className="p-3.5 rounded-2xl border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
                   <span className="text-[10px] font-bold text-foreground/40 uppercase block">Sport</span>
                   <span className="text-sm font-black text-primary">{championship.sport}</span>
@@ -1043,7 +1187,7 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
                 <div className="p-3.5 rounded-2xl border" style={{ borderColor: "var(--athlon-border-subtle)" }}>
                   <span className="text-[10px] font-bold text-foreground/40 uppercase block">Auction Mode</span>
-                  <span className="text-sm font-black text-primary">{championship.auctionMode}</span>
+                  <span className="text-sm font-black text-primary">{championship.auctionMode?.replace(/_/g, " ")}</span>
                 </div>
               </div>
 
@@ -1081,33 +1225,170 @@ export default function TeamChampionshipDashboardPage() {
               </div>
             </div>
 
-            {/* Stage Progression Checklist */}
+            {/* Stage Progression Checklist / Stage Roadmap */}
             <div
               className="rounded-3xl border p-6 space-y-4"
               style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
             >
-              <h3 className="text-base font-black uppercase tracking-wider text-foreground">Stage Roadmap</h3>
-              <div className="space-y-3">
-                {[
-                  { title: "1. Team & Player Registration", done: teams.length > 0 },
-                  { title: "2. Player Auction / Squad Draft", done: championship.stage !== "REGISTRATION_OPEN" },
-                  { title: "3. Pool Fixtures Generation", done: fixtures.length > 0 },
-                  { title: "4. Lineups Submission & Toss", done: fixtures.some((f) => f.tossWinnerTeamId) },
-                  { title: "5. Live Match Scoring", done: fixtures.some((f) => f.status === "COMPLETED") },
-                  { title: "6. Knockout Progression", done: false },
-                ].map((s, idx) => (
-                  <div key={idx} className="flex items-center gap-3 text-xs font-bold">
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                <div>
+                  <h3 className="text-base font-black uppercase tracking-wider text-foreground">Stage Roadmap</h3>
+                  <p className="text-[11px] text-foreground/50">Championship progression timeline</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                  {championship.stage?.replace(/_/g, " ")}
+                </span>
+              </div>
+
+              <div className="space-y-2.5 pt-1">
+                {(() => {
+                  const step1Done = teams.length >= 2;
+                  const step1InProgress = championship.stage === "REGISTRATION_OPEN";
+
+                  const step2Done = isAuctionConcluded;
+                  const step2InProgress = championship.stage === "AUCTION_STAGE" || championship.stage === "AUCTION_PAUSED";
+
+                  const step3Done = fixtures.length > 0;
+                  const step3InProgress = isAuctionConcluded && fixtures.length === 0;
+
+                  const step4Done = fixtures.length > 0 && fixtures.every((f) => f.tossWinnerTeamId);
+                  const step4InProgress = fixtures.length > 0 && fixtures.some((f) => f.tossWinnerTeamId) && !step4Done;
+
+                  const step5Done = fixtures.length > 0 && fixtures.every((f) => f.status === "COMPLETED");
+                  const step5InProgress = fixtures.length > 0 && fixtures.some((f) => f.status === "COMPLETED" || f.status === "LIVE" || (f as any).status === "IN_PROGRESS") && !step5Done;
+
+                  const step6Done = championship.stage === "COMPLETED";
+                  const step6InProgress = championship.stage === "KNOCKOUT_STAGE";
+
+                  const roadmapSteps = [
+                    {
+                      id: 1,
+                      title: "1. Team & Player Registration",
+                      desc: `${teams.length} teams, ${players.length} players registered`,
+                      done: step1Done,
+                      inProgress: step1InProgress && !step1Done,
+                      tab: "teams" as const,
+                    },
+                    {
+                      id: 2,
+                      title: "2. Player Auction / Squad Draft",
+                      desc: championship.auctionMode === "NO_AUCTION"
+                        ? "Direct Entry Mode (No Auction)"
+                        : step2Done
+                          ? "Auction Completed"
+                          : step2InProgress
+                            ? "Live Bidding in Progress"
+                            : "Awaiting Auction Start",
+                      done: step2Done,
+                      inProgress: step2InProgress,
+                      tab: "auction" as const,
+                    },
+                    {
+                      id: 3,
+                      title: "3. Pool Fixtures Generation",
+                      desc: fixtures.length > 0
+                        ? `${fixtures.length} Pool Fixtures Scheduled`
+                        : isAuctionConcluded
+                          ? "Ready to Generate Pools"
+                          : "Pending Auction Conclusion",
+                      done: step3Done,
+                      inProgress: step3InProgress,
+                      tab: "fixtures" as const,
+                      action: !step3Done && isAuctionConcluded ? handleGeneratePools : undefined,
+                      actionLabel: !step3Done && isAuctionConcluded ? "Generate" : undefined,
+                    },
+                    {
+                      id: 4,
+                      title: "4. Lineups Submission & Toss",
+                      desc: fixtures.length > 0
+                        ? `${fixtures.filter((f) => f.tossWinnerTeamId).length}/${fixtures.length} Tosses Conducted`
+                        : "Requires Generated Fixtures",
+                      done: step4Done,
+                      inProgress: step4InProgress,
+                      tab: "lineups" as const,
+                    },
+                    {
+                      id: 5,
+                      title: "5. Live Match Scoring",
+                      desc: fixtures.length > 0
+                        ? `${fixtures.filter((f) => f.status === "COMPLETED").length}/${fixtures.length} Matches Completed`
+                        : "Awaiting Fixtures & Lineups",
+                      done: step5Done,
+                      inProgress: step5InProgress,
+                      tab: "fixtures" as const,
+                    },
+                    {
+                      id: 6,
+                      title: "6. Knockout Progression",
+                      desc: step6Done
+                        ? "Championship Concluded"
+                        : step6InProgress
+                          ? "Knockout Semis & Finals Active"
+                          : "Awaiting Pool / League Results",
+                      done: step6Done,
+                      inProgress: step6InProgress,
+                      tab: "standings" as const,
+                    },
+                  ];
+
+                  return roadmapSteps.map((s) => (
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] ${s.done
-                        ? "bg-emerald-500 text-black font-black"
-                        : "bg-foreground/10 text-foreground/40 font-bold"
+                      key={s.id}
+                      onClick={() => setActiveTab(s.tab)}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 group ${s.done
+                        ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
+                        : s.inProgress
+                          ? "border-primary/40 bg-primary/5 hover:border-primary shadow-sm"
+                          : "border-foreground/10 hover:border-foreground/20 bg-foreground/[0.01]"
                         }`}
                     >
-                      {s.done ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : idx + 1}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs shrink-0 transition-transform group-hover:scale-110 ${s.done
+                            ? "bg-emerald-500 text-black font-black shadow-sm"
+                            : s.inProgress
+                              ? "bg-primary text-primary-foreground font-black animate-pulse"
+                              : "bg-foreground/10 text-foreground/40 font-bold"
+                            }`}
+                        >
+                          {s.done ? <Check className="w-4 h-4 stroke-[3]" /> : s.id}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs font-black truncate ${s.done ? "text-foreground" : s.inProgress ? "text-primary" : "text-foreground/70"
+                                }`}
+                            >
+                              {s.title}
+                            </span>
+                            {s.inProgress && (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-primary/20 text-primary border border-primary/30">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-foreground/50 truncate">{s.desc}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {s.action && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              s.action!();
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-primary text-primary-foreground text-[10px] font-black hover:scale-105 active:scale-95 transition-all shadow-sm"
+                          >
+                            {s.actionLabel}
+                          </button>
+                        )}
+                        <ChevronRight className="w-4 h-4 text-foreground/30 group-hover:text-primary transition-colors" />
+                      </div>
                     </div>
-                    <span className={s.done ? "text-foreground" : "text-foreground/50"}>{s.title}</span>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           </div>
@@ -2281,9 +2562,9 @@ export default function TeamChampionshipDashboardPage() {
             >
               {/* 1. Live Broadcast Stage Switcher & Projector Header */}
               <div
-                className={`border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 transition-all ${isAuctionFullscreen
-                  ? "rounded-none px-6 py-3.5 bg-surface/90 backdrop-blur-xl border-foreground/10"
-                  : "p-4 sm:p-5 rounded-3xl border shadow-xl"
+                className={`border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0 transition-all ${isAuctionFullscreen
+                  ? "rounded-none px-4 sm:px-6 py-3 bg-surface/90 backdrop-blur-xl border-foreground/10"
+                  : "p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border shadow-xl"
                   } ${isAuctionLive
                     ? "bg-gradient-to-r from-red-500/15 via-primary/10 to-transparent border-red-500/30"
                     : isAuctionPaused
@@ -2291,29 +2572,29 @@ export default function TeamChampionshipDashboardPage() {
                       : "bg-surface/60 border-foreground/10"
                   }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3">
                   <div
-                    className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shadow-inner border shrink-0 ${isAuctionLive
+                    className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-xs shadow-inner border shrink-0 ${isAuctionLive
                       ? "bg-red-500 text-white border-red-400 animate-pulse"
                       : isAuctionPaused
                         ? "bg-amber-500 text-black border-amber-400"
                         : "bg-primary/15 text-primary border-primary/30"
                       }`}
                   >
-                    {isAuctionLive ? <Radio className="w-5 h-5" /> : isAuctionPaused ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                    {isAuctionLive ? <Radio className="w-4 h-4 sm:w-5 sm:h-5" /> : isAuctionPaused ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </div>
 
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-black text-foreground tracking-tight">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <h3 className="text-sm sm:text-base font-black text-foreground tracking-tight truncate">
                         {isAuctionLive
-                          ? "LIVE AUCTION ARENA (BROADCASTING)"
+                          ? "LIVE AUCTION ARENA"
                           : isAuctionPaused
-                            ? "LIVE AUCTION PAUSED (OFF-AIR)"
-                            : "Live Auction Arena (Standby)"}
+                            ? "AUCTION PAUSED"
+                            : "Live Auction Standby"}
                       </h3>
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${isAuctionLive
+                        className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border shrink-0 ${isAuctionLive
                           ? "bg-red-500/20 text-red-400 border-red-500/40 animate-pulse"
                           : isAuctionPaused
                             ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
@@ -2321,62 +2602,63 @@ export default function TeamChampionshipDashboardPage() {
                           }`}
                       >
                         {isAuctionLive
-                          ? "PUBLIC ON-AIR"
+                          ? "ON-AIR"
                           : isAuctionPaused
-                            ? "PAUSED • SPECTATORS BLOCKED"
+                            ? "OFF-AIR"
                             : "OFFLINE"}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+                {/* Action Buttons: Responsive 2-column grid on mobile, horizontal cluster on desktop */}
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2.5 shrink-0 w-full sm:w-auto">
                   {isAuctionLive ? (
                     <>
                       <button
                         onClick={() => handleToggleAuctionStage("AUCTION_PAUSED")}
-                        className="px-4 py-2.5 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                        className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 text-center"
                         title="Pause auction so spectators cannot view"
                       >
-                        <Pause className="w-3.5 h-3.5" />
-                        <span>Pause Auction</span>
+                        <Pause className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">Pause</span>
                       </button>
 
                       <button
                         onClick={() => handleToggleAuctionStage("LEAGUE_STAGE")}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 font-black text-xs transition-all flex items-center gap-1.5"
+                        className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 font-black text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 text-center"
                         title="Conclude auction and proceed to fixtures"
                       >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Conclude Auction</span>
+                        <Check className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">Conclude</span>
                       </button>
                     </>
                   ) : isAuctionPaused ? (
                     <>
                       <button
                         onClick={() => handleToggleAuctionStage("AUCTION_STAGE")}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-red-500/25 flex items-center gap-2 animate-pulse"
+                        className="px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-red-500/25 flex items-center justify-center gap-1.5 animate-pulse text-center"
                         title="Resume live auction broadcasting"
                       >
-                        <Play className="w-4 h-4 fill-white" />
-                        <span>Resume Live Auction</span>
+                        <Play className="w-3.5 h-3.5 fill-white shrink-0" />
+                        <span className="truncate">Resume</span>
                       </button>
 
                       <button
                         onClick={() => handleToggleAuctionStage("LEAGUE_STAGE")}
-                        className="px-4 py-2.5 rounded-xl bg-surface hover:bg-white/10 text-foreground/80 border border-foreground/15 font-black text-xs transition-all flex items-center gap-1.5"
+                        className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-surface hover:bg-white/10 text-foreground/80 border border-foreground/15 font-black text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 text-center"
                         title="Conclude auction"
                       >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Conclude</span>
+                        <Check className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">Conclude</span>
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={() => handleToggleAuctionStage("AUCTION_STAGE")}
-                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-red-500/25 flex items-center gap-2"
+                      className="col-span-2 sm:col-auto px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-red-500/25 flex items-center justify-center gap-2 text-center"
                     >
-                      <Play className="w-4 h-4 fill-white" />
+                      <Play className="w-4 h-4 fill-white shrink-0" />
                       <span>Start Live Auction</span>
                     </button>
                   )}
@@ -2384,22 +2666,22 @@ export default function TeamChampionshipDashboardPage() {
                   {/* Franchise Purses On-Demand Trigger */}
                   <button
                     onClick={() => setIsPurseModalOpen(true)}
-                    className="px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 text-center"
                     title="View Franchise Purses & Balances"
                   >
-                    <Shield className="w-3.5 h-3.5 text-primary" />
-                    <span>Franchise Purses ({auctionTeams.length})</span>
+                    <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate">Purses ({auctionTeams.length})</span>
                   </button>
 
                   {/* Category Phase Button (Replaces Spectator View) */}
                   <button
                     onClick={() => setIsCategoryModalOpen(true)}
-                    className="px-4 py-2.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                    className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 text-center"
                     title="Choose or Spin Category Phase"
                   >
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Category: {activeCategory?.name || "All Categories"}</span>
-                    <ChevronDown className="w-3 h-3 opacity-60" />
+                    <Layers className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span className="truncate">{activeCategory?.name || "Category"}</span>
+                    <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
                   </button>
 
                   {/* Theme Selector Trigger - ONLY Icon in Maximize Screen */}
@@ -2407,17 +2689,17 @@ export default function TeamChampionshipDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setIsThemeModalOpen(true)}
-                      className="w-10 h-10 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/25 hover:border-primary text-primary transition-all flex items-center justify-center shadow-sm cursor-pointer active:scale-95 group"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/25 hover:border-primary text-primary transition-all flex items-center justify-center shadow-sm cursor-pointer active:scale-95 group"
                       title={`Select Arena Theme (Current: ${currentTheme?.name || "Default"})`}
                     >
                       <Palette className="w-4 h-4 transition-transform group-hover:rotate-12" />
                     </button>
                   )}
 
-                  {/* Maximize to Fullscreen for Projectors / Big Screens */}
+                  {/* Maximize to Fullscreen for Projectors / Big Screens - Desktop View Only */}
                   <button
                     onClick={toggleAuctionFullscreen}
-                    className={`px-4 py-2.5 rounded-xl border font-black text-xs transition-all flex items-center gap-2 shadow-sm ${isAuctionFullscreen
+                    className={`hidden md:flex col-span-2 sm:col-auto px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border font-black text-xs transition-all items-center justify-center gap-1.5 sm:gap-2 shadow-sm active:scale-95 text-center ${isAuctionFullscreen
                       ? "bg-amber-500 text-black border-amber-400 hover:bg-amber-400"
                       : "bg-surface hover:bg-white/10 text-foreground border-foreground/15"
                       }`}
@@ -2425,12 +2707,12 @@ export default function TeamChampionshipDashboardPage() {
                   >
                     {isAuctionFullscreen ? (
                       <>
-                        <Minimize2 className="w-3.5 h-3.5" />
+                        <Minimize2 className="w-3.5 h-3.5 shrink-0" />
                         <span>Exit Fullscreen</span>
                       </>
                     ) : (
                       <>
-                        <Maximize2 className="w-3.5 h-3.5 text-primary" />
+                        <Maximize2 className="w-3.5 h-3.5 text-primary shrink-0" />
                         <span>Maximize Screen</span>
                       </>
                     )}
@@ -2441,11 +2723,11 @@ export default function TeamChampionshipDashboardPage() {
               {/* 2. MAIN SINGLE-PAGE ARENA COCKPIT (Floor Spotlight + Category Queue Tray) */}
               <div className={`grid grid-cols-1 lg:grid-cols-12 ${isAuctionFullscreen ? "flex-1 min-h-0 gap-0 divide-x divide-foreground/10 bg-surface/10" : "gap-5 items-stretch"}`}>
                 {/* LEFT 9 COLS: MAXIMUM SIZE PLAYER CALL FLOOR SPOTLIGHT & MANUAL BIDDING PAD */}
-                <div className={`flex flex-col min-h-0 ${isAuctionFullscreen ? "lg:col-span-9 h-full p-5 sm:p-7 overflow-y-auto hide-scrollbar" : "lg:col-span-9"}`}>
+                <div className={`flex flex-col min-h-0 ${isAuctionFullscreen ? "lg:col-span-9 h-full p-4 sm:p-7 overflow-y-auto hide-scrollbar" : "lg:col-span-9"}`}>
                   <div
                     className={`flex flex-col justify-between transition-all duration-300 ${isAuctionFullscreen
                       ? "h-full p-0 border-0 shadow-none bg-transparent"
-                      : "h-[620px] max-h-[calc(100vh-180px)] rounded-3xl border shadow-2xl p-4 sm:p-5 overflow-y-auto hide-scrollbar"
+                      : "min-h-0 h-auto md:h-[620px] max-h-none md:max-h-[calc(100vh-180px)] rounded-2xl sm:rounded-3xl border shadow-2xl p-3.5 sm:p-5 overflow-y-visible md:overflow-y-auto hide-scrollbar"
                       }`}
                     style={{
                       backgroundColor: isAuctionFullscreen ? "transparent" : "var(--athlon-card)",
@@ -2458,131 +2740,137 @@ export default function TeamChampionshipDashboardPage() {
                     )}
 
                     {/* 1. Floor Glass Header */}
-                    <div className="flex items-center justify-between border-b pb-3 shrink-0 relative z-10" style={{ borderColor: "var(--athlon-border)" }}>
-                      <div className="flex items-center gap-2.5">
-                        <span className="relative flex h-3 w-3">
+                    <div className="flex items-center justify-between border-b pb-2.5 sm:pb-3 shrink-0 relative z-10 gap-1.5 sm:gap-2" style={{ borderColor: "var(--athlon-border)" }}>
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-red-500"></span>
                         </span>
-                        <span className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                          <Flame className="w-4 h-4 text-primary fill-primary/30" /> Player Call Floor
+                        <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1 shrink-0 whitespace-nowrap">
+                          <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary fill-primary/30" />
+                          <span className="hidden sm:inline">Player Call Floor</span>
+                          <span className="sm:hidden">Floor</span>
                         </span>
                         {activePlayer && (
-                          <span className="px-2 py-0.5 rounded-md bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-black text-[10px] uppercase animate-pulse">
-                            Live On-Air
+                          <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-black text-[9px] sm:text-[10px] uppercase animate-pulse shrink-0">
+                            On-Air
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                         {/* Category Switch Quick Pill */}
                         <button
                           onClick={() => setIsCategoryModalOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                          className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-[10px] sm:text-xs transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer shrink-0"
                         >
-                          <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                          <span>{activeCategory?.name || "Category"}</span>
-                          <ChevronDown className="w-3 h-3 text-foreground/40" />
+                          <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 shrink-0" />
+                          <span className="truncate max-w-[65px] xs:max-w-[85px] sm:max-w-none">{activeCategory?.name || "Category"}</span>
+                          <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-foreground/40 shrink-0" />
                         </button>
 
                         {/* Franchise Purses Quick Click */}
                         <button
                           onClick={() => setIsPurseModalOpen(true)}
-                          className="px-3 py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                          className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-[10px] sm:text-xs transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
                         >
-                          <Shield className="w-3.5 h-3.5 text-primary" />
+                          <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary shrink-0" />
                           <span>Purses ({auctionTeams.length})</span>
                         </button>
                       </div>
                     </div>
 
                     {activePlayer ? (
-                      <div className="w-full flex-1 flex flex-col justify-between py-1 relative z-10">
+                      <div className="w-full flex-1 flex flex-col justify-between py-1 relative z-10 gap-2.5 sm:gap-4 mt-1 sm:mt-2">
                         {auctionBiddingMode === "AUTOMATIC" ? (
                           /* ======================================================== */
                           /* GRAND AUTOMATIC LIVE STAGE SHOWCASE (MAX SCALE & IMPACT) */
                           /* ======================================================== */
-                          <div className="w-full flex-1 flex flex-col justify-between space-y-4 animate-fadeIn">
+                          <div className="w-full flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-4 animate-fadeIn">
                             {/* Grand Center Stage Container */}
                             <div
-                              className="w-full rounded-3xl bg-gradient-to-br from-surface/90 via-surface/70 to-surface/40 backdrop-blur-xl border shadow-2xl p-5 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shrink-0"
+                              className="w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-surface/90 via-surface/70 to-surface/40 backdrop-blur-xl border shadow-2xl p-3 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-6 relative overflow-hidden shrink-0"
                               style={{ borderColor: "var(--athlon-border)" }}
                             >
                               {/* Ambient Spotlight Flare */}
                               <div className="absolute top-1/2 left-20 -translate-y-1/2 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none -z-0" />
                               <div className="absolute bottom-0 right-10 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none -z-0" />
 
-                              {/* Left: Extra Large Athlete Photo & Details */}
-                              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-6 min-w-0 relative z-10 flex-1">
-                                {/* Massive Ultra-Large Athlete Photo Frame */}
-                                <div className="relative shrink-0 group">
-                                  <div className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-4 border-primary/80 p-1.5 flex items-center justify-center shadow-2xl shadow-primary/30 overflow-hidden transition-all duration-300 group-hover:scale-105">
+                              {/* Left: Extra Large Athlete Photo & Details (Side-by-side on Mobile and Desktop) */}
+                              <div className="flex flex-row items-center gap-3 sm:gap-6 min-w-0 relative z-10 flex-1 w-full">
+                                {/* Massive Ultra-Large Athlete Photo Frame on the Left */}
+                                <div
+                                  onClick={() => setIsPlayerPreviewModalOpen(true)}
+                                  className="relative shrink-0 group cursor-pointer"
+                                  title="Click to view full athlete profile & photo in large split view"
+                                >
+                                  <div className="w-24 h-24 xs:w-28 xs:h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-2 sm:border-4 border-primary/80 p-0.5 sm:p-1.5 flex items-center justify-center shadow-2xl shadow-primary/30 overflow-hidden transition-all duration-300 group-hover:scale-105 active:scale-95">
                                     {activePlayer.avatarUrl ? (
                                       <img
                                         src={activePlayer.avatarUrl}
                                         alt={activePlayer.playerName}
-                                        className="w-full h-full object-cover rounded-[20px]"
+                                        className="w-full h-full object-cover rounded-[14px] sm:rounded-[20px]"
                                       />
                                     ) : (
-                                      <span className="text-5xl sm:text-6xl md:text-7xl font-black text-primary tracking-wider drop-shadow-lg">
+                                      <span className="text-3xl xs:text-4xl sm:text-6xl md:text-7xl font-black text-primary tracking-wider drop-shadow-lg">
                                         {activePlayer.playerName.substring(0, 2).toUpperCase()}
                                       </span>
                                     )}
                                   </div>
-                                  <span className="absolute -bottom-2.5 -right-2.5 px-3 py-1 rounded-xl bg-black/95 border-2 border-primary text-xs font-mono font-black text-primary shadow-xl">
-                                    #{activePlayer.auctionPlayerId}
-                                  </span>
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl sm:rounded-3xl flex items-center justify-center pointer-events-none">
+                                    <Maximize2 className="w-5 h-5 text-white drop-shadow-lg" />
+                                  </div>
                                 </div>
 
-                                {/* Athlete Identity & Category Information */}
-                                <div className="text-center sm:text-left space-y-2 min-w-0">
-                                  <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                                    <span className="px-3.5 py-1 rounded-xl bg-primary/20 text-primary border border-primary/40 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                                      <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-                                      <span>{activePlayer.categoryName || activeCategory?.name || "Category Phase"}</span>
+                                {/* Right: Athlete Identity & Category Information */}
+                                <div className="text-left space-y-1 sm:space-y-2 min-w-0 flex-1">
+                                  <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                    <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[9px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                      <Sparkles className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-primary animate-pulse shrink-0" />
+                                      <span className="truncate max-w-[120px] xs:max-w-none">{activePlayer.categoryName || activeCategory?.name || "Category Phase"}</span>
                                     </span>
                                   </div>
 
-                                  <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight truncate drop-shadow-md leading-tight">
+                                  <h2 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight truncate drop-shadow-md leading-tight">
                                     {activePlayer.playerName}
                                   </h2>
 
-                                  <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap pt-0.5">
-                                    <span className="text-xs px-3 py-1 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1.5 shadow-sm">
-                                      <span className="text-primary/60 text-[10px] uppercase font-black">Base Price:</span>
-                                      <strong className="font-mono font-black text-sm">{activePlayerBasePrice} pts</strong>
+                                  <div className="flex items-center justify-start gap-2 flex-wrap pt-0.5">
+                                    <span className="text-[11px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1 shadow-sm">
+                                      <span className="text-primary/70 text-[9px] sm:text-[10px] uppercase font-black">Base Price:</span>
+                                      <strong className="font-mono font-black text-[11px] sm:text-sm">{activePlayerBasePrice} pts</strong>
                                     </span>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Right: Grand High Bid & Live Timer Pod */}
-                              <div className="flex flex-col sm:flex-row md:flex-col items-center gap-3.5 shrink-0 relative z-10 w-full sm:w-auto md:w-60">
+                              {/* Right: Grand High Bid & Live Timer Pod - 2 cols on mobile, vertical stack on desktop */}
+                              <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:flex sm:flex-row md:flex-col items-center shrink-0 relative z-10 w-full sm:w-auto md:w-60">
                                 {/* Leading Bidder Spotlight Box */}
                                 <div
-                                  className={`w-full text-center px-4 py-3 rounded-2xl border shadow-xl flex flex-col justify-between transition-all ${auctionState?.winningTeamName
+                                  className={`w-full text-center p-2 sm:p-3 rounded-xl sm:rounded-2xl border shadow-xl flex flex-col justify-between transition-all ${auctionState?.winningTeamName
                                     ? "bg-gradient-to-br from-amber-500/15 via-primary/10 to-background/90 border-amber-400/70 shadow-amber-500/15 ring-1 ring-amber-400/30"
                                     : "bg-background/90 border-foreground/10"
                                     }`}
                                   style={{ borderColor: auctionState?.winningTeamName ? undefined : "var(--athlon-border)" }}
                                 >
-                                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                                    <Crown className={`w-3.5 h-3.5 ${auctionState?.winningTeamName ? "text-amber-400 fill-amber-400 animate-bounce" : "text-foreground/40"}`} />
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
-                                      {auctionState?.winningTeamName ? "Current High Bid" : "Opening Floor"}
+                                  <div className="flex items-center justify-center gap-1 mb-0.5">
+                                    <Crown className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${auctionState?.winningTeamName ? "text-amber-400 fill-amber-400 animate-bounce" : "text-foreground/40"}`} />
+                                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-foreground/60 truncate">
+                                      {auctionState?.winningTeamName ? "High Bid" : "Floor"}
                                     </span>
                                   </div>
 
                                   <div className="my-0.5">
-                                    <span className="text-3xl sm:text-4xl font-black text-primary font-mono block leading-tight drop-shadow-sm">
-                                      {auctionState?.currentBid || activePlayerBasePrice} <span className="text-xs font-bold text-foreground/50 font-sans">pts</span>
+                                    <span className="text-xl sm:text-3xl md:text-4xl font-black text-primary font-mono block leading-tight drop-shadow-sm">
+                                      {auctionState?.currentBid || activePlayerBasePrice} <span className="text-[9px] sm:text-xs font-bold text-foreground/50 font-sans">pts</span>
                                     </span>
                                   </div>
 
-                                  <div className="mt-0.5 pt-1 border-t border-foreground/10 flex items-center justify-center gap-1.5">
-                                    <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
-                                    <span className="text-xs font-black text-foreground truncate max-w-[170px]">
-                                      {auctionState?.winningTeamName || "Waiting for Bids"}
+                                  <div className="mt-0.5 pt-1 border-t border-foreground/10 flex items-center justify-center gap-1">
+                                    <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary shrink-0" />
+                                    <span className="text-[10px] sm:text-xs font-black text-foreground truncate max-w-[110px] sm:max-w-[170px]">
+                                      {auctionState?.winningTeamName || "No Bids"}
                                     </span>
                                   </div>
                                 </div>
@@ -2591,18 +2879,18 @@ export default function TeamChampionshipDashboardPage() {
                                 <button
                                   type="button"
                                   onClick={handleTogglePauseTimer}
-                                  className={`w-full text-center px-4 py-3 rounded-2xl border shadow-xl transition-all cursor-pointer select-none group flex flex-col justify-between ${isTimerPaused
+                                  className={`w-full text-center p-2 sm:p-3 rounded-xl sm:rounded-2xl border shadow-xl transition-all cursor-pointer select-none group flex flex-col justify-between active:scale-95 ${isTimerPaused
                                     ? "bg-amber-500/15 border-amber-400/80 hover:border-emerald-400 hover:bg-emerald-500/15 shadow-amber-500/10"
                                     : "bg-background/90 hover:bg-surface border-foreground/10 hover:border-amber-400/80"
                                     }`}
                                   style={{ borderColor: isTimerPaused ? "#f59e0b" : "var(--athlon-border)" }}
                                   title={isTimerPaused ? "Click to Start / Resume Timer" : "Click to Pause Timer"}
                                 >
-                                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                                  <div className="flex items-center justify-center gap-1 mb-0.5">
                                     {isTimerPaused ? (
                                       <>
-                                        <Play className="w-3 h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
+                                        <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
+                                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
                                           {displayRemainingSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
                                             ? "STANDBY"
                                             : "PAUSED"}
@@ -2610,61 +2898,63 @@ export default function TeamChampionshipDashboardPage() {
                                       </>
                                     ) : (
                                       <>
-                                        <Pause className="w-3 h-3 text-amber-400/70 group-hover:text-amber-400 transition-colors shrink-0" />
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
-                                          Live Timer
+                                        <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400/70 group-hover:text-amber-400 transition-colors shrink-0" />
+                                        <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
+                                          Timer
                                         </span>
                                       </>
                                     )}
                                   </div>
 
                                   <span
-                                    className={`text-2xl sm:text-3xl font-black font-mono block leading-none my-0.5 ${isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
+                                    className={`text-xl sm:text-3xl md:text-4xl font-black font-mono block leading-none my-0.5 ${isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
                                       }`}
                                   >
                                     {displayRemainingSeconds}s
                                   </span>
 
-                                  <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
-                                    {isTimerPaused ? "Start Timer" : "Pause"}
+                                  <span className="text-[9px] sm:text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
+                                    {isTimerPaused ? "Start" : "Pause"}
                                   </span>
                                 </button>
                               </div>
                             </div>
 
                             {/* Bottom Action Gavel & Controls Bar */}
-                            <div className="flex items-center gap-2.5 pt-0.5 shrink-0">
+                            <div className="flex items-center gap-2 sm:gap-2.5 pt-0.5 shrink-0 flex-wrap sm:flex-nowrap">
                               <button
                                 onClick={handleAssignPlayerManual}
                                 disabled={assigningLoading || !auctionState?.winningTeamId}
-                                className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs sm:text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:scale-100"
+                                className="w-full sm:flex-1 py-3 sm:py-3.5 px-3 sm:px-5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs sm:text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
                               >
-                                <Gavel className="w-4 h-4" />
-                                <span>
+                                <Gavel className="w-4 h-4 shrink-0" />
+                                <span className="truncate">
                                   {assigningLoading
                                     ? "Processing..."
                                     : auctionState?.winningTeamName
-                                      ? `SEAL & MAP TO ${auctionState.winningTeamName.toUpperCase()} (${auctionState.currentBid || activePlayerBasePrice} PTS)`
+                                      ? `SEAL TO ${auctionState.winningTeamName.toUpperCase()} (${auctionState.currentBid || activePlayerBasePrice} PTS)`
                                       : "WAITING FOR FIRST FRANCHISE BID"}
                                 </span>
                               </button>
 
-                              <button
-                                onClick={handleMarkUnsold}
-                                className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all"
-                              >
-                                UNSOLD
-                              </button>
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <button
+                                  onClick={handleMarkUnsold}
+                                  className="flex-1 sm:flex-initial px-3 sm:px-5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all active:scale-95 text-center cursor-pointer"
+                                >
+                                  UNSOLD
+                                </button>
 
-                              {/* Switch Back to Manual Mode Pill */}
-                              <button
-                                onClick={() => handleUpdateAuctionSettings("MANUAL")}
-                                className="px-3.5 py-3.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground/70 hover:text-foreground font-black text-xs transition-all flex items-center gap-1.5"
-                                title="Switch to Manual Gavel mode"
-                              >
-                                <Settings className="w-4 h-4" />
-                                <span className="hidden sm:inline">Manual Mode</span>
-                              </button>
+                                {/* Switch Back to Manual Mode Pill */}
+                                <button
+                                  onClick={() => handleUpdateAuctionSettings("MANUAL")}
+                                  className="flex-1 sm:flex-initial px-3 sm:px-3.5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground/70 hover:text-foreground font-black text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                                  title="Switch to Manual Gavel mode"
+                                >
+                                  <Settings className="w-4 h-4 shrink-0" />
+                                  <span>Manual Mode</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ) : (
@@ -2676,67 +2966,71 @@ export default function TeamChampionshipDashboardPage() {
                             const isReadyToLock = isTimerExpired || isManualLocked;
 
                             return (
-                              <div className="w-full flex-1 flex flex-col justify-between space-y-4 animate-fadeIn">
+                              <div className="w-full flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-4 animate-fadeIn">
                                 {/* Grand Center Stage Container (Same high impact scale as automatic) */}
                                 <div
-                                  className="w-full rounded-3xl bg-gradient-to-br from-surface/90 via-surface/70 to-surface/40 backdrop-blur-xl border shadow-2xl p-5 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shrink-0"
+                                  className="w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-surface/90 via-surface/70 to-surface/40 backdrop-blur-xl border shadow-2xl p-3 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-6 relative overflow-hidden shrink-0"
                                   style={{ borderColor: "var(--athlon-border)" }}
                                 >
                                   {/* Ambient Spotlight Flare */}
                                   <div className="absolute top-1/2 left-20 -translate-y-1/2 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none -z-0" />
                                   <div className="absolute bottom-0 right-10 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -z-0" />
 
-                                  {/* Left: Extra Large Athlete Photo & Details */}
-                                  <div className="flex flex-col sm:flex-row items-center sm:items-center gap-6 min-w-0 relative z-10 flex-1">
-                                    {/* Massive Ultra-Large Athlete Photo Frame */}
-                                    <div className="relative shrink-0 group">
-                                      <div className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-4 border-primary/80 p-1.5 flex items-center justify-center shadow-2xl shadow-primary/30 overflow-hidden transition-all duration-300 group-hover:scale-105">
+                                  {/* Left: Extra Large Athlete Photo & Details (Side-by-side on Mobile and Desktop) */}
+                                  <div className="flex flex-row items-center gap-3 sm:gap-6 min-w-0 relative z-10 flex-1 w-full">
+                                    {/* Massive Ultra-Large Athlete Photo Frame on the Left */}
+                                    <div
+                                      onClick={() => setIsPlayerPreviewModalOpen(true)}
+                                      className="relative shrink-0 group cursor-pointer"
+                                      title="Click to view full athlete profile & photo in large split view"
+                                    >
+                                      <div className="w-24 h-24 xs:w-28 xs:h-28 sm:w-44 sm:h-44 md:w-56 md:h-56 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-2 sm:border-4 border-primary/80 p-0.5 sm:p-1.5 flex items-center justify-center shadow-2xl shadow-primary/30 overflow-hidden transition-all duration-300 group-hover:scale-105 active:scale-95">
                                         {activePlayer.avatarUrl ? (
                                           <img
                                             src={activePlayer.avatarUrl}
                                             alt={activePlayer.playerName}
-                                            className="w-full h-full object-cover rounded-[20px]"
+                                            className="w-full h-full object-cover rounded-[14px] sm:rounded-[20px]"
                                           />
                                         ) : (
-                                          <span className="text-5xl sm:text-6xl md:text-7xl font-black text-primary tracking-wider drop-shadow-lg">
+                                          <span className="text-3xl xs:text-4xl sm:text-6xl md:text-7xl font-black text-primary tracking-wider drop-shadow-lg">
                                             {activePlayer.playerName.substring(0, 2).toUpperCase()}
                                           </span>
                                         )}
                                       </div>
-                                      <span className="absolute -bottom-2.5 -right-2.5 px-3 py-1 rounded-xl bg-black/95 border-2 border-primary text-xs font-mono font-black text-primary shadow-xl">
-                                        #{activePlayer.auctionPlayerId}
-                                      </span>
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl sm:rounded-3xl flex items-center justify-center pointer-events-none">
+                                        <Maximize2 className="w-5 h-5 text-white drop-shadow-lg" />
+                                      </div>
                                     </div>
 
-                                    {/* Athlete Identity & Category Information */}
-                                    <div className="text-center sm:text-left space-y-2 min-w-0">
-                                      <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                                        <span className="px-3.5 py-1 rounded-xl bg-primary/20 text-primary border border-primary/40 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                                          <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-                                          <span>{activePlayer.categoryName || activeCategory?.name || "Category Phase"}</span>
+                                    {/* Right: Athlete Identity & Category Information */}
+                                    <div className="text-left space-y-1 sm:space-y-2 min-w-0 flex-1">
+                                      <div className="flex items-center justify-start gap-1.5 flex-wrap">
+                                        <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[9px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                          <Sparkles className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-primary animate-pulse" />
+                                          <span className="truncate max-w-[120px] xs:max-w-none">{activePlayer.categoryName || activeCategory?.name || "Category Phase"}</span>
                                         </span>
                                       </div>
 
-                                      <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight truncate drop-shadow-md leading-tight">
+                                      <h2 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-foreground tracking-tight truncate drop-shadow-md leading-tight">
                                         {activePlayer.playerName}
                                       </h2>
 
-                                      <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap pt-0.5">
-                                        <span className="text-xs px-3 py-1 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1.5 shadow-sm">
-                                          <span className="text-primary/60 text-[10px] uppercase font-black">Base Price:</span>
-                                          <strong className="font-mono font-black text-sm">{activePlayerBasePrice} pts</strong>
+                                      <div className="flex items-center justify-start gap-2 flex-wrap pt-0.5">
+                                        <span className="text-[11px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold flex items-center gap-1 shadow-sm">
+                                          <span className="text-primary/60 text-[9px] sm:text-[10px] uppercase font-black">Base Price:</span>
+                                          <strong className="font-mono font-black text-[11px] sm:text-sm">{activePlayerBasePrice} pts</strong>
                                         </span>
                                       </div>
                                     </div>
                                   </div>
 
-                                  {/* Right: Timer Pod + Restart Timer Button */}
-                                  <div className="flex flex-col sm:flex-row md:flex-col items-center gap-3 shrink-0 relative z-10 w-full sm:w-auto md:w-60">
+                                  {/* Right: Timer Pod + Restart Timer Button - 2 cols on mobile, vertical stack on desktop */}
+                                  <div className="grid grid-cols-2 gap-2 sm:gap-2.5 sm:flex sm:flex-row md:flex-col items-center shrink-0 relative z-10 w-full sm:w-auto md:w-60">
                                     {/* Interactive Countdown Timer */}
                                     <button
                                       type="button"
                                       onClick={handleTogglePauseTimer}
-                                      className={`w-full text-center px-4 py-3 rounded-2xl border shadow-xl transition-all cursor-pointer select-none group flex flex-col justify-between ${isTimerPaused
+                                      className={`w-full text-center p-2 sm:p-3 rounded-xl sm:rounded-2xl border shadow-xl transition-all cursor-pointer select-none group flex flex-col justify-between ${isTimerPaused
                                         ? "bg-amber-500/15 border-amber-400/80 hover:border-emerald-400 hover:bg-emerald-500/15 shadow-amber-500/10"
                                         : isTimerExpired
                                           ? "bg-red-500/15 border-red-400/80 shadow-red-500/10"
@@ -2745,11 +3039,11 @@ export default function TeamChampionshipDashboardPage() {
                                       style={{ borderColor: isTimerPaused ? "#f59e0b" : isTimerExpired ? "#ef4444" : "var(--athlon-border)" }}
                                       title={isTimerPaused ? "Click to Start / Resume Timer" : "Click to Pause Timer"}
                                     >
-                                      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                                      <div className="flex items-center justify-center gap-1 mb-0.5">
                                         {isTimerPaused ? (
                                           <>
-                                            <Play className="w-3 h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
+                                            <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 fill-current animate-pulse shrink-0" />
+                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-400 animate-pulse">
                                               {displayRemainingSeconds === (auctionState?.config?.timerSeconds || timerDurationSeconds || 60)
                                                 ? "STANDBY"
                                                 : "PAUSED"}
@@ -2757,30 +3051,30 @@ export default function TeamChampionshipDashboardPage() {
                                           </>
                                         ) : isTimerExpired ? (
                                           <>
-                                            <Lock className="w-3 h-3 text-red-400 shrink-0" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-red-400 animate-pulse">
-                                              TIMER FINISHED
+                                            <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-400 shrink-0" />
+                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-red-400 animate-pulse">
+                                              FINISHED
                                             </span>
                                           </>
                                         ) : (
                                           <>
-                                            <Pause className="w-3 h-3 text-amber-400/70 group-hover:text-amber-400 transition-colors shrink-0" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
-                                              Floor Countdown
+                                            <Pause className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400/70 group-hover:text-amber-400 transition-colors shrink-0" />
+                                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-400/80 group-hover:text-amber-400 transition-colors">
+                                              Countdown
                                             </span>
                                           </>
                                         )}
                                       </div>
 
                                       <span
-                                        className={`text-2xl sm:text-3xl font-black font-mono block leading-none my-0.5 ${isTimerExpired ? "text-red-400" : isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
+                                        className={`text-xl sm:text-3xl md:text-4xl font-black font-mono block leading-none my-0.5 ${isTimerExpired ? "text-red-400" : isTimerPaused ? "text-amber-300" : "text-amber-400 animate-pulse"
                                           }`}
                                       >
                                         {displayRemainingSeconds}s
                                       </span>
 
-                                      <span className="text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
-                                        {isTimerExpired ? "Locked" : isTimerPaused ? "Start Timer" : "Pause"}
+                                      <span className="text-[9px] sm:text-[10px] font-black uppercase mt-0.5 block transition-colors text-foreground/40 group-hover:text-emerald-400">
+                                        {isTimerExpired ? "Locked" : isTimerPaused ? "Start" : "Pause"}
                                       </span>
                                     </button>
 
@@ -2788,11 +3082,11 @@ export default function TeamChampionshipDashboardPage() {
                                     <button
                                       type="button"
                                       onClick={handleResetTimer}
-                                      className="w-full py-2.5 px-4 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-xs transition-all flex items-center justify-center gap-2 shadow-sm hover:border-amber-400/60"
+                                      className="w-full py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl bg-surface hover:bg-white/10 border border-foreground/15 text-foreground font-black text-[11px] sm:text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm hover:border-amber-400/60 active:scale-95 text-center"
                                       title="Reset timer countdown back to initial full seconds"
                                     >
-                                      <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                                      <span>Restart Timer</span>
+                                      <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
+                                      <span>Restart</span>
                                     </button>
                                   </div>
                                 </div>
@@ -2810,7 +3104,7 @@ export default function TeamChampionshipDashboardPage() {
 
                                     return (
                                       <div
-                                        className="p-5 sm:p-6 rounded-3xl border shadow-2xl bg-gradient-to-br from-surface/95 via-surface/85 to-background/90 backdrop-blur-2xl space-y-4 animate-fadeIn relative overflow-hidden ring-1 ring-primary/20 shrink-0"
+                                        className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border shadow-2xl bg-gradient-to-br from-surface/95 via-surface/85 to-background/90 backdrop-blur-2xl space-y-3 sm:space-y-4 animate-fadeIn relative overflow-hidden ring-1 ring-primary/20 shrink-0"
                                         style={{ borderColor: "var(--athlon-border)" }}
                                       >
                                         {/* Subtle Glow Flare */}
@@ -2818,39 +3112,40 @@ export default function TeamChampionshipDashboardPage() {
                                         <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-0" />
 
                                         {/* 1. Header Bar */}
-                                        <div className="flex items-center justify-between border-b pb-3 relative z-10" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                                          <div className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm">
-                                              <Gavel className="w-4 h-4" />
+                                        <div className="flex items-center justify-between border-b pb-2.5 sm:pb-3 relative z-10 gap-2" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                                          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm shrink-0">
+                                              <Gavel className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                             </div>
-                                            <div>
-                                              <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+                                            <div className="min-w-0">
+                                              <h4 className="text-[11px] sm:text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2 truncate">
                                                 Final Gavel Lock & Team Assignment
                                               </h4>
-                                              <p className="text-[10px] text-foreground/50 font-medium">
+                                              <p className="text-[9px] sm:text-[10px] text-foreground/50 font-medium truncate">
                                                 Review final floor bid and confirm the winning franchise
                                               </p>
                                             </div>
                                           </div>
 
-                                          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono font-black text-[11px] uppercase shadow-sm">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                                            <span>Bidding Finalized</span>
+                                          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg sm:rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono font-black text-[10px] sm:text-[11px] uppercase shadow-sm shrink-0">
+                                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-ping" />
+                                            <span className="hidden xs:inline">Bidding Finalized</span>
+                                            <span className="xs:hidden">Finalized</span>
                                           </div>
                                         </div>
 
                                         {/* 2. Dual Interactive Glass Cards */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 relative z-10">
                                           {/* Card A: Final Locked Points */}
                                           <div
-                                            className="p-4 rounded-2xl bg-background/80 border shadow-inner flex flex-col justify-between space-y-3 transition-all hover:border-primary/40 group"
+                                            className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-background/80 border shadow-inner flex flex-col justify-between space-y-2.5 sm:space-y-3 transition-all hover:border-primary/40 group"
                                             style={{ borderColor: "var(--athlon-border)" }}
                                           >
                                             <div className="flex items-center justify-between">
-                                              <label className="text-[11px] font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
-                                                <Coins className="w-3.5 h-3.5 text-primary" /> Final Locked Points
+                                              <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
+                                                <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Final Locked Points
                                               </label>
-                                              <span className="text-[10px] font-mono text-foreground/40 font-bold">
+                                              <span className="text-[9px] sm:text-[10px] font-mono text-foreground/40 font-bold">
                                                 Base: {activePlayerBasePrice} pts
                                               </span>
                                             </div>
@@ -2862,23 +3157,23 @@ export default function TeamChampionshipDashboardPage() {
                                                 value={manualWinningBid || ""}
                                                 onChange={(e) => setManualWinningBid(Number(e.target.value))}
                                                 placeholder="0"
-                                                className="w-full pl-4 pr-14 py-3 rounded-xl border bg-surface text-foreground font-mono font-black text-2xl sm:text-3xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
+                                                className="w-full pl-3.5 pr-14 py-2.5 sm:py-3 rounded-xl border bg-surface text-foreground font-mono font-black text-xl sm:text-3xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
                                                 style={{ borderColor: "var(--athlon-border)" }}
                                               />
-                                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black uppercase font-mono text-primary/70 pointer-events-none px-2 py-1 rounded-lg bg-primary/10 border border-primary/20">
+                                              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs font-black uppercase font-mono text-primary/70 pointer-events-none px-2 py-0.5 sm:py-1 rounded-lg bg-primary/10 border border-primary/20">
                                                 PTS
                                               </span>
                                             </div>
 
                                             {/* Quick Point Increment Helpers */}
-                                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                              <span className="text-[10px] text-foreground/40 font-bold uppercase mr-1">Quick:</span>
+                                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap pt-0.5">
+                                              <span className="text-[9px] sm:text-[10px] text-foreground/40 font-bold uppercase mr-1">Quick:</span>
                                               {[50, 100, 250, 500, 1000].map((inc) => (
                                                 <button
                                                   key={inc}
                                                   type="button"
                                                   onClick={() => setManualWinningBid((prev) => (Number(prev) || 0) + inc)}
-                                                  className="px-2.5 py-1 rounded-lg bg-surface hover:bg-white/10 border border-foreground/10 text-foreground font-mono font-bold text-[10px] transition-all hover:border-primary/40 hover:text-primary active:scale-95"
+                                                  className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-surface hover:bg-white/10 border border-foreground/10 text-foreground font-mono font-bold text-[9px] sm:text-[10px] transition-all hover:border-primary/40 hover:text-primary active:scale-95"
                                                 >
                                                   +{inc}
                                                 </button>
@@ -2886,7 +3181,7 @@ export default function TeamChampionshipDashboardPage() {
                                               <button
                                                 type="button"
                                                 onClick={() => setManualWinningBid(activePlayerBasePrice)}
-                                                className="px-2.5 py-1 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary font-mono font-black text-[10px] transition-all ml-auto active:scale-95"
+                                                className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary font-mono font-black text-[9px] sm:text-[10px] transition-all ml-auto active:scale-95"
                                                 title="Reset to Base Price"
                                               >
                                                 Reset Base
@@ -2896,16 +3191,16 @@ export default function TeamChampionshipDashboardPage() {
 
                                           {/* Card B: Map to Franchise Team */}
                                           <div
-                                            className="p-4 rounded-2xl bg-background/80 border shadow-inner flex flex-col justify-between space-y-3 transition-all hover:border-primary/40 group"
+                                            className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-background/80 border shadow-inner flex flex-col justify-between space-y-2.5 sm:space-y-3 transition-all hover:border-primary/40 group"
                                             style={{ borderColor: "var(--athlon-border)" }}
                                           >
                                             <div className="flex items-center justify-between">
-                                              <label className="text-[11px] font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
-                                                <Shield className="w-3.5 h-3.5 text-primary" /> Map to Franchise Team
+                                              <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
+                                                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" /> Map to Franchise Team
                                               </label>
                                               {selectedManualTeam && (
                                                 <span
-                                                  className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-md border ${isExceedingPurse
+                                                  className={`text-[9px] sm:text-[10px] font-mono font-black px-1.5 sm:px-2 py-0.5 rounded-md border ${isExceedingPurse
                                                     ? "bg-red-500/15 border-red-500/30 text-red-400"
                                                     : "bg-primary/15 border-primary/30 text-primary"
                                                     }`}
@@ -2920,7 +3215,7 @@ export default function TeamChampionshipDashboardPage() {
                                               <select
                                                 value={manualWinningTeamId || ""}
                                                 onChange={(e) => setManualWinningTeamId(Number(e.target.value))}
-                                                className="w-full px-4 py-3.5 rounded-xl border bg-surface text-foreground font-black text-xs sm:text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer appearance-none shadow-inner"
+                                                className="w-full px-3.5 py-2.5 sm:py-3.5 rounded-xl border bg-surface text-foreground font-black text-xs sm:text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer appearance-none shadow-inner truncate pr-8"
                                                 style={{ borderColor: "var(--athlon-border)" }}
                                               >
                                                 <option value="">-- Choose Winning Franchise Team --</option>
@@ -2930,23 +3225,23 @@ export default function TeamChampionshipDashboardPage() {
                                                   </option>
                                                 ))}
                                               </select>
-                                              <ChevronDown className="w-4 h-4 text-foreground/40 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                              <ChevronDown className="w-4 h-4 text-foreground/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                             </div>
 
                                             {/* Selected Team Live Summary Strip */}
                                             <div className="flex items-center justify-between pt-0.5 text-xs">
                                               {selectedManualTeam ? (
                                                 isExceedingPurse ? (
-                                                  <span className="text-red-400 font-bold text-[11px] flex items-center gap-1">
+                                                  <span className="text-red-400 font-bold text-[10px] sm:text-[11px] flex items-center gap-1">
                                                     ⚠️ Bid exceeds remaining purse ({selectedManualTeam.team.remainingBudget} pts)
                                                   </span>
                                                 ) : (
-                                                  <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
+                                                  <span className="text-emerald-400 font-bold text-[10px] sm:text-[11px] flex items-center gap-1">
                                                     ✓ Purse remaining after seal: {selectedManualTeam.team.remainingBudget - (manualWinningBid || 0)} pts
                                                   </span>
                                                 )
                                               ) : (
-                                                <span className="text-foreground/40 text-[11px] font-medium">
+                                                <span className="text-foreground/40 text-[10px] sm:text-[11px] font-medium">
                                                   Select which franchise won the bidding round
                                                 </span>
                                               )}
@@ -2955,7 +3250,7 @@ export default function TeamChampionshipDashboardPage() {
                                         </div>
 
                                         {/* 3. Action Button HUD */}
-                                        <div className="flex items-center gap-3 pt-2 relative z-10">
+                                        <div className="flex items-center gap-2 sm:gap-3 pt-1 sm:pt-2 relative z-10 flex-wrap sm:flex-nowrap">
                                           <button
                                             onClick={handleAssignPlayerManual}
                                             disabled={
@@ -2964,10 +3259,10 @@ export default function TeamChampionshipDashboardPage() {
                                               !manualWinningBid ||
                                               isExceedingPurse
                                             }
-                                            className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-sm sm:text-base hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
+                                            className="w-full sm:flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-black font-black text-xs sm:text-base hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
                                           >
-                                            <Gavel className="w-5 h-5" />
-                                            <span>
+                                            <Gavel className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                                            <span className="truncate">
                                               {assigningLoading
                                                 ? "Processing Gavel Seal..."
                                                 : isExceedingPurse
@@ -2978,51 +3273,55 @@ export default function TeamChampionshipDashboardPage() {
                                             </span>
                                           </button>
 
-                                          <button
-                                            onClick={handleMarkUnsold}
-                                            className="px-6 py-4 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all shrink-0"
-                                          >
-                                            UNSOLD
-                                          </button>
+                                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            <button
+                                              onClick={handleMarkUnsold}
+                                              className="flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all active:scale-95 text-center cursor-pointer"
+                                            >
+                                              UNSOLD
+                                            </button>
 
-                                          <button
-                                            onClick={handleResetTimer}
-                                            className="px-5 py-4 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground font-black text-xs transition-all flex items-center gap-2 shrink-0 hover:border-amber-400/50"
-                                            title="Restart countdown timer and resume live floor bids"
-                                          >
-                                            <RotateCcw className="w-4 h-4 text-amber-400" />
-                                            <span>Resume Bid</span>
-                                          </button>
+                                            <button
+                                              onClick={handleResetTimer}
+                                              className="flex-1 sm:flex-initial px-3.5 sm:px-5 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground font-black text-xs transition-all flex items-center justify-center gap-1.5 shrink-0 hover:border-amber-400/50 active:scale-95 cursor-pointer"
+                                              title="Restart countdown timer and resume live floor bids"
+                                            >
+                                              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+                                              <span>Resume Bid</span>
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
                                     );
                                   })()
                                 ) : (
                                   /* LIVE FLOOR RUNNING: Clean bar with Lock Now button */
-                                  <div className="flex items-center gap-2.5 pt-0.5 shrink-0">
+                                  <div className="flex items-center gap-2 sm:gap-2.5 pt-0.5 shrink-0 flex-wrap sm:flex-nowrap">
                                     <button
                                       onClick={() => setIsManualLocked(true)}
-                                      className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-black font-black text-xs sm:text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2"
+                                      className="w-full sm:flex-1 py-3 sm:py-3.5 px-4 sm:px-5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-black font-black text-xs sm:text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2 cursor-pointer"
                                     >
-                                      <Lock className="w-4 h-4" />
-                                      <span>Lock Bidding & Enter Final Points</span>
+                                      <Lock className="w-4 h-4 shrink-0" />
+                                      <span className="truncate">Lock Bidding & Enter Final Points</span>
                                     </button>
 
-                                    <button
-                                      onClick={handleMarkUnsold}
-                                      className="px-5 py-3.5 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all"
-                                    >
-                                      UNSOLD
-                                    </button>
+                                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                                      <button
+                                        onClick={handleMarkUnsold}
+                                        className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black text-xs sm:text-sm transition-all active:scale-95 text-center cursor-pointer"
+                                      >
+                                        UNSOLD
+                                      </button>
 
-                                    <button
-                                      onClick={() => handleUpdateAuctionSettings("AUTOMATIC")}
-                                      className="px-3.5 py-3.5 rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground/70 hover:text-foreground font-black text-xs transition-all flex items-center gap-1.5"
-                                      title="Switch to Automatic Live Bidding mode"
-                                    >
-                                      <Zap className="w-4 h-4 text-amber-400" />
-                                      <span className="hidden sm:inline">Automatic Mode</span>
-                                    </button>
+                                      <button
+                                        onClick={() => handleUpdateAuctionSettings("AUTOMATIC")}
+                                        className="flex-1 sm:flex-initial px-3 sm:px-3.5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl border border-foreground/15 bg-surface hover:bg-white/10 text-foreground/70 hover:text-foreground font-black text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                                        title="Switch to Automatic Live Bidding mode"
+                                      >
+                                        <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                                        <span>Automatic Mode</span>
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -4030,7 +4329,7 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
               )}
 
-              {/* 10. ARENA THEME SELECTOR MODAL (EXCLUSIVE TO MAXIMIZE / FULLSCREEN SCREEN) */}
+              {/* 10. ARENA THEME & DISPLAY MODE SELECTOR MODAL (EXCLUSIVE TO MAXIMIZE / FULLSCREEN SCREEN) */}
               {isAuctionFullscreen && isThemeModalOpen && (
                 <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-lg flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
                   <div
@@ -4052,9 +4351,12 @@ export default function TeamChampionshipDashboardPage() {
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
                               {currentTheme.name}
                             </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-white/10 text-foreground/80 border border-white/15">
+                              {mode}
+                            </span>
                           </h3>
                           <p className="text-xs text-foreground/60 mt-0.5">
-                            Select a color scheme for the live auction big-screen broadcast. Applied in real-time.
+                            Customize display mode (Dark/Light) and accent color scheme for the live auction big-screen broadcast.
                           </p>
                         </div>
                       </div>
@@ -4067,90 +4369,349 @@ export default function TeamChampionshipDashboardPage() {
                       </button>
                     </div>
 
-                    {/* Theme Cards Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-                      {availableThemes.map((t) => {
-                        const isSelected = t.key === themeKey;
-                        const tc = t.colors;
+                    {/* 1. Theme Display Mode (Dark vs Light) */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {mode === 'dark' ? (
+                            <Moon className="w-4 h-4 text-primary" />
+                          ) : (
+                            <Sun className="w-4 h-4 text-primary" />
+                          )}
+                          <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
+                            Display Mode
+                          </h4>
+                        </div>
+                        <span className="text-[11px] font-bold text-foreground/60">
+                          Active: <span className="uppercase text-primary font-black">{mode}</span>
+                        </span>
+                      </div>
 
-                        return (
-                          <button
-                            key={t.key}
-                            type="button"
-                            onClick={() => {
-                              setTheme(t.key);
-                            }}
-                            className={`p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden group active:scale-[0.97] cursor-pointer flex flex-col justify-between gap-4 ${isSelected
-                              ? 'shadow-xl ring-2'
-                              : 'hover:bg-white/[0.04]'
-                              }`}
-                            style={{
-                              backgroundColor: isSelected ? tc.surface : 'var(--athlon-surface)',
-                              borderColor: isSelected ? tc.primary : 'var(--athlon-border)',
-                              outlineColor: tc.primary,
-                              boxShadow: isSelected ? `0 8px 24px -4px ${tc.glow}` : 'none',
-                            }}
-                          >
-                            {/* Top: Swatch Orb + Check Icon */}
-                            <div className="flex items-center justify-between">
-                              <div className="relative">
-                                <div
-                                  className="w-9 h-9 rounded-full shadow-md transition-transform duration-200 group-hover:scale-110 flex items-center justify-center"
-                                  style={{
-                                    backgroundColor: tc.primary,
-                                    boxShadow: `0 0 16px ${tc.primaryGlow}`,
-                                  }}
-                                >
-                                  <div className="w-3 h-3 rounded-full bg-white/40 blur-[1px]" />
-                                </div>
-                              </div>
-
-                              {isSelected ? (
-                                <div
-                                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-sm"
-                                  style={{ backgroundColor: tc.primary, color: tc.primaryForeground }}
-                                >
-                                  <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                                </div>
-                              ) : (
-                                <span className="w-3 h-3 rounded-full bg-foreground/10 group-hover:bg-primary/40 transition-colors" />
-                              )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Dark Mode Card */}
+                        <button
+                          type="button"
+                          onClick={() => setMode('dark')}
+                          className={`p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden flex items-center justify-between cursor-pointer group active:scale-[0.98] ${
+                            mode === 'dark' ? 'shadow-lg ring-2 ring-primary/40' : 'hover:bg-white/[0.04]'
+                          }`}
+                          style={{
+                            backgroundColor: mode === 'dark' ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+                            borderColor: mode === 'dark' ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-transform group-hover:scale-105"
+                              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <Moon className="w-5 h-5 text-primary" />
                             </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs sm:text-sm font-black text-foreground">Deep Dark</span>
+                                <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-white/10 text-white/70 border border-white/15">Default</span>
+                              </div>
+                              <p className="text-[10.5px] font-medium text-foreground/60 truncate mt-0.5">
+                                Deep slate navy with radiant accent glow
+                              </p>
+                            </div>
+                          </div>
+                          {mode === 'dark' && (
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm ml-2 bg-primary text-black"
+                            >
+                              <Check className="w-3 h-3" strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
 
-                            {/* Bottom: Theme Name & Details */}
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between gap-1">
-                                <div className="text-sm font-black tracking-tight truncate" style={{ color: isSelected ? tc.text : 'inherit' }}>
-                                  {t.name}
+                        {/* Light Mode Card */}
+                        <button
+                          type="button"
+                          onClick={() => setMode('light')}
+                          className={`p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden flex items-center justify-between cursor-pointer group active:scale-[0.98] ${
+                            mode === 'light' ? 'shadow-lg ring-2 ring-primary/40' : 'hover:bg-white/[0.04]'
+                          }`}
+                          style={{
+                            backgroundColor: mode === 'light' ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+                            borderColor: mode === 'light' ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-transform group-hover:scale-105"
+                              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <Sun className="w-5 h-5 text-amber-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs sm:text-sm font-black text-foreground">Daylight Light</span>
+                                <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">Crisp</span>
+                              </div>
+                              <p className="text-[10.5px] font-medium text-foreground/60 truncate mt-0.5">
+                                Pure white cards with tinted ambient page
+                              </p>
+                            </div>
+                          </div>
+                          {mode === 'light' && (
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm ml-2 bg-primary text-black"
+                            >
+                              <Check className="w-3 h-3" strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 2. Theme Accent Palettes */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-foreground flex items-center gap-2">
+                          <Palette className="w-4 h-4 text-primary" />
+                          <span>Color Theme Accent</span>
+                        </h4>
+                        <span className="text-[11px] font-bold text-primary">
+                          {currentTheme.name}
+                        </span>
+                      </div>
+
+                      {/* Theme Cards Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {availableThemes.map((t) => {
+                          const isSelected = t.key === themeKey;
+                          const tc = t.colors;
+
+                          return (
+                            <button
+                              key={t.key}
+                              type="button"
+                              onClick={() => {
+                                setTheme(t.key);
+                              }}
+                              className={`p-3 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden group active:scale-[0.97] cursor-pointer flex flex-col justify-between gap-3 ${
+                                isSelected ? 'shadow-xl ring-2' : 'hover:bg-white/[0.04]'
+                              }`}
+                              style={{
+                                backgroundColor: isSelected ? tc.surface : 'var(--athlon-surface)',
+                                borderColor: isSelected ? tc.primary : 'var(--athlon-border)',
+                                outlineColor: tc.primary,
+                                boxShadow: isSelected ? `0 6px 20px -4px ${tc.glow}` : 'none',
+                              }}
+                            >
+                              {/* Top: Swatch Orb + Check Icon */}
+                              <div className="flex items-center justify-between">
+                                <div className="relative">
+                                  <div
+                                    className="w-8 h-8 rounded-full shadow-md transition-transform duration-200 group-hover:scale-110 flex items-center justify-center"
+                                    style={{
+                                      backgroundColor: tc.primary,
+                                      boxShadow: `0 0 14px ${tc.primaryGlow}`,
+                                    }}
+                                  >
+                                    <div className="w-2.5 h-2.5 rounded-full bg-white/40 blur-[1px]" />
+                                  </div>
                                 </div>
-                                {t.key === 'algae' && (
-                                  <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white/10 text-white/60 shrink-0">
-                                    Default
-                                  </span>
+
+                                {isSelected ? (
+                                  <div
+                                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm"
+                                    style={{ backgroundColor: tc.primary, color: tc.primaryForeground }}
+                                  >
+                                    <Check className="w-3 h-3" strokeWidth={3} />
+                                  </div>
+                                ) : (
+                                  <span className="w-2.5 h-2.5 rounded-full bg-foreground/10 group-hover:bg-primary/40 transition-colors" />
                                 )}
                               </div>
-                              <div className="flex items-center gap-1.5 pt-1">
-                                <div className="w-3 h-3 rounded-md" style={{ backgroundColor: tc.primary }} />
-                                <div className="w-3 h-3 rounded-md" style={{ backgroundColor: tc.surface }} />
-                                <div className="w-3 h-3 rounded-md" style={{ backgroundColor: tc.card }} />
+
+                              {/* Bottom: Theme Name & Details */}
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <div className="text-xs font-black tracking-tight truncate" style={{ color: isSelected ? tc.text : 'inherit' }}>
+                                    {t.name.replace('Athlon ', '')}
+                                  </div>
+                                  {t.key === 'algae' && (
+                                    <span className="text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white/10 text-white/60 shrink-0">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 pt-0.5">
+                                  <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: tc.primary }} />
+                                  <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: tc.surface }} />
+                                  <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: tc.card }} />
+                                </div>
                               </div>
-                            </div>
-                          </button>
-                        );
-                      })}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     {/* Modal Footer */}
                     <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: "var(--athlon-border)" }}>
-                      <span className="text-xs text-foreground/50 font-bold">
-                        Click any theme card to instantly preview and switch arena color palette.
+                      <span className="text-xs text-foreground/50 font-bold hidden sm:inline">
+                        Theme changes are applied immediately across the entire auction screen.
                       </span>
-                      <button
-                        onClick={() => setIsThemeModalOpen(false)}
-                        className="px-7 py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                      >
-                        Done
-                      </button>
+                      <div className="flex items-center gap-2 ml-auto">
+                        <button
+                          onClick={() => {
+                            setTheme('algae', 'dark');
+                          }}
+                          className="px-4 py-2.5 rounded-xl border border-foreground/15 hover:bg-foreground/5 text-foreground/70 text-xs font-bold transition-all cursor-pointer"
+                        >
+                          Reset Defaults
+                        </button>
+                        <button
+                          onClick={() => setIsThemeModalOpen(false)}
+                          className="px-7 py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 11. ATHLETE MAXIMIZE SPOTLIGHT MODAL (Split View: Big Photo on Left, Details on Right) */}
+              {isPlayerPreviewModalOpen && activePlayer && (
+                <div
+                  className="fixed inset-0 z-[10001] bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) setIsPlayerPreviewModalOpen(false);
+                  }}
+                >
+                  <div
+                    className="relative w-full max-w-4xl max-h-[92vh] rounded-3xl border shadow-2xl overflow-hidden flex flex-col md:flex-row animate-scaleIn"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    {/* Close Button */}
+                    <button
+                      onClick={() => setIsPlayerPreviewModalOpen(false)}
+                      className="absolute top-3.5 right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/60 hover:bg-black border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg active:scale-95"
+                      title="Close Preview"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    {/* LEFT SIDE: BIG PHOTO CONTAINER */}
+                    <div className="w-full md:w-1/2 p-5 sm:p-8 flex flex-col items-center justify-center bg-gradient-to-b from-primary/15 via-background/60 to-background/90 border-b md:border-b-0 md:border-r border-foreground/10 relative overflow-hidden min-h-[260px] sm:min-h-[360px] md:min-h-[460px]">
+                      {/* Ambient Glow */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-primary/25 rounded-full blur-3xl pointer-events-none" />
+
+                      {/* Large Photo Frame */}
+                      <div className="relative w-full max-w-[280px] sm:max-w-[340px] aspect-square rounded-3xl bg-gradient-to-tr from-primary/40 via-indigo-500/30 to-amber-400/30 border-3 sm:border-4 border-primary p-1.5 sm:p-2 flex items-center justify-center shadow-2xl shadow-primary/30 overflow-hidden">
+                        {activePlayer.avatarUrl ? (
+                          <img
+                            src={activePlayer.avatarUrl}
+                            alt={activePlayer.playerName}
+                            className="w-full h-full object-cover rounded-[18px] sm:rounded-[22px]"
+                          />
+                        ) : (
+                          <div className="w-full h-full rounded-[18px] sm:rounded-[22px] bg-surface flex flex-col items-center justify-center text-center p-4">
+                            <span className="text-6xl sm:text-8xl font-black text-primary tracking-wider drop-shadow-2xl">
+                              {activePlayer.playerName.substring(0, 2).toUpperCase()}
+                            </span>
+                            <span className="mt-2 text-[10px] sm:text-xs font-mono font-bold text-foreground/50 uppercase tracking-widest">
+                              No Photo Uploaded
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Caption */}
+                      <div className="mt-2.5 sm:mt-3 text-center">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-foreground/50">
+                          Lot ID: #{activePlayer.auctionPlayerId} • Active Nominee
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* RIGHT SIDE: ATHLETE INFO & DETAILS */}
+                    <div className="w-full md:w-1/2 p-5 sm:p-8 flex flex-col justify-between space-y-4 sm:space-y-5 overflow-y-auto hide-scrollbar">
+                      <div className="space-y-3.5 sm:space-y-4">
+                        {/* Category & Status Badges */}
+                        <div className="flex items-center gap-2 flex-wrap pr-8 md:pr-0">
+                          <span className="px-3 sm:px-3.5 py-0.5 sm:py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary animate-pulse shrink-0" />
+                            <span>{activePlayer.categoryName || activeCategory?.name || "Category Phase"}</span>
+                          </span>
+
+                          <span className="px-2.5 py-0.5 sm:py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 font-mono font-black text-[9px] sm:text-[10px] uppercase tracking-wider animate-pulse">
+                            Live On-Air Floor
+                          </span>
+                        </div>
+
+                        {/* Athlete Name */}
+                        <div>
+                          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight drop-shadow-md">
+                            {activePlayer.playerName}
+                          </h2>
+                          <p className="text-xs text-foreground/50 font-medium mt-0.5">
+                            Official Registered Athlete • Badminton Championship
+                          </p>
+                        </div>
+
+                        {/* Metric Cards Grid */}
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-1">
+                          {/* Base Price Card */}
+                          <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-surface/80 border border-foreground/10 flex flex-col justify-between space-y-1">
+                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-foreground/50 flex items-center gap-1">
+                              <Coins className="w-3 h-3 text-primary" /> Base Price
+                            </span>
+                            <span className="text-lg sm:text-2xl font-black font-mono text-primary">
+                              {activePlayerBasePrice} <span className="text-xs font-sans text-foreground/50 font-bold">pts</span>
+                            </span>
+                          </div>
+
+                          {/* Current Floor / High Bid Card */}
+                          <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-surface/80 border border-foreground/10 flex flex-col justify-between space-y-1">
+                            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-foreground/50 flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-amber-400" /> Current Bid
+                            </span>
+                            <span className="text-lg sm:text-2xl font-black font-mono text-amber-400">
+                              {auctionState?.currentBid || activePlayerBasePrice} <span className="text-xs font-sans text-foreground/50 font-bold">pts</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Leading Bidder Strip */}
+                        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-primary/10 via-surface/60 to-surface/80 border border-primary/20 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center text-primary shrink-0">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-foreground/50 block">
+                                Leading Franchise
+                              </span>
+                              <span className="text-xs sm:text-sm font-black text-foreground truncate block">
+                                {auctionState?.winningTeamName || "No Franchise Bids Yet"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className="text-[10px] font-mono font-bold text-amber-400 block uppercase">
+                              Timer: {displayRemainingSeconds}s
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Modal Action Bar */}
+                      <div className="pt-2 border-t border-foreground/10 flex items-center gap-2">
+                        <button
+                          onClick={() => setIsPlayerPreviewModalOpen(false)}
+                          className="w-full py-2.5 sm:py-3 px-5 rounded-xl sm:rounded-2xl bg-primary text-black font-black text-xs sm:text-sm shadow-lg shadow-primary/25 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <span>Return to Bidding Arena</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4224,11 +4785,40 @@ export default function TeamChampionshipDashboardPage() {
                 </div>
               </div>
 
+              {/* MOBILE FRANCHISE HORIZONTAL SELECTOR (MOBILE EXCLUSIVE < lg) */}
+              <div className="flex lg:hidden items-center justify-between gap-2 pb-1">
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 flex-1">
+                  {teams.map((t) => {
+                    const isSelected = selectedTeamForAudit === t.teamId;
+                    return (
+                      <button
+                        key={t.teamId}
+                        onClick={() => setSelectedTeamForAudit(t.teamId)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black shrink-0 transition-all border active:scale-95 ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                            : "bg-surface/80 text-foreground/70 border-foreground/10 hover:bg-surface"
+                        }`}
+                      >
+                        <Shield className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate max-w-[120px]">{t.teamName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setIsAddTeamModalOpen(true)}
+                  className="px-2.5 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-tight flex items-center gap-1 transition-all shrink-0 active:scale-95"
+                >
+                  <Plus className="w-3 h-3" /> Team
+                </button>
+              </div>
+
               {/* MAIN CONTENT TWO-COLUMN LAYOUT */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* LEFT RAIL: FRANCHISE SELECTOR (4 Cols on LG) */}
+                {/* LEFT RAIL: FRANCHISE SELECTOR (4 Cols on LG, hidden on mobile in favor of top carousel) */}
                 <div
-                  className="lg:col-span-4 rounded-3xl border p-4 sm:p-5 space-y-4"
+                  className="hidden lg:block lg:col-span-4 rounded-3xl border p-4 sm:p-5 space-y-4"
                   style={{
                     backgroundColor: "var(--athlon-card)",
                     borderColor: "var(--athlon-border)",
@@ -4838,7 +5428,97 @@ export default function TeamChampionshipDashboardPage() {
           );
         })()}
 
-        {/* TAB 6: FIXTURES */}
+        {/* TAB 7: MATCH SETUP */}
+        {activeTab === "match-setup" && (
+          <div className="space-y-6">
+            {/* Match Setup Header */}
+            <div
+              className="p-6 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl relative overflow-hidden"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                    ⚙️ Match & Court Configuration
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-foreground">Championship Match Setup</h3>
+                <p className="text-xs text-foreground/60 max-w-xl">
+                  Configure available courts, schedule start timings, assign official umpires, and define sub-match tie order rules.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  onClick={() => setActiveTab("matches")}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20"
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>Matches & Scoring</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("lineups")}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold text-foreground/75 hover:text-foreground transition-all"
+                  style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+                >
+                  <Swords className="w-3.5 h-3.5" />
+                  <span>Lineups & Toss</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Team Championship Tie Rules & Format Card */}
+            <div
+              className="p-6 rounded-3xl border space-y-4 shadow-xl"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                    <Sliders className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-foreground uppercase tracking-wider">Tie Format & Category Events</h4>
+                    <p className="text-xs text-foreground/50">Standard sub-match rubber order for every fixture tie</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold font-mono">
+                  {championship?.events?.length || 5} Sub-Matches Per Tie
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+                {(championship?.events && championship.events.length > 0 ? championship.events : [
+                  { eventName: "Men's Singles 1", formatName: "Singles", pointsWeight: 1 },
+                  { eventName: "Women's Singles", formatName: "Singles", pointsWeight: 1 },
+                  { eventName: "Men's Doubles 1", formatName: "Doubles", pointsWeight: 1 },
+                  { eventName: "Mixed Doubles", formatName: "Doubles", pointsWeight: 1 },
+                  { eventName: "Men's Doubles 2", formatName: "Doubles", pointsWeight: 1 },
+                ]).map((ev: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-2xl border space-y-1.5"
+                    style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                  >
+                    <div className="flex items-center justify-between text-[10px] font-bold text-foreground/50 uppercase">
+                      <span>Rubber #{idx + 1}</span>
+                      <span className="text-primary font-mono font-black">{ev.pointsWeight || 1} pt</span>
+                    </div>
+                    <div className="font-extrabold text-xs text-foreground truncate">{ev.eventName}</div>
+                    <span className="text-[10px] text-foreground/40 font-medium block capitalize">{ev.formatName || "Standard Match"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Embedded Match Setup Settings Component */}
+            {championship && (
+              <MatchSetupSettings tournamentId={championship.championshipUuid || championshipUuid} />
+            )}
+          </div>
+        )}
+
+        {/* TAB 8: FIXTURES */}
         {activeTab === "fixtures" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -4892,142 +5572,1152 @@ export default function TeamChampionshipDashboardPage() {
           </div>
         )}
 
-        {/* TAB 7: LINEUPS & SUB-MATCHES (FIXTURE DRILLDOWN) */}
+        {/* TAB 7: LINEUPS & TOSS (FIXTURE DRILLDOWN) */}
         {activeTab === "lineups" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            {/* Fixture Selector Carousel / Pills */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="text-base font-black text-foreground">Lineup Submissions & Match Toss</h3>
+                <p className="text-xs text-foreground/50">Manage franchise team declarations, conduct toss, and launch live scoring</p>
+              </div>
               <button
                 onClick={() => setActiveTab("fixtures")}
                 className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back to Fixtures List
+                <ArrowLeft className="w-3.5 h-3.5" /> All Fixtures
               </button>
             </div>
 
-            {fixtureDetail ? (
+            {fixtures.length === 0 ? (
               <div
-                className="rounded-3xl border p-6 sm:p-8 space-y-6"
+                className="py-16 px-4 text-center rounded-3xl border flex flex-col items-center justify-center space-y-4 shadow-sm"
                 style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4" style={{ borderColor: "var(--athlon-border-subtle)" }}>
-                  <div>
-                    <h3 className="text-lg font-black text-foreground">
-                      {fixtureDetail.fixture.teamAName} vs {fixtureDetail.fixture.teamBName}
-                    </h3>
-                    <p className="text-xs text-foreground/60">
-                      Toss Winner: <strong>{fixtureDetail.toss?.tossWinnerTeamName || "Toss not conducted"}</strong>
-                    </p>
-                  </div>
+                <Swords className="w-12 h-12 text-foreground/20" />
+                <div>
+                  <h4 className="text-base font-black text-foreground">No Fixtures Generated Yet</h4>
+                  <p className="text-xs text-foreground/50 mt-1 max-w-md">
+                    Generate the pool match schedule after concluding the player auction to manage team lineups and match toss.
+                  </p>
+                </div>
+                {isAuctionConcluded && (
+                  <button
+                    onClick={handleGeneratePools}
+                    className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                  >
+                    Generate Pool Fixtures Now
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Horizontal Fixture Pill Selector */}
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+                  {fixtures.map((f, idx) => {
+                    const isSelected = selectedFixtureId === f.fixtureId;
+                    const hasToss = Boolean(f.tossWinnerTeamId);
 
-                  {/* Simultaneous Reveal Status */}
-                  <div>
-                    {fixtureDetail.lineupsRevealed ? (
-                      <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-xs font-black uppercase flex items-center gap-1.5">
-                        <Eye className="w-3.5 h-3.5" /> Lineups Public & Revealed
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 text-xs font-black uppercase flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5" /> Secret Submission Stage
-                      </span>
-                    )}
-                  </div>
+                    return (
+                      <button
+                        key={f.fixtureId}
+                        onClick={() => setSelectedFixtureId(f.fixtureId)}
+                        className={`flex items-center gap-2.5 px-3.5 py-2 rounded-2xl text-xs font-bold shrink-0 transition-all border ${isSelected
+                          ? "bg-primary text-primary-foreground border-primary shadow-md scale-102"
+                          : "border-foreground/10 bg-surface/40 text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
+                          }`}
+                      >
+                        <span className="font-mono text-[10px] opacity-70">M{idx + 1}</span>
+                        <span className="font-black truncate max-w-[140px]">
+                          {f.teamAName} vs {f.teamBName}
+                        </span>
+                        {hasToss ? (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" title="Toss Conducted" />
+                        ) : (
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" title="Toss Pending" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Sub-Matches Cards */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">
-                    Individual Sub-Match Events
-                  </h4>
-                  {fixtureDetail.subMatches?.map((sm: TeamChampionshipSubMatch) => (
+                {fixtureDetail ? (
+                  <div
+                    className="rounded-3xl border p-6 sm:p-8 space-y-6 shadow-xl"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    {/* Fixture Match Header */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-5" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-black uppercase">
+                            {fixtureDetail.fixture.roundName || "Pool Stage"} • {fixtureDetail.fixture.courtName || "Court 1"}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-foreground/5 text-foreground/60">
+                            {fixtureDetail.fixture.status || "SCHEDULED"}
+                          </span>
+                        </div>
+                        <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                          {fixtureDetail.fixture.teamAName} <span className="text-primary font-light">vs</span> {fixtureDetail.fixture.teamBName}
+                        </h3>
+                      </div>
+
+                      {/* Lineup & Toss Action Buttons */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <button
+                          onClick={() => handleOpenTossModal(fixtureDetail.fixture.fixtureId)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-xs font-black transition-all shadow-sm"
+                        >
+                          <Coins className="w-4 h-4" />
+                          <span>{fixtureDetail.toss?.tossWinnerTeamName ? "Update Match Toss" : "Conduct Match Toss"}</span>
+                        </button>
+                        {fixtureDetail.lineupsRevealed ? (
+                          <span className="px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-xs font-black uppercase flex items-center gap-1.5">
+                            <Eye className="w-4 h-4" /> Lineups Public
+                          </span>
+                        ) : (
+                          <span className="px-3 py-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/25 text-xs font-black uppercase flex items-center gap-1.5">
+                            <Lock className="w-4 h-4" /> Secret Lineups
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Match Toss Details Banner */}
                     <div
-                      key={sm.subMatchId}
-                      className="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                      className="p-4 sm:p-5 rounded-2xl border grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs"
                       style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
                     >
-                      <div className="space-y-1">
-                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
-                          Match #{sm.orderSequence} • {sm.eventName}
-                        </span>
-                        <div className="font-bold text-foreground">
-                          {sm.teamAPlayers || "Team A Lineup Pending"} vs {sm.teamBPlayers || "Team B Lineup Pending"}
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-foreground/40 block">Toss Winner</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Coins className="w-3.5 h-3.5 text-primary" />
+                          <strong className="text-sm font-black text-foreground">
+                            {fixtureDetail.toss?.tossWinnerTeamName || "Toss Pending"}
+                          </strong>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono font-black text-primary">{sm.scoreSummary || "0 - 0"}</span>
-                        <button
-                          onClick={() => router.push(`/live-score/${sm.subMatchId}`)}
-                          className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-[11px] font-black hover:scale-105 transition-all shadow-sm"
-                        >
-                          Live Score
-                        </button>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-foreground/40 block">Decision / Choice</span>
+                        <span className="text-sm font-extrabold text-primary capitalize mt-0.5 block">
+                          {fixtureDetail.toss?.choice ? `Elected to ${fixtureDetail.toss.choice}` : "Not Decided"}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-foreground/40 block">Official Notes</span>
+                        <span className="text-xs font-medium text-foreground/70 mt-0.5 block truncate">
+                          {fixtureDetail.toss?.notes || "No special umpire notes recorded"}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="py-12 text-center text-foreground/40">Select a fixture from the list to manage lineups.</div>
+
+                    {/* Sub-Matches Cards */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">
+                          Individual Sub-Match Events ({fixtureDetail.subMatches?.length || 0})
+                        </h4>
+                        <span className="text-[11px] font-bold text-foreground/50">
+                          Click Live Score to open umpire scoreboard
+                        </span>
+                      </div>
+
+                      {fixtureDetail.subMatches?.map((sm: TeamChampionshipSubMatch) => (
+                        <div
+                          key={sm.subMatchId}
+                          className="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs transition-all hover:border-primary/40 hover:bg-foreground/[0.01]"
+                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                        >
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[9px] font-black uppercase">
+                                Match #{sm.orderSequence} • {sm.eventName}
+                              </span>
+                              <span className="text-[10px] font-mono font-bold text-foreground/40">
+                                {sm.pointsWeight || 1} pt event
+                              </span>
+                              {sm.status === "COMPLETED" ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[9px] font-black uppercase border border-emerald-500/20">
+                                  Completed
+                                </span>
+                              ) : sm.status === "LIVE" ? (
+                                <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[9px] font-black uppercase border border-red-500/20 animate-pulse flex items-center gap-1">
+                                  <Radio className="w-2.5 h-2.5" /> Live
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="font-extrabold text-foreground text-sm tracking-tight truncate">
+                              {sm.teamAPlayers || `${fixtureDetail.fixture.teamAName} Lineup`} <span className="text-foreground/40 font-normal">vs</span> {sm.teamBPlayers || `${fixtureDetail.fixture.teamBName} Lineup`}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 shrink-0">
+                            <div className="text-right">
+                              <span className="text-[10px] font-bold uppercase text-foreground/40 block">Score</span>
+                              <span className="font-mono font-black text-primary text-base">
+                                {sm.scoreSummary || "0 - 0"}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => router.push(`/live-score/${sm.subMatchId}`)}
+                              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center gap-1.5"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" /> Live Score
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-foreground/40">Select a fixture from above to view and manage lineups.</div>
+                )}
+              </>
             )}
           </div>
         )}
 
-        {/* TAB 8: STANDINGS */}
-        {activeTab === "standings" && (
+        {/* TAB 10: MATCHES & LIVE SCORING CONSOLE */}
+        {activeTab === "matches" && (
           <div className="space-y-6">
-            <h3 className="text-base font-black text-foreground">Pool Standings Table</h3>
+            {/* Header & Controls */}
             <div
-              className="rounded-3xl border overflow-hidden shadow-xl"
+              className="p-6 rounded-3xl border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl"
               style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
             >
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b bg-foreground/[0.02]" style={{ borderColor: "var(--athlon-border)" }}>
-                      <th className="p-4 font-black uppercase text-foreground/50">Rank & Team</th>
-                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Played</th>
-                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Won</th>
-                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Lost</th>
-                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Sub-Matches Diff</th>
-                      <th className="p-4 font-black uppercase text-primary text-center">Points</th>
-                      <th className="p-4 font-black uppercase text-foreground/50 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {standings.map((row) => (
-                      <tr
-                        key={row.teamId}
-                        className="border-b hover:bg-foreground/[0.02] transition-colors"
-                        style={{ borderColor: "var(--athlon-border-subtle)" }}
-                      >
-                        <td className="p-4 font-black text-foreground flex items-center gap-3">
-                          <span className="w-6 h-6 rounded-lg bg-foreground/10 flex items-center justify-center text-xs">
-                            {row.rank}
-                          </span>
-                          <span>{row.teamName}</span>
-                        </td>
-                        <td className="p-4 text-center font-bold text-foreground/70">{row.played}</td>
-                        <td className="p-4 text-center font-bold text-emerald-400">{row.won}</td>
-                        <td className="p-4 text-center font-bold text-red-400">{row.lost}</td>
-                        <td className="p-4 text-center font-bold text-foreground/70">
-                          {row.subMatchDiff > 0 ? `+${row.subMatchDiff}` : row.subMatchDiff}
-                        </td>
-                        <td className="p-4 text-center font-black text-primary text-sm">{row.points}</td>
-                        <td className="p-4 text-center">
-                          {row.isQualified ? (
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-[10px] font-black uppercase">
-                              Qualified
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-foreground/40 font-bold uppercase">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                    <Radio className="w-3 h-3 text-primary animate-pulse" /> Live Match Center
+                  </span>
+                  <span className="text-xs text-foreground/50 font-bold font-mono">
+                    {fixtures.length} Total Fixtures
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-foreground">Matches & Live Scoring Console</h3>
+                <p className="text-xs text-foreground/60">
+                  Track real-time tie scores, rubber-by-rubber game points, umpire toss, and launch the digital scoring console.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  onClick={() => setActiveTab("match-setup")}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold text-foreground/75 hover:text-foreground transition-all"
+                  style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>Match Setup</span>
+                </button>
+                <button
+                  onClick={loadData}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold text-foreground/75 hover:text-foreground transition-all"
+                  style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Refresh</span>
+                </button>
               </div>
             </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+              {(["ALL", "LIVE", "SCHEDULED", "COMPLETED"] as const).map((statusKey) => {
+                const count = statusKey === "ALL"
+                  ? fixtures.length
+                  : fixtures.filter((f) => f.status === statusKey).length;
+                const isActive = matchStatusFilter === statusKey;
+                return (
+                  <button
+                    key={statusKey}
+                    onClick={() => setMatchStatusFilter(statusKey)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-extrabold shrink-0 border transition-all ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary shadow-md"
+                        : "border-foreground/10 bg-surface/50 text-foreground/60 hover:text-foreground hover:bg-foreground/5"
+                    }`}
+                  >
+                    {statusKey === "LIVE" && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+                    <span>{statusKey === "ALL" ? "All Matches" : statusKey}</span>
+                    <span className="font-mono text-[10px] opacity-70">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Fixtures List */}
+            {(() => {
+              const filteredFixtures = fixtures.filter((f) => {
+                if (matchStatusFilter === "ALL") return true;
+                return f.status === matchStatusFilter;
+              });
+
+              if (filteredFixtures.length === 0) {
+                return (
+                  <div
+                    className="py-16 px-4 text-center rounded-3xl border flex flex-col items-center justify-center space-y-4 shadow-xl"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    <Activity className="w-12 h-12 text-foreground/20" />
+                    <div>
+                      <h4 className="text-base font-black text-foreground">No Matches Found</h4>
+                      <p className="text-xs text-foreground/50 mt-1 max-w-md">
+                        {matchStatusFilter !== "ALL"
+                          ? `There are no matches currently marked as ${matchStatusFilter}.`
+                          : "Generate pool fixtures to schedule ties and start live scoring."}
+                      </p>
+                    </div>
+                    {fixtures.length === 0 && isAuctionConcluded && (
+                      <button
+                        onClick={handleGeneratePools}
+                        className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                      >
+                        Generate Pool Fixtures Now
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  {filteredFixtures.map((f, idx) => {
+                    const isLive = f.status === "LIVE";
+                    const isCompleted = f.status === "COMPLETED";
+
+                    return (
+                      <div
+                        key={f.fixtureId}
+                        className={`rounded-3xl border transition-all overflow-hidden shadow-xl ${
+                          isLive ? "border-primary/60 ring-1 ring-primary/30" : ""
+                        }`}
+                        style={{ backgroundColor: "var(--athlon-card)", borderColor: isLive ? undefined : "var(--athlon-border)" }}
+                      >
+                        {/* Header info */}
+                        <div
+                          className="px-5 py-3.5 border-b flex items-center justify-between text-xs"
+                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[11px] font-black text-primary uppercase">
+                              M{idx + 1} • {f.roundName || "Pool Match"}
+                            </span>
+                            {f.courtName && (
+                              <span className="px-2 py-0.5 rounded-md bg-foreground/5 text-foreground/60 text-[10px] font-bold">
+                                {f.courtName}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {isLive ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase border border-red-500/25 animate-pulse flex items-center gap-1">
+                                <Radio className="w-2.5 h-2.5" /> LIVE
+                              </span>
+                            ) : isCompleted ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black uppercase border border-emerald-500/25">
+                                COMPLETED
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full bg-foreground/5 text-foreground/60 text-[10px] font-bold uppercase">
+                                SCHEDULED
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Scoreboard Body */}
+                        <div className="p-5 sm:p-6 space-y-4">
+                          <div className="flex items-center justify-between gap-4">
+                            {/* Team A */}
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm sm:text-base font-black text-foreground truncate">{f.teamAName}</span>
+                                {f.winnerTeamId === f.teamAId && <Crown className="w-4 h-4 text-amber-400 shrink-0" />}
+                              </div>
+                              <span className="text-[11px] text-foreground/40 font-bold block">Franchise Squad</span>
+                            </div>
+
+                            {/* Score Center */}
+                            <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-foreground/[0.03] border border-foreground/10 shrink-0">
+                              <span className={`text-2xl sm:text-3xl font-mono font-black ${
+                                f.teamAPoints > f.teamBPoints ? "text-primary" : "text-foreground"
+                              }`}>
+                                {f.teamAPoints}
+                              </span>
+                              <span className="text-foreground/30 font-bold text-xs">VS</span>
+                              <span className={`text-2xl sm:text-3xl font-mono font-black ${
+                                f.teamBPoints > f.teamAPoints ? "text-primary" : "text-foreground"
+                              }`}>
+                                {f.teamBPoints}
+                              </span>
+                            </div>
+
+                            {/* Team B */}
+                            <div className="flex-1 space-y-1 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {f.winnerTeamId === f.teamBId && <Crown className="w-4 h-4 text-amber-400 shrink-0" />}
+                                <span className="text-sm sm:text-base font-black text-foreground truncate">{f.teamBName}</span>
+                              </div>
+                              <span className="text-[11px] text-foreground/40 font-bold block">Franchise Squad</span>
+                            </div>
+                          </div>
+
+                          {/* Toss details badge if recorded */}
+                          {f.tossWinnerTeamId && (
+                            <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/15 flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-1.5 text-foreground/70">
+                                <Coins className="w-3.5 h-3.5 text-primary" />
+                                <span className="text-[11px] font-bold">
+                                  Toss: <strong className="text-foreground">{f.tossWinnerTeamId === f.teamAId ? f.teamAName : f.teamBName}</strong>
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-mono text-primary font-black uppercase">
+                                Toss Won
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Quick Action Footer */}
+                          <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                            <button
+                              onClick={() => {
+                                setSelectedFixtureId(f.fixtureId);
+                                setActiveTab("lineups");
+                              }}
+                              className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Swords className="w-3.5 h-3.5" />
+                              <span>Lineups & Toss</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setSelectedFixtureId(f.fixtureId);
+                                setActiveTab("lineups");
+                              }}
+                              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center gap-1.5"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                              <span>Open Live Score</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* TAB 11: DRAWS & BRACKETS */}
+        {activeTab === "draws" && (
+          <div className="space-y-8">
+            {/* Stage Progression Banner */}
+            <div
+              className="p-6 rounded-3xl border flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl relative overflow-hidden"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="space-y-2 relative z-10">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                    🏆 Knockout Elimination & Championship Draws
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-foreground">
+                  {championship.stage === "COMPLETED"
+                    ? "🏆 Championship Concluded & Podium Awarded"
+                    : championship.stage === "KNOCKOUT_STAGE"
+                      ? "⚔️ Knockout Playoff Stage Active"
+                      : "📊 Pool Qualifiers & Playoff Tree"}
+                </h3>
+                <p className="text-xs text-foreground/60 max-w-xl">
+                  Track the road to the championship finals. Top qualifying franchises from round-robin pool play advance to the semi-finals, bronze medal playoff, and the grand championship final.
+                </p>
+              </div>
+
+              {/* Stage Transition Action Buttons */}
+              <div className="flex items-center gap-3 flex-wrap relative z-10">
+                {championship.stage === "LEAGUE_STAGE" && (
+                  <button
+                    onClick={() => {
+                      if (confirm("Advance tournament to KNOCKOUT_STAGE? Top qualifying teams will be locked for the elimination bracket.")) {
+                        handleToggleAuctionStage("KNOCKOUT_STAGE");
+                      }
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                  >
+                    <Swords className="w-4 h-4" /> Advance to Knockout Stage
+                  </button>
+                )}
+
+                {championship.stage === "KNOCKOUT_STAGE" && (
+                  <button
+                    onClick={() => {
+                      if (confirm("Are you sure you want to conclude the championship and award the champion trophy?")) {
+                        handleToggleAuctionStage("COMPLETED");
+                      }
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-black text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                  >
+                    <Crown className="w-4 h-4" /> Conclude Championship & Award Trophy
+                  </button>
+                )}
+
+                {championship.stage === "COMPLETED" && (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black">
+                    <Award className="w-4 h-4" /> Trophy Awarded
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Knockout Brackets & Seeds */}
+            {(() => {
+              const hasMatchesPlayed = standings.some((s) => s.played > 0) || fixtures.some((f) => f.status === "COMPLETED");
+
+              return (
+                <div className="space-y-6">
+                  {/* Qualified Franchises Seed Cards */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">Top Seeded Playoff Franchises</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[1, 2, 3, 4].map((seedNum) => {
+                        const teamRow = hasMatchesPlayed ? standings.find((s) => s.rank === seedNum && s.played > 0) : null;
+                        const teamName = teamRow ? teamRow.teamName : `TBD (Pool Seed #${seedNum})`;
+
+                        return (
+                          <div
+                            key={seedNum}
+                            className="p-3.5 rounded-2xl border space-y-1.5 shadow-sm"
+                            style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                          >
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase text-foreground/40">
+                              <span>Seed #{seedNum}</span>
+                              {seedNum === 1 && teamRow && <Crown className="w-3.5 h-3.5 text-amber-400" />}
+                            </div>
+                            <div className={`font-black text-sm truncate ${teamRow ? "text-foreground" : "text-foreground/40 italic"}`}>
+                              {teamName}
+                            </div>
+                            <span className={`text-[10px] font-bold uppercase block ${teamRow ? "text-emerald-400" : "text-foreground/30"}`}>
+                              {teamRow ? (seedNum <= 2 ? "Top Seed" : "Playoff Qualifier") : "Awaiting Pool Results"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Visual Elimination Bracket Tree */}
+                  <div
+                    className="p-6 sm:p-8 rounded-3xl border space-y-8 shadow-xl"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-foreground">Championship Playoff Tree</h3>
+                        <p className="text-xs text-foreground/50">Semi-Finals, 3rd Place Playoff & Grand Final</p>
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold font-mono">
+                        Best of 5 Rubbers Per Tie
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                      {/* Column 1: Semi-Finals */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-primary" />
+                          <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">Semi-Finals</h4>
+                        </div>
+
+                        {/* Semi-Final 1 */}
+                        <div
+                          className="p-4 rounded-2xl border space-y-2 shadow-sm"
+                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                        >
+                          <span className="text-[10px] font-bold uppercase text-primary block">Semi-Final 1</span>
+                          <div className="space-y-1 text-xs font-bold">
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className={hasMatchesPlayed && standings[0]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                {hasMatchesPlayed && standings[0]?.played ? standings[0].teamName : "TBD (Pool Seed #1)"}
+                              </span>
+                              <span className="font-mono text-primary font-black">—</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className={hasMatchesPlayed && standings[3]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                {hasMatchesPlayed && standings[3]?.played ? standings[3].teamName : "TBD (Pool Seed #4)"}
+                              </span>
+                              <span className="font-mono text-primary font-black">—</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Semi-Final 2 */}
+                        <div
+                          className="p-4 rounded-2xl border space-y-2 shadow-sm"
+                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                        >
+                          <span className="text-[10px] font-bold uppercase text-primary block">Semi-Final 2</span>
+                          <div className="space-y-1 text-xs font-bold">
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className={hasMatchesPlayed && standings[1]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                {hasMatchesPlayed && standings[1]?.played ? standings[1].teamName : "TBD (Pool Seed #2)"}
+                              </span>
+                              <span className="font-mono text-primary font-black">—</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className={hasMatchesPlayed && standings[2]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                {hasMatchesPlayed && standings[2]?.played ? standings[2].teamName : "TBD (Pool Seed #3)"}
+                              </span>
+                              <span className="font-mono text-primary font-black">—</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Column 2: 3rd Place Playoff */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">3rd Place Match</h4>
+                        </div>
+
+                        <div
+                          className="p-4 rounded-2xl border space-y-2 my-auto shadow-sm"
+                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                        >
+                          <span className="text-[10px] font-bold uppercase text-amber-400 block">Bronze Medal Match</span>
+                          <div className="space-y-1 text-xs font-bold">
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className="text-foreground/60">Loser Semi-Final 1</span>
+                              <span className="font-mono text-amber-400 font-black">—</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className="text-foreground/60">Loser Semi-Final 2</span>
+                              <span className="font-mono text-amber-400 font-black">—</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Column 3: Grand Final */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-400" />
+                          <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">Grand Final</h4>
+                        </div>
+
+                        <div
+                          className="p-4 rounded-2xl border space-y-2 border-primary/40 shadow-lg relative overflow-hidden"
+                          style={{ backgroundColor: "var(--athlon-surface)" }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase text-primary block">Trophy Championship Match</span>
+                            <Crown className="w-4 h-4 text-amber-400" />
+                          </div>
+                          <div className="space-y-1 text-xs font-bold">
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className="text-foreground font-black">Winner Semi-Final 1</span>
+                              <span className="font-mono text-primary font-black">—</span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                              <span className="text-foreground font-black">Winner Semi-Final 2</span>
+                              <span className="font-mono text-primary font-black">—</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* TAB 12: STANDINGS */}
+        {activeTab === "standings" && (
+          <div className="space-y-8">
+            {/* Stage Progression Banner */}
+            <div
+              className="p-6 rounded-3xl border flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl relative overflow-hidden"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="space-y-2 relative z-10">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                    Tournament Stage: {championship.stage?.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-foreground">
+                  {championship.stage === "COMPLETED"
+                    ? "🏆 Championship Concluded"
+                    : championship.stage === "KNOCKOUT_STAGE"
+                      ? "⚔️ Knockout Elimination Stage Active"
+                      : championship.stage === "LEAGUE_STAGE"
+                        ? "📊 Pool / League Stage in Progress"
+                        : championship.stage === "AUCTION_STAGE" || championship.stage === "AUCTION_PAUSED"
+                          ? "🔨 Live Player Auction in Progress"
+                          : "📝 Team & Player Registration Open"}
+                </h3>
+                <p className="text-xs text-foreground/60 max-w-xl">
+                  {championship.stage === "COMPLETED"
+                    ? "All fixtures and finals have concluded. Final championship standings and winners are awarded below."
+                    : championship.stage === "KNOCKOUT_STAGE"
+                      ? "Top qualified franchises are competing in the Semi-Finals & Grand Championship Finals."
+                      : championship.stage === "LEAGUE_STAGE"
+                        ? "Franchises are competing in round-robin pool fixtures. Top teams qualify for the knockout playoffs."
+                        : championship.stage === "AUCTION_STAGE" || championship.stage === "AUCTION_PAUSED"
+                          ? "Franchises are actively drafting players. Conclude the auction and generate fixtures to begin league play."
+                          : "Franchises and players are registering. Open auction or schedule fixtures when ready."}
+                </p>
+              </div>
+
+              {/* Stage Transition Action Buttons */}
+              <div className="flex items-center gap-3 flex-wrap relative z-10">
+                {championship.stage === "LEAGUE_STAGE" && (
+                  <button
+                    onClick={() => {
+                      if (confirm("Advance tournament to KNOCKOUT_STAGE? Top qualifying teams will be locked for the elimination bracket.")) {
+                        handleToggleAuctionStage("KNOCKOUT_STAGE");
+                      }
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                  >
+                    <Swords className="w-4 h-4" /> Advance to Knockout Stage
+                  </button>
+                )}
+
+                {championship.stage === "KNOCKOUT_STAGE" && (
+                  <button
+                    onClick={() => {
+                      if (confirm("Are you sure you want to conclude the championship and award the champion trophy?")) {
+                        handleToggleAuctionStage("COMPLETED");
+                      }
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-black text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                  >
+                    <Crown className="w-4 h-4" /> Conclude Championship & Award Trophy
+                  </button>
+                )}
+
+                {championship.stage === "COMPLETED" && (
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black">
+                    <Award className="w-4 h-4" /> Trophy Awarded
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pool Standings Section */}
+            {(() => {
+              if (fixtures.length === 0) {
+                return (
+                  <div
+                    className="py-16 px-6 text-center rounded-3xl border flex flex-col items-center justify-center space-y-4 shadow-xl"
+                    style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                  >
+                    <div className="p-4 rounded-2xl bg-primary/10 text-primary border border-primary/20">
+                      <Layers className="w-10 h-10" />
+                    </div>
+                    <div className="space-y-1.5 max-w-md">
+                      <h4 className="text-lg font-black text-foreground">Pools & Fixtures Not Generated Yet</h4>
+                      <p className="text-xs text-foreground/60 leading-relaxed">
+                        Teams have not been partitioned into pools yet. Conclude the player auction/draft and generate pool fixtures to allocate franchises into their pools (Pool A, Pool B) and activate the official standings leaderboard.
+                      </p>
+                    </div>
+                    {isAuctionConcluded ? (
+                      <button
+                        onClick={handleGeneratePools}
+                        className="px-6 py-3 rounded-2xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                      >
+                        <Swords className="w-4 h-4" /> Generate Pool Fixtures Now
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setActiveTab("auction")}
+                        className="px-6 py-3 rounded-2xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                      >
+                        <Gavel className="w-4 h-4" /> Go to Live Auction Arena
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              const hasMatchesPlayed = standings.some((s) => s.played > 0) || fixtures.some((f) => f.status === "COMPLETED");
+
+              // Group standings by pool
+              const poolMap: Record<string, StandingsRow[]> = {};
+              if (standings.length > 0) {
+                standings.forEach((row) => {
+                  const pName = row.poolName || (pools.find((p) => p.poolId === row.poolId)?.poolName) || "Championship Pool";
+                  if (!poolMap[pName]) poolMap[pName] = [];
+                  poolMap[pName].push(row);
+                });
+              } else {
+                poolMap["Championship Pool"] = [];
+              }
+
+              const poolEntries = Object.entries(poolMap);
+
+              return (
+                <>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-foreground">Pool Standings Table</h3>
+                        <p className="text-xs text-foreground/50">Official team ranks based on match wins, sub-matches diff, and league points</p>
+                      </div>
+                      <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
+                        {poolEntries.length} Active Pool{poolEntries.length > 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    {poolEntries.map(([poolName, rows]) => (
+                      <div
+                        key={poolName}
+                        className="rounded-3xl border overflow-hidden shadow-xl space-y-0"
+                        style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                      >
+                        <div
+                          className="px-6 py-4 border-b flex items-center justify-between"
+                          style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                            <h4 className="text-sm font-black text-foreground uppercase tracking-wider">{poolName}</h4>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold text-foreground/50">
+                            {rows.length} Franchises Assigned
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs">
+                            <thead>
+                              <tr className="border-b bg-foreground/[0.02]" style={{ borderColor: "var(--athlon-border)" }}>
+                                <th className="p-4 font-black uppercase text-foreground/50">Rank & Team</th>
+                                <th className="p-4 font-black uppercase text-foreground/50 text-center">Played</th>
+                                <th className="p-4 font-black uppercase text-foreground/50 text-center">Won</th>
+                                <th className="p-4 font-black uppercase text-foreground/50 text-center">Lost</th>
+                                <th className="p-4 font-black uppercase text-foreground/50 text-center">Sub-Matches Diff</th>
+                                <th className="p-4 font-black uppercase text-primary text-center">Points</th>
+                                <th className="p-4 font-black uppercase text-foreground/50 text-center">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.length === 0 ? (
+                                <tr>
+                                  <td colSpan={7} className="p-8 text-center text-foreground/40 font-bold">
+                                    No matches completed yet in {poolName}. Results will update after scoring fixtures.
+                                  </td>
+                                </tr>
+                              ) : (
+                                rows.map((row) => (
+                                  <tr
+                                    key={row.teamId}
+                                    className="border-b hover:bg-foreground/[0.02] transition-colors"
+                                    style={{ borderColor: "var(--athlon-border-subtle)" }}
+                                  >
+                                    <td className="p-4 font-black text-foreground flex items-center gap-3">
+                                      <span
+                                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${
+                                          row.played > 0 && row.rank === 1
+                                            ? "bg-amber-500 text-black shadow-sm"
+                                            : row.played > 0 && row.rank === 2
+                                              ? "bg-slate-300 text-black shadow-sm"
+                                              : row.played > 0 && row.rank === 3
+                                                ? "bg-amber-700 text-white shadow-sm"
+                                                : "bg-foreground/10 text-foreground/70"
+                                        }`}
+                                      >
+                                        {row.rank}
+                                      </span>
+                                      <span className="font-extrabold">{row.teamName}</span>
+                                    </td>
+                                    <td className="p-4 text-center font-bold text-foreground/70">{row.played}</td>
+                                    <td className="p-4 text-center font-bold text-emerald-400">{row.won}</td>
+                                    <td className="p-4 text-center font-bold text-red-400">{row.lost}</td>
+                                    <td className="p-4 text-center font-bold text-foreground/70">
+                                      {row.subMatchDiff > 0 ? `+${row.subMatchDiff}` : row.subMatchDiff}
+                                    </td>
+                                    <td className="p-4 text-center font-black text-primary text-sm">{row.points}</td>
+                                    <td className="p-4 text-center">
+                                      {hasMatchesPlayed && row.played > 0 && (row.isQualified || row.rank <= 2) ? (
+                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 text-[10px] font-black uppercase">
+                                          Qualified
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] text-foreground/40 font-bold uppercase">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Knockout Progression & Playoff Brackets */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-foreground">Knockout Stage Progression</h3>
+                        <p className="text-xs text-foreground/50">Elimination bracket: Semi-Finals, 3rd Place Playoff & Grand Final</p>
+                      </div>
+                    </div>
+
+                    {/* Qualified Franchises Seed Cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[1, 2, 3, 4].map((seedNum) => {
+                        const teamRow = hasMatchesPlayed ? standings.find((s) => s.rank === seedNum && s.played > 0) : null;
+                        const teamName = teamRow ? teamRow.teamName : `TBD (Pool Seed #${seedNum})`;
+
+                        return (
+                          <div
+                            key={seedNum}
+                            className="p-3.5 rounded-2xl border space-y-1.5"
+                            style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                          >
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase text-foreground/40">
+                              <span>Seed #{seedNum}</span>
+                              {seedNum === 1 && teamRow && <Crown className="w-3.5 h-3.5 text-amber-400" />}
+                            </div>
+                            <div className={`font-black text-sm truncate ${teamRow ? "text-foreground" : "text-foreground/40 italic"}`}>
+                              {teamName}
+                            </div>
+                            <span className={`text-[10px] font-bold uppercase block ${teamRow ? "text-emerald-400" : "text-foreground/30"}`}>
+                              {teamRow ? (seedNum <= 2 ? "Top Seed" : "Playoff Qualifier") : "Awaiting Match Results"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Visual Knockout Bracket Tree */}
+                    <div
+                      className="p-6 sm:p-8 rounded-3xl border space-y-8"
+                      style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                        {/* Column 1: Semi-Finals */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-primary" />
+                            <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">Semi-Finals</h4>
+                          </div>
+
+                          {/* Semi-Final 1 */}
+                          <div
+                            className="p-4 rounded-2xl border space-y-2"
+                            style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <span className="text-[10px] font-bold uppercase text-primary block">Semi-Final 1</span>
+                            <div className="space-y-1 text-xs font-bold">
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span className={hasMatchesPlayed && standings[0]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                  {hasMatchesPlayed && standings[0]?.played ? standings[0].teamName : "TBD (Pool Seed #1)"}
+                                </span>
+                                <span className="font-mono text-primary font-black">—</span>
+                              </div>
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span className={hasMatchesPlayed && standings[3]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                  {hasMatchesPlayed && standings[3]?.played ? standings[3].teamName : "TBD (Pool Seed #4)"}
+                                </span>
+                                <span className="font-mono text-primary font-black">—</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Semi-Final 2 */}
+                          <div
+                            className="p-4 rounded-2xl border space-y-2"
+                            style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <span className="text-[10px] font-bold uppercase text-primary block">Semi-Final 2</span>
+                            <div className="space-y-1 text-xs font-bold">
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span className={hasMatchesPlayed && standings[1]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                  {hasMatchesPlayed && standings[1]?.played ? standings[1].teamName : "TBD (Pool Seed #2)"}
+                                </span>
+                                <span className="font-mono text-primary font-black">—</span>
+                              </div>
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span className={hasMatchesPlayed && standings[2]?.played ? "text-foreground font-black" : "text-foreground/50"}>
+                                  {hasMatchesPlayed && standings[2]?.played ? standings[2].teamName : "TBD (Pool Seed #3)"}
+                                </span>
+                                <span className="font-mono text-primary font-black">—</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Column 2: 3rd Place Playoff */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">3rd Place Match</h4>
+                          </div>
+
+                          <div
+                            className="p-4 rounded-2xl border space-y-2 my-auto"
+                            style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}
+                          >
+                            <span className="text-[10px] font-bold uppercase text-amber-400 block">Bronze Medal Match</span>
+                            <div className="space-y-1 text-xs font-bold">
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span>Loser Semi-Final 1</span>
+                                <span className="font-mono text-amber-400 font-black">—</span>
+                              </div>
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span>Loser Semi-Final 2</span>
+                                <span className="font-mono text-amber-400 font-black">—</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Column 3: Grand Final */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                            <h4 className="text-xs font-black uppercase tracking-wider text-foreground/70">Grand Championship Final</h4>
+                          </div>
+
+                          <div
+                            className="p-4 rounded-2xl border space-y-2 border-primary/40 shadow-lg relative overflow-hidden"
+                            style={{ backgroundColor: "var(--athlon-surface)" }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black uppercase text-primary block">Trophy Match</span>
+                              <Crown className="w-4 h-4 text-amber-400" />
+                            </div>
+                            <div className="space-y-1 text-xs font-bold">
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span>Winner Semi-Final 1</span>
+                                <span className="font-mono text-primary font-black">—</span>
+                              </div>
+                              <div className="flex items-center justify-between p-2 rounded-xl bg-background/60">
+                                <span>Winner Semi-Final 2</span>
+                                <span className="font-mono text-primary font-black">—</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* TAB 13: LIVE STREAM */}
+        {activeTab === "livestream" && (
+          <div className="space-y-6">
+            {/* Live Stream Banner */}
+            <div
+              className="p-6 rounded-3xl border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl relative overflow-hidden"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
+                    <Radio className="w-3 h-3 animate-pulse" /> Live Broadcast & Studio
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-foreground">Championship Live Stream Arena</h3>
+                <p className="text-xs text-foreground/60 max-w-xl">
+                  Broadcast center court matches directly to YouTube Live & RTMP streaming servers with automated real-time scoreboard tickers.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  onClick={() => setActiveTab("matches")}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20"
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>Live Scores</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Center Court Stream Theater */}
+            <div
+              className="rounded-3xl border overflow-hidden shadow-2xl space-y-0"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div
+                className="px-6 py-4 border-b flex items-center justify-between"
+                style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                  <h4 className="text-sm font-black text-foreground uppercase tracking-wider">Center Court 1 • Live Broadcast Feed</h4>
+                </div>
+                <span className="text-[11px] font-mono font-bold text-foreground/50">
+                  HD 1080p • 60 FPS
+                </span>
+              </div>
+
+              <div className="relative aspect-video w-full bg-black flex flex-col items-center justify-center p-6 text-center group">
+                <div className="space-y-3 z-10 max-w-md">
+                  <div className="w-16 h-16 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center mx-auto shadow-lg group-hover:scale-110 transition-transform">
+                    <Tv className="w-8 h-8" />
+                  </div>
+                  <h4 className="text-lg font-black text-white">Live Court Stream Preview</h4>
+                  <p className="text-xs text-white/60">
+                    Configure your streaming keys and RTMP server below to begin broadcasting matches live to audiences worldwide.
+                  </p>
+                </div>
+
+                {/* Floating Live Match Score Overlay Ticker */}
+                {fixtures.find((f) => f.status === "LIVE") && (
+                  <div className="absolute bottom-4 left-4 right-4 p-3 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 flex items-center justify-between text-xs text-white z-20 shadow-2xl">
+                    {(() => {
+                      const liveFix = fixtures.find((f) => f.status === "LIVE")!;
+                      return (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                            <span className="font-bold uppercase tracking-wider text-red-400 text-[10px]">LIVE COURT 1</span>
+                            <span className="font-black text-white">{liveFix.teamAName}</span>
+                          </div>
+                          <div className="font-mono font-black text-primary text-base">
+                            {liveFix.teamAPoints} - {liveFix.teamBPoints}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-white">{liveFix.teamBName}</span>
+                            <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-bold uppercase">
+                              {liveFix.roundName || "Match"}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Live Stream Configuration Component */}
+            {championship && (
+              <LiveStreamSettings
+                tournamentId={championship.championshipUuid || championshipUuid}
+                tournamentName={championship.name}
+              />
+            )}
           </div>
         )}
 
@@ -5354,6 +7044,156 @@ export default function TeamChampionshipDashboardPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* CONDUCT MATCH TOSS MODAL */}
+        {isTossModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+            <div
+              className="w-full max-w-md rounded-3xl border p-6 space-y-6 shadow-2xl relative"
+              style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+            >
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                    <Coins className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-foreground">Conduct Match Toss</h3>
+                    <p className="text-xs text-foreground/60">Official umpire toss recording for fixture</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsTossModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-foreground/5 text-foreground/40 hover:text-foreground transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {(() => {
+                const targetFix = fixtures.find((f) => f.fixtureId === tossForm.fixtureId);
+                return (
+                  <form onSubmit={handleRecordTossSubmit} className="space-y-4">
+                    {targetFix && (
+                      <div className="p-3 rounded-2xl bg-surface/50 border flex items-center justify-between text-xs font-bold" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                        <span className="text-foreground/60">{targetFix.roundName || "Match"}</span>
+                        <span className="text-foreground font-black">
+                          {targetFix.teamAName} vs {targetFix.teamBName}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Select Toss Winner */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black uppercase tracking-wider text-foreground/70 block">
+                        Toss Winner Franchise *
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {targetFix ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setTossForm({ ...tossForm, tossWinnerTeamId: targetFix.teamAId })}
+                              className={`p-3 rounded-2xl border text-xs font-black text-center transition-all ${
+                                tossForm.tossWinnerTeamId === targetFix.teamAId
+                                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                                  : "border-foreground/10 bg-background text-foreground/70 hover:border-foreground/30"
+                              }`}
+                            >
+                              {targetFix.teamAName}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTossForm({ ...tossForm, tossWinnerTeamId: targetFix.teamBId })}
+                              className={`p-3 rounded-2xl border text-xs font-black text-center transition-all ${
+                                tossForm.tossWinnerTeamId === targetFix.teamBId
+                                  ? "bg-primary text-primary-foreground border-primary shadow-md"
+                                  : "border-foreground/10 bg-background text-foreground/70 hover:border-foreground/30"
+                              }`}
+                            >
+                              {targetFix.teamBName}
+                            </button>
+                          </>
+                        ) : (
+                          <select
+                            value={tossForm.tossWinnerTeamId}
+                            onChange={(e) => setTossForm({ ...tossForm, tossWinnerTeamId: Number(e.target.value) })}
+                            className="col-span-2 px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                            style={{ borderColor: "var(--athlon-border)" }}
+                          >
+                            <option value={0}>Select Winner Franchise</option>
+                            {teams.map((t) => (
+                              <option key={t.teamId} value={t.teamId}>
+                                {t.teamName}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Elected Choice */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black uppercase tracking-wider text-foreground/70 block">
+                        Elected Decision / Choice *
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: "SERVE", label: "Serve" },
+                          { id: "RECEIVE", label: "Receive" },
+                          { id: "SIDE", label: "Court Side" },
+                        ].map((choiceOpt) => (
+                          <button
+                            key={choiceOpt.id}
+                            type="button"
+                            onClick={() => setTossForm({ ...tossForm, choice: choiceOpt.id as any })}
+                            className={`p-2.5 rounded-xl border text-xs font-bold text-center transition-all ${
+                              tossForm.choice === choiceOpt.id
+                                ? "bg-primary/20 text-primary border-primary font-black shadow-sm"
+                                : "border-foreground/10 bg-background text-foreground/70 hover:border-foreground/30"
+                            }`}
+                          >
+                            {choiceOpt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground/70">Umpire Notes (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Chosen North Court side"
+                        value={tossForm.notes}
+                        onChange={(e) => setTossForm({ ...tossForm, notes: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border bg-background text-xs font-bold outline-none focus:border-primary"
+                        style={{ borderColor: "var(--athlon-border)" }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-2 border-t" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsTossModalOpen(false)}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-foreground/60 hover:text-foreground transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={tossSubmitting || !tossForm.tossWinnerTeamId}
+                        className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black hover:scale-105 active:scale-95 transition-all disabled:opacity-30 shadow-lg shadow-primary/20"
+                      >
+                        {tossSubmitting ? "Recording..." : "Save Toss Result"}
+                      </button>
+                    </div>
+                  </form>
+                );
+              })()}
             </div>
           </div>
         )}

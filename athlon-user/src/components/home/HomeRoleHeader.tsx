@@ -70,6 +70,7 @@ export default function HomeRoleHeader({
     if (type === 'ORGANIZER') return 'Organizer';
     if (type === 'ACADEMY') return 'Academy';
     if (type === 'CLUB') return 'Club';
+    if (type === 'COACH') return 'Coach / Trainer';
     if (type === 'COURT') return 'Venue';
     if (type === 'ASSOCIATION') return 'Association';
     return type;
@@ -78,6 +79,7 @@ export default function HomeRoleHeader({
   const getOrg3DType = (type: string) => {
     if (type === 'ORGANIZER') return 'tournaments';
     if (type === 'CLUB') return 'members';
+    if (type === 'COACH') return 'coaches';
     if (type === 'ACADEMY') return 'students';
     if (type === 'ASSOCIATION') return 'rankings';
     if (type === 'COURT') return 'facilities';

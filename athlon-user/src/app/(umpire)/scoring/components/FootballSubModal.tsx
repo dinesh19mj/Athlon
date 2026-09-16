@@ -26,75 +26,83 @@ export default function FootballSubModal({ onClose, timeStr }: FootballSubModalP
       return;
     }
     
-    // In many amateur rules they allow rolling subs, but if the limit is reached we might warn.
-    // For now we just log it and the UI will show 6/5 if they exceed it (as a visual indicator).
-    
     store.addSubstitutionDetailed(team, playerOffId, playerOnId, timeStr);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#2A2A2A] rounded-2xl w-full max-w-md shadow-2xl border border-white/5 animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-card rounded-3xl w-full max-w-md shadow-2xl border border-border animate-in zoom-in-95 duration-200 overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/5">
-          <div>
-            <h2 className="text-xl font-bold text-white">substitution</h2>
-            <p className="text-sm text-white/50">{timeStr} • {store.currentHalf === 1 ? '1st half' : store.currentHalf === 2 ? '2nd half' : `Half ${store.currentHalf}`} • subs used: {team === 'A' ? store.config?.teamA || 'Team A' : store.config?.teamB || 'Team B'} {subsUsed}/{maxSubs}</p>
+        <div className="flex items-center justify-between p-5 border-b border-border bg-surface/50">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-xl">
+              🔄
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-foreground uppercase tracking-wider">Player Substitution</h2>
+              <p className="text-xs text-text-muted font-mono">
+                {timeStr} • {store.currentHalf === 1 ? '1st Half' : store.currentHalf === 2 ? '2nd Half' : `Half ${store.currentHalf}`} • Subs: {subsUsed}/{maxSubs}
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 text-white/50 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+          <button onClick={onClose} className="p-2 text-text-muted hover:text-foreground rounded-xl hover:bg-surface transition-colors">
             ✕
           </button>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-4">
           
           {/* Team Selection */}
-          <div className="space-y-2">
-            <label className="text-xs text-white/50 font-bold">team</label>
-            <div className="flex gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs text-text-muted font-bold uppercase tracking-wider pl-1">Team</label>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => { setTeam('A'); setPlayerOffId(''); setPlayerOnId(''); }}
-                className={`flex-1 py-3 rounded-lg font-bold border transition-all ${team === 'A' ? 'bg-[#1a2332] border-[#2d4a77] text-[#4f8eff]' : 'bg-transparent border-white/10 text-white hover:bg-white/5'}`}
+                className={`py-3 px-3 rounded-2xl font-black text-xs uppercase tracking-wider border transition-all truncate ${team === 'A' ? 'bg-primary text-black border-primary shadow-sm' : 'bg-surface border-border text-foreground hover:bg-surface-hover'}`}
               >
-                {store.config?.teamA || 'Team A'}
+                {store.config?.teamA || 'Team A'} ({store.subsUsedA}/{maxSubs})
               </button>
               <button
                 onClick={() => { setTeam('B'); setPlayerOffId(''); setPlayerOnId(''); }}
-                className={`flex-1 py-3 rounded-lg font-bold border transition-all ${team === 'B' ? 'bg-[#2d2d2d] border-white/30 text-white' : 'bg-transparent border-white/10 text-white/70 hover:bg-white/5'}`}
+                className={`py-3 px-3 rounded-2xl font-black text-xs uppercase tracking-wider border transition-all truncate ${team === 'B' ? 'bg-primary text-black border-primary shadow-sm' : 'bg-surface border-border text-foreground hover:bg-surface-hover'}`}
               >
-                {store.config?.teamB || 'Team B'}
+                {store.config?.teamB || 'Team B'} ({store.subsUsedB}/{maxSubs})
               </button>
             </div>
           </div>
 
           {/* Player Off */}
-          <div className="space-y-2">
-            <label className="text-xs text-white/50 font-bold">player off</label>
+          <div className="space-y-1.5">
+            <label className="text-xs text-text-muted font-bold uppercase tracking-wider pl-1 flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-rose-500"></span> Player Coming Off
+            </label>
             <select
               value={playerOffId}
               onChange={(e) => setPlayerOffId(e.target.value)}
-              className="w-full bg-[#1c1c1c] border border-white/10 rounded-lg px-4 py-3 text-white font-bold focus:outline-none focus:border-white/30"
+              className="w-full bg-surface border border-border rounded-2xl px-4 py-3 text-foreground font-bold text-xs focus:outline-none focus:border-primary shadow-inner"
             >
-              <option value="" disabled>select player</option>
+              <option value="" disabled>Select Starting / On-field Player</option>
               {onFieldPlayers.map(p => (
-                <option key={p.id} value={p.id}>{p.jerseyNumber ? `${p.jerseyNumber} ` : ''}{p.name}</option>
+                <option key={p.id} value={p.id}>{p.jerseyNumber ? `#${p.jerseyNumber} ` : ''}{p.name}</option>
               ))}
             </select>
           </div>
 
           {/* Player On */}
-          <div className="space-y-2">
-            <label className="text-xs text-white/50 font-bold">player on</label>
+          <div className="space-y-1.5">
+            <label className="text-xs text-text-muted font-bold uppercase tracking-wider pl-1 flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Player Coming On (Bench)
+            </label>
             <select
               value={playerOnId}
               onChange={(e) => setPlayerOnId(e.target.value)}
-              className="w-full bg-[#1c1c1c] border border-white/10 rounded-lg px-4 py-3 text-white font-bold focus:outline-none focus:border-white/30"
+              className="w-full bg-surface border border-border rounded-2xl px-4 py-3 text-foreground font-bold text-xs focus:outline-none focus:border-primary shadow-inner"
             >
-              <option value="" disabled>select player</option>
+              <option value="" disabled>Select Substitute from Bench</option>
               {benchPlayers.map(p => (
-                <option key={p.id} value={p.id}>{p.jerseyNumber ? `${p.jerseyNumber} ` : ''}{p.name}</option>
+                <option key={p.id} value={p.id}>{p.jerseyNumber ? `#${p.jerseyNumber} ` : ''}{p.name}</option>
               ))}
             </select>
           </div>
@@ -102,18 +110,18 @@ export default function FootballSubModal({ onClose, timeStr }: FootballSubModalP
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-5 border-t border-white/5 bg-black/20 rounded-b-2xl">
+        <div className="flex gap-2.5 p-5 border-t border-border bg-surface/30">
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 rounded-xl font-bold bg-transparent border border-white/10 text-white hover:bg-white/5 transition-all"
+            className="flex-1 py-3 rounded-2xl font-bold text-xs bg-surface border border-border text-foreground hover:bg-surface-hover transition-all"
           >
-            cancel
+            Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-[2] py-3.5 rounded-xl font-bold bg-white text-black hover:bg-white/90 active:scale-[0.98] transition-all"
+            className="flex-[2] py-3 rounded-2xl font-black text-xs uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400 active:scale-[0.98] transition-all shadow-lg shadow-cyan-500/25"
           >
-            confirm sub
+            Confirm Substitution
           </button>
         </div>
 

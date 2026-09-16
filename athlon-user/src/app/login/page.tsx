@@ -315,8 +315,13 @@ export default function LoginPage() {
 
       {/* Floating Bottom Navigation Bar (Consistent with Mobile Experience) */}
       <nav
-        className="fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto lg:hidden"
-        style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
+        className="fixed bottom-0 inset-x-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto lg:hidden fixed-bottom-nav"
+        style={{
+          backgroundColor: 'var(--athlon-navigation)',
+          borderColor: 'var(--athlon-border)',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
+        }}
       >
         <Link href="/" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
           <Athlon3DIcon type="home" size={32} active={false} />

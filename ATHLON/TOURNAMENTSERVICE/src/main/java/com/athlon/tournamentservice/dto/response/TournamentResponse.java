@@ -37,6 +37,7 @@ public class TournamentResponse {
     private String poster;
 
     private String status;
+    private String registrationMode;
     private Integer isActive;
 
     public TournamentResponse() {
@@ -80,6 +81,7 @@ public class TournamentResponse {
         response.setPoster(tournament.getPoster());
 
         response.setStatus(tournament.getStatus());
+        response.setRegistrationMode(tournament.getRegistrationMode() != null ? tournament.getRegistrationMode() : "PUBLIC");
         response.setIsActive(tournament.getIsActive());
 
         return response;
@@ -283,6 +285,14 @@ public class TournamentResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getRegistrationMode() {
+        return registrationMode;
+    }
+
+    public void setRegistrationMode(String registrationMode) {
+        this.registrationMode = registrationMode;
     }
 
     public Integer getIsActive() {

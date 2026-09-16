@@ -646,62 +646,6 @@ export default function LiveScorePage() {
             </div>
           )}
         </main>
-
-        {/* Mobile Fixed Bottom Nav */}
-        <nav
-          className="fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto"
-          style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
-        >
-          <Link href="/" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
-            <Athlon3DIcon type="home" size={32} active={false} />
-            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
-              Home
-            </span>
-          </Link>
-
-          <Link href="/tournaments" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
-            <Athlon3DIcon type="tournaments" size={32} active={false} />
-            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
-              Tournaments
-            </span>
-          </Link>
-
-          {/* 3D Circular Elevated Umpire Button */}
-          <div className="relative -top-5 flex items-center justify-center">
-            <Link
-              href="/practice"
-              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
-              style={{
-                backgroundColor: 'var(--athlon-primary)',
-                borderColor: 'var(--athlon-navigation)',
-                boxShadow: '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
-              }}
-            >
-              {/* 3D Glass Specular Reflection Arc */}
-              <div className="absolute inset-x-1 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none" />
-
-              <img
-                src="/umpire.png"
-                alt="Umpire"
-                className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
-              />
-            </Link>
-          </div>
-
-          <Link href="/academies" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
-            <Athlon3DIcon type="academies" size={32} active={false} />
-            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
-              Academy
-            </span>
-          </Link>
-
-          <Link href={isAuthenticated ? '/home' : '/login'} className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
-            <Athlon3DIcon type="profile" size={32} active={false} />
-            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
-              Profile
-            </span>
-          </Link>
-        </nav>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

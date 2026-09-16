@@ -41,6 +41,7 @@ import { AcademyStaffService, AcademyStaffResponse } from '@/lib/api/academyStaf
 import { OrganizationService } from '@/lib/api/organization';
 import { AcademyService, AcademyCentre } from '@/lib/api/academy';
 import { UserService } from '@/lib/api/user';
+import OrganizerRolesPermissionsView from '@/components/organizer/OrganizerRolesPermissionsView';
 
 /* ─── Non-Coach Staff Role Configuration ─── */
 const STAFF_ROLES = [
@@ -61,6 +62,10 @@ export default function StaffPage() {
   const activeOrg = getActiveOrganization();
   const orgUuid = activeOrg?.id || orgIdParam;
   const orgName = activeOrg?.name ?? 'Academy';
+
+  if (activeOrg?.type === 'ORGANIZER' || activeOrg?.type === 'ASSOCIATION') {
+    return <OrganizerRolesPermissionsView orgUuid={orgUuid} orgName={orgName} />;
+  }
 
   const { role, isAdmin } = useOrgRole();
   const { canManageModule } = usePermissions(orgUuid);

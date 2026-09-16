@@ -150,7 +150,13 @@ export default function AcademyCentresPage() {
 
   useEffect(() => { loadCentres(); }, [orgId]);
 
+  const isClub = org?.type === 'CLUB';
+
   const toggleSport = (sportName: string) => {
+    if (isClub) {
+      setSelectedSports([sportName]);
+      return;
+    }
     setSelectedSports((prev) =>
       prev.includes(sportName)
         ? prev.filter((s) => s !== sportName)
@@ -744,8 +750,8 @@ export default function AcademyCentresPage() {
               {/* Section: Sports Selection */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                    Sports Available ({selectedSports.length} Selected)
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                    {isClub ? 'Sport Discipline' : 'Sports Available'} ({selectedSports.length} Selected)
                   </p>
                   {selectedSports.length === 0 && (
                     <span className="text-[10px] text-amber-400 font-semibold">Select at least one</span>

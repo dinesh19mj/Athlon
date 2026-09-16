@@ -31,7 +31,7 @@ export default function WicketModal({
   alreadyBattedIds,
   strikerId,
   nonStrikerId,
-  onConfirm
+  onConfirm,
 }: WicketModalProps) {
   const [type, setType] = useState('bowled');
   const [fielderId, setFielderId] = useState('');
@@ -42,46 +42,53 @@ export default function WicketModal({
   const requiresFielder = ['caught', 'run out', 'stumped'].includes(type);
 
   // Available batters: Not out, and not currently on the pitch
-  const availableBatters = battingTeam.filter(p => 
-    !alreadyBattedIds.includes(p.id) && p.id !== strikerId && p.id !== nonStrikerId
+  const availableBatters = battingTeam.filter(
+    (p) => !alreadyBattedIds.includes(p.id) && p.id !== strikerId && p.id !== nonStrikerId
   );
 
   const handleConfirm = () => {
     onConfirm(type, nextBatterId, fielderId);
-    // Reset state for next time
     setType('bowled');
     setFielderId('');
     setNextBatterId('');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 font-sans antialiased">
-      <div className="bg-[#27272a] border border-white/10 rounded-xl w-full max-w-md shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 font-sans antialiased backdrop-blur-sm animate-in fade-in">
+      <div className="bg-card border border-border rounded-3xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border bg-surface/50">
           <div>
-            <h2 className="text-xl font-bold text-white">wicket — {batterName}</h2>
-            <p className="text-xs text-gray-400 mt-1">out at {overStr} • score {scoreStr}</p>
+            <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Wicket Fallen</span>
+            <h2 className="text-base sm:text-lg font-extrabold text-foreground">Out — {batterName}</h2>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              Score: {scoreStr} • Over: {overStr}
+            </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X className="w-6 h-6" />
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-text-muted hover:text-foreground hover:bg-surface transition-colors"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 flex flex-col gap-5">
+        <div className="p-5 sm:p-6 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
           {/* How Out */}
           <div>
-            <label className="text-xs text-gray-400 mb-2 block">how out</label>
-            <div className="grid grid-cols-2 gap-3">
-              {DISMISSAL_TYPES.map(d => (
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary mb-2 block">
+              Dismissal Type
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {DISMISSAL_TYPES.map((d) => (
                 <button
                   key={d}
                   onClick={() => setType(d)}
-                  className={`py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                    type === d 
-                      ? 'bg-[#1e3a8a]/30 border-[#3b82f6]/50 text-[#60a5fa]' 
-                      : 'bg-[#18181b] border-white/10 text-gray-300 hover:bg-white/5'
+                  className={`py-2 rounded-xl text-xs font-bold border transition capitalize ${
+                    type === d
+                      ? 'bg-rose-500/15 border-rose-500/50 text-rose-500 shadow-sm'
+                      : 'bg-surface border-border text-text-secondary hover:text-foreground hover:bg-surface-hover'
                   }`}
                 >
                   {d}
@@ -92,55 +99,65 @@ export default function WicketModal({
 
           {/* Fielder */}
           <div>
-            <label className={`text-xs block mb-2 ${requiresFielder ? 'text-gray-400' : 'text-gray-600'}`}>
-              fielder (if caught / run out / stumped)
+            <label
+              className={`text-[11px] font-bold uppercase tracking-wider block mb-1.5 ${
+                requiresFielder ? 'text-text-secondary' : 'text-text-muted opacity-60'
+              }`}
+            >
+              Fielder {requiresFielder ? '*' : '(Not required)'}
             </label>
             <select
               value={fielderId}
               onChange={(e) => setFielderId(e.target.value)}
               disabled={!requiresFielder}
-              className="w-full bg-[#18181b] border border-white/10 rounded-lg px-4 py-3 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:border-[#3b82f6]/50"
+              className="w-full bg-surface border border-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-foreground disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:border-primary transition"
             >
-              <option value="" disabled>select fielder</option>
-              {fieldingTeam.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+              <option value="">Select Fielder</option>
+              {fieldingTeam.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Next Batter */}
           <div>
-            <label className="text-xs text-gray-400 mb-2 block">next batter</label>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary mb-1.5 block">
+              Next Batter *
+            </label>
             <select
               value={nextBatterId}
               onChange={(e) => setNextBatterId(e.target.value)}
-              className="w-full bg-[#18181b] border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#3b82f6]/50"
+              className="w-full bg-surface border border-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary transition"
             >
-              <option value="" disabled>select next batter</option>
-              {availableBatters.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+              <option value="" disabled>
+                Select Next Batter
+              </option>
+              {availableBatters.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
-              {availableBatters.length === 0 && (
-                <option value="none">End of Innings (All Out)</option>
-              )}
+              <option value="none">End of Innings (All Out)</option>
             </select>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 pt-2 flex items-center gap-3">
-          <button 
-            onClick={onClose} 
-            className="flex-1 py-3 rounded-lg border border-white/10 text-sm font-medium text-gray-300 hover:bg-white/5 transition-colors"
+        <div className="p-4 sm:p-5 border-t border-border bg-surface/50 flex items-center gap-2.5">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-border text-xs font-bold text-text-secondary hover:bg-surface transition"
           >
-            cancel
+            Cancel
           </button>
-          <button 
+          <button
             onClick={handleConfirm}
             disabled={!nextBatterId || (requiresFielder && !fielderId)}
-            className="flex-1 py-3 rounded-lg bg-white text-black text-sm font-bold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-xs font-bold hover:bg-rose-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
-            confirm wicket
+            Confirm Wicket
           </button>
         </div>
       </div>

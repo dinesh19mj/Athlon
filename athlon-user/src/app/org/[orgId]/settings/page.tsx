@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
 import {
@@ -11,22 +11,38 @@ import {
   ShieldAlert,
   Palette,
   ShieldCheck,
+  Building2,
+  LogOut,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/theme';
 import { AcademyPermissionMatrixView } from '@/components/academy/AcademyPermissionMatrixView';
+import { ClubPermissionMatrixView } from '@/components/club/ClubPermissionMatrixView';
+import OrganizerRolesPermissionsView from '@/components/organizer/OrganizerRolesPermissionsView';
+import { OrganizationProfileEditor } from '@/components/academy/OrganizationProfileEditor';
+import { useAuthStore } from '@/lib/store/useAuthStore';
 
-export default function SettingsPage() {
+function SettingsContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const orgId = (params?.orgId as string) || '';
   const { getActiveOrganization, organizations } = useWorkspaceStore();
   const org = getActiveOrganization() || organizations.find((o) => o.id === orgId);
   const { isAdmin } = useOrgRole();
-  const [activeTab, setActiveTab] = useState<'permissions' | 'appearance' | 'notifications' | 'billing' | 'danger'>('permissions');
+  const { logout } = useAuthStore();
+
+  const tabQuery = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'profile' | 'permissions' | 'appearance' | 'notifications' | 'billing' | 'danger'>('profile');
+
+  useEffect(() => {
+    if (tabQuery && ['profile', 'permissions', 'appearance', 'notifications', 'billing', 'danger'].includes(tabQuery)) {
+      setActiveTab(tabQuery as any);
+    }
+  }, [tabQuery]);
 
   if (!org) return null;
 
   return (
-    <div className="p-3.5 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-300 text-foreground font-sans">
+    <div className="w-full max-w-7xl mx-auto overflow-x-hidden p-3.5 sm:p-6 md:p-8 pb-32 sm:pb-16 space-y-4 sm:space-y-6 animate-in fade-in duration-300 text-foreground font-sans">
       {/* ── Header ── */}
       <div>
         <div className="flex items-center gap-2 mb-1">
@@ -38,17 +54,36 @@ export default function SettingsPage() {
           <Settings className="w-6 h-6 sm:w-7 sm:h-7 text-primary" /> Workspace Settings
         </h1>
         <p className="text-foreground/55 text-xs sm:text-sm font-medium mt-0.5">
-          Manage workspace permissions, appearance, notifications, billing, and preferences for{' '}
+          Manage workspace profile, permissions, appearance, notifications, billing, and preferences for{' '}
           <span className="font-bold text-foreground">{org.name}</span>.
         </p>
       </div>
 
       {/* ── MOBILE HORIZONTAL PILL BAR & DESKTOP SIDEBAR ── */}
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8 w-full max-w-full">
         {/* Navigation Tabs (Horizontal on mobile, Vertical on desktop) */}
-        <div className="w-full md:w-64 shrink-0">
-          <div className="flex md:flex-col gap-1.5 overflow-x-auto pb-1.5 md:pb-0 no-scrollbar">
-            {org.type === 'ACADEMY' && isAdmin && (
+        <div className="w-full md:w-64 shrink-0 max-w-full">
+          <div className="flex md:flex-col gap-1.5 overflow-x-auto pb-1.5 md:pb-0 hide-scrollbar w-full max-w-full">
+            {/* Profile Tab */}
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
+                activeTab === 'profile'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground border'
+              }`}
+              style={{
+                backgroundColor: activeTab === 'profile' ? undefined : 'var(--athlon-card)',
+                borderColor: activeTab === 'profile' ? undefined : 'var(--athlon-border)',
+              }}
+            >
+              <Building2 className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">
+                {org.type === 'ACADEMY' ? 'Academy Profile' : org.type === 'COACH' ? 'Coach Profile & Credentials' : org.type === 'CLUB' ? 'Club Profile' : 'Organization Profile'}
+              </span>
+            </button>
+
+            {(org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION') && isAdmin && (
               <button
                 onClick={() => setActiveTab('permissions')}
                 className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
@@ -62,7 +97,7 @@ export default function SettingsPage() {
                 }}
               >
                 <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span className="whitespace-nowrap">Roles & Permissions</span>
+                <span className="whitespace-nowrap">Roles &amp; Permissions</span>
               </button>
             )}
 
@@ -128,16 +163,53 @@ export default function SettingsPage() {
               <ShieldAlert className="w-4 h-4 shrink-0" />
               <span className="whitespace-nowrap">Danger Zone</span>
             </button>
+
+            <button
+              onClick={() => {
+                logout();
+                window.location.href = '/';
+              }}
+              className="flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 md:mt-2"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+              }}
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Log Out</span>
+            </button>
           </div>
         </div>
 
         {/* ── Settings Content Area ── */}
-        <div className="flex-grow min-w-0">
-          {activeTab === 'permissions' && org.type === 'ACADEMY' ? (
+        <div className="flex-grow min-w-0 w-full max-w-full overflow-x-hidden">
+          {/* Profile Editor Tab */}
+          {activeTab === 'profile' && (
+            <div className="animate-in fade-in duration-300">
+              <OrganizationProfileEditor orgId={org.id} />
+            </div>
+          )}
+
+          {/* Permissions Tab */}
+          {activeTab === 'permissions' && org.type === 'ACADEMY' && (
             <div className="animate-in fade-in duration-300">
               <AcademyPermissionMatrixView orgUuid={org.id} />
             </div>
-          ) : (
+          )}
+
+          {activeTab === 'permissions' && org.type === 'CLUB' && (
+            <div className="animate-in fade-in duration-300">
+              <ClubPermissionMatrixView orgUuid={org.id} />
+            </div>
+          )}
+
+          {activeTab === 'permissions' && (org.type === 'ORGANIZER' || org.type === 'ASSOCIATION') && (
+            <div className="animate-in fade-in duration-300">
+              <OrganizerRolesPermissionsView orgUuid={org.id} orgName={org.name || 'Organizer Workspace'} />
+            </div>
+          )}
+
+          {/* Other Tabs in Card */}
+          {activeTab !== 'profile' && !(activeTab === 'permissions' && (org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION')) && (
             <div
               className="rounded-[24px] p-4 sm:p-6 md:p-8 shadow-sm border"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
@@ -281,5 +353,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-foreground/50">Loading settings...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }

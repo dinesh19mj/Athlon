@@ -40,6 +40,10 @@ public class DataSeeder {
                                 "Host premier franchise team championships with live player auctions, team purse bidding, multi-match tie lineups, and live broadcasting.", 
                                 new BigDecimal("2499"), 1, 
                                 "[\"1 Complete Team Championship Event\", \"Real-Time Live Player Auction & Bidding\", \"Franchise Purse & Squad Management\", \"Team vs Team Tie Multi-Match Lineups\", \"Live YouTube Auction & Score Overlays\"]"),
+                        new SubscriptionPackage("Freelance Coach & Trainer", 
+                                "Dedicated workspace for private coaches and personal trainers with trainee enrollment, custom pricing packages, credentials showcase, and schedule manager.", 
+                                new BigDecimal("2499"), 1, 
+                                "[\"Single-Sport Discipline Profile\", \"Trainee Roster & Enrolment\", \"Custom Coaching Rate Cards & Packages\", \"Verified Credentials & Certifications Showcase\", \"Daily Training Schedule & Attendance\"]"),
                         new SubscriptionPackage("Academy Hub", 
                                 "End-to-end management for sports academies, student rosters, coaches, and training schedules.", 
                                 new BigDecimal("7900"), 1, 
@@ -53,6 +57,16 @@ public class DataSeeder {
                                 new BigDecimal("3100"), 1, 
                                 "[\"Dynamic Court Scheduling\", \"Payment Processing\", \"Player Reviews\", \"Booking Analytics\"]")
                 ));
+            } else {
+                // Ensure Freelance Coach package exists in existing databases
+                boolean hasCoach = repository.findAll().stream()
+                        .anyMatch(p -> p.getName() != null && (p.getName().toLowerCase().contains("coach") || p.getName().toLowerCase().contains("trainer")));
+                if (!hasCoach) {
+                    repository.save(new SubscriptionPackage("Freelance Coach & Trainer", 
+                            "Dedicated workspace for private coaches and personal trainers with trainee enrollment, custom pricing packages, credentials showcase, and schedule manager.", 
+                            new BigDecimal("2499"), 1, 
+                            "[\"Single-Sport Discipline Profile\", \"Trainee Roster & Enrolment\", \"Custom Coaching Rate Cards & Packages\", \"Verified Credentials & Certifications Showcase\", \"Daily Training Schedule & Attendance\"]"));
+                }
             }
 
             // Seed Location Master Data

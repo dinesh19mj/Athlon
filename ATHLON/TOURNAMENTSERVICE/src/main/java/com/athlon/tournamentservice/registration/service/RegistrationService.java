@@ -2,11 +2,15 @@ package com.athlon.tournamentservice.registration.service;
 
 import com.athlon.tournamentservice.dto.request.RegistrationCreateRequest;
 import com.athlon.tournamentservice.dto.response.RegistrationResponse;
+import com.athlon.tournamentservice.exception.BadRequestException;
 import com.athlon.tournamentservice.exception.ResourceNotFoundException;
+import com.athlon.tournamentservice.match.entity.Match;
+import com.athlon.tournamentservice.match.repository.MatchRepository;
 import com.athlon.tournamentservice.registration.entity.Registration;
 import com.athlon.tournamentservice.registration.entity.RegistrationPlayer;
 import com.athlon.tournamentservice.registration.repository.RegistrationRepository;
 import com.athlon.tournamentservice.registration.repository.RegistrationPlayerRepository;
+import com.athlon.tournamentservice.tournament.repository.TournamentRepository;
 import com.athlon.tournamentservice.dto.request.PlayerRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,14 +25,37 @@ public class RegistrationService {
 
     private final RegistrationRepository registrationRepository;
     private final RegistrationPlayerRepository registrationPlayerRepository;
+    private final MatchRepository matchRepository;
+    private final TournamentRepository tournamentRepository;
 
-    public RegistrationService(RegistrationRepository registrationRepository, RegistrationPlayerRepository registrationPlayerRepository) {
+    public RegistrationService(RegistrationRepository registrationRepository,
+                               RegistrationPlayerRepository registrationPlayerRepository,
+                               MatchRepository matchRepository,
+                               TournamentRepository tournamentRepository) {
         this.registrationRepository = registrationRepository;
         this.registrationPlayerRepository = registrationPlayerRepository;
+        this.matchRepository = matchRepository;
+        this.tournamentRepository = tournamentRepository;
     }
 
     @Transactional
     public RegistrationResponse createRegistration(RegistrationCreateRequest request) {
+        if (!"ORGANIZER_MANUAL".equalsIgnoreCase(request.getRegistrationSource())) {
+            if (request.getTournamentUuid() != null) {
+                tournamentRepository.findByTournamentUuid(request.getTournamentUuid()).ifPresent(t -> {
+                    if ("ORGANIZER_MANAGED".equalsIgnoreCase(t.getRegistrationMode()) || "ORGANIZER_MANUAL".equalsIgnoreCase(t.getRegistrationMode())) {
+                        throw new BadRequestException("Online public registration is not enabled for this tournament. Participants are managed directly by the organizer.");
+                    }
+                });
+            } else if (request.getTournamentId() != null) {
+                tournamentRepository.findById(request.getTournamentId()).ifPresent(t -> {
+                    if ("ORGANIZER_MANAGED".equalsIgnoreCase(t.getRegistrationMode()) || "ORGANIZER_MANUAL".equalsIgnoreCase(t.getRegistrationMode())) {
+                        throw new BadRequestException("Online public registration is not enabled for this tournament. Participants are managed directly by the organizer.");
+                    }
+                });
+            }
+        }
+
         Registration registration = new Registration(
                 request.getTournamentId(),
                 request.getTournamentUuid(),
@@ -39,6 +66,22 @@ public class RegistrationService {
                 request.getPrimaryContactUuid(),
                 request.getCreatedBy()
         );
+
+        if (request.getPlace() != null) {
+            registration.setPlace(request.getPlace());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            registration.setStatus(request.getStatus());
+        }
+        if (request.getPaymentStatus() != null && !request.getPaymentStatus().isBlank()) {
+            registration.setPaymentStatus(request.getPaymentStatus());
+        }
+        if (request.getRegistrationSource() != null && !request.getRegistrationSource().isBlank()) {
+            registration.setRegistrationSource(request.getRegistrationSource());
+        }
+        if (request.getGender() != null && !request.getGender().isBlank()) {
+            registration.setGender(request.getGender());
+        }
 
         Registration saved = registrationRepository.save(registration);
 
@@ -59,7 +102,7 @@ public class RegistrationService {
             }
         }
 
-        return RegistrationResponse.fromEntity(saved);
+        return mapRegistrationToResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -144,6 +187,84 @@ public class RegistrationService {
         registrationRepository.save(registration);
 
         return mapRegistrationToResponse(registration);
+    }
+
+    @Transactional
+    public void deleteRegistration(UUID uuid, Long updatedBy) {
+        Registration registration = registrationRepository.findByRegistrationUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Registration not found with UUID: " + uuid));
+
+        // Validate against in-progress or completed matches
+        if (registration.getTournamentUuid() != null) {
+            List<Match> matches = matchRepository.findByTournamentUuid(registration.getTournamentUuid());
+            for (Match m : matches) {
+                boolean isTeamA = (m.getTeamARegistrationId() != null && m.getTeamARegistrationId().equals(registration.getRegistrationId()))
+                        || (m.getTeamARegistrationUuid() != null && m.getTeamARegistrationUuid().equals(registration.getRegistrationUuid()));
+                boolean isTeamB = (m.getTeamBRegistrationId() != null && m.getTeamBRegistrationId().equals(registration.getRegistrationId()))
+                        || (m.getTeamBRegistrationUuid() != null && m.getTeamBRegistrationUuid().equals(registration.getRegistrationUuid()));
+
+                if (isTeamA || isTeamB) {
+                    if ("IN_PROGRESS".equalsIgnoreCase(m.getStatus()) || "COMPLETED".equalsIgnoreCase(m.getStatus())) {
+                        throw new IllegalStateException("Cannot delete participant because match results or scoring has already started for this participant.");
+                    }
+                }
+            }
+        }
+
+        registrationPlayerRepository.deleteByRegistrationId(registration.getRegistrationId());
+        registrationRepository.delete(registration);
+    }
+
+    @Transactional
+    public RegistrationResponse updateRegistration(UUID uuid, RegistrationCreateRequest request, Long updatedBy) {
+        Registration registration = registrationRepository.findByRegistrationUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Registration not found with UUID: " + uuid));
+
+        if (request.getTeamName() != null && !request.getTeamName().isBlank()) {
+            registration.setTeamName(request.getTeamName());
+        }
+        if (request.getPlace() != null) {
+            registration.setPlace(request.getPlace());
+        }
+        if (request.getCategoryId() != null) {
+            registration.setCategoryId(request.getCategoryId());
+        }
+        if (request.getCategoryUuid() != null) {
+            registration.setCategoryUuid(request.getCategoryUuid());
+        }
+        if (request.getGender() != null) {
+            registration.setGender(request.getGender());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            registration.setStatus(request.getStatus());
+        }
+        if (request.getPaymentStatus() != null && !request.getPaymentStatus().isBlank()) {
+            registration.setPaymentStatus(request.getPaymentStatus());
+        }
+        if (updatedBy != null) {
+            registration.setUpdatedBy(updatedBy);
+        }
+
+        if (request.getPlayers() != null && !request.getPlayers().isEmpty()) {
+            registrationPlayerRepository.deleteByRegistrationId(registration.getRegistrationId());
+            for (PlayerRequest playerRequest : request.getPlayers()) {
+                RegistrationPlayer registrationPlayer = new RegistrationPlayer(
+                        registration.getRegistrationId(),
+                        registration.getRegistrationUuid(),
+                        registration.getTournamentId(),
+                        registration.getTournamentUuid(),
+                        playerRequest.getPlayerId(),
+                        playerRequest.getPlayerUuid(),
+                        playerRequest.getPlayerName(),
+                        playerRequest.getPhoneNumber(),
+                        updatedBy != null ? updatedBy : request.getCreatedBy()
+                );
+                registrationPlayerRepository.save(registrationPlayer);
+            }
+        }
+
+        Registration saved = registrationRepository.save(registration);
+        return mapRegistrationToResponse(saved);
     }
 }
 

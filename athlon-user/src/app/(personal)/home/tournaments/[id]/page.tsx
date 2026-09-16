@@ -218,6 +218,7 @@ export default function PersonalTournamentDetailsPage() {
   const endInfo = parseDateTime(tournament.endDate);
 
   const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT' || tournament.tournamentType === 'TEAM_LEAGUE';
+  const isOrganizerManaged = tournament.registrationMode === 'ORGANIZER_MANAGED' || tournament.registrationMode === 'ORGANIZER_MANUAL';
   const isLeague = tournament.tournamentType === 'LEAGUE' || tournament.tournamentType === 'TEAM_EVENT' || tournament.tournamentType === 'TEAM_LEAGUE';
 
   const isRegistrationClosed = tournament.status === 'REGISTRATION_CLOSED';
@@ -441,13 +442,20 @@ export default function PersonalTournamentDetailsPage() {
             {/* Prominent Hero Register CTA */}
             {!isRegistrationClosed && tournament.status !== 'COMPLETED' && tournament.status !== 'FINISHED' && (
               <div className="pt-2">
-                <button
-                  onClick={() => router.push(`/home/tournaments/${tournamentUuid}/register`)}
-                  className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-                >
-                  <Ticket className="w-4 h-4" />
-                  <span>{isTeamEvent ? 'Register Your Team' : 'Register for Tournament'}</span>
-                </button>
+                {isOrganizerManaged ? (
+                  <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 text-xs font-bold shadow-sm">
+                    <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>Participant entry managed directly by the tournament organizer</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => router.push(`/home/tournaments/${tournamentUuid}/register`)}
+                    className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    <span>{isTeamEvent ? 'Register Your Team' : 'Register for Tournament'}</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1058,10 +1066,12 @@ export default function PersonalTournamentDetailsPage() {
 
       {/* Sticky Bottom Registration Bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 p-4 backdrop-blur-xl border-t z-50 shadow-2xl"
+        className="fixed bottom-0 inset-x-0 p-4 backdrop-blur-xl border-t z-50 shadow-2xl fixed-bottom-nav"
         style={{
           backgroundColor: 'var(--athlon-navigation)',
           borderColor: 'var(--athlon-border)',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
         }}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
@@ -1087,6 +1097,11 @@ export default function PersonalTournamentDetailsPage() {
             >
               Registration Closed
             </button>
+          ) : isOrganizerManaged ? (
+            <div className="px-6 py-3.5 bg-purple-500/15 border border-purple-500/30 text-purple-400 font-bold text-xs sm:text-sm rounded-2xl flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+              <span>Managed by Organizer</span>
+            </div>
           ) : (
             <button
               onClick={() => router.push(`/home/tournaments/${tournamentUuid}/register`)}

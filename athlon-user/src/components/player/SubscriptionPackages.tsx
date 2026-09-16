@@ -33,7 +33,8 @@ import {
   SlidersHorizontal,
   Ticket,
   Gavel,
-  Crown
+  Crown,
+  UserCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/useAuthStore';
@@ -227,6 +228,32 @@ export function SubscriptionPackages() {
                 { label: 'Events Limit', value: 'Unlimited Tournaments' },
                 { label: 'Live Streaming', value: 'Multi-Court HD' },
               ];
+            } else if (nameLower.includes('coach') || nameLower.includes('trainer')) {
+              type = 'COACH';
+              icon = UserCheck;
+              subtitle = 'Private Coaching, Trainee Roster & Rate Cards';
+              badge = 'COACH & TRAINER';
+              colorScheme = {
+                accent: 'from-amber-500 to-orange-600',
+                text: 'text-amber-500 dark:text-amber-400',
+                bg: 'bg-amber-500/10',
+                border: 'border-amber-500/30',
+                badgeBg: 'bg-amber-500/15',
+                badgeText: 'text-amber-600 dark:text-amber-300',
+                glow: 'rgba(245, 158, 11, 0.25)',
+              };
+              highlightFeatures = [
+                'Single-Sport Profile & Credentials Showcase',
+                'Trainee Enrolment & Skill Level Tracker',
+                'Custom Coaching Packages & Rate Cards',
+                'Daily Training Schedule & Check-in Queue',
+                'Direct Fee Collection & Payment Receipts',
+              ];
+              specs = [
+                { label: 'Sport Disciplines', value: '1 Dedicated Sport' },
+                { label: 'Trainees Limit', value: 'Unlimited Trainees' },
+                { label: 'Credentials', value: 'Verified Badges' },
+              ];
             } else if (nameLower.includes('academy')) {
               type = 'ACADEMY';
               icon = GraduationCap;
@@ -352,6 +379,7 @@ export function SubscriptionPackages() {
         activeCategory === 'ALL' ||
         (activeCategory === 'ORGANIZER' && mod.type === 'ORGANIZER' && !mod.isTeamChampionship) ||
         (activeCategory === 'AUCTION' && mod.isTeamChampionship) ||
+        (activeCategory === 'COACH' && mod.type === 'COACH') ||
         (activeCategory === 'ACADEMY' && mod.type === 'ACADEMY') ||
         (activeCategory === 'CLUB' && mod.type === 'CLUB') ||
         (activeCategory === 'COURT' && mod.type === 'COURT');
@@ -467,6 +495,7 @@ export function SubscriptionPackages() {
               { id: 'ALL', label: 'All Packages', icon: Layers },
               { id: 'ORGANIZER', label: 'Knockout & League', icon: Trophy },
               { id: 'AUCTION', label: '👑 Team Championship & Auctions', icon: Crown },
+              { id: 'COACH', label: 'Coaches & Trainers', icon: UserCheck },
               { id: 'ACADEMY', label: 'Academies', icon: GraduationCap },
               { id: 'CLUB', label: 'Clubs', icon: Building2 },
               { id: 'COURT', label: 'Courts', icon: MapPin },
@@ -746,6 +775,7 @@ export function SubscriptionPackages() {
                       <th className="py-4 px-4 text-center">Single Tournament</th>
                       <th className="py-4 px-4 text-center">Monthly Pro Organizer</th>
                       <th className="py-4 px-4 text-center text-amber-500">👑 Team Championship</th>
+                      <th className="py-4 px-4 text-center text-amber-600 dark:text-amber-400">Coach / Trainer</th>
                       <th className="py-4 px-4 text-center">Academy Hub</th>
                       <th className="py-4 px-4 text-center">Club Management</th>
                       <th className="py-4 px-4 text-center">Court Provider</th>
@@ -753,17 +783,20 @@ export function SubscriptionPackages() {
                   </thead>
                   <tbody className="divide-y divide-border text-xs">
                     {[
-                      { name: 'Tournament Events Allowed', single: '1 Event', org: 'Unlimited / Mo', champ: '1 Mega Event', acad: 'Internal', club: 'Internal', court: '—' },
-                      { name: 'Knockout Fixtures & Draws', single: true, org: true, champ: true, acad: false, club: true, court: false },
-                      { name: 'League / Round-Robin Pools', single: true, org: true, champ: true, acad: false, club: true, court: false },
-                      { name: 'Live Player Auction & Bidding Console', single: false, org: false, champ: true, acad: false, club: false, court: false },
-                      { name: 'Franchise Team Purse & Squad Budget', single: false, org: false, champ: true, acad: false, club: false, court: false },
-                      { name: 'Team-vs-Team Multi-Match Tie Lineups', single: false, org: false, champ: true, acad: false, club: false, court: false },
-                      { name: 'YouTube Live Score Overlay', single: true, org: true, champ: true, acad: false, club: false, court: false },
-                      { name: 'Digital Umpire Console & Scoring', single: true, org: true, champ: true, acad: true, club: true, court: false },
-                      { name: 'Student Roster & Skill Tracking', single: false, org: false, champ: false, acad: true, club: false, court: false },
-                      { name: 'Automated Monthly Invoicing', single: false, org: false, champ: false, acad: true, club: true, court: true },
-                      { name: 'Dynamic Turf & Slot Booking', single: false, org: false, champ: false, acad: false, club: true, court: true },
+                      { name: 'Tournament Events Allowed', single: '1 Event', org: 'Unlimited / Mo', champ: '1 Mega Event', coach: '—', acad: 'Internal', club: 'Internal', court: '—' },
+                      { name: 'Single-Sport Profile Restriction', single: false, org: false, champ: false, coach: true, acad: false, club: true, court: false },
+                      { name: 'Verified Credentials & Badges', single: false, org: false, champ: false, coach: true, acad: false, club: false, court: false },
+                      { name: 'Custom Multi-Tier Fee Rate Cards', single: false, org: false, champ: false, coach: true, acad: true, club: false, court: true },
+                      { name: 'Knockout Fixtures & Draws', single: true, org: true, champ: true, coach: false, acad: false, club: true, court: false },
+                      { name: 'League / Round-Robin Pools', single: true, org: true, champ: true, coach: false, acad: false, club: true, court: false },
+                      { name: 'Live Player Auction & Bidding Console', single: false, org: false, champ: true, coach: false, acad: false, club: false, court: false },
+                      { name: 'Franchise Team Purse & Squad Budget', single: false, org: false, champ: true, coach: false, acad: false, club: false, court: false },
+                      { name: 'Team-vs-Team Multi-Match Tie Lineups', single: false, org: false, champ: true, coach: false, acad: false, club: false, court: false },
+                      { name: 'YouTube Live Score Overlay', single: true, org: true, champ: true, coach: false, acad: false, club: false, court: false },
+                      { name: 'Digital Umpire Console & Scoring', single: true, org: true, champ: true, coach: false, acad: true, club: true, court: false },
+                      { name: 'Trainee / Student Roster & Skill Tracking', single: false, org: false, champ: false, coach: true, acad: true, club: false, court: false },
+                      { name: 'Automated Monthly Invoicing', single: false, org: false, champ: false, coach: true, acad: true, club: true, court: true },
+                      { name: 'Dynamic Turf & Slot Booking', single: false, org: false, champ: false, coach: false, acad: false, club: true, court: true },
                     ].map((row, idx) => (
                       <tr key={idx} className="hover:bg-surface-hover/50 transition-colors">
                         <td className="py-3.5 px-4 font-bold text-foreground">{row.name}</td>
@@ -786,6 +819,13 @@ export function SubscriptionPackages() {
                             row.champ ? <Check className="w-4 h-4 text-amber-500 mx-auto" /> : <span className="text-text-muted/40 font-bold">—</span>
                           ) : (
                             <span className="font-black text-amber-500">{row.champ}</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-center bg-amber-500/10">
+                          {typeof row.coach === 'boolean' ? (
+                            row.coach ? <Check className="w-4 h-4 text-amber-500 mx-auto" /> : <span className="text-text-muted/40 font-bold">—</span>
+                          ) : (
+                            <span className="font-bold text-amber-500">{row.coach}</span>
                           )}
                         </td>
                         <td className="py-3.5 px-4 text-center">

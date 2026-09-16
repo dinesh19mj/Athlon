@@ -176,6 +176,26 @@ function SetupWorkspaceForm() {
               'Digital Umpire Console for All Courts',
               'Multi-Court Control Room & Schedule Matrix',
             ];
+          } else if (nameLower.includes('coach') || nameLower.includes('trainer')) {
+            type = 'COACH';
+            icon = UserCheck;
+            subtitle = 'Private Coaching, Trainee Roster & Rate Cards';
+            badge = 'COACH & TRAINER';
+            colorScheme = {
+              accent: 'from-amber-500 to-orange-600',
+              text: 'text-amber-500 dark:text-amber-400',
+              bg: 'bg-amber-500/10',
+              border: 'border-amber-500/30',
+              badgeBg: 'bg-amber-500/15',
+              badgeText: 'text-amber-600 dark:text-amber-300',
+            };
+            defaultFeatures = [
+              'Single-Sport Profile & Credentials Showcase',
+              'Trainee Enrolment & Skill Level Tracker',
+              'Custom Coaching Packages & Rate Cards',
+              'Daily Training Schedule & Check-in Queue',
+              'Direct Fee Collection & Payment Receipts',
+            ];
           } else if (nameLower.includes('academy')) {
             type = 'ACADEMY';
             icon = GraduationCap;
@@ -522,6 +542,8 @@ function SetupWorkspaceForm() {
                         ? 'e.g. Kerala Badminton Super League (KBSL)'
                         : selectedModule.type === 'ORGANIZER'
                         ? 'e.g. South India Open Championship 2026'
+                        : selectedModule.type === 'COACH'
+                        ? 'e.g. Coach Dinesh Sports Performance'
                         : selectedModule.type === 'ACADEMY'
                         ? 'e.g. Apex Smashers Academy'
                         : selectedModule.type === 'CLUB'

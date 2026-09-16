@@ -114,7 +114,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
     pathname.startsWith('/setup-workspace');
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex h-screen h-[100dvh] min-h-[100dvh] bg-background text-foreground overflow-hidden">
       {/* ══════════════════════════════════════════════════════════════════════
           DESKTOP SIDEBAR (Collapsible, Stylish, No Logo Image)
          ══════════════════════════════════════════════════════════════════════ */}
@@ -301,13 +301,18 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 overflow-auto bg-background md:pb-0 ${hideBottomNav ? 'pb-0' : 'pb-16'}`}>{children}</main>
+      <main className={`flex-1 overflow-y-auto overscroll-y-contain bg-background md:pb-0 ${hideBottomNav ? 'pb-0' : 'pb-24'}`}>{children}</main>
 
       {/* Mobile Bottom Nav */}
       {!hideBottomNav && (
         <nav
-          className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto"
-          style={{ backgroundColor: 'var(--athlon-navigation)', borderColor: 'var(--athlon-border)' }}
+          className="md:hidden fixed bottom-0 inset-x-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto fixed-bottom-nav"
+          style={{
+            backgroundColor: 'var(--athlon-navigation)',
+            borderColor: 'var(--athlon-border)',
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)',
+          }}
         >
         <Link
           href={homeHref}

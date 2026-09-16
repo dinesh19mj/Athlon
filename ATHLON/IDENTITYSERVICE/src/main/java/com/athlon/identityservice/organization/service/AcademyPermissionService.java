@@ -22,13 +22,13 @@ public class AcademyPermissionService {
 
     private final AcademyRolePermissionRepository permissionRepository;
 
-    public static final List<String> ALL_MODULES = Arrays.asList(
+    public static final List<String> ACADEMY_MODULES = Arrays.asList(
             "batches", "schedule", "attendance", "students", "coaches",
             "performance", "posts", "tournaments", "matches", "inventory",
             "centres", "facilities", "staff", "finances", "settings"
     );
 
-    public static final List<String> ALL_ROLES = Arrays.asList(
+    public static final List<String> ACADEMY_ROLES = Arrays.asList(
             "ADMIN", "COACH", "STAFF", "STUDENT", "PARENT"
     );
 
@@ -101,11 +101,11 @@ public class AcademyPermissionService {
 
     private List<AcademyRolePermissionResponse> generateDefaultPermissions(UUID organizationUuid) {
         List<AcademyRolePermissionResponse> defaults = new ArrayList<>();
-        Map<String, Map<String, String>> defaultMatrix = getDefaultMatrix();
+        Map<String, Map<String, String>> defaultMatrix = getAcademyDefaultMatrix();
 
-        for (String role : ALL_ROLES) {
+        for (String role : ACADEMY_ROLES) {
             Map<String, String> moduleMap = defaultMatrix.getOrDefault(role, new HashMap<>());
-            for (String moduleId : ALL_MODULES) {
+            for (String moduleId : ACADEMY_MODULES) {
                 String level = moduleMap.getOrDefault(moduleId, role.equals("ADMIN") ? "MANAGE" : "VIEW");
                 defaults.add(new AcademyRolePermissionResponse(
                         UUID.randomUUID(),
@@ -119,12 +119,12 @@ public class AcademyPermissionService {
         return defaults;
     }
 
-    private Map<String, Map<String, String>> getDefaultMatrix() {
+    private Map<String, Map<String, String>> getAcademyDefaultMatrix() {
         Map<String, Map<String, String>> matrix = new HashMap<>();
 
         // ADMIN
         Map<String, String> admin = new HashMap<>();
-        ALL_MODULES.forEach(m -> admin.put(m, "MANAGE"));
+        ACADEMY_MODULES.forEach(m -> admin.put(m, "MANAGE"));
         matrix.put("ADMIN", admin);
 
         // COACH

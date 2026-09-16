@@ -497,3 +497,34 @@ html.light [class*="bg-gradient-"] .text-white,
 html.light [class*="bg-gradient-"].text-white {
   color: #FFFFFF !important;
 }
+
+/* ─── Mobile Fixed Bottom Navigation & Action Bar Stability ──────────────── */
+nav[class*="fixed"][class*="bottom-0"],
+div[class*="fixed"][class*="bottom-0"],
+footer[class*="fixed"][class*="bottom-0"],
+.fixed-bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  transform: translate3d(0, 0, 0) !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+  will-change: transform !important;
+  contain: layout style;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent dynamic viewport height shifting and elastic pull on fixed bars */
+html,
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+@supports (-webkit-touch-callout: none) {
+  main[class*="overflow-"] {
+    -webkit-overflow-scrolling: touch;
+  }
+}

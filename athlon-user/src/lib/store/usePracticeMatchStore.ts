@@ -11,7 +11,9 @@ export interface PracticeMatchRecord {
   status: 'live' | 'completed';
   scoreA?: string;
   scoreB?: string;
-  winner?: 'A' | 'B';
+  winner?: 'A' | 'B' | string;
+  winnerLabel?: string;
+  winReason?: string;
   liveRoute: string;
 }
 

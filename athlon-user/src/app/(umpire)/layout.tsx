@@ -116,7 +116,13 @@ export default function UmpireLayout({ children }: { children: React.ReactNode }
 
       {/* Mobile Bottom Nav (PWA Style) */}
       {!isScoringLive && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface/95 backdrop-blur-xl border-t border-border z-50 px-6 flex items-center justify-between">
+        <nav
+          className="md:hidden fixed bottom-0 inset-x-0 h-20 bg-surface/95 backdrop-blur-xl border-t border-border z-50 px-6 flex items-center justify-between max-w-lg mx-auto fixed-bottom-nav"
+          style={{
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)',
+          }}
+        >
           <Link href="/umpire" className={`flex flex-col items-center gap-1 w-16 transition-opacity ${pathname === '/umpire' ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}>
             <Home className={`w-6 h-6 ${pathname === '/umpire' ? 'text-red-500' : 'text-foreground'}`} />
             <span className={`text-[9px] font-bold ${pathname === '/umpire' ? 'text-red-500' : 'text-foreground'}`}>Home</span>

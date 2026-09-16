@@ -8,9 +8,11 @@ import com.athlon.tournamentservice.registration.service.RegistrationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -76,6 +78,7 @@ public class RegistrationController {
         RegistrationResponse response = registrationService.updatePaymentStatus(uuid, status, updatedBy);
         return ResponseEntity.ok(ApiResponse.success("Registration payment status updated successfully", response));
     }
+
     @PostMapping("/{uuid}/players")
     public ResponseEntity<ApiResponse<RegistrationResponse>> addPlayers(
             @PathVariable("uuid") UUID uuid,
@@ -83,6 +86,23 @@ public class RegistrationController {
             @RequestParam(value = "updatedBy", required = false) Long updatedBy) {
         RegistrationResponse response = registrationService.addPlayersToRegistration(uuid, players, updatedBy);
         return ResponseEntity.ok(ApiResponse.success("Players added successfully", response));
+    }
+
+    @PutMapping("/{uuid}")
+    public ResponseEntity<ApiResponse<RegistrationResponse>> updateRegistration(
+            @PathVariable("uuid") UUID uuid,
+            @RequestBody RegistrationCreateRequest request,
+            @RequestParam(value = "updatedBy", required = false) Long updatedBy) {
+        RegistrationResponse response = registrationService.updateRegistration(uuid, request, updatedBy);
+        return ResponseEntity.ok(ApiResponse.success("Registration updated successfully", response));
+    }
+
+    @DeleteMapping("/{uuid}")
+    public ResponseEntity<ApiResponse<Void>> deleteRegistration(
+            @PathVariable("uuid") UUID uuid,
+            @RequestParam(value = "updatedBy", required = false) Long updatedBy) {
+        registrationService.deleteRegistration(uuid, updatedBy);
+        return ResponseEntity.ok(ApiResponse.success("Registration deleted successfully", null));
     }
 }
 

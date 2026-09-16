@@ -233,8 +233,8 @@ export const useMatchStore = create<MatchState>((set, get) => ({
       });
     }
     
-    // API Call with Meta
-    if (state.config.id) {
+    // API Call with Meta (skip for local storage practice matches)
+    if (state.config.id && !state.config.id.startsWith('practice-')) {
       const sportType = state.config.sportType || 'BADMINTON';
       ScoringService.recordEvent(state.config.id, sportType, {
         eventValue: scoringTeam,
@@ -263,8 +263,8 @@ export const useMatchStore = create<MatchState>((set, get) => ({
       matchWinner: null,
     });
 
-    // Optimistic API Call
-    if (state.config && state.config.id) {
+    // Optimistic API Call (skip for local storage practice matches)
+    if (state.config && state.config.id && !state.config.id.startsWith('practice-')) {
       const sportType = state.config.sportType || 'BADMINTON';
       ScoringService.recordEvent(state.config.id, sportType, {
         eventValue: previousGameState.winner || 'A',
@@ -375,7 +375,7 @@ export const useMatchStore = create<MatchState>((set, get) => ({
 
 if (typeof window !== 'undefined') {
   useMatchStore.subscribe((state) => {
-    if (!state.config?.id) return;
+    if (!state.config?.id || state.config.id.startsWith('practice-')) return;
     
     const currentGame = state.games[state.currentGameIndex];
     const payload = {

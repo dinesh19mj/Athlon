@@ -37,7 +37,7 @@ function MatchSetupContent() {
   const matchIdParam = searchParams.get('matchId');
 
   useEffect(() => {
-    if (matchIdParam && matchIdParam !== 'live') {
+    if (matchIdParam && matchIdParam !== 'live' && !matchIdParam.startsWith('practice-')) {
       MatchService.getById(matchIdParam)
         .then((res: any) => {
           if (res?.data?.status === 'COMPLETED') {
@@ -637,14 +637,14 @@ function MatchSetupContent() {
             ) : sport === 'Football' ? (
               <div className="space-y-3.5">
                 {/* Half Length */}
-                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-2">
+                <div className="p-4 rounded-2xl bg-surface border border-foreground/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Activity className="w-3.5 h-3.5 text-primary" /> Half Duration
                     </span>
                     <span className="text-xs font-mono font-black text-primary">{halfLengthMinutes} Mins</span>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                  <div className="grid grid-cols-5 gap-1.5">
                     {[10, 15, 20, 45].map((half) => (
                       <button
                         key={half}
@@ -657,6 +657,54 @@ function MatchSetupContent() {
                         {half}m
                       </button>
                     ))}
+                    <button
+                      onClick={() => {
+                        if ([10, 15, 20, 45].includes(halfLengthMinutes)) {
+                          setHalfLengthMinutes(25);
+                        }
+                      }}
+                      className={`py-2 rounded-xl text-xs font-black border transition-all active:scale-95 ${![10, 15, 20, 45].includes(halfLengthMinutes)
+                        ? 'bg-primary text-black border-primary shadow-sm'
+                        : 'bg-background border-foreground/10 text-foreground/70 hover:text-foreground'
+                        }`}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
+                  {/* Custom Half Duration Input & Stepper */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-foreground/5">
+                    <span className="text-[11px] font-bold text-text-muted">Custom Duration:</span>
+                    <div className="flex items-center gap-1.5 bg-background border border-foreground/10 rounded-xl p-1 shadow-inner">
+                      <button
+                        type="button"
+                        onClick={() => setHalfLengthMinutes(Math.max(1, halfLengthMinutes - 1))}
+                        className="w-7 h-7 rounded-lg bg-surface border border-foreground/10 text-foreground font-black flex items-center justify-center active:scale-90"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        value={halfLengthMinutes}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          if (!isNaN(val) && val > 0) {
+                            setHalfLengthMinutes(val);
+                          }
+                        }}
+                        className="w-12 text-center bg-transparent text-xs font-mono font-black text-foreground focus:outline-none"
+                      />
+                      <span className="text-[10px] text-text-muted font-bold pr-1">mins</span>
+                      <button
+                        type="button"
+                        onClick={() => setHalfLengthMinutes(Math.min(120, halfLengthMinutes + 1))}
+                        className="w-7 h-7 rounded-lg bg-surface border border-foreground/10 text-foreground font-black flex items-center justify-center active:scale-90"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
 

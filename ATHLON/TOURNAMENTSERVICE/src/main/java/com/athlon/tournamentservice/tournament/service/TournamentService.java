@@ -78,6 +78,9 @@ public class TournamentService {
 
 		tournament.setRegistrationClosingDate(request.getRegistrationClosingDate());
 		tournament.setGpayNumber(request.getGpayNumber());
+		if (request.getRegistrationMode() != null && !request.getRegistrationMode().isBlank()) {
+			tournament.setRegistrationMode(request.getRegistrationMode());
+		}
 
 		if (poster != null && !poster.isEmpty()) {
 			String fileName = fileStorageUtil.saveFileToDir(poster, System.getProperty("tournament"), posterUploadDir);

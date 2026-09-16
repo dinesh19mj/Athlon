@@ -72,16 +72,16 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
   const logoRaw = academy.profile?.logo || academy.logo;
   const logoUrl = logoRaw
     ? (logoRaw.startsWith('http') || logoRaw.startsWith('data:') || logoRaw.startsWith('blob:')
-        ? logoRaw
-        : OrganizationService.getLogoUrl(logoRaw))
+      ? logoRaw
+      : OrganizationService.getLogoUrl(logoRaw))
     : '';
 
   // Extract cover
   const coverRaw = academy.profile?.banner || academy.banner || academy.image;
   const coverUrl = coverRaw
     ? (coverRaw.startsWith('http') || coverRaw.startsWith('data:') || coverRaw.startsWith('blob:')
-        ? coverRaw
-        : OrganizationService.getBannerUrl(coverRaw))
+      ? coverRaw
+      : OrganizationService.getBannerUrl(coverRaw))
     : 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80';
 
   // Extract location
@@ -97,8 +97,8 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
   const sportsList: string[] = rawSports
     ? rawSports.split(',').map((s) => s.trim()).filter(Boolean)
     : academy.tags && academy.tags.length > 0
-    ? academy.tags.slice(0, 3)
-    : [academy.sportType || 'Badminton'];
+      ? academy.tags.slice(0, 3)
+      : [academy.sportType || 'Badminton'];
 
   // Extract admission status
   const admissionStatus = academy.profile?.admissionStatus || 'OPEN';

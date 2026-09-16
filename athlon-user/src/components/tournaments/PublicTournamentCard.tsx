@@ -58,6 +58,7 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
   const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT';
   const isFinished = tournament.status === 'COMPLETED' || tournament.status === 'FINISHED';
   const isClosed = tournament.status === 'REGISTRATION_CLOSED';
+  const isOrganizerManaged = tournament.registrationMode === 'ORGANIZER_MANAGED' || tournament.registrationMode === 'ORGANIZER_MANUAL';
 
   const href = hrefPrefix
     ? `${hrefPrefix}/${tournament.tournamentUuid || tournament.tournamentId}`
@@ -101,6 +102,10 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
               ) : isClosed ? (
                 <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-foreground/10 text-foreground/60 border border-foreground/20 shrink-0">
                   <Lock className="w-2.5 h-2.5" /> Closed
+                </span>
+              ) : isOrganizerManaged ? (
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-500 dark:text-purple-400 border border-purple-500/20 shrink-0">
+                  <Users className="w-2.5 h-2.5" /> Managed Entry
                 </span>
               ) : null}
             </div>
@@ -156,7 +161,7 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
             </div>
 
             {/* Registration Closing Date Notice (if available) */}
-            {closingDate && !isFinished && (
+            {closingDate && !isFinished && !isOrganizerManaged && (
               <div className="flex items-center justify-between gap-2 text-[10px] bg-primary/10 border border-primary/20 px-2 py-1 rounded-lg">
                 <div className="flex items-center gap-1.5 text-primary font-bold">
                   <Clock className="w-3 h-3 text-primary shrink-0" />
@@ -197,21 +202,21 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
               {!isFinished && !isClosed && (
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               )}
-              {isFinished ? 'Finished' : isClosed ? 'Closed' : 'Open Entry'}
+              {isFinished ? 'Finished' : isClosed ? 'Closed' : isOrganizerManaged ? 'Organizer Managed' : 'Open Entry'}
             </span>
 
             <span
               className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform ${
                 isFinished
                   ? 'text-primary'
-                  : isClosed
+                  : isClosed || isOrganizerManaged
                   ? 'text-foreground/50'
                   : 'text-primary'
               }`}
             >
               {isFinished
                 ? 'Podium & Results'
-                : isClosed
+                : isClosed || isOrganizerManaged
                 ? 'View Details'
                 : 'Register Now'}
               <ChevronRight className="w-3.5 h-3.5" />

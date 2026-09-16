@@ -476,6 +476,40 @@ export default function RegistrationPage() {
     );
   }
 
+  // ── ORGANIZER MANAGED STATE (PUBLIC REGISTRATION DISABLED) ────────────────
+  if (tournament?.registrationMode === 'ORGANIZER_MANAGED' || tournament?.registrationMode === 'ORGANIZER_MANUAL') {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+        <div
+          className="max-w-md w-full rounded-3xl p-8 text-center space-y-6 relative overflow-hidden border shadow-2xl"
+          style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+        >
+          <div className="absolute top-0 left-0 right-0 h-1 bg-purple-500" />
+
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2 text-purple-400">
+            <Users className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-foreground tracking-tight">Organizer Managed Event</h2>
+            <p className="text-sm text-foreground/60 leading-relaxed">
+              Online public registration is not enabled for <span className="text-foreground font-bold">{tournament.name}</span>. All participants and teams are added and managed directly by the tournament organizer.
+            </p>
+          </div>
+
+          <button
+            onClick={() => router.push(`/home/tournaments/${tournamentUuid}`)}
+            className="w-full py-3.5 bg-primary text-primary-foreground font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+          >
+            View Tournament Details
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── REGISTRATION CLOSED STATE ───────────────────────────────────────────────
   if (tournament?.status === 'REGISTRATION_CLOSED') {
     return (

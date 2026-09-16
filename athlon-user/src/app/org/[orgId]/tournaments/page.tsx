@@ -46,6 +46,8 @@ export default function TournamentsPage() {
   const { organizations, getActiveOrganization } = useWorkspaceStore();
   const currentOrg = organizations.find((o) => o.id === orgId) || getActiveOrganization();
   const isAcademy = currentOrg?.type === 'ACADEMY';
+  const isClub = currentOrg?.type === 'CLUB';
+  const isInternalOrg = isAcademy || isClub;
   const { canManageModule } = usePermissions(orgId);
   const canManage = canManageModule('tournaments');
 
@@ -91,13 +93,13 @@ export default function TournamentsPage() {
         setIsLoading(true);
         const [tRes, cRes] = await Promise.allSettled([
           TournamentService.getByOrg(orgId),
-          !isAcademy ? TeamChampionshipService.getByOrganizer(orgId) : Promise.resolve([] as any),
+          !isInternalOrg ? TeamChampionshipService.getByOrganizer(orgId) : Promise.resolve([] as any),
         ]);
 
         if (tRes.status === 'fulfilled' && tRes.value?.data) {
           setTournaments(tRes.value.data as Tournament[]);
         }
-        if (!isAcademy && cRes.status === 'fulfilled' && cRes.value) {
+        if (!isInternalOrg && cRes.status === 'fulfilled' && cRes.value) {
           const list = Array.isArray(cRes.value) ? cRes.value : ((cRes.value as any)?.data || []);
           setChampionships(list);
         } else {
@@ -110,12 +112,12 @@ export default function TournamentsPage() {
       }
     };
     fetchAll();
-  }, [orgId, isAcademy]);
+  }, [orgId, isInternalOrg]);
 
   // Compute metrics
   const totalTournaments = tournaments.length;
-  const totalChampionships = isAcademy ? 0 : championships.length;
-  const totalCount = isAcademy ? totalTournaments : totalTournaments + totalChampionships;
+  const totalChampionships = isInternalOrg ? 0 : championships.length;
+  const totalCount = isInternalOrg ? totalTournaments : totalTournaments + totalChampionships;
 
   const publicCount =
     tournaments.filter((t) => (t.visibility || 'PRIVATE').toUpperCase() === 'PUBLIC').length +
@@ -199,9 +201,12 @@ export default function TournamentsPage() {
     }
   };
 
-  const hasEvents = isAcademy
+  const hasEvents = isInternalOrg
     ? filteredTournaments.length > 0
     : filteredTournaments.length > 0 || filteredChampionships.length > 0;
+
+  const orgArenaLabel = isClub ? 'Club Arena' : isAcademy ? 'Academy Arena' : 'Organizer Hub';
+  const orgTournamentsTitle = isClub ? 'Club Tournaments' : isAcademy ? 'Academy Tournaments' : 'Tournaments & Championships';
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 md:pb-16 selection:bg-primary selection:text-black">
@@ -223,11 +228,11 @@ export default function TournamentsPage() {
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                  {isAcademy ? 'Academy Arena' : 'Organizer Hub'}
+                  {orgArenaLabel}
                 </span>
               </div>
               <h1 className="text-base font-black text-foreground tracking-tight truncate">
-                {isAcademy ? 'Academy Tournaments' : 'Tournaments & Championships'}
+                {orgTournamentsTitle}
               </h1>
             </div>
           </div>
@@ -236,7 +241,7 @@ export default function TournamentsPage() {
         {/* Hero Banner & Summary Metrics Bar */}
         <div className="p-4 space-y-3.5">
           {/* Action Cards / Hero Quick Launch */}
-          {isAcademy ? (
+          {isInternalOrg ? (
             canManage ? (
               <button
                 onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
@@ -251,8 +256,12 @@ export default function TournamentsPage() {
                     <Trophy className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-sm font-black text-foreground group-hover:text-primary transition-colors">+ Host Academy Tournament</div>
-                    <div className="text-[10px] text-foreground/50 font-medium">Internal inter-batch & open knockout draws</div>
+                    <div className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
+                      + Host {isClub ? 'Club' : 'Academy'} Tournament
+                    </div>
+                    <div className="text-[10px] text-foreground/50 font-medium">
+                      {isClub ? 'Internal member & knockout tournaments' : 'Internal inter-batch & open knockout draws'}
+                    </div>
                   </div>
                 </div>
                 <span className="text-sm font-mono font-black text-foreground">{totalTournaments}</span>
@@ -270,8 +279,12 @@ export default function TournamentsPage() {
                     <Trophy className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-sm font-black text-foreground">Academy Tournaments</div>
-                    <div className="text-[10px] text-foreground/50 font-medium">Internal inter-batch & open knockout draws</div>
+                    <div className="text-sm font-black text-foreground">
+                      {isClub ? 'Club Tournaments' : 'Academy Tournaments'}
+                    </div>
+                    <div className="text-[10px] text-foreground/50 font-medium">
+                      {isClub ? 'Internal member & knockout tournaments' : 'Internal inter-batch & open knockout draws'}
+                    </div>
                   </div>
                 </div>
                 <span className="text-sm font-mono font-black text-foreground">{totalTournaments}</span>
@@ -333,7 +346,7 @@ export default function TournamentsPage() {
               <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">Total</div>
               <div className="text-xs font-black font-mono text-foreground">{totalCount}</div>
             </div>
-            {!isAcademy && (
+            {!isInternalOrg && (
               <>
                 <div className="w-[1px] h-5 bg-foreground/10" />
                 <div>
@@ -344,10 +357,10 @@ export default function TournamentsPage() {
             )}
             <div className="w-[1px] h-5 bg-foreground/10" />
             <div>
-              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">{isAcademy ? 'Internal' : 'Private'}</div>
-              <div className="text-xs font-black font-mono text-primary">{isAcademy ? totalTournaments : privateCount}</div>
+              <div className="text-[9.5px] font-extrabold uppercase text-foreground/45">{isInternalOrg ? 'Internal' : 'Private'}</div>
+              <div className="text-xs font-black font-mono text-primary">{isInternalOrg ? totalTournaments : privateCount}</div>
             </div>
-            {isAcademy && (
+            {isInternalOrg && (
               <>
                 <div className="w-[1px] h-5 bg-foreground/10" />
                 <div>
@@ -628,15 +641,17 @@ export default function TournamentsPage() {
             >
               <Trophy className="w-8 h-8 text-primary mb-3" />
               <h3 className="text-base font-black text-foreground mb-1">
-                {isAcademy ? 'No Tournaments Scheduled' : 'No Matching Events'}
+                {isClub ? 'No Club Tournaments' : isAcademy ? 'No Tournaments Scheduled' : 'No Matching Events'}
               </h3>
               <p className="text-xs text-foreground/60 mb-5">
-                {isAcademy
+                {isClub
+                  ? 'Create an internal club tournament or member draw to get started.'
+                  : isAcademy
                   ? 'Create an internal inter-batch tournament or open draw to get started.'
                   : 'Create a championship or tournament to get started.'}
               </p>
               <div className="flex flex-col gap-2 w-full max-w-xs">
-                {!isAcademy && (
+                {!isInternalOrg && (
                   <button
                     onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
                     className="w-full py-2.5 rounded-xl bg-primary text-black font-black text-xs"
@@ -647,9 +662,9 @@ export default function TournamentsPage() {
                 <button
                   onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
                   className={`w-full py-2.5 rounded-xl font-bold text-xs ${
-                    isAcademy ? 'bg-primary text-black font-black shadow-lg shadow-primary/20' : 'border text-foreground'
+                    isInternalOrg ? 'bg-primary text-black font-black shadow-lg shadow-primary/20' : 'border text-foreground'
                   }`}
-                  style={!isAcademy ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' } : undefined}
+                  style={!isInternalOrg ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' } : undefined}
                 >
                   + Create Tournament
                 </button>
@@ -660,14 +675,16 @@ export default function TournamentsPage() {
 
         {/* Mobile Floating Action Dock */}
         <div
-          className="fixed bottom-0 left-0 right-0 z-40 backdrop-blur-xl border-t p-3"
+          className="fixed bottom-20 inset-x-0 z-30 backdrop-blur-xl border-t p-3 max-w-lg mx-auto"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--athlon-card) 90%, transparent)',
             borderColor: 'var(--athlon-border)',
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)',
           }}
         >
           <div className="flex items-center gap-2">
-            {!isAcademy && (
+            {!isInternalOrg && (
               <button
                 onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl border font-black text-xs text-primary shadow-sm active:scale-95 transition-all"
@@ -685,8 +702,8 @@ export default function TournamentsPage() {
               onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
               className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-primary text-black font-black text-xs shadow-xl shadow-primary/25 active:scale-95 transition-all"
             >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>+ Create Tournament</span>
+              <Trophy className="w-4 h-4 stroke-[2.5]" />
+              <span>+ Tournament</span>
             </button>
           </div>
         </div>
@@ -716,15 +733,23 @@ export default function TournamentsPage() {
               <div className="space-y-3 max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary/10 border border-primary/25 text-primary">
                   <Trophy className="w-4 h-4" />
-                  <span>{isAcademy ? 'Academy Competition Center' : 'Competition Command Center'}</span>
+                  <span>
+                    {isClub
+                      ? 'Club Competition Center'
+                      : isAcademy
+                      ? 'Academy Competition Center'
+                      : 'Competition Command Center'}
+                  </span>
                 </div>
 
                 <h1 className="text-3xl lg:text-4xl font-black text-foreground tracking-tight leading-tight">
-                  {isAcademy ? 'Academy Tournaments' : 'Tournaments & Championships'}
+                  {orgTournamentsTitle}
                 </h1>
 
                 <p className="text-sm text-foreground/75 leading-relaxed">
-                  {isAcademy
+                  {isClub
+                    ? 'Host internal club leagues, member friendly tournaments, knockout brackets, live scoring, and leaderboards for your club members.'
+                    : isAcademy
                     ? 'Host internal academy leagues, inter-batch competitions, knockout brackets, live scoring, and live streams for your athletes and coaches.'
                     : 'Manage sports tournaments, franchise team championships, live auction bidding arenas, knockout brackets, pool leagues, and referee scoresheets in one unified console.'}
                 </p>
@@ -732,7 +757,7 @@ export default function TournamentsPage() {
 
               {/* Top Quick Actions */}
               <div className="flex items-center gap-3.5 shrink-0">
-                {!isAcademy && (
+                {!isInternalOrg && (
                   <button
                     onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
                     className="flex items-center gap-2.5 px-5 py-3 rounded-2xl text-sm font-black border transition-all hover:scale-105 active:scale-95 shadow-md"
@@ -753,7 +778,7 @@ export default function TournamentsPage() {
                   style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
                 >
                   <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>{isAcademy ? 'Create Tournament' : 'Create Tournament'}</span>
+                  <span>Create Tournament</span>
                 </button>
               </div>
             </div>
@@ -769,7 +794,7 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    {isAcademy ? 'Total Tournaments' : 'Total Competitions'}
+                    {isInternalOrg ? 'Total Tournaments' : 'Total Competitions'}
                   </span>
                   <div className="text-2xl font-black text-foreground font-mono tabular-nums">
                     {totalCount}
@@ -789,14 +814,14 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    {isAcademy ? 'Internal Tournaments' : 'Team Championships'}
+                    {isInternalOrg ? 'Internal Tournaments' : 'Team Championships'}
                   </span>
                   <div className="text-2xl font-black text-emerald-400 font-mono tabular-nums">
-                    {isAcademy ? privateCount : totalChampionships}
+                    {isInternalOrg ? privateCount : totalChampionships}
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  {isAcademy ? <Lock className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
+                  {isInternalOrg ? <Lock className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
                 </div>
               </div>
 
@@ -809,16 +834,16 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    {isAcademy ? 'Active / Live Draws' : 'Public Discoverable'}
+                    {isInternalOrg ? 'Active / Live Draws' : 'Public Discoverable'}
                   </span>
                   <div className="text-2xl font-black text-blue-400 font-mono tabular-nums">
-                    {isAcademy
+                    {isInternalOrg
                       ? tournaments.filter((t) => t.status === 'ONGOING' || t.status === 'LIVE').length
                       : publicCount}
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                  {isAcademy ? <Activity className="w-6 h-6" /> : <Globe className="w-6 h-6" />}
+                  {isInternalOrg ? <Activity className="w-6 h-6" /> : <Globe className="w-6 h-6" />}
                 </div>
               </div>
 
@@ -831,16 +856,16 @@ export default function TournamentsPage() {
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-extrabold uppercase text-foreground/50 tracking-wider">
-                    {isAcademy ? 'Completed Events' : 'Private (Internal)'}
+                    {isInternalOrg ? 'Completed Events' : 'Private (Internal)'}
                   </span>
                   <div className="text-2xl font-black text-amber-400 font-mono tabular-nums">
-                    {isAcademy
+                    {isInternalOrg
                       ? tournaments.filter((t) => t.status === 'COMPLETED').length
                       : privateCount}
                   </div>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                  {isAcademy ? <CheckCircle2 className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+                  {isInternalOrg ? <CheckCircle2 className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
                 </div>
               </div>
             </div>
@@ -856,8 +881,8 @@ export default function TournamentsPage() {
               borderColor: 'var(--athlon-border)',
             }}
           >
-            {/* Left: Primary Segmented Type Selector (Only for non-academy) */}
-            {!isAcademy ? (
+            {/* Left: Primary Segmented Type Selector (Only for non-internal) */}
+            {!isInternalOrg ? (
               <div
                 className="p-1 rounded-2xl border flex items-center gap-1.5"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
@@ -897,7 +922,7 @@ export default function TournamentsPage() {
                   <Trophy className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <span className="text-xs font-black text-foreground block">Academy Tournaments</span>
+                  <span className="text-xs font-black text-foreground block">{orgTournamentsTitle}</span>
                   <span className="text-[10px] text-foreground/50">{totalTournaments} Total Competitions</span>
                 </div>
               </div>
@@ -905,8 +930,8 @@ export default function TournamentsPage() {
 
             {/* Right: Visibility Pills & Search Box */}
             <div className="flex items-center gap-3">
-              {/* Visibility Switcher (Only for non-academy) */}
-              {!isAcademy && (
+              {/* Visibility Switcher (Only for non-internal) */}
+              {!isInternalOrg && (
                 <div
                   className="p-1 rounded-2xl border flex items-center gap-1"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
@@ -971,8 +996,8 @@ export default function TournamentsPage() {
             </div>
           ) : hasEvents ? (
             <div className="space-y-12">
-              {/* 1. Team Championships Section (Only for non-academy) */}
-              {!isAcademy && filteredChampionships.length > 0 && (
+              {/* 1. Team Championships Section (Only for non-internal orgs) */}
+              {!isInternalOrg && filteredChampionships.length > 0 && (
                 <section className="space-y-4">
                   <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
                     <div className="flex items-center gap-2.5">
@@ -1323,6 +1348,8 @@ export default function TournamentsPage() {
               <h3 className="text-2xl font-black text-foreground mb-2">
                 {searchQuery
                   ? 'No Matching Events Found'
+                  : isClub
+                  ? 'Host Your First Club Tournament'
                   : isAcademy
                   ? 'Host Your First Academy Tournament'
                   : 'Launch Your First Competition'}
@@ -1331,6 +1358,8 @@ export default function TournamentsPage() {
               <p className="text-sm font-medium max-w-lg mb-8 leading-relaxed text-foreground/70">
                 {searchQuery
                   ? `No competitions matched "${searchQuery}". Try searching with a different keyword or reset filters.`
+                  : isClub
+                  ? 'Create internal club tournaments, member friendly knockouts, or skill draws with automated brackets and live scoreboards.'
                   : isAcademy
                   ? 'Create internal inter-batch leagues, skill-level draws, or open knockout tournaments with automated brackets and live scoreboards.'
                   : 'Create franchise team championships with live player auctions and pool leagues, or knockout tournaments with automated draws.'}
@@ -1346,7 +1375,7 @@ export default function TournamentsPage() {
                   </button>
                 ) : (
                   <>
-                    {!isAcademy && (
+                    {!isInternalOrg && (
                       <button
                         onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
                         className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-black font-black text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
@@ -1359,12 +1388,12 @@ export default function TournamentsPage() {
                     <button
                       onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
                       className={`flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all ${
-                        isAcademy
+                        isInternalOrg
                           ? 'bg-primary text-black font-black shadow-xl shadow-primary/20 hover:scale-105 active:scale-95'
                           : 'border text-foreground hover:bg-white/5 active:scale-95'
                       }`}
                       style={
-                        !isAcademy
+                        !isInternalOrg
                           ? {
                               backgroundColor: 'var(--athlon-surface)',
                               borderColor: 'var(--athlon-border)',
@@ -1372,8 +1401,14 @@ export default function TournamentsPage() {
                           : undefined
                       }
                     >
-                      <Plus className={`w-4 h-4 ${isAcademy ? 'stroke-[3]' : 'text-primary'}`} />
-                      <span>{isAcademy ? 'Create Academy Tournament' : 'Create Tournament'}</span>
+                      <Plus className={`w-4 h-4 ${isInternalOrg ? 'stroke-[3]' : 'text-primary'}`} />
+                      <span>
+                        {isClub
+                          ? 'Create Club Tournament'
+                          : isAcademy
+                          ? 'Create Academy Tournament'
+                          : 'Create Tournament'}
+                      </span>
                     </button>
                   </>
                 )}

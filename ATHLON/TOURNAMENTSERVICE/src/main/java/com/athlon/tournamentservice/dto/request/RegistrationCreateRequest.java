@@ -30,6 +30,14 @@ public class RegistrationCreateRequest {
     @NotNull(message = "Players are required")
     private List<PlayerRequest> players;
 
+    private String status;
+
+    private String paymentStatus;
+
+    private String registrationSource;
+
+    private String gender;
+
     private Long createdBy;
 
     public RegistrationCreateRequest() {
@@ -113,6 +121,38 @@ public class RegistrationCreateRequest {
 
     public void setPlayers(List<PlayerRequest> players) {
         this.players = players;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getRegistrationSource() {
+        return registrationSource;
+    }
+
+    public void setRegistrationSource(String registrationSource) {
+        this.registrationSource = registrationSource;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 }
 

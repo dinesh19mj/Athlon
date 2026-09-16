@@ -57,6 +57,12 @@ public class Registration {
     @Column(name = "paymentstatus")
     private String paymentStatus = "PENDING";
 
+    @Column(name = "registration_source")
+    private String registrationSource = "USER_REGISTRATION";
+
+    @Column(name = "gender")
+    private String gender;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -108,6 +114,10 @@ public class Registration {
 
         if (paymentStatus == null) {
             paymentStatus = "PENDING";
+        }
+
+        if (registrationSource == null) {
+            registrationSource = "USER_REGISTRATION";
         }
     }
 
@@ -229,6 +239,22 @@ public class Registration {
 
     public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getRegistrationSource() {
+        return registrationSource;
+    }
+
+    public void setRegistrationSource(String registrationSource) {
+        this.registrationSource = registrationSource;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public Long getUpdatedBy() {

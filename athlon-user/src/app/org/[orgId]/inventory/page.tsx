@@ -14,6 +14,7 @@ import {
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService } from '@/lib/api/user';
 import AcademyInventoryView from '@/components/academy/AcademyInventoryView';
+import OrganizerInventoryView from '@/components/organizer/OrganizerInventoryView';
 import {
   Package,
   Plus,
@@ -69,6 +70,10 @@ export default function InventoryPage() {
 
   if (org?.type === 'ACADEMY') {
     return <AcademyInventoryView orgUuid={orgUuid} orgName={org.name || 'Academy'} />;
+  }
+
+  if (org?.type === 'ORGANIZER' || org?.type === 'ASSOCIATION') {
+    return <OrganizerInventoryView orgUuid={orgUuid} orgName={org.name || 'Organizer'} />;
   }
 
   const { role, isAdmin, canManage } = useOrgRole(orgUuid);

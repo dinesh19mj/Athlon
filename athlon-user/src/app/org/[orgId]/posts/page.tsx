@@ -12,7 +12,8 @@ export default function OrganizationPostsPage() {
   const org = organizations.find((o) => o.id === orgIdParam) || getActiveOrganization();
 
   const orgUuid = (org?.id || orgIdParam) as string;
-  const orgName = org?.name || 'Academy';
+  const orgName = org?.name || (org?.type === 'CLUB' ? 'Club' : 'Academy');
+  const orgType = org?.type || 'ACADEMY';
 
-  return <AcademyPostFeedView orgUuid={orgUuid} orgName={orgName} />;
+  return <AcademyPostFeedView orgUuid={orgUuid} orgName={orgName} orgType={orgType} />;
 }

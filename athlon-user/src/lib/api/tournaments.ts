@@ -28,6 +28,7 @@ export interface Tournament {
   poster: string;
   registrationClosingDate?: string;
   teamEventCategories?: string;
+  registrationMode?: string;
 }
 
 export const sortTournamentsDesc = (list: Tournament[] = []): Tournament[] => {
@@ -183,10 +184,13 @@ export interface Registration {
   registrationUuid?: string;
   tournamentId: number;
   categoryId: number;
+  categoryUuid?: string;
   primaryContactId?: number;
   teamName: string;
   place?: string;
   category?: string;
+  gender?: string;
+  registrationSource?: string;
   status: string;
   paymentStatus?: string;
   createdAt: string;
@@ -207,6 +211,10 @@ export const RegistrationService = {
     api.post<{ data: Registration }>(`/api/tournament/registrations/${uuid}/payment-status?status=${status}${updatedBy ? `&updatedBy=${updatedBy}` : ''}`, {}),
   addPlayers: (uuid: string, players: { playerName: string; phoneNumber?: string }[], updatedBy?: number) =>
     api.post<{ data: Registration }>(`/api/tournament/registrations/${uuid}/players${updatedBy ? `?updatedBy=${updatedBy}` : ''}`, players),
+  updateRegistration: (uuid: string, data: any, updatedBy?: number) =>
+    api.put<{ data: Registration }>(`/api/tournament/registrations/${uuid}${updatedBy ? `?updatedBy=${updatedBy}` : ''}`, data),
+  deleteRegistration: (uuid: string, updatedBy?: number) =>
+    api.delete<{ data: null }>(`/api/tournament/registrations/${uuid}${updatedBy ? `?updatedBy=${updatedBy}` : ''}`),
 };
 
 export interface TeamEventRosterPlayer {

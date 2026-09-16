@@ -182,7 +182,7 @@ export default function AcademiesPage() {
             const prof = org.profile;
             const sports = prof?.sportsOffered ? prof.sportsOffered.split(',').map((s: string) => s.trim()) : ['Badminton'];
             const amenitiesList = prof?.amenities ? prof.amenities.split(',').map((a: string) => a.trim()).slice(0, 2) : [];
-            const feeString = prof?.monthlyFeeMin 
+            const feeString = prof?.monthlyFeeMin
               ? `₹${prof.monthlyFeeMin.toLocaleString()}${prof?.monthlyFeeMax ? ` - ₹${prof.monthlyFeeMax.toLocaleString()}` : ''}/mo`
               : (prof?.pricePerHour ? `₹${prof.pricePerHour}/hr` : '₹2,000/mo');
 
@@ -413,11 +413,10 @@ export default function AcademiesPage() {
                 <button
                   key={f.id}
                   onClick={() => setActiveFilter(f.id)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
-                    activeFilter === f.id
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${activeFilter === f.id
                       ? 'bg-primary text-black border-primary shadow-sm font-black'
                       : 'bg-surface border-white/10 text-foreground/70 hover:bg-white/5'
-                  }`}
+                    }`}
                 >
                   {f.label}
                 </button>
@@ -464,13 +463,74 @@ export default function AcademiesPage() {
         )}
       </main>
 
+      {/* Mobile Fixed Bottom Nav */}
+      <nav
+        className="fixed bottom-0 inset-x-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto fixed-bottom-nav md:hidden"
+        style={{
+          backgroundColor: 'var(--athlon-navigation)',
+          borderColor: 'var(--athlon-border)',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
+        }}
+      >
+        <Link href="/" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+          <Athlon3DIcon type="home" size={32} active={false} />
+          <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+            Home
+          </span>
+        </Link>
+
+        <Link href="/tournaments" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+          <Athlon3DIcon type="tournaments" size={32} active={false} />
+          <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+            Tournaments
+          </span>
+        </Link>
+
+        {/* 3D Circular Elevated Umpire Button */}
+        <div className="relative -top-5 flex items-center justify-center">
+          <Link
+            href="/practice"
+            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+            style={{
+              backgroundColor: 'var(--athlon-primary)',
+              borderColor: 'var(--athlon-navigation)',
+              boxShadow: '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
+            }}
+          >
+            {/* 3D Glass Specular Reflection Arc */}
+            <div className="absolute inset-x-1 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none" />
+
+            <img
+              src="/umpire.png"
+              alt="Umpire"
+              className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+            />
+          </Link>
+        </div>
+
+        <Link href="/academies" className="flex flex-col items-center gap-0.5 w-16 group">
+          <Athlon3DIcon type="academies" size={32} active={true} />
+          <span className="text-[9.5px] font-bold text-primary leading-tight">
+            Academy
+          </span>
+        </Link>
+
+        <Link href={isAuthenticated ? '/home' : '/login'} className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+          <Athlon3DIcon type="profile" size={32} active={false} />
+          <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+            Profile
+          </span>
+        </Link>
+      </nav>
+
       {/* ══════════════════════════════════════════════════════════════════════
           DIRECT ENROLLMENT MODAL (ATHLETE / PARENT SELF-ENROLL)
          ══════════════════════════════════════════════════════════════════════ */}
       {selectedAcademyForEnroll && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
           <div className="bg-surface border border-white/10 rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl relative">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2.5">
@@ -501,7 +561,7 @@ export default function AcademiesPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmitEnrollment} className="space-y-3.5 text-xs">
-                
+
                 {/* 1. Athlete Information */}
                 <div className="space-y-2.5">
                   <h4 className="text-xs font-black uppercase text-primary tracking-wider">

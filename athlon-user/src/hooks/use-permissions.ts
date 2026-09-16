@@ -1,10 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AcademyPermissionService, AcademyRolePermission, AccessLevel } from '@/lib/api/permissions';
+import {
+  AcademyPermissionService,
+  ClubPermissionService,
+  AcademyRolePermission,
+  AccessLevel,
+} from '@/lib/api/permissions';
 import { useOrgRole } from './use-org-role';
 
-// System Default Fallback Matrix if API is unreachable
+// System Default Fallback Matrix if API is unreachable (Academy)
 const DEFAULT_ACCESS_MATRIX: Record<string, Record<string, AccessLevel>> = {
   ADMIN: {
     batches: 'MANAGE',
@@ -93,9 +98,38 @@ const DEFAULT_ACCESS_MATRIX: Record<string, Record<string, AccessLevel>> = {
   },
 };
 
+// System Default Fallback Matrix if API is unreachable (Club)
+const CLUB_DEFAULT_ACCESS_MATRIX: Record<string, Record<string, AccessLevel>> = {
+  ADMIN: {
+    tournaments: 'MANAGE',
+    members: 'MANAGE',
+    matches: 'MANAGE',
+    attendance: 'MANAGE',
+    leaderboard: 'MANAGE',
+    posts: 'MANAGE',
+    inventory: 'MANAGE',
+    finances: 'MANAGE',
+    analytics: 'MANAGE',
+    settings: 'MANAGE',
+  },
+  MEMBER: {
+    tournaments: 'MANAGE',
+    members: 'VIEW',
+    matches: 'MANAGE',
+    attendance: 'VIEW',
+    leaderboard: 'VIEW',
+    posts: 'VIEW',
+    inventory: 'VIEW',
+    finances: 'NONE',
+    analytics: 'VIEW',
+    settings: 'NONE',
+  },
+};
+
 export function usePermissions(customOrgId?: string) {
   const { org, role, isAdmin } = useOrgRole(customOrgId);
   const orgUuid = org?.id || '';
+  const isClub = org?.type === 'CLUB';
 
   const [permissions, setPermissions] = useState<AcademyRolePermission[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -103,12 +137,12 @@ export function usePermissions(customOrgId?: string) {
   const normalizedRole = useMemo(() => {
     const r = role.toUpperCase();
     if (['ADMIN', 'OWNER', 'MANAGER'].includes(r)) return 'ADMIN';
+    if (isClub) return 'MEMBER';
     if (r === 'COACH') return 'COACH';
     if (r === 'STAFF') return 'STAFF';
     if (r === 'PARENT') return 'PARENT';
-    if (['STUDENT', 'ATHLETE', 'MEMBER'].includes(r)) return 'STUDENT';
     return 'STUDENT';
-  }, [role]);
+  }, [role, isClub]);
 
   const loadPermissions = useCallback(async () => {
     if (!orgUuid) {
@@ -117,7 +151,8 @@ export function usePermissions(customOrgId?: string) {
     }
     try {
       setLoading(true);
-      const res = await AcademyPermissionService.getOrgPermissions(orgUuid);
+      const service = isClub ? ClubPermissionService : AcademyPermissionService;
+      const res = await service.getOrgPermissions(orgUuid);
       const list = Array.isArray(res) ? res : res.data || [];
       if (list && list.length > 0) {
         setPermissions(list);
@@ -127,7 +162,7 @@ export function usePermissions(customOrgId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [orgUuid]);
+  }, [orgUuid, isClub]);
 
   useEffect(() => {
     loadPermissions();
@@ -153,9 +188,10 @@ export function usePermissions(customOrgId?: string) {
       }
 
       // Fallback matrix
-      return DEFAULT_ACCESS_MATRIX[activeRole]?.[mod] || 'VIEW';
+      const matrix = isClub ? CLUB_DEFAULT_ACCESS_MATRIX : DEFAULT_ACCESS_MATRIX;
+      return matrix[activeRole]?.[mod] || 'VIEW';
     },
-    [normalizedRole, permissions]
+    [normalizedRole, permissions, isClub]
   );
 
   const canAccessModule = useCallback(

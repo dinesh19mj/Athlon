@@ -14,6 +14,9 @@ public class RegistrationResponse {
     private Long tournamentId;
     private UUID tournamentUuid;
 
+    private Long categoryId;
+    private UUID categoryUuid;
+
     private String teamName;
 
     private String place;
@@ -21,6 +24,10 @@ public class RegistrationResponse {
     private String status;
 
     private String paymentStatus;
+
+    private String registrationSource;
+
+    private String gender;
 
     private LocalDateTime createdAt;
 
@@ -41,10 +48,14 @@ public class RegistrationResponse {
         response.setRegistrationUuid(registration.getRegistrationUuid());
         response.setTournamentId(registration.getTournamentId());
         response.setTournamentUuid(registration.getTournamentUuid());
+        response.setCategoryId(registration.getCategoryId());
+        response.setCategoryUuid(registration.getCategoryUuid());
         response.setTeamName(registration.getTeamName());
         response.setPlace(registration.getPlace());
         response.setStatus(registration.getStatus());
         response.setPaymentStatus(registration.getPaymentStatus());
+        response.setRegistrationSource(registration.getRegistrationSource() != null ? registration.getRegistrationSource() : "USER_REGISTRATION");
+        response.setGender(registration.getGender());
         response.setCreatedAt(registration.getCreatedAt());
 
         return response;
@@ -128,6 +139,38 @@ public class RegistrationResponse {
 
     public void setPlayers(List<PlayerResponse> players) {
         this.players = players;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public UUID getCategoryUuid() {
+        return categoryUuid;
+    }
+
+    public void setCategoryUuid(UUID categoryUuid) {
+        this.categoryUuid = categoryUuid;
+    }
+
+    public String getRegistrationSource() {
+        return registrationSource;
+    }
+
+    public void setRegistrationSource(String registrationSource) {
+        this.registrationSource = registrationSource;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public LocalDateTime getCreatedAt() {

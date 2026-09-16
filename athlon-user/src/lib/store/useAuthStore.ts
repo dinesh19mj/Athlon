@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AuthService } from '../api/auth';
 
-export type Subscription = 'PLAYER' | 'ORGANIZER' | 'ACADEMY' | 'COURT' | 'CLUB';
+export type Subscription = 'PLAYER' | 'ORGANIZER' | 'ACADEMY' | 'COURT' | 'CLUB' | 'COACH';
 
 type AuthState = {
   isAuthenticated: boolean;

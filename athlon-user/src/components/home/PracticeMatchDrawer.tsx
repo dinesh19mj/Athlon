@@ -192,45 +192,77 @@ export default function PracticeMatchDrawer({ isOpen, onClose }: PracticeMatchDr
             ) : pastMatches.length === 0 && activeMatches.length > 0 ? (
               <p className="text-xs text-foreground/40 italic pl-1">No completed practice matches yet.</p>
             ) : (
-              <div className="space-y-2">
-                {pastMatches.map((m) => (
-                  <div
-                    key={m.id}
-                    className="p-3.5 rounded-2xl bg-surface border border-foreground/10 hover:border-foreground/20 flex items-center justify-between gap-3 transition-colors shadow-sm"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded-md bg-foreground/5 text-foreground/70 text-[10px] font-bold uppercase tracking-wider border border-foreground/10">
-                          {m.sport}
-                        </span>
-                        <span className="text-[10px] text-foreground/50 font-medium">
-                          {formatDate(m.createdAt)} at {formatTime(m.createdAt)}
-                        </span>
-                        {m.winner && (
-                          <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">
-                            Winner: Team {m.winner}
+              <div className="space-y-2.5">
+                {pastMatches.map((m) => {
+                  let winnerDisplay = m.winnerLabel;
+                  if (!winnerDisplay) {
+                    if (m.winner === 'A') winnerDisplay = m.teamALabel;
+                    else if (m.winner === 'B') winnerDisplay = m.teamBLabel;
+                    else if (m.winner === 'TIE') winnerDisplay = 'Tied';
+                    else if (m.winner) winnerDisplay = m.winner;
+                  }
+
+                  const isTeamAWinner = m.winner === 'A' || (m.winnerLabel && m.winnerLabel === m.teamALabel);
+                  const isTeamBWinner = m.winner === 'B' || (m.winnerLabel && m.winnerLabel === m.teamBLabel);
+
+                  return (
+                    <div
+                      key={m.id}
+                      className="p-3.5 rounded-2xl bg-surface border border-foreground/10 hover:border-foreground/20 flex flex-col gap-2.5 transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-md bg-foreground/5 text-foreground/70 text-[10px] font-bold uppercase tracking-wider border border-foreground/10">
+                            {m.sport}
+                          </span>
+                          <span className="text-[10px] text-foreground/50 font-medium">
+                            {formatDate(m.createdAt)} • {formatTime(m.createdAt)}
+                          </span>
+                        </div>
+                        {winnerDisplay && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9.5px] font-bold border border-emerald-500/20">
+                            <Trophy className="w-2.5 h-2.5" />
+                            <span>{winnerDisplay === 'Tied' ? 'Tied' : `${winnerDisplay} Won`}</span>
                           </span>
                         )}
                       </div>
-                      <div className="text-xs font-semibold text-foreground truncate">
-                        {m.teamALabel} vs {m.teamBLabel}
-                      </div>
-                      {(m.scoreA || m.scoreB) && (
-                        <div className="text-[11px] font-mono text-primary font-bold mt-0.5">
-                          Score: {m.scoreA || '0'} - {m.scoreB || '0'}
-                        </div>
-                      )}
-                    </div>
 
-                    <button
-                      onClick={() => removeRecord(m.id)}
-                      className="p-2 rounded-lg hover:bg-foreground/10 text-foreground/40 hover:text-red-500 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="bg-background/80 border border-foreground/5 rounded-xl p-2.5 space-y-1.5 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className={`truncate ${isTeamAWinner ? 'font-black text-foreground' : 'font-semibold text-foreground/80'}`}>
+                            {isTeamAWinner && '🏆 '}{m.teamALabel || 'Team A'}
+                          </span>
+                          {m.scoreA && (
+                            <span className={`font-mono text-xs ${isTeamAWinner ? 'font-black text-primary' : 'text-foreground/60'}`}>
+                              {m.scoreA}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className={`truncate ${isTeamBWinner ? 'font-black text-foreground' : 'font-semibold text-foreground/80'}`}>
+                            {isTeamBWinner && '🏆 '}{m.teamBLabel || 'Team B'}
+                          </span>
+                          {m.scoreB && (
+                            <span className={`font-mono text-xs ${isTeamBWinner ? 'font-black text-primary' : 'text-foreground/60'}`}>
+                              {m.scoreB}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-foreground/5 text-[10px] text-foreground/50">
+                        <span>{m.category}</span>
+                        <button
+                          onClick={() => removeRecord(m.id)}
+                          className="p-1 rounded-lg text-foreground/40 hover:text-red-500 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
