@@ -342,6 +342,7 @@ public class OrganizationService {
     @Transactional(readOnly = true)
     public List<OrganizationResponse> getAllOrganizations() {
         return organizationRepository.findAll().stream()
+                .filter(o -> o.getIsActive() != null && o.getIsActive() == 1)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -354,9 +355,11 @@ public class OrganizationService {
         if (userUuid != null) {
             List<Organization> ownedOrgs = organizationRepository.findByUserUuid(userUuid);
             for (Organization o : ownedOrgs) {
-                OrganizationResponse resp = mapToResponse(o);
-                resp.setRole("ADMIN");
-                result.put(o.getOrganizationUuid(), resp);
+                if (o.getIsActive() != null && o.getIsActive() == 1) {
+                    OrganizationResponse resp = mapToResponse(o);
+                    resp.setRole("ADMIN");
+                    result.put(o.getOrganizationUuid(), resp);
+                }
             }
 
             // Also check by userId if userUuid resolves to a user entity
@@ -364,7 +367,7 @@ public class OrganizationService {
                 if (user.getUserId() != null) {
                     List<Organization> byUserId = organizationRepository.findByUserId(user.getUserId());
                     for (Organization o : byUserId) {
-                        if (!result.containsKey(o.getOrganizationUuid())) {
+                        if (o.getIsActive() != null && o.getIsActive() == 1 && !result.containsKey(o.getOrganizationUuid())) {
                             OrganizationResponse resp = mapToResponse(o);
                             resp.setRole("ADMIN");
                             result.put(o.getOrganizationUuid(), resp);
