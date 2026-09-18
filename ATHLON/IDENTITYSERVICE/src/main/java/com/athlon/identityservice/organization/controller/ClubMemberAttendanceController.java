@@ -45,7 +45,7 @@ public class ClubMemberAttendanceController {
     @PostMapping("/mark")
     public ResponseEntity<ApiResponse<ClubMemberAttendanceResponse>> markAttendance(
             @RequestBody MarkAttendanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         
         ClubMemberAttendanceResponse response = attendanceService.markAttendance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Member attendance recorded successfully", response));
@@ -54,7 +54,7 @@ public class ClubMemberAttendanceController {
     @PostMapping("/bulk")
     public ResponseEntity<ApiResponse<List<ClubMemberAttendanceResponse>>> bulkMarkAttendance(
             @RequestBody BulkAttendanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         
         List<ClubMemberAttendanceResponse> list = attendanceService.bulkMarkAttendance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Attendance sheet saved successfully", list));

@@ -304,11 +304,11 @@ export function SubscriptionPackages() {
                 { label: 'Venues', value: 'Multi-Facility Support' },
                 { label: 'Ladder System', value: 'Real-time Ranking' },
               ];
-            } else if (nameLower.includes('court')) {
+            } else if (nameLower.includes('court') || nameLower.includes('venue')) {
               type = 'COURT';
               icon = MapPin;
-              subtitle = 'Turnkey Turf & Arena Slot Booking System';
-              badge = 'VENUE OWNERS';
+              subtitle = 'Complete Sports Facility, Turf & Court Booking Suite';
+              badge = 'VENUE & ARENA OPS';
               colorScheme = {
                 accent: 'from-rose-500 to-pink-500',
                 text: 'text-rose-500 dark:text-rose-400',
@@ -319,15 +319,17 @@ export function SubscriptionPackages() {
                 glow: 'rgba(244, 63, 94, 0.25)',
               };
               highlightFeatures = [
-                'Dynamic Slot Pricing & Real-Time Availability',
-                'Instant Payment Gateway & UPI QR Check-In',
-                'Player Reviews & Verified Badges',
-                'Court Peak-Hour Revenue Analytics',
+                'Real-Time Visual Booking Grid & Slot Matrix',
+                'Multi-Sport Facilities (Turf, Courts, Swimming)',
+                'Dynamic Peak, Weekend & Off-Peak Rate Rules',
+                '10-Minute Cart Hold & Instant UPI/Card Checkout',
+                'Recurring Academy & Club Series with Conflict Checks',
+                'Admin Maintenance Blocks & Financial Analytics',
               ];
               specs = [
-                { label: 'Courts Managed', value: 'Up to 20 Courts' },
-                { label: 'Booking Matrix', value: 'Hourly & Daily' },
-                { label: 'Payouts', value: 'Instant T+1 Settlement' },
+                { label: 'Facilities / Courts', value: 'Unlimited Multi-Sport' },
+                { label: 'Booking Matrix', value: 'Live 15/30/60m Grid' },
+                { label: 'Pricing Engine', value: 'Dynamic Peak Tiers' },
               ];
             }
 
@@ -498,7 +500,7 @@ export function SubscriptionPackages() {
               { id: 'COACH', label: 'Coaches & Trainers', icon: UserCheck },
               { id: 'ACADEMY', label: 'Academies', icon: GraduationCap },
               { id: 'CLUB', label: 'Clubs', icon: Building2 },
-              { id: 'COURT', label: 'Courts', icon: MapPin },
+              { id: 'COURT', label: '🏟️ Venue Manager', icon: MapPin },
             ].map((cat) => {
               const Icon = cat.icon;
               const isActive = activeCategory === cat.id;
@@ -695,7 +697,7 @@ export function SubscriptionPackages() {
                       <p className="text-[11px] font-black uppercase tracking-wider text-text-muted">
                         Included Features:
                       </p>
-                      {mod.features.slice(0, 5).map((feature, idx) => (
+                      {mod.features.slice(0, 6).map((feature, idx) => (
                         <div key={idx} className="flex items-start gap-2.5 text-xs text-foreground/90">
                           <div className={`w-4 h-4 rounded-full ${isChamp ? 'bg-amber-500/20 text-amber-500' : 'bg-primary/10 text-primary'} flex items-center justify-center shrink-0 mt-0.5`}>
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
@@ -753,7 +755,7 @@ export function SubscriptionPackages() {
                   Compare Tournament & Organization Formats
                 </h3>
                 <p className="text-xs sm:text-sm text-text-secondary mt-1">
-                  Standard packages include Knockout & League formats. Team Championships with Live Auctions are unlocked via the specialized pass.
+                  Standard packages include Knockout & League formats. Team Championships with Live Auctions and Venue Operations are unlocked via their dedicated workspaces.
                 </p>
               </div>
 
@@ -778,7 +780,7 @@ export function SubscriptionPackages() {
                       <th className="py-4 px-4 text-center text-amber-600 dark:text-amber-400">Coach / Trainer</th>
                       <th className="py-4 px-4 text-center">Academy Hub</th>
                       <th className="py-4 px-4 text-center">Club Management</th>
-                      <th className="py-4 px-4 text-center">Court Provider</th>
+                      <th className="py-4 px-4 text-center text-rose-500 font-bold">Venue Manager</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border text-xs">
@@ -796,7 +798,10 @@ export function SubscriptionPackages() {
                       { name: 'Digital Umpire Console & Scoring', single: true, org: true, champ: true, coach: false, acad: true, club: true, court: false },
                       { name: 'Trainee / Student Roster & Skill Tracking', single: false, org: false, champ: false, coach: true, acad: true, club: false, court: false },
                       { name: 'Automated Monthly Invoicing', single: false, org: false, champ: false, coach: true, acad: true, club: true, court: true },
-                      { name: 'Dynamic Turf & Slot Booking', single: false, org: false, champ: false, coach: false, acad: false, club: true, court: true },
+                      { name: 'Live Visual Slot Booking Matrix Grid', single: false, org: false, champ: false, coach: false, acad: false, club: true, court: true },
+                      { name: '10-Minute Concurrency Cart Hold Checkout', single: false, org: false, champ: false, coach: false, acad: false, club: false, court: true },
+                      { name: 'Dynamic Peak & Weekend Pricing Rules', single: false, org: false, champ: false, coach: false, acad: false, club: false, court: true },
+                      { name: 'Recurring Academy/Club Reservation Series', single: false, org: false, champ: false, coach: false, acad: false, club: true, court: true },
                     ].map((row, idx) => (
                       <tr key={idx} className="hover:bg-surface-hover/50 transition-colors">
                         <td className="py-3.5 px-4 font-bold text-foreground">{row.name}</td>
@@ -842,9 +847,9 @@ export function SubscriptionPackages() {
                             <span className="font-bold text-purple-500">{row.club}</span>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center bg-rose-500/5">
                           {typeof row.court === 'boolean' ? (
-                            row.court ? <Check className="w-4 h-4 text-primary mx-auto" /> : <span className="text-text-muted/40 font-bold">—</span>
+                            row.court ? <Check className="w-4 h-4 text-rose-500 mx-auto" /> : <span className="text-text-muted/40 font-bold">—</span>
                           ) : (
                             <span className="font-bold text-rose-500">{row.court}</span>
                           )}

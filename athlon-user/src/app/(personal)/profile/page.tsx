@@ -34,7 +34,6 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ContextSwitcher from '@/components/ContextSwitcher';
-import MyOrganizationsList from '@/components/MyOrganizationsList';
 import { ThemeSelector, ThemeModal } from '@/components/theme';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 
@@ -44,6 +43,8 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { UserService, UserResponse, SportsProfileResponse } from '@/lib/api/user';
 import { OrganizationService, Organization } from '@/lib/api/organization';
 import { LocationService, FALLBACK_INDIAN_STATES, FALLBACK_STATE_DISTRICTS } from '@/lib/api/location';
+import { RewardsService } from '@/lib/api/rewards';
+import { MatchService, Match } from '@/lib/api/matches';
 
 export default function ProfilePage() {
   const { userId: playerId, userUuid, token, logout, userEmail } = useAuthStore();
@@ -56,6 +57,8 @@ export default function ProfilePage() {
   } = useWorkspaceStore();
   const [profile, setProfile] = useState<UserResponse | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [userCredits, setUserCredits] = useState<number | null>(null);
+  const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
@@ -247,35 +250,54 @@ export default function ProfilePage() {
         return;
       }
       try {
-        const [res, orgsRes] = await Promise.all([
+        const [res, orgsRes, walletRes] = await Promise.allSettled([
           UserService.getUserByUuid(userUuid),
           OrganizationService.getByUserUuid(userUuid),
+          RewardsService.getWallet(userUuid),
         ]);
-        if (res.success && res.data) {
-          setProfile(res.data);
-          setEditFirstName(res.data.firstName || '');
-          setEditLastName(res.data.lastName || '');
-          setEditPhone(res.data.phone || '');
-          setEditCity(res.data.city || '');
-          setEditDistrict(res.data.district || '');
-          setEditState(res.data.state || '');
+        if (res.status === 'fulfilled' && res.value?.success && res.value.data) {
+          const data = res.value.data;
+          setProfile(data);
+          setEditFirstName(data.firstName || '');
+          setEditLastName(data.lastName || '');
+          setEditPhone(data.phone || '');
+          setEditCity(data.city || '');
+          setEditDistrict(data.district || '');
+          setEditState(data.state || '');
           setPersonalProfile({
-            id: res.data.uuid,
-            name: `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim(),
+            id: data.uuid,
+            name: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
             athlonId: '',
-            avatar: res.data.photo ? UserService.getPhotoUrl(res.data.photo) : '',
+            avatar: data.photo ? UserService.getPhotoUrl(data.photo) : '',
           });
         }
-        if (orgsRes?.data) {
-          setOrganizations(orgsRes.data);
-          setStoreOrganizations(
-            orgsRes.data.map((o: any) => ({
-              id: o.uuid,
-              name: o.name,
-              type: o.type,
-              logo: o.logo,
-            }))
-          );
+        if (orgsRes.status === 'fulfilled' && orgsRes.value?.data && Array.isArray(orgsRes.value.data)) {
+          const apiOrgs = orgsRes.value.data.map((o: any) => ({
+            id: o.uuid || o.organizationUuid,
+            name: o.name,
+            type: o.type,
+            logo: o.logo,
+            role: o.role || 'MEMBER',
+          }));
+          setOrganizations(orgsRes.value.data);
+          const currentOrgs = useWorkspaceStore.getState().organizations || [];
+          const mergedMap = new Map<string, any>();
+          currentOrgs.forEach((org) => mergedMap.set(org.id, org));
+          apiOrgs.forEach((org: any) => mergedMap.set(org.id, org));
+          setStoreOrganizations(Array.from(mergedMap.values()));
+        }
+        if (playerId) {
+          try {
+            const matchesRes = await MatchService.getByUser(Number(playerId));
+            if (matchesRes?.data && Array.isArray(matchesRes.data)) {
+              setUserMatches(matchesRes.data);
+            } else {
+              setUserMatches([]);
+            }
+          } catch (err) {
+            console.warn('Failed to load user match history', err);
+            setUserMatches([]);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch profile', error);
@@ -319,41 +341,6 @@ export default function ProfilePage() {
       }
     }
   };
-
-  const matchHistory = [
-    {
-      id: 1,
-      opponent: 'Rahul Verma',
-      tournament: 'Smash Arena Practice',
-      result: 'WIN',
-      score: '21-18, 21-15',
-      date: 'Yesterday',
-    },
-    {
-      id: 2,
-      opponent: 'Vikram Singh',
-      tournament: 'District Qualifiers',
-      result: 'LOSS',
-      score: '19-21, 21-18, 15-21',
-      date: '12 Jul 2024',
-    },
-    {
-      id: 3,
-      opponent: 'Amit Sharma',
-      tournament: 'Corporate League',
-      result: 'WIN',
-      score: '21-12, 21-10',
-      date: '08 Jul 2024',
-    },
-    {
-      id: 4,
-      opponent: 'Karthik N.',
-      tournament: 'Friendly Match',
-      result: 'WIN',
-      score: '21-19, 21-17',
-      date: '05 Jul 2024',
-    },
-  ];
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-primary selection:text-black">
@@ -681,122 +668,6 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          {/* SPORTS PROFILE */}
-          <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-4 py-3 flex items-center justify-between border-b border-foreground/5">
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Sports Profile</span>
-              </div>
-              <button
-                onClick={() => setIsAddingSport(true)}
-                className="text-[10px] font-bold text-primary hover:opacity-80 transition-opacity flex items-center gap-1 bg-primary/10 px-2 py-1 rounded-md"
-              >
-                <Plus className="w-3 h-3" /> Add New
-              </button>
-            </div>
-
-            <div className="px-4 py-3 border-b border-foreground/5 overflow-x-auto hide-scrollbar flex gap-2">
-              {sportsProfiles.length === 0 ? (
-                <div className="text-xs text-foreground/50 py-2">No sports added yet.</div>
-              ) : (
-                sportsProfiles.map((sp) => (
-                  <button
-                    key={sp.uuid}
-                    onClick={() => setSelectedSportId(sp.uuid)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                      selectedSportId === sp.uuid
-                        ? 'bg-primary text-black border-primary'
-                        : 'bg-surface border-border text-foreground hover:bg-foreground/5'
-                    }`}
-                  >
-                    {sp.sportName}
-                  </button>
-                ))
-              )}
-            </div>
-
-            {isAddingSport && (
-              <div className="p-4 border-b border-foreground/5 bg-foreground/5">
-                <div className="flex flex-col gap-3">
-                  <select
-                    value={newSportName}
-                    onChange={(e) => setNewSportName(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
-                  >
-                    <option value="Badminton">Badminton</option>
-                    <option value="Cricket">Cricket</option>
-                    <option value="Football">Football</option>
-                    <option value="Volleyball">Volleyball</option>
-                  </select>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                    <option value="Professional">Professional</option>
-                  </select>
-                  <input
-                    type="number"
-                    placeholder="Current Ranking (Optional)"
-                    value={newRanking}
-                    onChange={(e) => setNewRanking(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none placeholder:text-foreground/40"
-                  />
-                  <textarea
-                    placeholder="Career Highlights (Optional)"
-                    value={newHighlights}
-                    onChange={(e) => setNewHighlights(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none resize-none h-24 placeholder:text-foreground/40"
-                  />
-                  <div className="flex justify-end gap-3 mt-2">
-                    <button
-                      onClick={() => setIsAddingSport(false)}
-                      className="px-4 py-2 text-xs font-bold text-foreground/60 hover:text-foreground"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleAddSportsProfile}
-                      disabled={isSubmitting}
-                      className="px-5 py-2.5 text-xs font-bold bg-primary text-black rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(27,156,86,0.2)]"
-                    >
-                      {isSubmitting && (
-                        <span className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                      )}
-                      Save Profile
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!isAddingSport &&
-              sportsProfiles
-                .filter((sp) => sp.uuid === selectedSportId)
-                .map((sp) => (
-                  <div key={sp.uuid}>
-                    <div className="px-4 py-4 flex items-center justify-between border-b border-foreground/5">
-                      <span className="text-sm font-medium text-foreground/70">Sport</span>
-                      <span className="text-sm font-semibold text-foreground">{sp.sportName}</span>
-                    </div>
-                    <div className="px-4 py-4 flex items-center justify-between border-b border-foreground/5">
-                      <span className="text-sm font-medium text-foreground/70">Ranking</span>
-                      <span className="text-sm font-semibold text-foreground">{sp.currentRanking || 'N/A'}</span>
-                    </div>
-                    <div className="px-4 py-4 flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground/70">Highlights</span>
-                      <span className="text-sm font-semibold text-foreground">{sp.careerHighlights || 'None'}</span>
-                    </div>
-                  </div>
-                ))}
-          </section>
-
-          <MyOrganizationsList />
-
           {/* APPEARANCE & THEMES (Color + 2D/3D Icons) */}
           <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-4 py-3 border-b border-foreground/5 flex items-center justify-between">
@@ -825,13 +696,18 @@ export default function ProfilePage() {
             <div className="px-4 py-3 border-b border-primary/10">
               <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Rewards</span>
             </div>
-            <div className="px-4 py-4 flex items-center justify-between gap-3">
+            <Link
+              href="/referrals"
+              className="w-full px-4 py-4 flex items-center justify-between gap-3 hover:bg-foreground/5 transition-all text-left group"
+            >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   <Gift className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
-                  <span className="text-sm font-bold text-foreground truncate">Referrals</span>
+                  <span className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                    Referrals
+                  </span>
                   <span className="text-[10px] font-medium text-foreground/60 truncate">
                     Invite players · earn credits
                   </span>
@@ -839,11 +715,11 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-xs font-bold">
-                  0 credits
+                  {userCredits !== null ? `${userCredits} credits` : '0 credits'}
                 </span>
-                <ChevronRight className="w-4 h-4 text-foreground/40" />
+                <ChevronRight className="w-4 h-4 text-foreground/40 group-hover:text-primary transition-colors" />
               </div>
-            </div>
+            </Link>
           </section>
 
           {/* LEGAL */}
@@ -851,14 +727,20 @@ export default function ProfilePage() {
             <div className="px-4 py-3 border-b border-foreground/5">
               <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Legal</span>
             </div>
-            <button className="w-full px-4 py-4 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left">
+            <Link
+              href="/terms"
+              className="w-full px-4 py-4 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left"
+            >
               <span className="text-sm font-medium text-foreground">Terms &amp; Conditions</span>
               <ChevronRight className="w-4 h-4 text-foreground/40" />
-            </button>
-            <button className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left">
+            </Link>
+            <Link
+              href="/privacy"
+              className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left"
+            >
               <span className="text-sm font-medium text-foreground">Privacy Policy</span>
               <ChevronRight className="w-4 h-4 text-foreground/40" />
-            </button>
+            </Link>
           </section>
 
           {/* SUPPORT & HELP */}
@@ -973,7 +855,7 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-black text-foreground tracking-tight">
-                    {profile ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim() : 'Athlete'}
+                    {profile ? (`${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'Athlete') : (personalProfile?.name || (userEmail ? userEmail.split('@')[0] : 'Athlete'))}
                   </h1>
                   <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/30">
                     Pro Verified
@@ -1046,37 +928,35 @@ export default function ProfilePage() {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Activity className="w-5 h-5 text-primary" />
+                <Target className="w-5 h-5 text-primary" />
                 <div>
-                  <h2 className="text-lg font-black text-foreground">Sports Profiles &amp; Skill Tiers</h2>
-                  <p className="text-xs text-foreground/50">Your active disciplines, rankings, and career highlights</p>
+                  <h2 className="text-lg font-black text-foreground">Athletic Disciplines</h2>
+                  <p className="text-xs text-foreground/50">Your active sports passports, tiers, and win ratios</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsAddingSport(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/25 text-primary text-xs font-black hover:bg-primary hover:text-black transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs font-black uppercase tracking-wider hover:bg-primary/20 transition-all mr-2"
                 >
-                  <Plus className="w-3.5 h-3.5" /> <span>Add Sport</span>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Sport</span>
                 </button>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => scrollTrack(sportsTrackRef, 'left')}
-                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                    style={{ borderColor: 'var(--athlon-border)' }}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => scrollTrack(sportsTrackRef, 'right')}
-                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                    style={{ borderColor: 'var(--athlon-border)' }}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => scrollTrack(sportsTrackRef, 'left')}
+                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scrollTrack(sportsTrackRef, 'right')}
+                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -1086,75 +966,85 @@ export default function ProfilePage() {
             >
               {sportsProfiles.length === 0 ? (
                 <div
-                  className="snap-start shrink-0 w-[360px] p-6 rounded-[28px] border border-dashed flex flex-col items-center justify-center text-center space-y-3"
+                  className="snap-start shrink-0 w-[360px] p-6 rounded-[28px] border border-dashed flex flex-col items-center justify-center text-center space-y-3 cursor-pointer hover:border-primary/50 transition-colors"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  onClick={() => setIsAddingSport(true)}
                 >
-                  <Activity className="w-10 h-10 text-foreground/30" />
-                  <h3 className="text-sm font-black text-foreground">No Sports Profiles Added</h3>
-                  <p className="text-xs text-foreground/50">Add Badminton, Cricket, Football or Volleyball</p>
-                  <button
-                    onClick={() => setIsAddingSport(true)}
-                    className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs"
-                  >
-                    Add Sport Profile
-                  </button>
+                  <Sparkles className="w-10 h-10 text-primary/40" />
+                  <h3 className="text-sm font-black text-foreground">No Sports Profile Yet</h3>
+                  <p className="text-xs text-foreground/50">Add your first sport to track rankings and matches</p>
+                  <span className="text-xs font-black text-primary uppercase tracking-wider">+ Add Sport Now</span>
                 </div>
               ) : (
-                sportsProfiles.map((sp) => (
-                  <div key={sp.uuid} className="snap-start shrink-0 w-[360px]">
+                sportsProfiles.map((sport) => {
+                  const isSelected = selectedSportId === sport.uuid;
+                  return (
                     <div
-                      className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-5 hover:border-primary/50 transition-all group"
-                      style={{
-                        backgroundColor: 'var(--athlon-card)',
-                        borderColor: 'var(--athlon-border)',
-                      }}
+                      key={sport.uuid}
+                      className="snap-start shrink-0 w-[360px] cursor-pointer"
+                      onClick={() => setSelectedSportId(sport.uuid)}
                     >
-                      <div className="h-1 w-full bg-primary absolute top-0 left-0 right-0" />
+                      <div
+                        className={`p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl transition-all ${
+                          isSelected ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/40'
+                        }`}
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                        }}
+                      >
+                        <div className="h-1 w-full bg-gradient-to-r from-primary to-emerald-400 absolute top-0 left-0 right-0" />
 
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-base font-black text-foreground">{sp.sportName}</span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                            {(sp as any).category || sp.verificationStatus || 'Competitor'}
-                          </span>
-                        </div>
-
-                        <div
-                          className="grid grid-cols-3 gap-2 p-3 rounded-2xl border text-center"
-                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                        >
-                          <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Total Matches</span>
-                            <span className="text-sm font-black text-foreground font-mono">
-                              {sp.totalMatches ?? 0}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black uppercase tracking-widest text-primary font-mono">
+                              {sport.sportName}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/10 text-foreground/80 border border-white/10">
+                              {sport.category || 'Athlete'}
                             </span>
                           </div>
-                          <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Matches Won</span>
-                            <span className="text-sm font-black text-emerald-400 font-mono">
-                              {sp.matchesWon ?? 0}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Win Rate</span>
-                            <span className="text-sm font-black text-primary font-mono">
-                              {sp.winRate ? `${Math.round(sp.winRate)}%` : '0%'}
-                            </span>
-                          </div>
-                        </div>
 
-                        <div>
-                          <span className="text-[10px] uppercase font-bold text-foreground/40 block mb-1">
-                            Career Highlights
-                          </span>
-                          <p className="text-xs text-foreground/75 leading-relaxed bg-surface/50 p-3 rounded-xl border border-foreground/5">
-                            {sp.careerHighlights || 'Active competitor registered for tournament leagues'}
-                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div
+                              className="p-3 rounded-2xl border flex flex-col items-center justify-center text-center"
+                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <span className="text-[9px] uppercase font-bold text-foreground/40 mb-1">Rank</span>
+                              <span className="text-sm font-black font-mono text-foreground">
+                                {sport.currentRanking ? `#${sport.currentRanking}` : '-'}
+                              </span>
+                            </div>
+
+                            <div
+                              className="p-3 rounded-2xl border flex flex-col items-center justify-center text-center"
+                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <span className="text-[9px] uppercase font-bold text-foreground/40 mb-1">Matches</span>
+                              <span className="text-sm font-black font-mono text-foreground">{sport.totalMatches ?? 0}</span>
+                            </div>
+
+                            <div
+                              className="p-3 rounded-2xl border flex flex-col items-center justify-center text-center"
+                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <span className="text-[9px] uppercase font-bold text-foreground/40 mb-1">Win Rate</span>
+                              <span className="text-sm font-black font-mono text-primary">
+                                {sport.winRate ? `${Math.round(sport.winRate)}%` : '0%'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {sport.careerHighlights && (
+                            <p className="text-xs text-foreground/60 italic line-clamp-2">
+                              &ldquo;{sport.careerHighlights}&rdquo;
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </section>
@@ -1192,60 +1082,87 @@ export default function ProfilePage() {
               ref={historyTrackRef}
               className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
             >
-              {matchHistory.map((m) => {
-                const isWin = m.result === 'WIN';
-                return (
-                  <div key={m.id} className="snap-start shrink-0 w-[360px]">
-                    <div
-                      className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-primary/40 transition-all"
-                      style={{
-                        backgroundColor: 'var(--athlon-card)',
-                        borderColor: 'var(--athlon-border)',
-                      }}
-                    >
+              {userMatches.length === 0 ? (
+                <div
+                  className="snap-start shrink-0 w-[360px] p-6 rounded-[28px] border border-dashed flex flex-col items-center justify-center text-center space-y-3"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <Trophy className="w-10 h-10 text-foreground/30" />
+                  <h3 className="text-sm font-black text-foreground">No Matches Played Yet</h3>
+                  <p className="text-xs text-foreground/50">Register for tournaments or book matches to build your competitive history.</p>
+                  <Link
+                    href="/tournaments"
+                    className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider"
+                  >
+                    Browse Tournaments
+                  </Link>
+                </div>
+              ) : (
+                userMatches.map((m) => {
+                  const isCompleted = m.status === 'COMPLETED';
+                  const isWin = isCompleted && m.winnerRegistrationId && (
+                    (m.teamARegistrationId && m.winnerRegistrationId === m.teamARegistrationId) ||
+                    (m.teamBRegistrationId && m.winnerRegistrationId === m.teamBRegistrationId)
+                  );
+                  const opponentName = m.teamBName || m.teamAName || 'TBD Opponent';
+                  const matchStatusText = isCompleted ? (isWin ? 'WIN' : 'LOSS') : (m.status || 'SCHEDULED');
+                  const scoreDisplay = m.setScores 
+                    ? (typeof m.setScores === 'string' ? m.setScores : Array.isArray(m.setScores) ? m.setScores.join(', ') : JSON.stringify(m.setScores))
+                    : (m.status || 'Upcoming');
+
+                  return (
+                    <div key={m.id || m.uuid} className="snap-start shrink-0 w-[360px]">
                       <div
-                        className={`h-1 w-full absolute top-0 left-0 right-0 ${
-                          isWin ? 'bg-emerald-500' : 'bg-red-500'
-                        }`}
-                      />
-
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                              isWin
-                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
-                                : 'bg-red-500/15 text-red-400 border-red-500/25'
-                            }`}
-                          >
-                            {m.result}
-                          </span>
-                          <span className="text-xs text-foreground/50 font-medium">{m.date}</span>
-                        </div>
-
-                        <div>
-                          <span className="text-[10px] uppercase font-bold text-foreground/40 block">Tournament</span>
-                          <h3 className="text-sm font-black text-foreground truncate">{m.tournament}</h3>
-                        </div>
-
+                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-primary/40 transition-all"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
                         <div
-                          className="p-3 rounded-2xl border flex items-center justify-between"
-                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                        >
-                          <div>
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Opponent</span>
-                            <span className="text-xs font-black text-foreground">{m.opponent}</span>
+                          className={`h-1 w-full absolute top-0 left-0 right-0 ${
+                            isCompleted ? (isWin ? 'bg-emerald-500' : 'bg-red-500') : 'bg-primary'
+                          }`}
+                        />
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                                isCompleted
+                                  ? (isWin ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : 'bg-red-500/15 text-red-400 border-red-500/25')
+                                  : 'bg-primary/15 text-primary border-primary/25'
+                              }`}
+                            >
+                              {matchStatusText}
+                            </span>
+                            <span className="text-xs text-foreground/50 font-medium">{m.matchDate || 'Upcoming'}</span>
                           </div>
-                          <div className="text-right">
-                            <span className="text-[9px] uppercase font-bold text-foreground/40 block">Score</span>
-                            <span className="text-xs font-black font-mono text-primary">{m.score}</span>
+
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-foreground/40 block">Tournament</span>
+                            <h3 className="text-sm font-black text-foreground truncate">{m.tournamentName || 'Tournament Match'}</h3>
+                          </div>
+
+                          <div
+                            className="p-3 rounded-2xl border flex items-center justify-between"
+                            style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                          >
+                            <div>
+                              <span className="text-[9px] uppercase font-bold text-foreground/40 block">Opponent / Team</span>
+                              <span className="text-xs font-black text-foreground truncate max-w-[140px] block">{opponentName}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[9px] uppercase font-bold text-foreground/40 block">Score / Status</span>
+                              <span className="text-xs font-black font-mono text-primary truncate max-w-[120px] block">{scoreDisplay}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </section>
 
@@ -1319,7 +1236,7 @@ export default function ProfilePage() {
                           <div>
                             <h3 className="text-sm font-black text-foreground truncate">{org.name}</h3>
                             <span className="text-[10px] uppercase font-bold text-foreground/50">
-                              {org.type || 'Academy / Club'}
+                              {org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER' ? 'Venue Manager' : org.type === 'COACH' ? 'Freelance Coach' : org.type || 'Academy / Club'}
                             </span>
                           </div>
                         </div>

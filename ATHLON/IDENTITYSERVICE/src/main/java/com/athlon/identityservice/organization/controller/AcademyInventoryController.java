@@ -47,7 +47,7 @@ public class AcademyInventoryController {
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<ClubInventoryItemResponse>> createItem(
             @Valid @RequestBody CreateInventoryItemRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         ClubInventoryItemResponse response = inventoryService.createItem(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Academy inventory item created successfully", response));
@@ -56,7 +56,7 @@ public class AcademyInventoryController {
     @PostMapping("/update")
     public ResponseEntity<ApiResponse<ClubInventoryItemResponse>> updateItem(
             @Valid @RequestBody UpdateInventoryItemRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         ClubInventoryItemResponse response = inventoryService.updateItem(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Academy inventory item updated successfully", response));
@@ -65,7 +65,7 @@ public class AcademyInventoryController {
     @PostMapping("/stock/adjust")
     public ResponseEntity<ApiResponse<ClubInventoryItemResponse>> adjustStock(
             @Valid @RequestBody AdjustStockRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         ClubInventoryItemResponse response = inventoryService.adjustStock(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Stock adjusted successfully", response));

@@ -6,6 +6,15 @@ import java.util.UUID;
 public class LeagueDrawRequest {
     private String drawType; // LEAGUE
     private List<PoolAssignmentDTO> pools;
+    private Long categoryId;
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
 
     public String getDrawType() {
         return drawType;

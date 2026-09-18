@@ -18,4 +18,6 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
     boolean existsByName(String name);
 
     List<Organization> findByUserUuid(UUID userUuid);
+
+    List<Organization> findByUserId(Long userId);
 }

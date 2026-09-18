@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.athlon.identityservice.dto.response.ApiResponse;
 import com.athlon.identityservice.util.DocumentUtil;
+import com.athlon.identityservice.exception.BadRequestException;
 import com.athlon.identityservice.organization.dto.request.CreateOrganizationRequest;
 import com.athlon.identityservice.organization.dto.request.SaveOrganizationProfileRequest;
 import com.athlon.identityservice.organization.dto.request.UpdateOrganizationRequest;
@@ -43,23 +44,23 @@ public class OrganizationController {
 
     private Long parseUserId(String userIdHeader) {
         if (userIdHeader == null || userIdHeader.trim().isEmpty() || "undefined".equalsIgnoreCase(userIdHeader) || "null".equalsIgnoreCase(userIdHeader)) {
-            return 1L;
+            throw new BadRequestException("Authentication context missing: X-User-Id header is required");
         }
         try {
             return Long.parseLong(userIdHeader.trim());
         } catch (Exception e) {
-            return 1L;
+            throw new BadRequestException("Invalid X-User-Id format: " + userIdHeader);
         }
     }
 
     private UUID parseUserUuid(String userUuidHeader) {
         if (userUuidHeader == null || userUuidHeader.trim().isEmpty() || "undefined".equalsIgnoreCase(userUuidHeader) || "null".equalsIgnoreCase(userUuidHeader)) {
-            return UUID.fromString("00000000-0000-0000-0000-000000000000");
+            throw new BadRequestException("Authentication context missing: X-User-Uuid header is required");
         }
         try {
             return UUID.fromString(userUuidHeader.trim());
         } catch (Exception e) {
-            return UUID.fromString("00000000-0000-0000-0000-000000000000");
+            throw new BadRequestException("Invalid X-User-Uuid format: " + userUuidHeader);
         }
     }
 
@@ -133,7 +134,7 @@ public class OrganizationController {
 
     @PostMapping("/deleteOrganization/{uuid}")
     public ResponseEntity<ApiResponse<Void>> deleteOrganization(
-            @PathVariable UUID uuid,
+            @PathVariable("uuid") UUID uuid,
             @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
         
         Long userId = parseUserId(userIdHeader);

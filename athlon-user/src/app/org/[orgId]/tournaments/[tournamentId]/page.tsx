@@ -73,7 +73,6 @@ import { LiveStreamSettings } from '@/components/tournaments/LiveStreamSettings'
 import { MatchSetupSettings } from '@/components/tournaments/MatchSetupSettings';
 import { TeamEventControlRoom } from '@/components/tournaments/teamevent/TeamEventControlRoom';
 import { TournamentWinnersPodium } from '@/components/tournaments/TournamentWinnersPodium';
-import { AcademyStudentSelectorModal } from '@/components/academy/AcademyStudentSelectorModal';
 import { ManualParticipantModal } from '@/components/tournaments/ManualParticipantModal';
 import * as htmlToImage from 'html-to-image';
 
@@ -111,7 +110,6 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   const [showPlayoffModal, setShowPlayoffModal] = useState(false);
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('ALL');
   const [isGeneratingPlayoffs, setIsGeneratingPlayoffs] = useState(false);
-  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [assigningCourt, setAssigningCourt] = useState<number | null>(null);
   const [selectedTeamEventMatch, setSelectedTeamEventMatch] = useState<Match | null>(null);
@@ -119,6 +117,8 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   const [teamSearch, setTeamSearch] = useState('');
   const [approvalFilter, setApprovalFilter] = useState<'ALL' | 'APPROVED' | 'PENDING' | 'REJECTED'>('ALL');
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
+  const [registrationCategoryFilter, setRegistrationCategoryFilter] = useState<string>('ALL');
+  const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>('ALL');
   const [matchesMobileFilter, setMatchesMobileFilter] = useState<'ALL' | 'LIVE' | 'SCHEDULED' | 'COMPLETED'>('ALL');
   const [copied, setCopied] = useState(false);
   const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
@@ -344,8 +344,21 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   };
 
   const resolveRegistrationCategory = (reg: any) => {
-    if (reg.category) return reg.category;
-    if (reg.categoryName) return reg.categoryName;
+    if (reg.category && typeof reg.category === 'string' && reg.category.trim()) {
+      return reg.category.trim();
+    }
+    if (reg.categoryName && typeof reg.categoryName === 'string' && reg.categoryName.trim()) {
+      return reg.categoryName.trim();
+    }
+    if (reg.categoryId != null) {
+      const catNum = Number(reg.categoryId);
+      if (tournament?.category) {
+        const catList = tournament.category.split(',').map((c) => c.trim()).filter(Boolean);
+        if (catNum >= 1 && catNum <= catList.length) {
+          return catList[catNum - 1];
+        }
+      }
+    }
     if (reg.teamName) {
       const match = reg.teamName.match(/\(([^)]+)\)$/);
       if (match && match[1]) {
@@ -756,9 +769,13 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
       }
       if (approvalFilter !== 'ALL' && reg.status !== approvalFilter) return false;
       if (paymentFilter !== 'ALL' && reg.paymentStatus !== paymentFilter) return false;
+      if (registrationCategoryFilter !== 'ALL') {
+        const cat = resolveRegistrationCategory(reg);
+        if (cat !== registrationCategoryFilter) return false;
+      }
       return true;
     });
-  }, [registrations, registrationSearch, approvalFilter, paymentFilter]);
+  }, [registrations, registrationSearch, approvalFilter, paymentFilter, registrationCategoryFilter, tournament?.category]);
 
   const filteredTeams = useMemo(() => {
     return approvedAndPaidTeams.filter((reg) => {
@@ -769,9 +786,13 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
       ) {
         return false;
       }
+      if (teamCategoryFilter !== 'ALL') {
+        const cat = resolveRegistrationCategory(reg);
+        if (cat !== teamCategoryFilter) return false;
+      }
       return true;
     });
-  }, [approvedAndPaidTeams, teamSearch]);
+  }, [approvedAndPaidTeams, teamSearch, teamCategoryFilter, tournament?.category]);
 
   const academyTargetConfig = useMemo(() => {
     if (!tournament?.description) return null;
@@ -790,7 +811,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   }, [tournament?.category]);
 
   const manualModalCategories = useMemo(() => {
-    if (!tournament?.category) return [{ id: 1, name: 'Open Category', categoryName: 'Open Category' }];
+    if (!tournament?.category) return [{ id: 1, categoryId: 1, name: 'Open Category', categoryName: 'Open Category' }];
     return tournament.category
       .split(',')
       .map((c, idx) => ({ id: idx + 1, categoryId: idx + 1, name: c.trim(), categoryName: c.trim() }))
@@ -1557,7 +1578,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
               </div>
 
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                {/* Manual Participant Add Buttons */}
+                {/* Single unified Manual Participant Add Button */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1566,35 +1587,10 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                     setIsManualParticipantModalOpen(true);
                   }}
                   className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                  title="Manually add a player"
+                  title="Manually add a player or team participant"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>+ Add Player</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingRegistration(null);
-                    setManualParticipantMode('TEAM');
-                    setIsManualParticipantModalOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-primary/30 bg-primary/10 text-primary font-black text-xs uppercase tracking-wider hover:bg-primary/20 active:scale-95 transition-all shadow-sm"
-                  title="Manually add a team or doubles pair"
-                >
-                  <Users className="w-4 h-4 text-primary" />
-                  <span>+ Add Team</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsEnrollModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-foreground/70 font-black text-xs uppercase tracking-wider hover:text-foreground hover:bg-white/5 active:scale-95 transition-all shadow-sm"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-                  title="Directly enroll academy students from batches"
-                >
-                  <Users className="w-4 h-4 text-primary" />
-                  <span className="hidden sm:inline">Enroll Students</span>
+                  <span>Add Participant</span>
                 </button>
 
                 {tournament.registrationMode !== 'ORGANIZER_MANAGED' && (
@@ -1638,26 +1634,17 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 }}
                 tournamentId={tournament.tournamentId}
                 tournamentUuid={tournament.tournamentUuid || tournamentId}
+                sportType={(tournament as any).sportType || tournament.sport || 'BADMINTON'}
+                matchFormat={tournament.matchFormat || ''}
                 categories={manualModalCategories}
+                defaultCategoryId={
+                  registrationCategoryFilter !== 'ALL'
+                    ? manualModalCategories.find((c) => (c.categoryName || c.name) === registrationCategoryFilter)?.categoryId
+                    : undefined
+                }
                 editingRegistration={editingRegistration}
                 currentUserId={Number(userId)}
                 initialMode={manualParticipantMode}
-              />
-            )}
-
-            {/* Academy Student Enrollment Modal */}
-            {isEnrollModalOpen && (
-              <AcademyStudentSelectorModal
-                orgUuid={orgId}
-                tournamentId={tournament.tournamentUuid || tournamentId}
-                tournamentName={tournament.name}
-                categories={availableCategories}
-                onClose={() => setIsEnrollModalOpen(false)}
-                onSuccess={() => {
-                  if (tournament.tournamentId) {
-                    RegistrationService.getByTournament(tournament.tournamentId).then((r) => setRegistrations(r.data || []));
-                  }
-                }}
               />
             )}
 
@@ -1691,17 +1678,74 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 )}
               </div>
 
+              {/* Category Filter Row (when multiple categories exist) */}
+              {availableCategories.length > 1 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-foreground/45 block">
+                    Tournament Category
+                  </span>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    <button
+                      key="ALL"
+                      onClick={() => setRegistrationCategoryFilter('ALL')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all border ${
+                        registrationCategoryFilter === 'ALL'
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                          : 'text-foreground/60 hover:text-foreground hover:bg-white/[0.04]'
+                      }`}
+                      style={registrationCategoryFilter !== 'ALL' ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' } : {}}
+                    >
+                      <span>All Categories</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          registrationCategoryFilter === 'ALL' ? 'bg-black/20 text-primary-foreground' : 'bg-white/5 text-foreground/40'
+                        }`}
+                      >
+                        {registrations.length}
+                      </span>
+                    </button>
+                    {availableCategories.map((cat) => {
+                      const isSelected = registrationCategoryFilter === cat;
+                      const count = registrations.filter((r) => resolveRegistrationCategory(r) === cat).length;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setRegistrationCategoryFilter(cat)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all border ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                              : 'text-foreground/60 hover:text-foreground hover:bg-white/[0.04]'
+                          }`}
+                          style={!isSelected ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' } : {}}
+                        >
+                          <span>{cat}</span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                              isSelected ? 'bg-black/20 text-primary-foreground' : 'bg-white/5 text-foreground/40'
+                            }`}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Status Filter Row */}
-              <div className="space-y-2">
+              <div className={`space-y-2 ${availableCategories.length > 1 ? 'pt-1 border-t border-white/[0.06]' : ''}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-foreground/45">
                     Approval Status
                   </span>
-                  {(approvalFilter !== 'ALL' || paymentFilter !== 'ALL' || registrationSearch) && (
+                  {(approvalFilter !== 'ALL' || paymentFilter !== 'ALL' || registrationCategoryFilter !== 'ALL' || registrationSearch) && (
                     <button
                       onClick={() => {
                         setApprovalFilter('ALL');
                         setPaymentFilter('ALL');
+                        setRegistrationCategoryFilter('ALL');
                         setRegistrationSearch('');
                       }}
                       className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider"
@@ -2111,6 +2155,56 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 )}
               </div>
             </div>
+
+            {/* Category Filter Pills for Teams */}
+            {availableCategories.length > 1 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                  key="ALL"
+                  onClick={() => setTeamCategoryFilter('ALL')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all border ${
+                    teamCategoryFilter === 'ALL'
+                      ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm font-black'
+                      : 'text-foreground/60 hover:text-foreground hover:bg-white/[0.04]'
+                  }`}
+                  style={teamCategoryFilter !== 'ALL' ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' } : {}}
+                >
+                  <span>All Categories</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      teamCategoryFilter === 'ALL' ? 'bg-black/20 text-white' : 'bg-white/5 text-foreground/40'
+                    }`}
+                  >
+                    {approvedAndPaidTeams.length}
+                  </span>
+                </button>
+                {availableCategories.map((cat) => {
+                  const isSelected = teamCategoryFilter === cat;
+                  const count = approvedAndPaidTeams.filter((r) => resolveRegistrationCategory(r) === cat).length;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setTeamCategoryFilter(cat)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all border ${
+                        isSelected
+                          ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm font-black'
+                          : 'text-foreground/60 hover:text-foreground hover:bg-white/[0.04]'
+                      }`}
+                      style={!isSelected ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' } : {}}
+                    >
+                      <span>{cat}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          isSelected ? 'bg-black/20 text-white' : 'bg-white/5 text-foreground/40'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Empty State */}
             {approvedAndPaidTeams.length === 0 ? (

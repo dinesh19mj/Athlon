@@ -236,8 +236,8 @@ export function CTAAndFooter() {
           <div className="col-span-1 md:col-span-2">
             <h4 className="font-bold text-foreground mb-6 uppercase tracking-wider text-xs">Legal</h4>
             <ul className="space-y-4 text-sm font-medium">
-              <li><Link href="#" className="hover:text-foreground hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-foreground hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-foreground hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="hover:text-foreground hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Privacy Policy</Link></li>
             </ul>
           </div>
         </div>

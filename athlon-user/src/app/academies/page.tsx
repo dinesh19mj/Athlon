@@ -67,84 +67,16 @@ interface AcademyListing {
   profile?: any;
 }
 
-const DEFAULT_ACADEMIES: AcademyListing[] = [
-  {
-    id: 1,
-    name: 'Smash Arena Pro Academy',
-    sportType: 'Badminton',
-    rating: '4.9',
-    reviews: '128',
-    distance: '2.5 km',
-    location: 'Koramangala, Bangalore',
-    price: '₹1,500/mo',
-    courts: 6,
-    tags: ['BWF Certified', 'Pro Shop', 'Coaching Batches', 'Wooden Flooring'],
-    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800&auto=format&fit=crop',
-    featured: true,
-    openTiming: '6:00 AM - 11:00 PM',
-    phone: '+91 98765 43210',
-  },
-  {
-    id: 2,
-    name: 'Elite Sports Club & Academy',
-    sportType: 'Badminton',
-    rating: '4.7',
-    reviews: '84',
-    distance: '4.1 km',
-    location: 'HSR Layout, Bangalore',
-    price: '₹1,400/mo',
-    courts: 4,
-    tags: ['Wooden Courts', 'Showers', 'Coaching Batches', 'Cafeteria'],
-    image: 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?q=80&w=800&auto=format&fit=crop',
-    featured: false,
-    openTiming: '5:30 AM - 10:30 PM',
-    phone: '+91 98765 43211',
-  },
-  {
-    id: 3,
-    name: 'Velocity Badminton Hub',
-    sportType: 'Badminton',
-    rating: '4.5',
-    reviews: '56',
-    distance: '6.8 km',
-    location: 'Indiranagar, Bangalore',
-    price: '₹1,200/mo',
-    courts: 3,
-    tags: ['Synthetic Flooring', 'Coaching Batches', 'Equipment Rental'],
-    image: 'https://images.unsplash.com/photo-1611252758110-6c9f2868853b?q=80&w=800&auto=format&fit=crop',
-    featured: false,
-    openTiming: 'Open 24 Hours',
-    phone: '+91 98765 43212',
-  },
-  {
-    id: 4,
-    name: 'Apex Badminton & Fitness Center',
-    sportType: 'Badminton',
-    rating: '4.8',
-    reviews: '92',
-    distance: '3.4 km',
-    location: 'Whitefield, Bangalore',
-    price: '₹1,800/mo',
-    courts: 8,
-    tags: ['BWF Certified', 'Air Conditioned', 'Pro Shop'],
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800&auto=format&fit=crop',
-    featured: false,
-    openTiming: '6:00 AM - 10:00 PM',
-    phone: '+91 98765 43213',
-  },
-];
-
 export default function AcademiesPage() {
   const { isAuthenticated, userUuid, userEmail } = useAuthStore();
   const { personalProfile } = useWorkspaceStore();
 
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'carousel'>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
   const [liveAcademies, setLiveAcademies] = useState<AcademyListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
 
-  // Direct Enroll Modal State
+  // Direct Enrollment Modal States
   const [selectedAcademyForEnroll, setSelectedAcademyForEnroll] = useState<AcademyListing | null>(null);
   const [academyBatches, setAcademyBatches] = useState<AcademyBatch[]>([]);
   const [academyCourts, setAcademyCourts] = useState<AcademyCourt[]>([]);
@@ -168,12 +100,21 @@ export default function AcademiesPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Fetch Live Academies from Backend
+  // Fetch Live Academies from Backend with timeout handling
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 8000);
+
     const fetchAcademies = async () => {
       try {
         setLoading(true);
-        const res = await OrganizationService.getAll();
+        const res = await OrganizationService.getAll({ signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!active) return;
+
         const orgs = Array.isArray(res) ? res : (res as any)?.data || [];
         const liveOrgs = orgs.filter((o: any) => o.type === 'ACADEMY');
 
@@ -184,32 +125,32 @@ export default function AcademiesPage() {
             const amenitiesList = prof?.amenities ? prof.amenities.split(',').map((a: string) => a.trim()).slice(0, 2) : [];
             const feeString = prof?.monthlyFeeMin
               ? `₹${prof.monthlyFeeMin.toLocaleString()}${prof?.monthlyFeeMax ? ` - ₹${prof.monthlyFeeMax.toLocaleString()}` : ''}/mo`
-              : (prof?.pricePerHour ? `₹${prof.pricePerHour}/hr` : '₹2,000/mo');
+              : (prof?.pricePerHour ? `₹${prof.pricePerHour}/hr` : undefined);
 
             return {
               id: org.uuid || org.id || `org-${idx}`,
               uuid: org.uuid,
               name: org.name,
               sportType: sports[0] || 'Badminton',
-              rating: prof?.rating ? prof.rating.toFixed(1) : '4.9',
-              reviews: prof?.reviewsCount ? `${prof.reviewsCount}+` : '50+',
-              distance: prof?.city ? `${prof.city}` : 'Bangalore',
-              location: prof?.address || prof?.city || 'Athlon Academy Center',
-              price: feeString,
-              courts: prof?.totalCourts || 4,
+              rating: prof?.rating ? prof.rating.toFixed(1) : undefined,
+              reviews: prof?.reviewsCount ? `${prof.reviewsCount}` : undefined,
+              distance: prof?.city ? `${prof.city}` : undefined,
+              location: [prof?.address, prof?.city, prof?.state].filter(Boolean).join(', ') || org.location || 'Location TBA',
+              price: feeString || 'Fee upon enquiry',
+              courts: prof?.totalCourts || undefined,
               tags: [
                 ...sports.slice(0, 2),
-                prof?.surfaceType || 'BWF Synthetic Mats',
+                ...(prof?.surfaceType ? [prof.surfaceType] : []),
                 ...amenitiesList,
               ],
               image: prof?.banner
                 ? OrganizationService.getBannerUrl(prof.banner)
                 : prof?.logo
                   ? OrganizationService.getLogoUrl(prof.logo)
-                  : DEFAULT_ACADEMIES[idx % DEFAULT_ACADEMIES.length].image,
+                  : 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800&auto=format&fit=crop',
               featured: idx === 0,
-              openTiming: prof?.openingTime && prof?.closingTime ? `${prof.openingTime} - ${prof.closingTime}` : '6:00 AM - 10:00 PM',
-              phone: prof?.contactPhone || '+91 98765 43210',
+              openTiming: prof?.openingTime && prof?.closingTime ? `${prof.openingTime} - ${prof.closingTime}` : 'Timings TBA',
+              phone: prof?.contactPhone || '',
               isLiveOrg: true,
               logo: org.logo || prof?.logo,
               banner: org.banner || prof?.banner,
@@ -219,13 +160,13 @@ export default function AcademiesPage() {
           });
           setLiveAcademies(mapped);
         } else {
-          setLiveAcademies(DEFAULT_ACADEMIES);
+          setLiveAcademies([]);
         }
       } catch (err) {
         console.error('Failed to load academies:', err);
-        setLiveAcademies(DEFAULT_ACADEMIES);
+        if (active) setLiveAcademies([]);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
@@ -243,6 +184,8 @@ export default function AcademiesPage() {
     }
 
     return () => {
+      active = false;
+      clearTimeout(timeoutId);
       if (typeof window !== 'undefined') {
         window.removeEventListener('athlon-org-updated', handleOrgSync);
       }
@@ -250,7 +193,6 @@ export default function AcademiesPage() {
   }, []);
 
   const allAcademies = useMemo(() => {
-    if (liveAcademies.length === 0) return DEFAULT_ACADEMIES;
     return liveAcademies;
   }, [liveAcademies]);
 
@@ -377,14 +319,37 @@ export default function AcademiesPage() {
               </p>
             </div>
 
-            {/* Quick Actions / Link to Dashboard */}
-            <div className="flex items-center gap-2">
+            {/* Quick Actions / Link to Dashboard & Hub Switcher */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 p-1 rounded-full bg-surface border border-white/10 shadow-sm">
+                <Link
+                  href="/academies"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-black bg-primary text-black flex items-center gap-1.5 shadow-sm"
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>Academies</span>
+                </Link>
+                <Link
+                  href="/venues"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-bold text-foreground/70 hover:text-foreground flex items-center gap-1.5 hover:bg-white/5 transition-all"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-primary" />
+                  <span>Courts &amp; Turfs</span>
+                </Link>
+                <Link
+                  href="/coaches"
+                  className="px-3.5 py-1.5 rounded-full text-xs font-bold text-foreground/70 hover:text-foreground flex items-center gap-1.5 hover:bg-white/5 transition-all"
+                >
+                  <span>Coaches</span>
+                </Link>
+              </div>
+
               <Link
                 href="/home"
-                className="px-4 py-2.5 rounded-xl border border-white/10 bg-surface hover:bg-white/5 text-xs font-bold text-foreground transition-all flex items-center gap-2 shadow-sm"
+                className="px-3.5 py-2 rounded-full border border-white/10 bg-surface hover:bg-white/5 text-xs font-bold text-foreground transition-all flex items-center gap-1.5 shadow-sm"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Home</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Home</span>
               </Link>
             </div>
           </div>

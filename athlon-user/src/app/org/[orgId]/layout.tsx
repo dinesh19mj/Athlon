@@ -42,24 +42,29 @@ import { Athlon3DIcon, Athlon3DIconProps } from '@/components/common/Athlon3DIco
 function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
   if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
-  if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
+  if (n.includes('stream') || n.includes('broadcast') || n.includes('livestream') || (n.includes('live') && !n.includes('calendar') && !n.includes('score') && !n.includes('grid'))) return 'livestream';
   if (n.includes('post') || n.includes('blog') || n.includes('gallery') || n.includes('feed') || n.includes('media') || n.includes('article')) return 'posts';
   if (n.includes('admission') || n.includes('intake') || n.includes('enroll')) return 'registered';
   if (n.includes('trainee') || n.includes('student') || n.includes('pupil') || n.includes('client') || n.includes('athlete')) return 'students';
-  if (n.includes('session') || n.includes('schedule') || n.includes('calendar') || n.includes('slot') || n.includes('booking') || n.includes('timetable')) return 'schedule';
-  if (n.includes('batch') || n.includes('group') || n.includes('squad') || n.includes('package')) return 'batches';
+  if (n.includes('calendar') || n.includes('session') || n.includes('schedule') || n.includes('slot') || n.includes('timetable')) return 'schedule';
+  if (n.includes('booking') || n.includes('reservation')) return 'bookings';
+  if (n.includes('batch') || n.includes('group') || n.includes('squad') || n.includes('package') || n.includes('recurring') || n.includes('series')) return 'batches';
   if (n.includes('coach') || n.includes('trainer') || n.includes('instructor')) return 'coaches';
   if (n.includes('member') || n.includes('staff') || n.includes('team')) return 'members';
   if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
-  if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic')) return 'performance';
+  if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic') || n.includes('report') || n.includes('occupancy') || n.includes('stat') || n.includes('metric')) return 'performance';
   if (n.includes('match') || n.includes('fixture') || n.includes('sparring')) return 'matches';
+  if (n.includes('block') || n.includes('maint') || n.includes('hold')) return 'blocks';
   if (n.includes('setup') || n.includes('console') || n.includes('officiat')) return 'setup';
   if (n.includes('umpire') || n.includes('referee')) return 'umpire';
   if (n.includes('leaderboard') || n.includes('rank') || n.includes('standing') || n.includes('result')) return 'rankings';
   if (n.includes('inventory') || n.includes('equipment') || n.includes('shuttle') || n.includes('gear')) return 'inventory';
+  if (n.includes('pricing') || n.includes('rate') || n.includes('tariff') || n.includes('price')) return 'pricing';
   if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card') || n.includes('ledger')) return 'finances';
-  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('map') || n.includes('venue') || n.includes('centre') || n.includes('campus')) return 'facilities';
-  if (n.includes('setting') || n.includes('config')) return 'settings';
+  if (n.includes('centre') || n.includes('campus') || n.includes('branch')) return 'facilities';
+  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('arena') || n.includes('map')) return 'facilities';
+  if (n.includes('profile') || n.includes('venue profile')) return 'profile';
+  if (n.includes('setting') || n.includes('config') || n.includes('preference')) return 'settings';
   if (n.includes('registration') || n.includes('register') || n.includes('approv') || n.includes('entry') || n.includes('pass')) return 'registered';
   if (n.includes('academ') || n.includes('club')) return 'academies';
   return 'home';
@@ -70,7 +75,7 @@ export default function OrganizationLayout({ children }: { children: React.React
   const params = useParams();
   const router = useRouter();
   const { logout } = useAuthStore();
-  const { activeWorkspaceId, setActiveWorkspace, getActiveOrganization, organizations, personalProfile } =
+  const { activeWorkspaceId, setActiveWorkspace, organizations, personalProfile } =
     useWorkspaceStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -99,11 +104,9 @@ export default function OrganizationLayout({ children }: { children: React.React
     }
   }, [orgId, activeWorkspaceId, setActiveWorkspace]);
 
-  // Robust activeOrg resolver: check by URL param, activeWorkspaceId, or default fallback
-  const activeOrg =
-    organizations.find((o) => o.id === orgId) ||
-    getActiveOrganization() ||
-    (organizations.length > 0 ? organizations[0] : { id: orgId || 'matrix-org', name: 'Matrix', type: 'ORGANIZER' as const });
+  // An organization route is authoritative. Never render a persisted active
+  // workspace (or the first workspace) under a different organization URL.
+  const activeOrg = organizations.find((o) => o.id === orgId);
 
   // Close mobile menu on scroll
   useEffect(() => {
@@ -123,6 +126,18 @@ export default function OrganizationLayout({ children }: { children: React.React
   }, [isMenuOpen]);
 
   if (!isMounted) return <div className="h-screen w-full bg-background animate-pulse" />;
+
+  if (!activeOrg) {
+    return (
+      <main className="min-h-screen grid place-items-center bg-background p-6 text-center">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Workspace unavailable</h1>
+          <p className="mt-2 text-sm text-foreground/60">This workspace is not available in your current organization context.</p>
+          <Link href="/home" className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black">Return to personal space</Link>
+        </div>
+      </main>
+    );
+  }
 
   // 1. Original Mobile Navigation Resolver (100% UNTOUCHED)
   const getNavItems = () => {
@@ -187,13 +202,18 @@ export default function OrganizationLayout({ children }: { children: React.React
         { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
       ];
     }
-    if (activeOrg.type === 'COURT') {
+    if (activeOrg.type === 'COURT' || (activeOrg.type as string) === 'VENUE_MANAGER') {
       return [
         ...base,
-        { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
-        { name: 'Bookings', href: `/org/${orgId}/bookings`, icon: CalendarDays },
-        { name: 'Facilities', href: `/org/${orgId}/facilities`, icon: Building },
+        { name: 'Calendar', href: `/org/${orgId}/venue/calendar`, icon: CalendarDays },
+        { name: 'Bookings', href: `/org/${orgId}/venue/bookings`, icon: ClipboardList },
+        { name: 'Recurring', href: `/org/${orgId}/venue/recurring`, icon: Layers },
+        { name: 'Facilities', href: `/org/${orgId}/venue/facilities`, icon: Building },
+        { name: 'Pricing', href: `/org/${orgId}/venue/pricing`, icon: Tag },
+        { name: 'Blocks', href: `/org/${orgId}/venue/blocks`, icon: Shield },
+        { name: 'Reports', href: `/org/${orgId}/venue/reports`, icon: TrendingUp },
         { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
+        { name: 'Settings', href: `/org/${orgId}/settings`, icon: Settings },
       ];
     }
     return base;
@@ -284,6 +304,41 @@ export default function OrganizationLayout({ children }: { children: React.React
           title: 'Settings & Profile',
           items: [
             { name: 'Academy Profile', href: `/org/${orgId}/profile`, icon: Building2, badge: null, isLive: false },
+            { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
+          ],
+        },
+      ];
+    }
+
+    if (activeOrg.type === 'COURT' || (activeOrg.type as string) === 'VENUE_MANAGER') {
+      return [
+        {
+          title: 'Venue Operations',
+          items: [
+            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Live Calendar', href: `/org/${orgId}/venue/calendar`, icon: CalendarDays, badge: 'Live', isLive: true },
+            { name: 'Bookings & Walk-ins', href: `/org/${orgId}/venue/bookings`, icon: ClipboardList, badge: null, isLive: false },
+            { name: 'Recurring Series', href: `/org/${orgId}/venue/recurring`, icon: Layers, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Facility Management',
+          items: [
+            { name: 'Facilities & Courts', href: `/org/${orgId}/venue/facilities`, icon: Building, badge: null, isLive: false },
+            { name: 'Pricing & Slot Rates', href: `/org/${orgId}/venue/pricing`, icon: Tag, badge: null, isLive: false },
+            { name: 'Blocks & Maintenance', href: `/org/${orgId}/venue/blocks`, icon: Shield, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Insights & Treasury',
+          items: [
+            { name: 'Reports & Revenue', href: `/org/${orgId}/venue/reports`, icon: TrendingUp, badge: null, isLive: false },
+            { name: 'Venue Finances', href: `/org/${orgId}/finances`, icon: CreditCard, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Settings & Administration',
+          items: [
             { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
           ],
         },

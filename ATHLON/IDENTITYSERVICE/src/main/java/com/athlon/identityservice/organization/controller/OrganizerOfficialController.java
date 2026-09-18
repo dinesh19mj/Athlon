@@ -56,7 +56,7 @@ public class OrganizerOfficialController {
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<OrganizerOfficialResponse>> addOfficial(
             @Valid @RequestBody AddOrganizerOfficialRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         OrganizerOfficialResponse response = officialService.addOfficialByPhone(request.getOrganizationUuid(), request, userId);
         return ResponseEntity.ok(ApiResponse.success("Official added successfully", response));
@@ -65,7 +65,7 @@ public class OrganizerOfficialController {
     @PostMapping("/update")
     public ResponseEntity<ApiResponse<OrganizerOfficialResponse>> updateOfficial(
             @Valid @RequestBody UpdateOrganizerOfficialRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         OrganizerOfficialResponse response = officialService.updateOfficial(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Official updated successfully", response));
@@ -74,7 +74,7 @@ public class OrganizerOfficialController {
     @PostMapping("/delete/{officialUuid}")
     public ResponseEntity<ApiResponse<Void>> deleteOfficial(
             @PathVariable("officialUuid") UUID officialUuid,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         officialService.deleteOfficial(officialUuid, userId);
         return ResponseEntity.ok(ApiResponse.success("Official access revoked successfully", null));

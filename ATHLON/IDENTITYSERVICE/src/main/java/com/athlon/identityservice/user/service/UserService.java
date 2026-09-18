@@ -37,6 +37,9 @@ public class UserService {
     private final FileStorageUtil fileStorageUtil;
     private final WebClient webClient;
 
+    @Value("${service.internal.key:athlon-internal-secure-key-2026}")
+    private String internalServiceKey;
+
     @Value("${athlo.gateway.url}")
     private String gatewayPath;
 
@@ -87,6 +90,7 @@ public class UserService {
 
             webClient.post()
                     .uri(gatewayPath + "/api/auth/internal/credentials")
+                    .header("X-Internal-Service-Key", internalServiceKey)
                     .bodyValue(credentialRequest)
                     .retrieve()
                     .bodyToMono(Void.class)

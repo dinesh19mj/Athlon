@@ -47,6 +47,8 @@ export const fetchClient = async <T>(
     const sId = String(userId).trim();
     if (/^\d+$/.test(sId)) {
       headers['X-User-Id'] = sId;
+    } else if (/^[0-9a-fA-F-]{36}$/.test(sId) && !headers['X-User-Uuid']) {
+      headers['X-User-Uuid'] = sId;
     }
   }
 
@@ -71,6 +73,7 @@ export const fetchClient = async <T>(
       } catch (e) {
         errorData = textData;
       }
+      console.error(`[API Error ${response.status}] ${method} ${url}:`, errorData || textData || response.statusText);
       throw new ApiError(response.status, response.statusText, errorData);
     }
 

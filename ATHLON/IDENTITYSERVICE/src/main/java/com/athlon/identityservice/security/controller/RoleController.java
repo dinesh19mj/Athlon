@@ -1,4 +1,5 @@
 package com.athlon.identityservice.security.controller;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -35,14 +36,14 @@ public class RoleController {
     }
 
     @PostMapping("/delete/{uuid}")
-    public ResponseEntity<ApiResponse<Void>> deleteRole(@PathVariable UUID uuid) {
+    public ResponseEntity<ApiResponse<Void>> deleteRole(@PathVariable("uuid") UUID uuid) {
         Long currentUserId = 1L;
         roleService.deleteRole(uuid, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Role deleted successfully", null));
     }
 
     @GetMapping("/get/{uuid}")
-    public ResponseEntity<ApiResponse<RoleResponse>> getRoleByUuid(@PathVariable UUID uuid) {
+    public ResponseEntity<ApiResponse<RoleResponse>> getRoleByUuid(@PathVariable("uuid") UUID uuid) {
         RoleResponse response = roleService.getRoleByUuid(uuid);
         return ResponseEntity.ok(ApiResponse.success(response));
     }

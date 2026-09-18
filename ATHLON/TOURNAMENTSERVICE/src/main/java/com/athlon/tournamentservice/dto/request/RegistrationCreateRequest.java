@@ -16,7 +16,6 @@ public class RegistrationCreateRequest {
     @NotBlank(message = "Team name is required")
     private String teamName;
 
-    @NotBlank(message = "Place is required")
     private String place;
 
     private Long categoryId;

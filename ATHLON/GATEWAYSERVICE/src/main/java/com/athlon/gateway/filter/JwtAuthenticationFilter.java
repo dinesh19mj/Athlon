@@ -37,40 +37,66 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         String token = RequestUtil.extractBearerToken(request);
 
+        HeaderMapRequestWrapper requestWrapper = new HeaderMapRequestWrapper(request);
+        // Strip caller-supplied identity headers by default
+        requestWrapper.removeHeader("x-user-id");
+        requestWrapper.removeHeader("x-user-uuid");
+        requestWrapper.removeHeader("x-user-email");
+        requestWrapper.removeHeader("x-user-role");
+
         if (token != null && jwtUtil.validateToken(token)) {
+            String userId = jwtUtil.extractUserId(token);
             String userUuid = jwtUtil.extractUserUuid(token);
             String email = jwtUtil.extractEmail(token);
             String role = jwtUtil.extractRole(token);
 
-            logger.debug("Authenticated User: UUID={}, Email={}, Role={}", userUuid, email, role);
+            logger.debug("Authenticated User: Id={}, UUID={}, Email={}, Role={}", userId, userUuid, email, role);
 
-            // Wrap request to inject custom headers for downstream microservices
-            HttpServletRequestWrapper requestWrapper = new HeaderMapRequestWrapper(request);
-            ((HeaderMapRequestWrapper) requestWrapper).addHeader("X-User-Id", userUuid);
-            ((HeaderMapRequestWrapper) requestWrapper).addHeader("X-User-Email", email);
-            ((HeaderMapRequestWrapper) requestWrapper).addHeader("X-User-Role", role);
+            // Inject verified headers for downstream microservices
+            if (userId != null && !userId.isBlank() && !userId.equals("null") && userId.matches("\\d+")) {
+                requestWrapper.addHeader("X-User-Id", userId);
+            }
+            if (userUuid != null && !userUuid.isBlank() && !userUuid.equals("null")) {
+                requestWrapper.addHeader("X-User-Uuid", userUuid);
+            }
+            if (email != null && !email.isBlank()) {
+                requestWrapper.addHeader("X-User-Email", email);
+            }
+            if (role != null && !role.isBlank()) {
+                requestWrapper.addHeader("X-User-Role", role);
+            }
             
             filterChain.doFilter(requestWrapper, response);
             return;
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(requestWrapper, response);
     }
 
     private static class HeaderMapRequestWrapper extends HttpServletRequestWrapper {
         private final Map<String, String> customHeaders = new HashMap<>();
+        private final java.util.Set<String> removedHeaders = new java.util.HashSet<>();
 
         public HeaderMapRequestWrapper(HttpServletRequest request) {
             super(request);
         }
 
         public void addHeader(String name, String value) {
-            this.customHeaders.put(name, value);
+            this.removedHeaders.remove(name.toLowerCase());
+            this.customHeaders.put(name.toLowerCase(), value);
+        }
+
+        public void removeHeader(String name) {
+            this.customHeaders.remove(name.toLowerCase());
+            this.removedHeaders.add(name.toLowerCase());
         }
 
         @Override
         public String getHeader(String name) {
-            String headerValue = customHeaders.get(name);
+            if (removedHeaders.contains(name.toLowerCase())) {
+                return null;
+            }
+            String headerValue = customHeaders.get(name.toLowerCase());
             if (headerValue != null) {
                 return headerValue;
             }
@@ -79,14 +105,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         @Override
         public Enumeration<String> getHeaderNames() {
-            java.util.List<String> names = Collections.list(super.getHeaderNames());
-            names.addAll(customHeaders.keySet());
+            java.util.List<String> names = new java.util.ArrayList<>();
+            Enumeration<String> originalNames = super.getHeaderNames();
+            while (originalNames.hasMoreElements()) {
+                String original = originalNames.nextElement();
+                if (!removedHeaders.contains(original.toLowerCase())) {
+                    names.add(original);
+                }
+            }
+            for (String customName : customHeaders.keySet()) {
+                if (!names.contains(customName)) {
+                    names.add(customName);
+                }
+            }
             return Collections.enumeration(names);
         }
 
         @Override
         public Enumeration<String> getHeaders(String name) {
-            String headerValue = customHeaders.get(name);
+            if (removedHeaders.contains(name.toLowerCase())) {
+                return Collections.emptyEnumeration();
+            }
+            String headerValue = customHeaders.get(name.toLowerCase());
             if (headerValue != null) {
                 return Collections.enumeration(Collections.singletonList(headerValue));
             }

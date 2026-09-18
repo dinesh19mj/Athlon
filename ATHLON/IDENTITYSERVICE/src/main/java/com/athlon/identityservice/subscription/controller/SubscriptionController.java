@@ -54,7 +54,7 @@ public class SubscriptionController {
     }
 
     @GetMapping("/organizations/{orgUuid}/active")
-    public ResponseEntity<ApiResponse<OrganizationSubscriptionResponse>> getActiveSubscription(@PathVariable UUID orgUuid) {
+    public ResponseEntity<ApiResponse<OrganizationSubscriptionResponse>> getActiveSubscription(@PathVariable("orgUuid") UUID orgUuid) {
         OrganizationSubscriptionResponse response = subscriptionService.getActiveSubscription(orgUuid);
         return ResponseEntity.ok(ApiResponse.success(response));
     }

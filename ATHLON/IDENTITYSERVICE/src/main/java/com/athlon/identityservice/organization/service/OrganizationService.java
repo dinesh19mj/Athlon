@@ -71,21 +71,41 @@ public class OrganizationService {
             throw new DuplicateResourceException("Organization already exists with name: " + request.getName());
         }
 
+        UUID finalUserUuid = userUuid;
+        Long finalUserId = userId != null ? userId : 1L;
+
+        if ((finalUserUuid == null || "00000000-0000-0000-0000-000000000000".equals(finalUserUuid.toString())) && finalUserId != null) {
+            finalUserUuid = userRepository.findById(finalUserId)
+                    .map(com.athlon.identityservice.user.entity.User::getUserUuid)
+                    .orElse(finalUserUuid);
+        }
+
         Organization organization = new Organization(
             request.getName(), 
             request.getDescription(), 
             request.getType(), 
-            userId,
-            userUuid, 
-            userId
+            finalUserId,
+            finalUserUuid, 
+            finalUserId
         );
         organization = organizationRepository.save(organization);
 
         // Auto create empty profile record for convenience
-        OrganizationProfile profile = new OrganizationProfile(organization.getOrganizationId(), organization.getOrganizationUuid(), userId);
+        OrganizationProfile profile = new OrganizationProfile(organization.getOrganizationId(), organization.getOrganizationUuid(), finalUserId);
         boolean isPub = "ACADEMY".equalsIgnoreCase(organization.getType()) || "COURT".equalsIgnoreCase(organization.getType());
         profile.setIsPublic(isPub ? 1 : 0);
         organizationProfileRepository.save(profile);
+
+        // Auto create admin membership for creator
+        OrganizationMember ownerMember = new OrganizationMember(
+            organization.getOrganizationId(),
+            organization.getOrganizationUuid(),
+            finalUserId,
+            finalUserUuid,
+            "ADMIN",
+            finalUserId
+        );
+        organizationMemberRepository.save(ownerMember);
 
         if (request.getSubscriptionPackageUuid() != null) {
             SubscribeOrganizationRequest subRequest = new SubscribeOrganizationRequest();
@@ -322,24 +342,40 @@ public class OrganizationService {
     public List<OrganizationResponse> getOrganizationsByUserUuid(UUID userUuid) {
         java.util.Map<UUID, OrganizationResponse> result = new java.util.LinkedHashMap<>();
 
-        // 1. Organizations created/owned by the user (Admin role)
-        List<Organization> ownedOrgs = organizationRepository.findByUserUuid(userUuid);
-        for (Organization o : ownedOrgs) {
-            OrganizationResponse resp = mapToResponse(o);
-            resp.setRole("ADMIN");
-            result.put(o.getOrganizationUuid(), resp);
-        }
+        // 1. Organizations created/owned by the user (by userUuid)
+        if (userUuid != null) {
+            List<Organization> ownedOrgs = organizationRepository.findByUserUuid(userUuid);
+            for (Organization o : ownedOrgs) {
+                OrganizationResponse resp = mapToResponse(o);
+                resp.setRole("ADMIN");
+                result.put(o.getOrganizationUuid(), resp);
+            }
 
-        // 2. Organizations where user is an active member
-        List<OrganizationMember> memberships = organizationMemberRepository.findByUserUuid(userUuid);
-        for (OrganizationMember m : memberships) {
-            if (m.getIsActive() != null && m.getIsActive() == 1 && m.getOrganizationUuid() != null) {
-                if (!result.containsKey(m.getOrganizationUuid())) {
-                    organizationRepository.findByOrganizationUuid(m.getOrganizationUuid()).ifPresent(org -> {
-                        OrganizationResponse resp = mapToResponse(org);
-                        resp.setRole(m.getRole() != null ? m.getRole().toUpperCase() : "MEMBER");
-                        result.put(org.getOrganizationUuid(), resp);
-                    });
+            // Also check by userId if userUuid resolves to a user entity
+            userRepository.findByUserUuid(userUuid).ifPresent(user -> {
+                if (user.getUserId() != null) {
+                    List<Organization> byUserId = organizationRepository.findByUserId(user.getUserId());
+                    for (Organization o : byUserId) {
+                        if (!result.containsKey(o.getOrganizationUuid())) {
+                            OrganizationResponse resp = mapToResponse(o);
+                            resp.setRole("ADMIN");
+                            result.put(o.getOrganizationUuid(), resp);
+                        }
+                    }
+                }
+            });
+
+            // 2. Organizations where user is an active member
+            List<OrganizationMember> memberships = organizationMemberRepository.findByUserUuid(userUuid);
+            for (OrganizationMember m : memberships) {
+                if (m.getIsActive() != null && m.getIsActive() == 1 && m.getOrganizationUuid() != null) {
+                    if (!result.containsKey(m.getOrganizationUuid())) {
+                        organizationRepository.findByOrganizationUuid(m.getOrganizationUuid()).ifPresent(org -> {
+                            OrganizationResponse resp = mapToResponse(org);
+                            resp.setRole(m.getRole() != null ? m.getRole().toUpperCase() : "MEMBER");
+                            result.put(org.getOrganizationUuid(), resp);
+                        });
+                    }
                 }
             }
         }

@@ -88,7 +88,9 @@ public class DrawEngineService {
         List<Registration> registrations = registrationRepository.findByTournamentIdAndStatus(tournament.getTournamentId(), "APPROVED");
 
         // 3. Prevent duplicate draws (Optional: or delete old ones)
-        Long categoryId = 1L; // Placeholder since tournament doesn't have a direct categoryId mapping in this version
+        Long categoryId = (registrations != null && !registrations.isEmpty() && registrations.get(0).getCategoryId() != null)
+                ? registrations.get(0).getCategoryId()
+                : 1L;
         List<Draw> existingDraws = drawRepository.findByTournamentId(tournament.getTournamentId());
         if (!existingDraws.isEmpty()) {
             throw new IllegalStateException("Draw has already been generated. Please delete it first.");
@@ -138,7 +140,11 @@ public class DrawEngineService {
 
         List<Registration> registrations = registrationRepository.findByTournamentIdAndStatus(tournament.getTournamentId(), "APPROVED");
 
-        Long categoryId = 1L; // Placeholder
+        Long categoryId = (request != null && request.getCategoryId() != null)
+                ? request.getCategoryId()
+                : (registrations != null && !registrations.isEmpty() && registrations.get(0).getCategoryId() != null)
+                    ? registrations.get(0).getCategoryId()
+                    : 1L;
         List<Draw> existingDraws = drawRepository.findByTournamentId(tournament.getTournamentId());
         if (!existingDraws.isEmpty()) {
             throw new IllegalStateException("Draw has already been generated. Please delete it first.");
@@ -181,8 +187,6 @@ public class DrawEngineService {
         Tournament tournament = tournamentRepository.findByTournamentUuid(tournamentUuid)
                 .orElseThrow(() -> new IllegalArgumentException("Tournament not found"));
         
-        Long categoryId = 1L; // Placeholder consistent with creation
-        
         // Delete all matches for this tournament
         matchRepository.deleteByTournamentUuid(tournamentUuid);
         
@@ -207,7 +211,11 @@ public class DrawEngineService {
 
         List<Registration> allRegistrations = registrationRepository.findByTournamentIdAndStatus(tournament.getTournamentId(), "APPROVED");
 
-        Long categoryId = 1L; // Placeholder
+        Long categoryId = (request != null && request.getCategoryId() != null)
+                ? request.getCategoryId()
+                : (allRegistrations != null && !allRegistrations.isEmpty() && allRegistrations.get(0).getCategoryId() != null)
+                    ? allRegistrations.get(0).getCategoryId()
+                    : 1L;
         List<Draw> existingDraws = drawRepository.findByTournamentId(tournament.getTournamentId());
         if (!existingDraws.isEmpty()) {
             throw new IllegalStateException("Draw has already been generated. Please delete it first.");
@@ -366,8 +374,9 @@ public class DrawEngineService {
         ManualDrawRequest request = new ManualDrawRequest();
         request.setDrawType("KNOCKOUT");
         request.setPairings(pairings);
-
-        Long categoryId = 1L;
+        Long categoryId = (allRegistrations != null && !allRegistrations.isEmpty() && allRegistrations.get(0).getCategoryId() != null)
+                ? allRegistrations.get(0).getCategoryId()
+                : 1L;
         List<Match> generatedMatches = manualKnockoutFixtureGenerator.generateFixtures(
                 allRegistrations, request, categoryId, createdBy, tournament.getTournamentId(), tournament.getTournamentUuid()
         );
@@ -399,7 +408,11 @@ public class DrawEngineService {
 
         List<Registration> allRegistrations = registrationRepository.findByTournamentIdAndStatus(tournament.getTournamentId(), "APPROVED");
 
-        Long categoryId = request.getCategoryId() != null ? request.getCategoryId() : 1L;
+        Long categoryId = (request != null && request.getCategoryId() != null)
+                ? request.getCategoryId()
+                : (allRegistrations != null && !allRegistrations.isEmpty() && allRegistrations.get(0).getCategoryId() != null)
+                    ? allRegistrations.get(0).getCategoryId()
+                    : 1L;
         
         // 1. Calculate total teams
         int totalTeams = 0;
@@ -575,8 +588,11 @@ public class DrawEngineService {
         ManualDrawRequest drawReq = new ManualDrawRequest();
         drawReq.setDrawType("KNOCKOUT");
         drawReq.setPairings(pairings);
-
-        Long categoryId = request != null && request.getCategoryId() != null ? request.getCategoryId() : 1L;
+        Long categoryId = (request != null && request.getCategoryId() != null)
+                ? request.getCategoryId()
+                : (allRegistrations != null && !allRegistrations.isEmpty() && allRegistrations.get(0).getCategoryId() != null)
+                    ? allRegistrations.get(0).getCategoryId()
+                    : 1L;
         List<Match> generatedMatches = manualKnockoutFixtureGenerator.generateFixtures(
                 allRegistrations, drawReq, categoryId, createdBy, tournament.getTournamentId(), tournament.getTournamentUuid()
         );

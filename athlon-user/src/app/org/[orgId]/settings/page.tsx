@@ -12,13 +12,17 @@ import {
   Palette,
   ShieldCheck,
   Building2,
+  Clock,
+  Sparkles,
   LogOut,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/theme';
 import { AcademyPermissionMatrixView } from '@/components/academy/AcademyPermissionMatrixView';
 import { ClubPermissionMatrixView } from '@/components/club/ClubPermissionMatrixView';
 import OrganizerRolesPermissionsView from '@/components/organizer/OrganizerRolesPermissionsView';
+import VenueRolesPermissionsView from '@/components/venue/VenueRolesPermissionsView';
 import { OrganizationProfileEditor } from '@/components/academy/OrganizationProfileEditor';
+import { VenueProfileEditor } from '@/components/venue/VenueProfileEditor';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 
 function SettingsContent() {
@@ -31,15 +35,23 @@ function SettingsContent() {
   const { logout } = useAuthStore();
 
   const tabQuery = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'profile' | 'permissions' | 'appearance' | 'notifications' | 'billing' | 'danger'>('profile');
+  const [activeTab, setActiveTab] = useState<
+    'profile' | 'amenities' | 'permissions' | 'appearance' | 'notifications' | 'billing' | 'danger'
+  >('profile');
 
   useEffect(() => {
-    if (tabQuery && ['profile', 'permissions', 'appearance', 'notifications', 'billing', 'danger'].includes(tabQuery)) {
-      setActiveTab(tabQuery as any);
+    if (tabQuery) {
+      if (tabQuery === 'venue-hours' || tabQuery === 'amenities') {
+        setActiveTab('amenities');
+      } else if (['profile', 'permissions', 'appearance', 'notifications', 'billing', 'danger'].includes(tabQuery)) {
+        setActiveTab(tabQuery as any);
+      }
     }
   }, [tabQuery]);
 
   if (!org) return null;
+
+  const isVenueOrg = org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER';
 
   return (
     <div className="w-full max-w-7xl mx-auto overflow-x-hidden p-3.5 sm:p-6 md:p-8 pb-32 sm:pb-16 space-y-4 sm:space-y-6 animate-in fade-in duration-300 text-foreground font-sans">
@@ -54,7 +66,7 @@ function SettingsContent() {
           <Settings className="w-6 h-6 sm:w-7 sm:h-7 text-primary" /> Workspace Settings
         </h1>
         <p className="text-foreground/55 text-xs sm:text-sm font-medium mt-0.5">
-          Manage workspace profile, permissions, appearance, notifications, billing, and preferences for{' '}
+          Manage workspace profile, operating hours, permissions, appearance, notifications, billing, and preferences for{' '}
           <span className="font-bold text-foreground">{org.name}</span>.
         </p>
       </div>
@@ -64,14 +76,13 @@ function SettingsContent() {
         {/* Navigation Tabs (Horizontal on mobile, Vertical on desktop) */}
         <div className="w-full md:w-64 shrink-0 max-w-full">
           <div className="flex md:flex-col gap-1.5 overflow-x-auto pb-1.5 md:pb-0 hide-scrollbar w-full max-w-full">
-            {/* Profile Tab */}
+            {/* 1. Organization Profile Tab */}
             <button
               onClick={() => setActiveTab('profile')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
-                activeTab === 'profile'
+              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'profile'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground border'
-              }`}
+                }`}
               style={{
                 backgroundColor: activeTab === 'profile' ? undefined : 'var(--athlon-card)',
                 borderColor: activeTab === 'profile' ? undefined : 'var(--athlon-border)',
@@ -79,18 +90,41 @@ function SettingsContent() {
             >
               <Building2 className="w-4 h-4 shrink-0" />
               <span className="whitespace-nowrap">
-                {org.type === 'ACADEMY' ? 'Academy Profile' : org.type === 'COACH' ? 'Coach Profile & Credentials' : org.type === 'CLUB' ? 'Club Profile' : 'Organization Profile'}
+                {org.type === 'ACADEMY'
+                  ? 'Academy Profile'
+                  : org.type === 'COACH'
+                    ? 'Coach Profile & Credentials'
+                    : org.type === 'CLUB'
+                      ? 'Club Profile'
+                      : 'Organization Profile'}
               </span>
             </button>
 
-            {(org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION') && isAdmin && (
+            {/* 2. Venue Amenities & Hours Tab (Specific to Court / Venue Manager) */}
+            {isVenueOrg && (
               <button
-                onClick={() => setActiveTab('permissions')}
-                className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
-                  activeTab === 'permissions'
+                onClick={() => setActiveTab('amenities')}
+                className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'amenities'
                     ? 'bg-primary text-primary-foreground shadow-md'
                     : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground border'
-                }`}
+                  }`}
+                style={{
+                  backgroundColor: activeTab === 'amenities' ? undefined : 'var(--athlon-card)',
+                  borderColor: activeTab === 'amenities' ? undefined : 'var(--athlon-border)',
+                }}
+              >
+                <Clock className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Amenities &amp; Hours</span>
+              </button>
+            )}
+
+            {(org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || isVenueOrg) && isAdmin && (
+              <button
+                onClick={() => setActiveTab('permissions')}
+                className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'permissions'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground border'
+                  }`}
                 style={{
                   backgroundColor: activeTab === 'permissions' ? undefined : 'var(--athlon-card)',
                   borderColor: activeTab === 'permissions' ? undefined : 'var(--athlon-border)',
@@ -103,11 +137,10 @@ function SettingsContent() {
 
             <button
               onClick={() => setActiveTab('appearance')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
-                activeTab === 'appearance'
+              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'appearance'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground border'
-              }`}
+                }`}
               style={{
                 backgroundColor: activeTab === 'appearance' ? undefined : 'var(--athlon-card)',
                 borderColor: activeTab === 'appearance' ? undefined : 'var(--athlon-border)',
@@ -119,11 +152,10 @@ function SettingsContent() {
 
             <button
               onClick={() => setActiveTab('notifications')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
-                activeTab === 'notifications'
+              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'notifications'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground border'
-              }`}
+                }`}
               style={{
                 backgroundColor: activeTab === 'notifications' ? undefined : 'var(--athlon-card)',
                 borderColor: activeTab === 'notifications' ? undefined : 'var(--athlon-border)',
@@ -135,27 +167,25 @@ function SettingsContent() {
 
             <button
               onClick={() => setActiveTab('billing')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${
-                activeTab === 'billing'
+              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'billing'
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground border'
-              }`}
+                }`}
               style={{
                 backgroundColor: activeTab === 'billing' ? undefined : 'var(--athlon-card)',
                 borderColor: activeTab === 'billing' ? undefined : 'var(--athlon-border)',
               }}
             >
               <CreditCard className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">Billing &amp; Plan</span>
+              <span className="whitespace-nowrap">Plan &amp; Billing</span>
             </button>
 
             <button
               onClick={() => setActiveTab('danger')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 md:mt-4 ${
-                activeTab === 'danger'
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                  : 'text-red-400/70 hover:bg-red-500/10 hover:text-red-400 border border-red-500/15'
-              }`}
+              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'danger'
+                  ? 'bg-red-500 text-white shadow-md'
+                  : 'text-red-400 hover:bg-red-500/10 border border-red-500/20'
+                }`}
               style={{
                 backgroundColor: activeTab === 'danger' ? undefined : 'var(--athlon-card)',
               }}
@@ -182,10 +212,17 @@ function SettingsContent() {
 
         {/* ── Settings Content Area ── */}
         <div className="flex-grow min-w-0 w-full max-w-full overflow-x-hidden">
-          {/* Profile Editor Tab */}
+          {/* 1. Profile Editor Tab (Always OrganizationProfileEditor) */}
           {activeTab === 'profile' && (
             <div className="animate-in fade-in duration-300">
               <OrganizationProfileEditor orgId={org.id} />
+            </div>
+          )}
+
+          {/* 2. Venue Amenities & Hours Tab */}
+          {activeTab === 'amenities' && isVenueOrg && (
+            <div className="animate-in fade-in duration-300">
+              <VenueProfileEditor orgId={org.id} />
             </div>
           )}
 
@@ -208,8 +245,14 @@ function SettingsContent() {
             </div>
           )}
 
+          {activeTab === 'permissions' && isVenueOrg && (
+            <div className="animate-in fade-in duration-300">
+              <VenueRolesPermissionsView orgUuid={org.id} orgName={org.name || 'Venue Workspace'} />
+            </div>
+          )}
+
           {/* Other Tabs in Card */}
-          {activeTab !== 'profile' && !(activeTab === 'permissions' && (org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION')) && (
+          {activeTab !== 'profile' && activeTab !== 'amenities' && !(activeTab === 'permissions' && (org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || isVenueOrg)) && (
             <div
               className="rounded-[24px] p-4 sm:p-6 md:p-8 shadow-sm border"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}

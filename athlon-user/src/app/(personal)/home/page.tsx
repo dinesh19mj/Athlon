@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,8 +11,11 @@ import {
   ChevronLeft,
   MapPin,
   Calendar,
+  CalendarDays,
+  TicketCheck,
   ShieldCheck,
   Building,
+  Building2,
   Users,
   Plus,
   Flame,
@@ -36,6 +39,9 @@ import {
   Sparkles,
   Gavel,
   Award,
+  UserCheck,
+  Search,
+  Filter,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore, Organization } from '@/lib/store/useWorkspaceStore';
@@ -45,6 +51,8 @@ import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentC
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
 import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
 import { CoachMarketplaceCard } from '@/components/marketplace/CoachMarketplaceCard';
+import { VenueMarketplaceCard } from '@/components/marketplace/VenueMarketplaceCard';
+import { venueApi, facilityApi, VenueDto } from '@/lib/api/venue';
 import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { MatchService, Match } from '@/lib/api/matches';
 import { OrganizationService } from '@/lib/api/organization';
@@ -54,14 +62,23 @@ import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
+import HomeSearchFilterBar from '@/components/home/HomeSearchFilterBar';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import {
+  matchSport,
+  matchPlace,
+  matchVenueSport,
+  matchAcademySport,
+  matchCoachSport,
+  matchSearchQuery,
+  extractAvailablePlaces,
+} from '@/lib/utils/homeFilter';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
-const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments' | 'academies' | 'rankings' | 'matches' | 'registered'; desc: string }[] = [
+const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments' | 'academies' | 'rankings' | 'matches' | 'registered' | 'facilities' | 'bookings'; desc: string }[] = [
   { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, icon3d: 'tournaments', desc: 'Events & Brackets' },
-  { id: '/academies', label: 'Academies', icon: GraduationCap, icon3d: 'academies', desc: 'Training & Batches' },
-  // { id: '/home/rankings', label: 'Rankings', icon: TrendingUp, icon3d: 'rankings', desc: 'Global ELO Standings' }, // Commented out for now
+  { id: '/venues', label: 'Bookings', icon: TicketCheck, icon3d: 'bookings', desc: 'Venues, Turfs & Academies' },
   { id: '/home/matches', label: 'Matches', icon: Activity, icon3d: 'matches', desc: 'Schedule & Scores' },
   { id: '/home/registered', label: 'Registered', icon: ClipboardList, icon3d: 'registered', desc: 'My Entries' },
 ];
@@ -70,7 +87,8 @@ function orgIcon(type: string, cls = 'w-7 h-7') {
   if (type === 'ACADEMY') return <GraduationCap className={cls} strokeWidth={1.5} />;
   if (type === 'CLUB') return <Users className={cls} strokeWidth={1.5} />;
   if (type === 'ASSOCIATION') return <Trophy className={cls} strokeWidth={1.5} />;
-  if (type === 'COURT') return <LayoutDashboard className={cls} strokeWidth={1.5} />;
+  if (type === 'COACH') return <UserCheck className={cls} strokeWidth={1.5} />;
+  if (type === 'COURT' || type === 'VENUE_MANAGER') return <MapPin className={cls} strokeWidth={1.5} />;
   return <ShieldCheck className={cls} strokeWidth={1.5} />;
 }
 
@@ -101,6 +119,7 @@ export default function PersonalHomePage() {
   const [publicChampionships, setPublicChampionships] = useState<TeamChampionship[]>([]);
   const [publicAcademies, setPublicAcademies] = useState<any[]>([]);
   const [publicCoaches, setPublicCoaches] = useState<any[]>([]);
+  const [publicVenues, setPublicVenues] = useState<any[]>([]);
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [finishedScores, setFinishedScores] = useState<LiveScore[]>([]);
   const [userMatches, setUserMatches] = useState<any[]>([]);
@@ -113,6 +132,7 @@ export default function PersonalHomePage() {
   const liveScrollRef = useRef<HTMLDivElement>(null);
   const champsScrollRef = useRef<HTMLDivElement>(null);
   const tournsScrollRef = useRef<HTMLDivElement>(null);
+  const venuesScrollRef = useRef<HTMLDivElement>(null);
   const academiesScrollRef = useRef<HTMLDivElement>(null);
   const coachesScrollRef = useRef<HTMLDivElement>(null);
   const resultsScrollRef = useRef<HTMLDivElement>(null);
@@ -132,15 +152,249 @@ export default function PersonalHomePage() {
       .then((res) => setPublicTournaments(res.data.filter((t: Tournament) => t.visibility === 'PUBLIC')))
       .catch(() => { });
 
-    // Public Academies & Coaches with event-driven real-time sync
-    const loadPublicTrainingOrgs = () => {
-      OrganizationService.getAll()
-        .then((res: any) => {
-          const list = Array.isArray(res) ? res : res?.data || [];
-          setPublicAcademies(list.filter((o: any) => o.type === 'ACADEMY'));
-          setPublicCoaches(list.filter((o: any) => o.type === 'COACH'));
-        })
-        .catch(() => { });
+    // Public Academies, Coaches & Venues with event-driven real-time sync
+    const loadPublicTrainingOrgs = async () => {
+      try {
+        const orgRes = await OrganizationService.getAll().catch(() => ({ data: [] }));
+        const list = Array.isArray(orgRes) ? orgRes : orgRes?.data || [];
+        const rawAcademies = list.filter((o: any) => o.type === 'ACADEMY');
+        const rawCoaches = list.filter((o: any) => o.type === 'COACH');
+
+        // Build set of all non-venue organization IDs, UUIDs, and names (coaches & academies)
+        const nonVenueOrgUuids = new Set<string>();
+        const nonVenueOrgIds = new Set<string>();
+        const nonVenueOrgNames = new Set<string>();
+
+        list.forEach((o: any) => {
+          const type = (o.type || '').toUpperCase();
+          if (type !== 'COURT' && type !== 'VENUE' && type !== 'VENUE_MANAGER') {
+            if (o.uuid) nonVenueOrgUuids.add(String(o.uuid).toLowerCase());
+            if (o.organizationUuid) nonVenueOrgUuids.add(String(o.organizationUuid).toLowerCase());
+            if (o.id) nonVenueOrgIds.add(String(o.id).toLowerCase());
+            if (o.orgId) nonVenueOrgIds.add(String(o.orgId).toLowerCase());
+            if (o.organizationId) nonVenueOrgIds.add(String(o.organizationId).toLowerCase());
+            if (o.name) nonVenueOrgNames.add(o.name.trim().toLowerCase());
+          }
+        });
+
+        // Enrich academies with profile
+        const enrichedAcademies = await Promise.all(
+          rawAcademies.map(async (a: any) => {
+            const orgUuid = a.uuid || a.organizationUuid || a.id;
+            let profile = a.profile;
+            if (!profile && orgUuid) {
+              try {
+                const pRes = await OrganizationService.getProfileByOrgUuid(orgUuid);
+                profile = pRes?.data || pRes || null;
+              } catch {
+                profile = null;
+              }
+            }
+            const sportsOffered = profile?.sportsOffered || a.sportsOffered || a.sportType || 'Badminton';
+            return {
+              ...a,
+              profile,
+              sportsOffered,
+            };
+          })
+        );
+        setPublicAcademies(enrichedAcademies);
+
+        // Enrich coaches with profile
+        const enrichedCoaches = await Promise.all(
+          rawCoaches.map(async (c: any) => {
+            const orgUuid = c.uuid || c.organizationUuid || c.id;
+            let profile = c.profile;
+            if (!profile && orgUuid) {
+              try {
+                const pRes = await OrganizationService.getProfileByOrgUuid(orgUuid);
+                profile = pRes?.data || pRes || null;
+              } catch {
+                profile = null;
+              }
+            }
+            const sportsOffered = profile?.sportsOffered || c.sportsOffered || c.sportType || 'Badminton';
+            return {
+              ...c,
+              profile,
+              sportsOffered,
+            };
+          })
+        );
+        setPublicCoaches(enrichedCoaches);
+
+        // Rich fallback venues
+        const FALLBACK_PUBLIC_VENUES = [
+          {
+            venueId: 101,
+            venueUuid: 'v-bangalore-playzone-1',
+            name: 'Playzone Badminton & Turf Arena',
+            venueType: 'MIXED',
+            city: 'Bangalore',
+            state: 'Karnataka',
+            addressLine1: 'Koramangala 4th Block, 80 Feet Road',
+            totalFacilities: 6,
+            startingPrice: '₹450/hr',
+            amenities: [{ amenityName: 'Floodlights' }, { amenityName: 'AC Arena' }, { amenityName: 'Parking' }],
+            sportsOffered: ['Badminton', 'Football Turf', 'Cricket', 'Pickleball'],
+            image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80',
+          },
+          {
+            venueId: 102,
+            venueUuid: 'v-chennai-apex-turf-2',
+            name: 'Apex Arena Football & Cricket Turf',
+            venueType: 'OUTDOOR',
+            city: 'Chennai',
+            state: 'Tamil Nadu',
+            addressLine1: 'Velachery Bypass Road',
+            totalFacilities: 4,
+            startingPrice: '₹800/hr',
+            amenities: [{ amenityName: 'Floodlights' }, { amenityName: 'Equipment Rental' }, { amenityName: 'Parking' }],
+            sportsOffered: ['Football Turf', 'Cricket Nets'],
+            image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
+          },
+          {
+            venueId: 103,
+            venueUuid: 'v-hyderabad-elite-court-3',
+            name: 'Elite Sports Hub & Wooden Courts',
+            venueType: 'INDOOR',
+            city: 'Hyderabad',
+            state: 'Telangana',
+            addressLine1: 'Gachibowli Stadium Road',
+            totalFacilities: 8,
+            startingPrice: '₹500/hr',
+            amenities: [{ amenityName: 'Air Conditioned' }, { amenityName: 'Showers' }, { amenityName: 'Pro Shop' }],
+            sportsOffered: ['Badminton', 'Tennis', 'Squash'],
+            image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
+          },
+          {
+            venueId: 104,
+            venueUuid: 'v-bangalore-prime-turf-4',
+            name: 'Prime Ground 7v7 FIFA Certified Turf',
+            venueType: 'OUTDOOR',
+            city: 'Bangalore',
+            state: 'Karnataka',
+            addressLine1: 'HSR Layout Sector 2, Outer Ring Road',
+            totalFacilities: 3,
+            startingPrice: '₹950/hr',
+            amenities: [{ amenityName: 'Floodlights' }, { amenityName: 'Cafeteria' }, { amenityName: 'Parking' }],
+            sportsOffered: ['Football Turf', 'Cricket Nets'],
+            image: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1200&q=80',
+          },
+        ];
+
+        // Fetch Venues strictly for slot booking
+        const publicRes = await venueApi.getPublicVenues().catch(() => ({ data: [] }));
+        let rawVenues: any[] = Array.isArray(publicRes?.data) ? publicRes.data : Array.isArray(publicRes) ? publicRes : [];
+
+        // Also fetch venues for user's active COURT or VENUE_MANAGER organizations
+        const currentOrgs = useWorkspaceStore.getState().organizations || [];
+        const venueOrgs = currentOrgs.filter((org) => org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER');
+        if (venueOrgs.length > 0) {
+          const orgVenuesArrays = await Promise.all(
+            venueOrgs.map(async (org) => {
+              try {
+                const res = await venueApi.getVenuesByOrganization(org.id);
+                return Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+              } catch {
+                return [];
+              }
+            })
+          );
+          orgVenuesArrays.forEach((ovList) => {
+            rawVenues = [...rawVenues, ...ovList];
+          });
+        }
+
+        // Deduplicate and strictly filter out non-venue workspaces (coaches/academies/organizers/associations)
+        const venueMap = new Map<string, any>();
+        rawVenues.forEach((v) => {
+          if (v.bookingEnabled === false) return;
+          const vType = (v.venueType || v.type || '').toUpperCase();
+          if (vType === 'ACADEMY' || vType === 'COACH' || vType === 'CLUB' || vType === 'ORGANIZER' || vType === 'ASSOCIATION') return;
+
+          const orgUuid = String(v.organizationUuid || v.uuid || '').toLowerCase();
+          const orgId = String(v.organizationId || v.id || v.orgId || '').toLowerCase();
+          if (orgUuid && nonVenueOrgUuids.has(orgUuid)) return;
+          if (orgId && nonVenueOrgIds.has(orgId)) return;
+
+          const vName = (v.name || '').toLowerCase().trim();
+          if (vName && nonVenueOrgNames.has(vName)) return;
+
+          const key = String(v.venueUuid || v.uuid || v.venueId || v.id || '');
+          if (key) venueMap.set(key, v);
+        });
+        const uniqueVenues = Array.from(venueMap.values());
+
+        if (uniqueVenues.length > 0) {
+          // Enrich every venue with its facilities and sports
+          const enriched = await Promise.all(
+            uniqueVenues.map(async (v: any) => {
+              const venueId = v.venueId || v.id;
+              let facilities = Array.isArray(v.facilities) ? v.facilities : [];
+
+              if (facilities.length === 0 && venueId) {
+                try {
+                  const facRes = await facilityApi.getFacilitiesByVenue(venueId);
+                  facilities = Array.isArray(facRes?.data) ? facRes.data : Array.isArray(facRes) ? facRes : [];
+                } catch {
+                  facilities = [];
+                }
+              }
+
+              const sportsSet = new Set<string>();
+
+              facilities.forEach((f: any) => {
+                if (Array.isArray(f.sports)) {
+                  f.sports.forEach((s: any) => {
+                    if (typeof s === 'string') sportsSet.add(s);
+                    else if (s?.sportName) sportsSet.add(s.sportName);
+                    else if (s?.name) sportsSet.add(s.name);
+                    else if (s?.sport) sportsSet.add(s.sport);
+                  });
+                }
+                if (f.sportName) sportsSet.add(f.sportName);
+                if (f.sport) sportsSet.add(f.sport);
+                if (f.sportType) sportsSet.add(f.sportType);
+                if (f.name) sportsSet.add(f.name);
+                if (f.facilityType) sportsSet.add(f.facilityType);
+              });
+
+              if (Array.isArray(v.sportsOffered)) {
+                v.sportsOffered.forEach((s: string) => sportsSet.add(s));
+              } else if (typeof v.sportsOffered === 'string') {
+                v.sportsOffered.split(',').forEach((s: string) => sportsSet.add(s.trim()));
+              }
+              if (v.sport) sportsSet.add(v.sport);
+              if (v.sportType) sportsSet.add(v.sportType);
+
+              return {
+                ...v,
+                venueId: venueId || v.venueId,
+                facilities: facilities.length > 0 ? facilities : (v.facilities || []),
+                sportsOffered: Array.from(sportsSet).filter(Boolean),
+              };
+            })
+          );
+
+          // Only keep venues with actual facilities or valid venue structures
+          const validVenues = enriched.filter((v) => {
+            const vName = (v.name || '').toLowerCase().trim();
+            if (nonVenueOrgNames.has(vName)) return false;
+            return true;
+          });
+
+          if (validVenues.length > 0) {
+            setPublicVenues(validVenues);
+          } else {
+            setPublicVenues(FALLBACK_PUBLIC_VENUES);
+          }
+        } else {
+          setPublicVenues(FALLBACK_PUBLIC_VENUES);
+        }
+      } catch (e) {
+        console.error('Failed to load training orgs or venues:', e);
+      }
     };
 
     loadPublicTrainingOrgs();
@@ -175,16 +429,19 @@ export default function PersonalHomePage() {
     if (userUuid) {
       OrganizationService.getByUserUuid(userUuid)
         .then((res) => {
-          if (res?.data?.length) {
-            setOrganizations(
-              res.data.map((o: any) => ({
-                id: o.uuid,
-                name: o.name,
-                type: o.type,
-                logo: o.logo,
-                role: o.role || 'MEMBER',
-              }))
-            );
+          if (res?.data && Array.isArray(res.data)) {
+            const apiOrgs: Organization[] = res.data.map((o: any) => ({
+              id: o.uuid || o.organizationUuid,
+              name: o.name,
+              type: o.type,
+              logo: o.logo,
+              role: o.role || 'MEMBER',
+            }));
+            const currentOrgs = useWorkspaceStore.getState().organizations || [];
+            const mergedMap = new Map<string, Organization>();
+            currentOrgs.forEach((org) => mergedMap.set(org.id, org));
+            apiOrgs.forEach((org) => mergedMap.set(org.id, org));
+            setOrganizations(Array.from(mergedMap.values()));
           }
         })
         .catch(() => { });
@@ -358,6 +615,128 @@ export default function PersonalHomePage() {
   const liveAuctionChampionships = publicChampionships.filter(
     (c) => c.stage === 'AUCTION_STAGE' || c.stage === 'AUCTION_PAUSED' || c.stage === 'AUCTION'
   );
+
+  /* ── search & filter state ── */
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSport, setSelectedSport] = useState('All');
+  const [selectedPlace, setSelectedPlace] = useState('All');
+
+  const availablePlaces = useMemo(() => {
+    return extractAvailablePlaces(
+      publicTournaments,
+      publicChampionships,
+      publicVenues,
+      publicAcademies,
+      publicCoaches
+    );
+  }, [publicTournaments, publicChampionships, publicVenues, publicAcademies, publicCoaches]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedSport('All');
+    setSelectedPlace('All');
+  };
+
+  const filteredTournaments = useMemo(() => {
+    return publicTournaments.filter((t) => {
+      const matchesSport = matchSport(t.sport, selectedSport);
+      const matchesPlace = matchPlace(t, selectedPlace);
+      const matchesQuery = matchSearchQuery(`${t.name} ${t.sport} ${t.location || ''} ${t.description || ''}`, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [publicTournaments, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredChampionships = useMemo(() => {
+    return publicChampionships.filter((c) => {
+      const matchesSport = matchSport(c.sport, selectedSport);
+      const matchesPlace = matchPlace(c, selectedPlace);
+      const matchesQuery = matchSearchQuery(`${c.name} ${c.sport} ${c.location || ''} ${c.venue || ''}`, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [publicChampionships, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredVenues = useMemo(() => {
+    return publicVenues.filter((v) => {
+      const matchesSport = matchVenueSport(v, selectedSport);
+      const matchesPlace = matchPlace(v, selectedPlace);
+      const sportsText = Array.isArray(v.sportsOffered)
+        ? v.sportsOffered.join(' ')
+        : Array.isArray(v.sports)
+          ? v.sports.map((s: any) => (typeof s === 'string' ? s : s.sportName || '')).join(' ')
+          : String(v.sportsOffered || '');
+      const amenitiesText = Array.isArray(v.amenities)
+        ? v.amenities.map((a: any) => (typeof a === 'string' ? a : a.amenityName || '')).join(' ')
+        : '';
+      const searchPayload = `${v.name || ''} ${v.venueType || ''} ${v.city || ''} ${v.state || ''} ${v.addressLine1 || ''} ${v.address || ''} ${sportsText} ${amenitiesText}`;
+      const matchesQuery = matchSearchQuery(searchPayload, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [publicVenues, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredAcademies = useMemo(() => {
+    return publicAcademies.filter((a) => {
+      const matchesSport = matchAcademySport(a, selectedSport);
+      const matchesPlace = matchPlace(a, selectedPlace);
+      const sportsText = `${a.profile?.sportsOffered || ''} ${a.sportsOffered || ''} ${a.sportType || ''} ${(a.tags || []).join(' ')}`;
+      const searchPayload = `${a.name || ''} ${sportsText} ${a.city || ''} ${a.profile?.city || ''} ${a.location || ''} ${a.address || ''} ${a.profile?.bio || ''} ${a.description || ''}`;
+      const matchesQuery = matchSearchQuery(searchPayload, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [publicAcademies, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredCoaches = useMemo(() => {
+    return publicCoaches.filter((c) => {
+      const matchesSport = matchCoachSport(c, selectedSport);
+      const matchesPlace = matchPlace(c, selectedPlace);
+      const specsText = Array.isArray(c.profile?.specializations) ? c.profile.specializations.join(' ') : '';
+      const sportsText = `${c.profile?.sportsOffered || ''} ${c.sportsOffered || ''} ${c.sportType || ''} ${(c.tags || []).join(' ')} ${specsText} ${c.specialization || ''}`;
+      const searchPayload = `${c.name || ''} ${sportsText} ${c.city || ''} ${c.profile?.city || ''} ${c.location || ''} ${c.address || ''} ${c.profile?.bio || ''} ${c.description || ''}`;
+      const matchesQuery = matchSearchQuery(searchPayload, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [publicCoaches, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredLiveScores = useMemo(() => {
+    return liveScores.filter((s) => {
+      const cfg = s.scoreMeta?.config || {};
+      const matchesSport = matchSport(cfg.sport || cfg.category, selectedSport);
+      const matchesPlace = matchPlace({ location: cfg.courtName, city: cfg.city }, selectedPlace);
+      const matchesQuery = matchSearchQuery(`${cfg.tournamentName || ''} ${cfg.courtName || ''} ${cfg.teamAName || ''} ${cfg.teamBName || ''}`, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [liveScores, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredFinishedScores = useMemo(() => {
+    return finishedScores.filter((s) => {
+      const cfg = s.scoreMeta?.config || {};
+      const matchesSport = matchSport(cfg.sport || cfg.category, selectedSport);
+      const matchesPlace = matchPlace({ location: cfg.courtName, city: cfg.city }, selectedPlace);
+      const matchesQuery = matchSearchQuery(`${cfg.tournamentName || ''} ${cfg.courtName || ''} ${cfg.teamAName || ''} ${cfg.teamBName || ''}`, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [finishedScores, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredLiveAuctionChampionships = useMemo(() => {
+    return liveAuctionChampionships.filter((c) => {
+      const matchesSport = matchSport(c.sport, selectedSport);
+      const matchesPlace = matchPlace(c, selectedPlace);
+      const matchesQuery = matchSearchQuery(`${c.name} ${c.sport} ${c.location || ''} ${c.venue || ''}`, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [liveAuctionChampionships, selectedSport, selectedPlace, searchQuery]);
+
+  const totalFilteredMatches =
+    filteredTournaments.length +
+    filteredChampionships.length +
+    filteredVenues.length +
+    filteredAcademies.length +
+    filteredCoaches.length +
+    filteredLiveScores.length;
+
+  const isFilteringActive =
+    searchQuery.trim() !== '' ||
+    selectedSport.toLowerCase() !== 'all' ||
+    selectedPlace.toLowerCase() !== 'all';
 
   return (
     <div className="bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-black min-h-screen w-full max-w-full overflow-x-hidden">
@@ -544,7 +923,7 @@ export default function PersonalHomePage() {
                           }}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <div className="w-9 h-9 rounded-xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center text-base shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                            <div className="w-9 h-9 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform text-primary">
                               {orgItem.logo ? (
                                 <img src={orgItem.logo} alt={orgItem.name} className="w-full h-full object-cover" />
                               ) : (
@@ -554,7 +933,11 @@ export default function PersonalHomePage() {
                                       ? 'members'
                                       : orgItem.type === 'ACADEMY'
                                         ? 'students'
-                                        : 'tournaments'
+                                        : orgItem.type === 'COACH'
+                                          ? 'coaches'
+                                          : orgItem.type === 'COURT' || (orgItem.type as string) === 'VENUE_MANAGER'
+                                            ? 'facilities'
+                                            : 'tournaments'
                                   }
                                   size={22}
                                   active={true}
@@ -582,7 +965,7 @@ export default function PersonalHomePage() {
                               {orgItem.name}
                             </h4>
                             <span className="text-[9.5px] font-bold text-foreground/70 dark:text-foreground/40 uppercase tracking-wider block mt-0.5">
-                              {orgItem.type}
+                              {orgItem.type === 'COURT' || (orgItem.type as string) === 'VENUE_MANAGER' ? 'Venue Manager' : orgItem.type === 'COACH' ? 'Freelance Coach' : orgItem.type}
                             </span>
                           </div>
 
@@ -598,100 +981,138 @@ export default function PersonalHomePage() {
               </div>
             )}
 
-            {/* Featured Sports Academies & Coaching Centers */}
-            <div className="px-6 pb-4 pt-1 overflow-hidden">
-              <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-primary" />
-                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
-                    Training Academies
-                  </h2>
-                </div>
-                <Link href="/academies?type=ACADEMY" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
-                  <span>Explore</span>
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
-
-              <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-                {publicAcademies.length > 0 ? (
-                  publicAcademies.map((acad: any) => (
-                    <div
-                      key={acad.uuid || acad.id}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
-                    >
-                      <AcademyMarketplaceCard academy={acad} className="h-full shadow-md" />
-                    </div>
-                  ))
-                ) : (
-                  <div className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]">
-                    <Link
-                      href="/academies?type=ACADEMY"
-                      className="block p-4 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-1.5"
-                    >
-                      <GraduationCap className="w-7 h-7 text-primary mx-auto" />
-                      <div className="text-xs font-bold text-foreground">Find Sports Academies</div>
-                      <p className="text-[10px] text-foreground/40">Browse batches and enroll in coaching</p>
-                    </Link>
-                  </div>
-                )}
-              </div>
+            {/* 🔍 DISCOVERY SEARCH & FILTRATION (SPORTS & LOCATION) ────────────── */}
+            <div className="px-6 pb-2 pt-1">
+              <HomeSearchFilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedSport={selectedSport}
+                onSelectSport={setSelectedSport}
+                selectedPlace={selectedPlace}
+                onSelectPlace={setSelectedPlace}
+                availablePlaces={availablePlaces}
+                totalResults={totalFilteredMatches}
+                onResetFilters={handleResetFilters}
+              />
             </div>
 
-            {/* Professional Coaches & Mentors */}
-            <div className="px-6 pb-4 pt-1 overflow-hidden">
-              <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-primary" />
-                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
-                    Professional Coaches
-                  </h2>
+            {/* Empty State when Search/Filter returns 0 results */}
+            {isFilteringActive && totalFilteredMatches === 0 && (
+              <div
+                className="mx-6 my-4 p-8 rounded-[24px] border border-dashed text-center space-y-3 shadow-sm backdrop-blur-md"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <Search className="w-8 h-8 text-foreground/30 mx-auto" />
+                <div className="space-y-1">
+                  <h3 className="text-sm font-black text-foreground">No matches found</h3>
+                  <p className="text-xs text-foreground/50 max-w-xs mx-auto">
+                    No tournaments, turfs, academies, or live matches found for{' '}
+                    {selectedSport !== 'All' && <span className="text-primary font-bold">{selectedSport} </span>}
+                    {selectedPlace !== 'All' && <span className="text-emerald-400 font-bold">in {selectedPlace} </span>}
+                    {searchQuery && <span>matching "{searchQuery}"</span>}.
+                  </p>
                 </div>
-                <Link href="/coaches" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
-                  <span>Explore</span>
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
+                <button
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 rounded-xl text-xs font-black bg-primary text-black hover:scale-105 active:scale-95 transition-all shadow-md"
+                >
+                  Reset All Filters
+                </button>
               </div>
+            )}
 
-              <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-                {publicCoaches.length > 0 ? (
-                  publicCoaches.map((coach: any) => (
+            {/* ── SECTION 0: LIVE PLAYER AUCTIONS (MOBILE) ── */}
+            {filteredLiveAuctionChampionships.length > 0 && (
+              <div className="px-6 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                    <h2 className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+                      Live Player Auctions ({filteredLiveAuctionChampionships.length})
+                    </h2>
+                  </div>
+                  <span className="text-[9px] font-black text-red-400 uppercase tracking-wider">
+                    🔴 Broadcasting
+                  </span>
+                </div>
+
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                  {filteredLiveAuctionChampionships.map((champ) => (
                     <div
-                      key={coach.uuid || coach.id}
+                      key={champ.championshipUuid}
                       className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
                     >
-                      <CoachMarketplaceCard coach={coach} className="h-full shadow-md" />
-                    </div>
-                  ))
-                ) : (
-                  <div className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]">
-                    <Link
-                      href="/coaches"
-                      className="block p-4 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-1.5"
-                    >
-                      <Award className="w-7 h-7 text-primary mx-auto" />
-                      <div className="text-xs font-bold text-foreground">Find Certified Coaches</div>
-                      <p className="text-[10px] text-foreground/40">1-on-1 private training, specialized drills & batches</p>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
+                      <Link
+                        href={`/home/team-championship/${champ.championshipUuid}/auction`}
+                        className="block h-full rounded-[22px] overflow-hidden shadow-xl border relative transition-all hover:border-red-500/50 group"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'rgba(239, 68, 68, 0.4)',
+                        }}
+                      >
+                        <div className="h-[2px] w-full bg-gradient-to-r from-red-500 via-rose-500 to-primary animate-pulse" />
+                        <div className="p-4 space-y-3 flex flex-col justify-between h-full">
+                          <div className="flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" /> Live Auction
+                            </span>
+                            <span className="text-[9px] font-bold text-foreground/45 uppercase tracking-wider truncate max-w-[140px]">
+                              {champ.sport || 'Badminton'}
+                            </span>
+                          </div>
 
-            {/* Live Scores */}
-            {liveScores.length > 0 && (
-              <div className="px-6 pb-6 pt-3 mt-3 overflow-hidden">
+                          <div className="space-y-1">
+                            <h3 className="text-sm font-black text-foreground tracking-tight line-clamp-1">
+                              {champ.name}
+                            </h3>
+                            <p className="text-[11px] text-foreground/60 line-clamp-1">
+                              {champ.location || champ.venue || 'Arena'} • Live Draft Floor
+                            </p>
+                          </div>
+
+                          <div
+                            className="rounded-xl p-2.5 border flex items-center justify-between text-xs"
+                            style={{
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border-subtle)',
+                            }}
+                          >
+                            <span className="text-foreground/60 font-semibold text-[11px]">Franchises:</span>
+                            <span className="font-mono font-black text-primary text-xs">
+                              {champ.registeredTeamsCount || champ.maxTeams || 0} Teams
+                            </span>
+                          </div>
+
+                          <div className="w-full py-2.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-red-500/25">
+                            <Gavel className="w-3.5 h-3.5" />
+                            <span>Enter Live Arena</span>
+                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── SECTION 1: LIVE SCORES (MOBILE) ── */}
+            {filteredLiveScores.length > 0 && (
+              <div className="px-6 pb-4 pt-1 overflow-hidden">
                 <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">Live Now</h2>
                   </div>
                   <Link href="/live-score" className="text-[10px] font-bold text-red-500 hover:underline uppercase tracking-wider">
-                    See All ({liveScores.length})
+                    See All ({filteredLiveScores.length})
                   </Link>
                 </div>
                 <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-                  {liveScores.map((score) => {
+                  {filteredLiveScores.map((score) => {
                     const meta = score.scoreMeta || {};
                     const config = meta.config || {};
                     const teamAPlayers = config.teamA || [];
@@ -856,8 +1277,95 @@ export default function PersonalHomePage() {
               </div>
             )}
 
+            {/* ── SECTION 2: Book Courts & Turfs ── */}
+            {filteredVenues.length > 0 && (
+              <div className="px-6 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-primary" />
+                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                      Book Courts &amp; Turfs ({filteredVenues.length})
+                    </h2>
+                  </div>
+                  <Link href="/venues" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                    <span>Explore</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                  {filteredVenues.map((venue: any) => (
+                    <div
+                      key={venue.venueUuid || venue.venueId || venue.id}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                    >
+                      <VenueMarketplaceCard venue={venue} className="h-full shadow-md" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── SECTION 3: Featured Sports Academies & Coaching Centers ── */}
+            {filteredAcademies.length > 0 && (
+              <div className="px-6 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-primary" />
+                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                      Training Academies ({filteredAcademies.length})
+                    </h2>
+                  </div>
+                  <Link href="/academies?type=ACADEMY" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                    <span>Explore</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                  {filteredAcademies.map((acad: any) => (
+                    <div
+                      key={acad.uuid || acad.id}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                    >
+                      <AcademyMarketplaceCard academy={acad} className="h-full shadow-md" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── SECTION 4: Professional Coaches & Mentors ── */}
+            {filteredCoaches.length > 0 && (
+              <div className="px-6 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-primary" />
+                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+                      Professional Coaches ({filteredCoaches.length})
+                    </h2>
+                  </div>
+                  <Link href="/coaches" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                    <span>Explore</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                  {filteredCoaches.map((coach: any) => (
+                    <div
+                      key={coach.uuid || coach.id}
+                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                    >
+                      <CoachMarketplaceCard coach={coach} className="h-full shadow-md" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Finished Match Results */}
-            {finishedScores.length > 0 && (
+            {filteredFinishedScores.length > 0 && (
               <div className="px-6 pb-6 pt-3 mt-4 overflow-hidden">
                 <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
                   <div className="flex items-center gap-2">
@@ -870,12 +1378,12 @@ export default function PersonalHomePage() {
                     href="/live-score"
                     className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
                   >
-                    View All ({finishedScores.length}) <ChevronRight className="w-3 h-3 ml-0.5" />
+                    View All ({filteredFinishedScores.length}) <ChevronRight className="w-3 h-3 ml-0.5" />
                   </Link>
                 </div>
 
                 <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-                  {finishedScores.map((score) => {
+                  {filteredFinishedScores.map((score) => {
                     const meta = score.scoreMeta || {};
                     const config = meta.config || {};
                     const teamAPlayers = config.teamA || [];
@@ -994,89 +1502,14 @@ export default function PersonalHomePage() {
               </div>
             )}
 
-            {/* Live Player Auctions Showcase (Mobile) */}
-            {liveAuctionChampionships.length > 0 && (
-              <div className="px-6 pb-6 pt-2 overflow-hidden">
-                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                    <h2 className="text-[10px] font-black text-red-500 uppercase tracking-widest">
-                      Live Player Auctions ({liveAuctionChampionships.length})
-                    </h2>
-                  </div>
-                  <span className="text-[9px] font-black text-red-400 uppercase tracking-wider">
-                    🔴 Broadcasting
-                  </span>
-                </div>
-
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-                  {liveAuctionChampionships.map((champ) => (
-                    <div
-                      key={champ.championshipUuid}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
-                    >
-                      <Link
-                        href={`/home/team-championship/${champ.championshipUuid}/auction`}
-                        className="block h-full rounded-[22px] overflow-hidden shadow-xl border relative transition-all hover:border-red-500/50 group"
-                        style={{
-                          backgroundColor: 'var(--athlon-card)',
-                          borderColor: 'rgba(239, 68, 68, 0.4)',
-                        }}
-                      >
-                        <div className="h-[2px] w-full bg-gradient-to-r from-red-500 via-rose-500 to-primary animate-pulse" />
-                        <div className="p-4 space-y-3 flex flex-col justify-between h-full">
-                          <div className="flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" /> Live Auction
-                            </span>
-                            <span className="text-[9px] font-bold text-foreground/45 uppercase tracking-wider truncate max-w-[140px]">
-                              {champ.sport || 'Badminton'}
-                            </span>
-                          </div>
-
-                          <div className="space-y-1">
-                            <h3 className="text-sm font-black text-foreground tracking-tight line-clamp-1">
-                              {champ.name}
-                            </h3>
-                            <p className="text-[11px] text-foreground/60 line-clamp-1">
-                              {champ.location || champ.venue || 'Arena'} • Live Draft Floor
-                            </p>
-                          </div>
-
-                          <div
-                            className="rounded-xl p-2.5 border flex items-center justify-between text-xs"
-                            style={{
-                              backgroundColor: 'var(--athlon-surface)',
-                              borderColor: 'var(--athlon-border-subtle)',
-                            }}
-                          >
-                            <span className="text-foreground/60 font-semibold text-[11px]">Franchises:</span>
-                            <span className="font-mono font-black text-primary text-xs">
-                              {champ.registeredTeamsCount || champ.maxTeams || 0} Teams
-                            </span>
-                          </div>
-
-                          <div className="w-full py-2.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-red-500/25">
-                            <Gavel className="w-3.5 h-3.5" />
-                            <span>Enter Live Arena</span>
-                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Team Championships (Auctions & Leagues) */}
-            {publicChampionships.length > 0 && (
+            {filteredChampionships.length > 0 && (
               <div className="px-6 pb-6 pt-2 overflow-hidden">
                 <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-primary" />
                     <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
-                      Team Championships ({publicChampionships.length})
+                      Team Championships ({filteredChampionships.length})
                     </h2>
                   </div>
                   <Link
@@ -1088,7 +1521,7 @@ export default function PersonalHomePage() {
                 </div>
 
                 <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-                  {publicChampionships.map((c) => (
+                  {filteredChampionships.map((c) => (
                     <div
                       key={c.championshipId || c.championshipUuid}
                       className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
@@ -1101,13 +1534,13 @@ export default function PersonalHomePage() {
             )}
 
             {/* Tournaments (Open, Ongoing & Finished) */}
-            {publicTournaments.length > 0 && (
+            {filteredTournaments.length > 0 && (
               <div className="px-6 pb-6 pt-2 overflow-hidden">
                 <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
                   <div className="flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-primary" />
                     <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
-                      Tournaments ({publicTournaments.length})
+                      Tournaments ({filteredTournaments.length})
                     </h2>
                   </div>
                   <Link
@@ -1119,7 +1552,7 @@ export default function PersonalHomePage() {
                 </div>
 
                 <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
-                  {publicTournaments.map((t) => (
+                  {filteredTournaments.map((t) => (
                     <div
                       key={t.tournamentId || t.tournamentUuid}
                       className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
@@ -1252,11 +1685,16 @@ export default function PersonalHomePage() {
               </div>
             )}
 
-            {/* My Schedule */}
+            {/* Matches */}
             {userMatches.length > 0 && (
               <div className="px-6 pb-8">
                 <div className="flex items-center justify-between mb-4 pl-1 pr-2">
-                  <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">My Schedule</h2>
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-primary" />
+                    <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">
+                      Matches ({userMatches.length})
+                    </h2>
+                  </div>
                   <Link
                     href="/home/matches"
                     className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center hover:underline"
@@ -1548,7 +1986,7 @@ export default function PersonalHomePage() {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <div
-                    className="w-16 h-16 rounded-2xl bg-black/60 border-2 overflow-hidden flex items-center justify-center shadow-2xl"
+                    className="w-16 h-16 rounded-2xl bg-surface border-2 overflow-hidden flex items-center justify-center shadow-md"
                     style={{ borderColor: 'var(--athlon-primary)' }}
                   >
                     <img src={personalProfile?.avatar || '/placeholder.png'} alt="Profile" className="w-full h-full object-cover" />
@@ -1632,14 +2070,75 @@ export default function PersonalHomePage() {
 
         {/* Desktop Workspace Content with Full-Width Horizontal Scrolling Tracks */}
         <main className="max-w-7xl mx-auto px-8 py-8 space-y-10">
+          {/* 🔍 DESKTOP DISCOVERY SEARCH & FILTRATION (SPORTS & LOCATION) */}
+          <div
+            className="p-6 rounded-[28px] border shadow-lg space-y-4"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
+              <div>
+                <h2 className="text-base font-black text-foreground">Explore Sports Ecosystem</h2>
+                <p className="text-xs text-foreground/50">Search tournaments, turfs, academies, and live scores by sport and city</p>
+              </div>
+              {isFilteringActive && (
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs font-bold text-red-400 hover:underline cursor-pointer"
+                >
+                  Clear All Filters
+                </button>
+              )}
+            </div>
+
+            <HomeSearchFilterBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              selectedSport={selectedSport}
+              onSelectSport={setSelectedSport}
+              selectedPlace={selectedPlace}
+              onSelectPlace={setSelectedPlace}
+              availablePlaces={availablePlaces}
+              totalResults={totalFilteredMatches}
+              onResetFilters={handleResetFilters}
+            />
+          </div>
+
+          {/* Desktop Empty Results Card */}
+          {isFilteringActive && totalFilteredMatches === 0 && (
+            <div
+              className="p-12 rounded-[28px] border border-dashed text-center space-y-4 shadow-sm"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <Search className="w-10 h-10 text-foreground/30 mx-auto" />
+              <div className="space-y-1">
+                <h3 className="text-base font-black text-foreground">No matching events, venues, or academies found</h3>
+                <p className="text-xs text-foreground/50 max-w-md mx-auto">
+                  We couldn't find any results matching your search criteria. Try choosing a different sport or clearing your filters.
+                </p>
+              </div>
+              <button
+                onClick={handleResetFilters}
+                className="px-5 py-2.5 rounded-xl text-xs font-black bg-primary text-black hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          )}
+
           {/* ── SECTION 0: 🔴 LIVE PLAYER AUCTIONS (HORIZONTAL SCROLL) ── */}
-          {liveAuctionChampionships.length > 0 && (
+          {filteredLiveAuctionChampionships.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
                   <h2 className="text-base font-black text-foreground uppercase tracking-wider">
-                    Live Player Auction Arenas ({liveAuctionChampionships.length})
+                    Live Player Auction Arenas ({filteredLiveAuctionChampionships.length})
                   </h2>
                 </div>
 
@@ -1668,7 +2167,7 @@ export default function PersonalHomePage() {
                 ref={auctionsScrollRef}
                 className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
               >
-                {liveAuctionChampionships.map((champ) => (
+                {filteredLiveAuctionChampionships.map((champ) => (
                   <div key={champ.championshipUuid} className="snap-start shrink-0 w-[380px]">
                     <div
                       className="block h-full rounded-[24px] border p-5 relative overflow-hidden transition-all hover:border-red-500/60 hover:shadow-xl group space-y-4 flex flex-col justify-between"
@@ -1722,13 +2221,13 @@ export default function PersonalHomePage() {
           )}
 
           {/* ── SECTION 1: 🔴 LIVE MATCH BROADCASTS (HORIZONTAL SCROLL) ── */}
-          {liveScores.length > 0 && (
+          {filteredLiveScores.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
                   <h2 className="text-base font-black text-foreground uppercase tracking-wider">
-                    Live Broadcast Center ({liveScores.length})
+                    Live Broadcast Center ({filteredLiveScores.length})
                   </h2>
                 </div>
 
@@ -1757,7 +2256,7 @@ export default function PersonalHomePage() {
                 ref={liveScrollRef}
                 className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
               >
-                {liveScores.map((score) => {
+                {filteredLiveScores.map((score) => {
                   const meta = score.scoreMeta || {};
                   const config = meta.config || {};
                   const teamAPlayers = config.teamA || [];
@@ -1900,20 +2399,22 @@ export default function PersonalHomePage() {
           )}
 
           {/* ── SECTION 3: 🛡️ FEATURED TEAM CHAMPIONSHIPS (HORIZONTAL SCROLL) ── */}
-          {publicChampionships.length > 0 && (
+          {filteredChampionships.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <Shield className="w-5 h-5 text-primary" />
                   <div>
-                    <h2 className="text-base font-black text-foreground">Featured Team Championships</h2>
+                    <h2 className="text-base font-black text-foreground">
+                      Featured Team Championships ({filteredChampionships.length})
+                    </h2>
                     <p className="text-xs text-foreground/50">Multi-category franchise leagues, live auctions, and team draft competitions</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Link href="/tournaments" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
-                    View All ({publicChampionships.length}) →
+                    View All ({filteredChampionships.length}) →
                   </Link>
                   <button
                     onClick={() => scrollContainer(champsScrollRef, 'left')}
@@ -1936,7 +2437,7 @@ export default function PersonalHomePage() {
                 ref={champsScrollRef}
                 className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
               >
-                {publicChampionships.map((c) => (
+                {filteredChampionships.map((c) => (
                   <div key={c.championshipId || c.championshipUuid} className="snap-start shrink-0 w-[360px]">
                     <PublicTeamChampionshipCard championship={c} />
                   </div>
@@ -1946,20 +2447,22 @@ export default function PersonalHomePage() {
           )}
 
           {/* ── SECTION 4: 🏆 OPEN TOURNAMENTS (HORIZONTAL SCROLL) ── */}
-          {publicTournaments.length > 0 && (
+          {filteredTournaments.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <Trophy className="w-5 h-5 text-amber-400" />
                   <div>
-                    <h2 className="text-base font-black text-foreground">Open Tournaments</h2>
+                    <h2 className="text-base font-black text-foreground">
+                      Open Tournaments ({filteredTournaments.length})
+                    </h2>
                     <p className="text-xs text-foreground/50">Knockout, round-robin &amp; league championships open for registration</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Link href="/home/tournaments" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
-                    View All ({publicTournaments.length}) →
+                    View All ({filteredTournaments.length}) →
                   </Link>
                   <button
                     onClick={() => scrollContainer(tournsScrollRef, 'left')}
@@ -1982,7 +2485,7 @@ export default function PersonalHomePage() {
                 ref={tournsScrollRef}
                 className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
               >
-                {publicTournaments.map((t) => (
+                {filteredTournaments.map((t) => (
                   <div key={t.tournamentId || t.tournamentUuid} className="snap-start shrink-0 w-[360px]">
                     <PublicTournamentCard tournament={t} />
                   </div>
@@ -1991,129 +2494,159 @@ export default function PersonalHomePage() {
             </section>
           )}
 
-          {/* ── SECTION 4.5: 🎓 FEATURED SPORTS ACADEMIES & TRAINING CENTERS ── */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <GraduationCap className="w-5 h-5 text-primary" />
-                <div>
-                  <h2 className="text-base font-black text-foreground">Featured Sports Academies & Training Centers</h2>
-                  <p className="text-xs text-foreground/50">Certified coaching batches, multi-court venues, and professional training</p>
+          {/* ── SECTION 4.4: 🏟️ FEATURED SPORTS VENUES & TURFS (HORIZONTAL SCROLL) ── */}
+          {filteredVenues.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  <div>
+                    <h2 className="text-base font-black text-foreground">
+                      Featured Sports Venues &amp; Turfs ({filteredVenues.length})
+                    </h2>
+                    <p className="text-xs text-foreground/50">Instant hourly court bookings, floodlit turfs, and multi-sport arenas</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link href="/venues" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                    Explore All Venues ({filteredVenues.length}) →
+                  </Link>
+                  <button
+                    onClick={() => scrollContainer(venuesScrollRef, 'left')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollContainer(venuesScrollRef, 'right')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Link href="/academies" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
-                  Explore All Academies →
-                </Link>
-                <button
-                  onClick={() => scrollContainer(academiesScrollRef, 'left')}
-                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                  style={{ borderColor: 'var(--athlon-border)' }}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => scrollContainer(academiesScrollRef, 'right')}
-                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                  style={{ borderColor: 'var(--athlon-border)' }}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              <div
+                ref={venuesScrollRef}
+                className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+              >
+                {filteredVenues.map((venue: any) => (
+                  <div key={venue.venueUuid || venue.venueId || venue.id} className="snap-start shrink-0 w-[360px]">
+                    <VenueMarketplaceCard venue={venue} className="h-full" />
+                  </div>
+                ))}
               </div>
-            </div>
+            </section>
+          )}
 
-            <div
-              ref={academiesScrollRef}
-              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-            >
-              {publicAcademies.length > 0 ? (
-                publicAcademies.map((acad: any) => (
+          {/* ── SECTION 4.5: 🎓 FEATURED SPORTS ACADEMIES & TRAINING CENTERS ── */}
+          {filteredAcademies.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <GraduationCap className="w-5 h-5 text-primary" />
+                  <div>
+                    <h2 className="text-base font-black text-foreground">
+                      Featured Sports Academies & Training Centers ({filteredAcademies.length})
+                    </h2>
+                    <p className="text-xs text-foreground/50">Certified coaching batches, multi-court venues, and professional training</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link href="/academies" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                    Explore All Academies ({filteredAcademies.length}) →
+                  </Link>
+                  <button
+                    onClick={() => scrollContainer(academiesScrollRef, 'left')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollContainer(academiesScrollRef, 'right')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                ref={academiesScrollRef}
+                className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+              >
+                {filteredAcademies.map((acad: any) => (
                   <div key={acad.uuid || acad.id} className="snap-start shrink-0 w-[360px]">
                     <AcademyMarketplaceCard academy={acad} className="h-full" />
                   </div>
-                ))
-              ) : (
-                <div className="snap-start shrink-0 w-[360px]">
-                  <Link
-                    href="/academies"
-                    className="block p-6 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-2"
-                  >
-                    <GraduationCap className="w-8 h-8 text-primary mx-auto" />
-                    <div className="text-sm font-bold text-foreground">Explore Sports Academies</div>
-                    <p className="text-xs text-foreground/40">Find certified coaching batches &amp; training centers</p>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── SECTION 4.6: 🏅 PROFESSIONAL COACHES & MENTORS (HORIZONTAL SCROLL) ── */}
+          {filteredCoaches.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Award className="w-5 h-5 text-primary" />
+                  <div>
+                    <h2 className="text-base font-black text-foreground">
+                      Professional Coaches &amp; Mentors ({filteredCoaches.length})
+                    </h2>
+                    <p className="text-xs text-foreground/50">Personal training, specialized drills, and private sparring sessions</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link href="/coaches" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                    Explore All Coaches ({filteredCoaches.length}) →
                   </Link>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ── SECTION 4.5: 🏅 PROFESSIONAL COACHES & MENTORS (HORIZONTAL SCROLL) ── */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Award className="w-5 h-5 text-primary" />
-                <div>
-                  <h2 className="text-base font-black text-foreground">Professional Coaches &amp; Mentors</h2>
-                  <p className="text-xs text-foreground/50">Personal training, specialized drills, and private sparring sessions</p>
+                  <button
+                    onClick={() => scrollContainer(coachesScrollRef, 'left')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollContainer(coachesScrollRef, 'right')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Link href="/coaches" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
-                  Explore All Coaches →
-                </Link>
-                <button
-                  onClick={() => scrollContainer(coachesScrollRef, 'left')}
-                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                  style={{ borderColor: 'var(--athlon-border)' }}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => scrollContainer(coachesScrollRef, 'right')}
-                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                  style={{ borderColor: 'var(--athlon-border)' }}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={coachesScrollRef}
-              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-            >
-              {publicCoaches.length > 0 ? (
-                publicCoaches.map((coach: any) => (
+              <div
+                ref={coachesScrollRef}
+                className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+              >
+                {filteredCoaches.map((coach: any) => (
                   <div key={coach.uuid || coach.id} className="snap-start shrink-0 w-[360px]">
                     <CoachMarketplaceCard coach={coach} className="h-full" />
                   </div>
-                ))
-              ) : (
-                <div className="snap-start shrink-0 w-[360px]">
-                  <Link
-                    href="/coaches"
-                    className="block p-6 rounded-3xl border border-dashed border-white/20 bg-surface/50 hover:bg-surface transition-all text-center space-y-2"
-                  >
-                    <Award className="w-8 h-8 text-primary mx-auto" />
-                    <div className="text-sm font-bold text-foreground">Find Certified Coaches</div>
-                    <p className="text-xs text-foreground/40">1-on-1 private training &amp; personalized mentoring</p>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          )}
 
-          {/* ── SECTION 5: 📅 MY SCHEDULE & UMPIRING (HORIZONTAL SCROLL) ── */}
+          {/* ── SECTION 5: 📅 MATCHES & UMPIRING (HORIZONTAL SCROLL) ── */}
           {(userMatches.length > 0 || umpireMatches.length > 0) && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Clock className="w-5 h-5 text-primary" />
+                  <Activity className="w-5 h-5 text-primary" />
                   <div>
-                    <h2 className="text-base font-black text-foreground">My Match Schedule &amp; Umpiring</h2>
-                    <p className="text-xs text-foreground/50">Your active court schedule, tie fixtures, and umpire assignments</p>
+                    <h2 className="text-base font-black text-foreground">Matches &amp; Umpiring</h2>
+                    <p className="text-xs text-foreground/50">Your active matches, tie fixtures, and umpire assignments</p>
                   </div>
                 </div>
 
@@ -2168,7 +2701,7 @@ export default function PersonalHomePage() {
                           const teamBStr = match.teamBName ? encodeURIComponent(match.teamBName.replace(/\s*&\s*/g, ',')) : '';
                           router.push(`/match-setup?matchId=${match.uuid}&sport=${sport}&teamA=${teamAStr}&teamB=${teamBStr}&fromUmpire=true`);
                         }}
-                        className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-red-500/25"
+                        className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-red-500/25 cursor-pointer"
                       >
                         <Activity className="w-3.5 h-3.5 animate-pulse" />
                         <span>Start / Resume Digital Score</span>
@@ -2211,13 +2744,15 @@ export default function PersonalHomePage() {
           )}
 
           {/* ── SECTION 6: ✅ RECENT RESULTS (HORIZONTAL SCROLL) ── */}
-          {finishedScores.length > 0 && (
+          {filteredFinishedScores.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   <div>
-                    <h2 className="text-base font-black text-foreground">Recent Match Results</h2>
+                    <h2 className="text-base font-black text-foreground">
+                      Recent Match Results ({filteredFinishedScores.length})
+                    </h2>
                     <p className="text-xs text-foreground/50">Official scorecards and completed fixture results</p>
                   </div>
                 </div>
@@ -2247,7 +2782,7 @@ export default function PersonalHomePage() {
                 ref={resultsScrollRef}
                 className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
               >
-                {finishedScores.map((score) => {
+                {filteredFinishedScores.map((score) => {
                   const meta = score.scoreMeta || {};
                   const config = meta.config || {};
                   const teamAPlayers = config.teamA || [];
@@ -2327,7 +2862,9 @@ export default function PersonalHomePage() {
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-black text-foreground truncate">{org.name}</div>
-                        <div className="text-[10px] text-foreground/50 uppercase font-bold">{org.type}</div>
+                        <div className="text-[10px] text-foreground/50 uppercase font-bold">
+                          {org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER' ? 'Venue Manager' : org.type === 'COACH' ? 'Freelance Coach' : org.type}
+                        </div>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all" />

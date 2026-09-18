@@ -48,7 +48,7 @@ public class ClubFinanceController {
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<ClubFinanceResponse>> createFinance(
             @Valid @RequestBody CreateFinanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         ClubFinanceResponse response = financeService.createFinance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Transaction recorded successfully", response));
@@ -57,7 +57,7 @@ public class ClubFinanceController {
     @PostMapping("/update")
     public ResponseEntity<ApiResponse<ClubFinanceResponse>> updateFinance(
             @Valid @RequestBody UpdateFinanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         ClubFinanceResponse response = financeService.updateFinance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Transaction updated successfully", response));

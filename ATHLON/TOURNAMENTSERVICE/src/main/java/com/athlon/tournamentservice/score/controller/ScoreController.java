@@ -33,8 +33,10 @@ public class ScoreController {
         try {
             Score response = scoreService.recordScoreEvent(matchId, event, sportType);
             return new ResponseEntity<>(ApiResponse.success("Score event recorded successfully", response), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.success("Score event skipped: " + e.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Failed to record score event: " + e.getMessage()));
         }
     }
 
@@ -44,7 +46,7 @@ public class ScoreController {
             Score score = scoreService.getScoreState(matchId);
             return ResponseEntity.ok(ApiResponse.success("Score state fetched successfully", score));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.success("No score state found", null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Failed to fetch score state: " + e.getMessage()));
         }
     }
 
@@ -54,7 +56,7 @@ public class ScoreController {
             Score score = scoreService.getScoreState(matchId);
             return ResponseEntity.ok(ApiResponse.success("Score state fetched successfully", score));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.success("No score state found", null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Failed to fetch score state: " + e.getMessage()));
         }
     }
 
@@ -65,15 +67,21 @@ public class ScoreController {
         try {
             Score score = scoreService.syncScoreState(matchId, state);
             return ResponseEntity.ok(ApiResponse.success("Score state synced successfully", score));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.success("Score sync skipped: " + e.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Failed to sync score state: " + e.getMessage()));
         }
     }
 
     @GetMapping("/live")
     public ResponseEntity<ApiResponse<List<Score>>> getLiveScores() {
-        List<Score> liveScores = scoreService.getLiveScores();
-        return ResponseEntity.ok(ApiResponse.success("Live scores fetched successfully", liveScores));
+        try {
+            List<Score> liveScores = scoreService.getLiveScores();
+            return ResponseEntity.ok(ApiResponse.success("Live scores fetched successfully", liveScores));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Failed to fetch live scores: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/all")
@@ -82,7 +90,7 @@ public class ScoreController {
             List<Score> allScores = scoreService.getAllScores();
             return ResponseEntity.ok(ApiResponse.success("All scores fetched successfully", allScores));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.success("Error fetching scores", java.util.Collections.emptyList()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Failed to fetch all scores: " + e.getMessage()));
         }
     }
 }

@@ -28,13 +28,21 @@ export const useAuthStore = create<AuthState>()(
       userUuid: null,
 
   login: async (email: string, token: string, userId: string, userUuid: string) => {
+    try {
+      if (typeof window !== 'undefined') {
+        const { useWorkspaceStore } = require('./useWorkspaceStore');
+        useWorkspaceStore.getState().clearWorkspace();
+      }
+    } catch {}
+
     const lowerEmail = email.toLowerCase();
     
     let subs: Subscription[] = ['PLAYER'];
     if (lowerEmail.includes('organizer')) subs.push('ORGANIZER');
     if (lowerEmail.includes('academy')) subs.push('ACADEMY');
     if (lowerEmail.includes('club')) subs.push('CLUB');
-    if (lowerEmail.includes('court')) subs.push('COURT');
+    if (lowerEmail.includes('coach') || lowerEmail.includes('trainer')) subs.push('COACH');
+    if (lowerEmail.includes('court') || lowerEmail.includes('venue')) subs.push('COURT');
     
     set({
       isAuthenticated: true,
@@ -48,6 +56,13 @@ export const useAuthStore = create<AuthState>()(
   
   register: async (data: any) => {
     try {
+      if (typeof window !== 'undefined') {
+        const { useWorkspaceStore } = require('./useWorkspaceStore');
+        useWorkspaceStore.getState().clearWorkspace();
+      }
+    } catch {}
+
+    try {
       await AuthService.register(data);
     } catch (error) {
       console.warn('API Register failed, proceeding with local simulation', error);
@@ -58,6 +73,10 @@ export const useAuthStore = create<AuthState>()(
     
     let subs: Subscription[] = ['PLAYER'];
     if (lowerEmail.includes('organizer')) subs.push('ORGANIZER');
+    if (lowerEmail.includes('academy')) subs.push('ACADEMY');
+    if (lowerEmail.includes('club')) subs.push('CLUB');
+    if (lowerEmail.includes('coach') || lowerEmail.includes('trainer')) subs.push('COACH');
+    if (lowerEmail.includes('court') || lowerEmail.includes('venue')) subs.push('COURT');
     
     set({
       isAuthenticated: true,
@@ -66,6 +85,14 @@ export const useAuthStore = create<AuthState>()(
     });
   },
   logout: () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const { useWorkspaceStore } = require('./useWorkspaceStore');
+        useWorkspaceStore.getState().clearWorkspace();
+      }
+    } catch {
+      // Ignore if circular dependency during initial hydration
+    }
     set({
       isAuthenticated: false,
       subscriptions: ['PLAYER'],

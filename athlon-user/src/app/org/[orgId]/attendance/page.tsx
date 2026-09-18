@@ -40,10 +40,8 @@ const getLocalDateString = (d: Date = new Date()): string => {
 export default function AttendancePage() {
   const params = useParams();
   const orgIdParam = (params?.orgId as string) || '';
-  const { getActiveOrganization, personalProfile } = useWorkspaceStore();
-  const { userUuid: authUserUuid, userId: authUserId } = useAuthStore();
+  const { getActiveOrganization } = useWorkspaceStore();
   const org = getActiveOrganization();
-
   const orgUuid = org?.id || orgIdParam;
 
   if (org?.type === 'ACADEMY') {
@@ -54,6 +52,12 @@ export default function AttendancePage() {
     return <CoachAttendanceView orgUuid={orgUuid} orgName={org.name || 'Coach Workspace'} />;
   }
 
+  return <ClubAttendanceView orgUuid={orgUuid} orgName={org?.name || 'Club'} org={org} />;
+}
+
+function ClubAttendanceView({ orgUuid, orgName, org }: { orgUuid: string; orgName: string; org?: any }) {
+  const { personalProfile } = useWorkspaceStore();
+  const { userUuid: authUserUuid, userId: authUserId } = useAuthStore();
   const { role, isAdmin, isCoach, canManage } = useOrgRole(orgUuid);
   const canTakeAttendance = isAdmin || isCoach;
 

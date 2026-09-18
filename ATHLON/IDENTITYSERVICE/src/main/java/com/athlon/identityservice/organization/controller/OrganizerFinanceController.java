@@ -49,7 +49,7 @@ public class OrganizerFinanceController {
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<OrganizerFinanceResponse>> createFinance(
             @Valid @RequestBody CreateOrganizerFinanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         OrganizerFinanceResponse response = financeService.createFinance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Tournament transaction recorded successfully", response));
@@ -58,7 +58,7 @@ public class OrganizerFinanceController {
     @PostMapping("/update")
     public ResponseEntity<ApiResponse<OrganizerFinanceResponse>> updateFinance(
             @Valid @RequestBody UpdateOrganizerFinanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         OrganizerFinanceResponse response = financeService.updateFinance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Tournament transaction updated successfully", response));

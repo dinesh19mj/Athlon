@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
   MapPin,
@@ -19,21 +20,92 @@ import {
   Play,
   Sparkles,
   Radio,
+  Layers,
+  ArrowRight,
+  Medal,
+  Flame,
+  CheckCircle2,
+  ExternalLink,
+  Search,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { MatchService, Match } from '@/lib/api/matches';
+import {
+  TournamentService,
+  RegistrationService,
+  Tournament,
+  Registration,
+} from '@/lib/api/tournaments';
 import { AuthService } from '@/lib/api/auth';
+
+interface EnrichedTournament {
+  id: string | number;
+  tournamentId?: number;
+  tournamentUuid?: string;
+  name: string;
+  sport?: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+  poster?: string;
+  status: string;
+  tournamentType?: string;
+  registration?: Registration;
+  userMatches: Match[];
+  completedMatchesCount: number;
+  totalMatchesCount: number;
+}
+
+function parseSetScores(setScores: any): string[] {
+  if (!setScores) return [];
+  if (Array.isArray(setScores)) {
+    return setScores.map((s) => {
+      if (typeof s === 'string') return s;
+      if (typeof s === 'object' && s !== null) {
+        if ('pointsA' in s && 'pointsB' in s) return `${s.pointsA}-${s.pointsB}`;
+        if ('teamAScore' in s && 'teamBScore' in s) return `${s.teamAScore}-${s.teamBScore}`;
+        if ('scoreA' in s && 'scoreB' in s) return `${s.scoreA}-${s.scoreB}`;
+      }
+      return String(s);
+    });
+  }
+  if (typeof setScores === 'string') {
+    const trimmed = setScores.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return parseSetScores(parsed);
+      } catch {
+        // ignore
+      }
+    }
+    if (trimmed.includes(',')) {
+      return trimmed
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    return [trimmed];
+  }
+  return [];
+}
 
 export default function PlayerMatchesPage() {
   const router = useRouter();
   const { userId, userUuid, token } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'playing' | 'umpiring'>('playing');
+  const [activeTab, setActiveTab] = useState<'tournaments' | 'matches' | 'umpiring'>('tournaments');
+  const [tournamentFilter, setTournamentFilter] = useState<'ALL' | 'COMPLETED' | 'LIVE' | 'REGISTERED'>('ALL');
+  const [matchFilter, setMatchFilter] = useState<'ALL' | 'COMPLETED' | 'LIVE' | 'UPCOMING'>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [umpireMatches, setUmpireMatches] = useState<Match[]>([]);
+  const [userTournaments, setUserTournaments] = useState<EnrichedTournament[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const playingTrackRef = useRef<HTMLDivElement>(null);
+  const tournamentsTrackRef = useRef<HTMLDivElement>(null);
+  const matchesTrackRef = useRef<HTMLDivElement>(null);
   const umpireTrackRef = useRef<HTMLDivElement>(null);
   const lineupsTrackRef = useRef<HTMLDivElement>(null);
 
@@ -45,95 +117,286 @@ export default function PlayerMatchesPage() {
   };
 
   useEffect(() => {
-    if (userId) {
-      setLoading(true);
-      MatchService.getByUser(Number(userId))
-        .then((response: any) => {
-          if (response && response.data) {
-            const sorted = [...response.data].sort((a: Match, b: Match) => {
-              const isACompleted = a.status === 'COMPLETED';
-              const isBCompleted = b.status === 'COMPLETED';
-              if (!isACompleted && isBCompleted) return -1;
-              if (isACompleted && !isBCompleted) return 1;
-              const isALive = a.status === 'LIVE' || a.status === 'IN_PROGRESS';
-              const isBLive = b.status === 'LIVE' || b.status === 'IN_PROGRESS';
-              if (isALive && !isBLive) return -1;
-              if (!isALive && isBLive) return 1;
-              const timeA = a.scheduledTime
-                ? new Date(a.scheduledTime).getTime()
-                : a.matchDate
-                ? new Date(a.matchDate).getTime()
-                : Infinity;
-              const timeB = b.scheduledTime
-                ? new Date(b.scheduledTime).getTime()
-                : b.matchDate
-                ? new Date(b.matchDate).getTime()
-                : Infinity;
-              if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
-              return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
-            });
-            setUserMatches(sorted);
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    const loadData = async () => {
+      try {
+        // 1. Fetch user matches
+        let matches: Match[] = [];
+        try {
+          const matchRes = await MatchService.getByUser(Number(userId));
+          if (matchRes && matchRes.data) {
+            matches = matchRes.data;
           }
-        })
-        .catch((err) => {
-          console.error('Failed to load user matches:', err);
-        })
-        .finally(() => {
-          if (!userUuid || !token) {
-            setLoading(false);
+        } catch (e) {
+          console.error('Failed to load user matches:', e);
+        }
+
+        // Sort user matches: Live first, then Scheduled by date, then Completed
+        const sortedMatches = [...matches].sort((a: Match, b: Match) => {
+          const isACompleted = a.status === 'COMPLETED';
+          const isBCompleted = b.status === 'COMPLETED';
+          if (!isACompleted && isBCompleted) return -1;
+          if (isACompleted && !isBCompleted) return 1;
+
+          const isALive = a.status === 'LIVE' || a.status === 'IN_PROGRESS';
+          const isBLive = b.status === 'LIVE' || b.status === 'IN_PROGRESS';
+          if (isALive && !isBLive) return -1;
+          if (!isALive && isBLive) return 1;
+
+          const timeA = a.scheduledTime
+            ? new Date(a.scheduledTime).getTime()
+            : a.matchDate
+            ? new Date(a.matchDate).getTime()
+            : Infinity;
+          const timeB = b.scheduledTime
+            ? new Date(b.scheduledTime).getTime()
+            : b.matchDate
+            ? new Date(b.matchDate).getTime()
+            : Infinity;
+          if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
+          return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
+        });
+        setUserMatches(sortedMatches);
+
+        // 2. Fetch user registrations & all tournaments
+        let registrations: Registration[] = [];
+        let allTournaments: Tournament[] = [];
+        try {
+          const [regRes, tourRes] = await Promise.all([
+            RegistrationService.getByUser(userId).catch(() => ({ data: [] as Registration[] })),
+            TournamentService.getAll().catch(() => ({ data: [] as Tournament[] })),
+          ]);
+          registrations = regRes?.data || [];
+          allTournaments = tourRes?.data || [];
+        } catch (e) {
+          console.error('Failed to load registrations or tournaments:', e);
+        }
+
+        // 3. Map into EnrichedTournaments
+        const tourMap = new Map<string | number, EnrichedTournament>();
+
+        // Add from registrations
+        registrations.forEach((reg) => {
+          const tDetail = allTournaments.find(
+            (t) => t.tournamentId === reg.tournamentId || (reg.tournamentId && t.tournamentId === reg.tournamentId)
+          );
+          const key = reg.tournamentId || reg.tournamentId || reg.uuid;
+          const tUuid = tDetail?.tournamentUuid || reg.categoryUuid || '';
+
+          const existing = tourMap.get(key) || {
+            id: key,
+            tournamentId: reg.tournamentId,
+            tournamentUuid: tUuid,
+            name: tDetail?.name || `Tournament #${reg.tournamentId}`,
+            sport: tDetail?.sport || 'Badminton',
+            startDate: tDetail?.startDate,
+            endDate: tDetail?.endDate,
+            location: tDetail?.location || 'Venue TBA',
+            poster: tDetail?.poster,
+            status: tDetail?.status || reg.status || 'REGISTERED',
+            tournamentType: tDetail?.tournamentType,
+            registration: reg,
+            userMatches: [],
+            completedMatchesCount: 0,
+            totalMatchesCount: 0,
+          };
+          existing.registration = reg;
+          tourMap.set(key, existing);
+        });
+
+        // Add / correlate from matches
+        sortedMatches.forEach((m) => {
+          const key = m.tournamentId || m.tournamentUuid || m.tournamentName || 'unknown';
+          let tour = tourMap.get(key);
+          if (!tour) {
+            // Find in allTournaments
+            const tDetail = allTournaments.find(
+              (t) =>
+                (m.tournamentId && t.tournamentId === m.tournamentId) ||
+                (m.tournamentUuid && t.tournamentUuid === m.tournamentUuid) ||
+                (m.tournamentName && t.name?.toLowerCase() === m.tournamentName?.toLowerCase())
+            );
+
+            tour = {
+              id: key,
+              tournamentId: m.tournamentId || tDetail?.tournamentId,
+              tournamentUuid: m.tournamentUuid || tDetail?.tournamentUuid || '',
+              name: m.tournamentName || tDetail?.name || `Tournament #${m.tournamentId || ''}`,
+              sport: m.sportType || tDetail?.sport || 'Badminton',
+              startDate: tDetail?.startDate || m.matchDate || undefined,
+              endDate: tDetail?.endDate,
+              location: tDetail?.location || m.courtName || 'Venue TBA',
+              poster: tDetail?.poster,
+              status: tDetail?.status || (m.status === 'COMPLETED' ? 'COMPLETED' : 'ONGOING'),
+              tournamentType: m.tournamentType || tDetail?.tournamentType,
+              userMatches: [],
+              completedMatchesCount: 0,
+              totalMatchesCount: 0,
+            };
+            tourMap.set(key, tour);
+          }
+
+          // Avoid duplicate matches
+          if (!tour.userMatches.some((x) => x.id === m.id || (x.uuid && x.uuid === m.uuid))) {
+            tour.userMatches.push(m);
+            tour.totalMatchesCount += 1;
+            if (m.status === 'COMPLETED') {
+              tour.completedMatchesCount += 1;
+            }
           }
         });
 
-      if (userUuid && token) {
-        AuthService.getUserProfile(userUuid, token)
-          .then((profileRes) => {
-            if (profileRes && profileRes.data && profileRes.data.phone) {
-              return MatchService.getByUmpirePhone(profileRes.data.phone).catch(() => ({ data: [] }));
+        const tourList = Array.from(tourMap.values()).map((tour) => {
+          // Compute refined status
+          const isAllCompleted =
+            tour.totalMatchesCount > 0 && tour.completedMatchesCount === tour.totalMatchesCount;
+          const isAnyLive = tour.userMatches.some(
+            (m) => m.status === 'LIVE' || m.status === 'IN_PROGRESS'
+          );
+
+          let finalStatus = tour.status;
+          if (
+            tour.status?.toUpperCase() === 'COMPLETED' ||
+            tour.status?.toUpperCase() === 'FINISHED' ||
+            isAllCompleted
+          ) {
+            finalStatus = 'COMPLETED';
+          } else if (isAnyLive || tour.status?.toUpperCase() === 'LIVE') {
+            finalStatus = 'LIVE';
+          } else if (tour.status?.toUpperCase() === 'ONGOING' || tour.userMatches.length > 0) {
+            finalStatus = 'ONGOING';
+          } else {
+            finalStatus = 'REGISTERED';
+          }
+
+          return { ...tour, status: finalStatus };
+        });
+
+        // Sort tournaments: Live first, Ongoing, then Registered, then Completed (most recent on top)
+        tourList.sort((a, b) => {
+          const rank = (s: string) => {
+            if (s === 'LIVE') return 0;
+            if (s === 'ONGOING') return 1;
+            if (s === 'REGISTERED') return 2;
+            if (s === 'COMPLETED') return 3;
+            return 4;
+          };
+          if (rank(a.status) !== rank(b.status)) {
+            return rank(a.status) - rank(b.status);
+          }
+          const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+          const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+          return dateB - dateA;
+        });
+
+        setUserTournaments(tourList);
+
+        // 4. Fetch umpire matches if userUuid & token available
+        if (userUuid && token) {
+          try {
+            const profileRes = await AuthService.getUserProfile(userUuid, token);
+            if (profileRes?.data?.phone) {
+              const uRes = await MatchService.getByUmpirePhone(profileRes.data.phone).catch(() => ({
+                data: [],
+              }));
+              if (uRes?.data && Array.isArray(uRes.data)) {
+                const sortedUmpire = [...uRes.data].sort((a: Match, b: Match) => {
+                  const isACompleted = a.status === 'COMPLETED';
+                  const isBCompleted = b.status === 'COMPLETED';
+                  if (!isACompleted && isBCompleted) return -1;
+                  if (isACompleted && !isBCompleted) return 1;
+                  const isALive = a.status === 'LIVE' || a.status === 'IN_PROGRESS';
+                  const isBLive = b.status === 'LIVE' || b.status === 'IN_PROGRESS';
+                  if (isALive && !isBLive) return -1;
+                  if (!isALive && isBLive) return 1;
+                  return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
+                });
+                setUmpireMatches(sortedUmpire);
+              }
             }
-            return { data: [] };
-          })
-          .then((response: any) => {
-            if (response && response.data && Array.isArray(response.data)) {
-              const sortedUmpire = [...response.data].sort((a: Match, b: Match) => {
-                const isACompleted = a.status === 'COMPLETED';
-                const isBCompleted = b.status === 'COMPLETED';
-                if (!isACompleted && isBCompleted) return -1;
-                if (isACompleted && !isBCompleted) return 1;
-                const isALive = a.status === 'LIVE' || a.status === 'IN_PROGRESS';
-                const isBLive = b.status === 'LIVE' || b.status === 'IN_PROGRESS';
-                if (isALive && !isBLive) return -1;
-                if (!isALive && isBLive) return 1;
-                const timeA = a.scheduledTime
-                  ? new Date(a.scheduledTime).getTime()
-                  : a.matchDate
-                  ? new Date(a.matchDate).getTime()
-                  : Infinity;
-                const timeB = b.scheduledTime
-                  ? new Date(b.scheduledTime).getTime()
-                  : b.matchDate
-                  ? new Date(b.matchDate).getTime()
-                  : Infinity;
-                if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
-                return (typeof a.id === 'number' ? a.id : 0) - (typeof b.id === 'number' ? b.id : 0);
-              });
-              setUmpireMatches(sortedUmpire);
-            } else {
-              setUmpireMatches([]);
-            }
-          })
-          .catch(() => {
-            setUmpireMatches([]);
-          })
-          .finally(() => {
-            setLoading(false);
-          });
+          } catch (e) {
+            console.error('Failed to load umpire assignments:', e);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading matches & tournaments page data:', err);
+      } finally {
+        setLoading(false);
       }
-    } else {
-      setLoading(false);
-    }
+    };
+
+    loadData();
   }, [userId, userUuid, token]);
 
-  const pendingLineups = userMatches.filter((m) => m.status === 'WAITING_FOR_LINEUPS');
+  const pendingLineups = useMemo(
+    () => userMatches.filter((m) => m.status === 'WAITING_FOR_LINEUPS'),
+    [userMatches]
+  );
+
+  const completedMatches = useMemo(
+    () => userMatches.filter((m) => m.status === 'COMPLETED'),
+    [userMatches]
+  );
+
+  const liveMatches = useMemo(
+    () => userMatches.filter((m) => m.status === 'LIVE' || m.status === 'IN_PROGRESS'),
+    [userMatches]
+  );
+
+  const upcomingMatches = useMemo(
+    () =>
+      userMatches.filter(
+        (m) =>
+          m.status !== 'COMPLETED' &&
+          m.status !== 'LIVE' &&
+          m.status !== 'IN_PROGRESS' &&
+          m.status !== 'WAITING_FOR_LINEUPS'
+      ),
+    [userMatches]
+  );
+
+  // Filtered lists
+  const filteredTournaments = useMemo(() => {
+    return userTournaments.filter((t) => {
+      const matchText =
+        !searchQuery ||
+        t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.sport?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.location?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!matchText) return false;
+      if (tournamentFilter === 'ALL') return true;
+      if (tournamentFilter === 'COMPLETED') return t.status === 'COMPLETED';
+      if (tournamentFilter === 'LIVE') return t.status === 'LIVE' || t.status === 'ONGOING';
+      if (tournamentFilter === 'REGISTERED') return t.status === 'REGISTERED';
+      return true;
+    });
+  }, [userTournaments, tournamentFilter, searchQuery]);
+
+  const filteredMatches = useMemo(() => {
+    return userMatches.filter((m) => {
+      const matchText =
+        !searchQuery ||
+        m.tournamentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.teamAName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.teamBName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.courtName?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!matchText) return false;
+      if (matchFilter === 'ALL') return true;
+      if (matchFilter === 'COMPLETED') return m.status === 'COMPLETED';
+      if (matchFilter === 'LIVE') return m.status === 'LIVE' || m.status === 'IN_PROGRESS';
+      if (matchFilter === 'UPCOMING')
+        return m.status !== 'COMPLETED' && m.status !== 'LIVE' && m.status !== 'IN_PROGRESS';
+      return true;
+    });
+  }, [userMatches, matchFilter, searchQuery]);
 
   const getLineupButtonProps = (match: Match) => {
     const isAApproved = match.teamALineupStatus === 'APPROVED';
@@ -183,7 +446,12 @@ export default function PlayerMatchesPage() {
       return { date: 'Date TBA', time: 'Time TBA' };
     }
     return {
-      date: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+      date: d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
       time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     };
   };
@@ -203,11 +471,11 @@ export default function PlayerMatchesPage() {
     const isRight = align === 'right';
 
     return (
-      <div className={`flex flex-col gap-2 min-w-0 ${isRight ? 'items-end' : 'items-start'}`}>
+      <div className={`flex flex-col gap-1.5 min-w-0 ${isRight ? 'items-end' : 'items-start'}`}>
         {parts.map((p, i) => (
           <div
             key={i}
-            className={`flex items-center gap-2 min-w-0 max-w-full ${
+            className={`flex items-center gap-1.5 min-w-0 max-w-full ${
               isRight ? 'flex-row-reverse text-right' : 'flex-row text-left'
             }`}
           >
@@ -221,7 +489,7 @@ export default function PlayerMatchesPage() {
               <User className="w-3 h-3" />
             </div>
             <span
-              className="text-xs md:text-sm font-extrabold text-foreground leading-none tracking-tight min-w-0 break-words"
+              className="text-xs md:text-sm font-extrabold text-foreground leading-tight tracking-tight min-w-0 break-words"
               style={{ overflowWrap: 'anywhere' }}
             >
               {p}
@@ -233,887 +501,667 @@ export default function PlayerMatchesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black pb-24 w-full max-w-full overflow-x-hidden">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
+          TOP STICKY HEADER & TABS (Mobile & Desktop)
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-24">
-        {/* Header */}
-        <header className="p-4 border-b border-foreground/10 bg-surface/80 backdrop-blur-md sticky top-0 z-20">
-          <h1 className="text-3xl font-black uppercase tracking-wide">Matches</h1>
-          <p className="text-text-muted font-medium mt-1 text-sm">
-            View your playing schedule and umpiring assignments.
-          </p>
-
-          {/* Main Tabs */}
-          <div className="flex bg-surface-elevated border border-border p-1 mt-6 rounded-xl max-w-sm shadow-sm">
-            <button
-              onClick={() => setActiveTab('playing')}
-              className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                activeTab === 'playing' ? 'bg-primary text-black shadow-md' : 'text-text-muted hover:text-foreground'
-              }`}
-            >
-              Playing ({userMatches.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('umpiring')}
-              className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                activeTab === 'umpiring' ? 'bg-red-500 text-white shadow-md' : 'text-text-muted hover:text-foreground'
-              }`}
-            >
-              Umpiring ({umpireMatches.length})
-            </button>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="p-4 max-w-4xl mx-auto space-y-6">
-          {loading && (
-            <div className="flex justify-center items-center py-20 text-text-muted">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <p className="text-sm font-medium tracking-wide">Loading match schedule...</p>
-              </div>
-            </div>
-          )}
-
-          {!loading && activeTab === 'playing' && pendingLineups.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-sm font-black uppercase tracking-widest text-orange-500 mb-4 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" /> Action Required
-              </h2>
-              <div className="space-y-4">
-                {pendingLineups.map((match) => {
-                  const btnProps = getLineupButtonProps(match);
-                  const { date, time } = formatMatchDateTime(match);
-
-                  return (
-                    <div
-                      key={match.id}
-                      className={`border rounded-2xl p-6 flex flex-col justify-between gap-6 transition-colors group ${btnProps.cardBg}`}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span
-                            className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${btnProps.badgeColor}`}
-                          >
-                            {btnProps.statusText}
-                          </span>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">
-                            Team Event
-                          </span>
-                        </div>
-                        <h3 className="text-xl font-black tracking-tight mb-1 transition-colors group-hover:text-primary">
-                          {match.teamAName && match.teamBName
-                            ? `${match.teamAName} vs ${match.teamBName}`
-                            : `Team Event Match #${match.id}`}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-text-muted mt-3">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-primary" /> {date}
-                          </div>
-                          {time && (
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-amber-400" /> {time}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-emerald-400" />{' '}
-                            {match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col justify-center pt-4 border-t border-border shrink-0">
-                        <button
-                          onClick={() => router.push(`/home/team-events/${match.uuid}/lineup`)}
-                          className={`w-full px-5 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 ${btnProps.color}`}
-                        >
-                          {btnProps.icon} {btnProps.text}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Playing Tab */}
-          {!loading && activeTab === 'playing' && (
+      <header
+        className="p-3 sm:p-4 md:px-8 md:py-5 border-b border-foreground/10 bg-surface/85 backdrop-blur-md sticky top-0 z-20 shadow-sm w-full max-w-full overflow-x-hidden"
+      >
+        <div className="max-w-7xl mx-auto space-y-2.5 sm:space-y-3.5 w-full">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4 w-full">
             <div>
-              <h2 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">Playing Matches</h2>
-              <div className="space-y-4">
-                {userMatches.filter((m) => m.status !== 'WAITING_FOR_LINEUPS').length === 0 ? (
-                  <div className="text-center py-12 text-text-muted text-sm font-semibold bg-surface rounded-2xl border border-border">
-                    No upcoming or past playing matches found.
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
+                  <Trophy className="w-4 h-4 md:w-5 md:h-5" />
+                </span>
+                <div>
+                  <h1 className="text-base sm:text-xl md:text-2xl font-black uppercase tracking-tight text-foreground leading-tight">
+                    Tournaments &amp; Matches
+                  </h1>
+                  <p className="text-text-muted font-medium text-[10px] sm:text-xs md:text-sm leading-tight mt-0.5">
+                    Your registered events, match fixtures, scores &amp; umpire duties
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 3 Main Segmented Action Tabs (Snug, full visibility without truncation) */}
+            <div className="flex items-center bg-surface-elevated border border-border p-1 rounded-2xl shadow-sm w-full md:w-auto">
+              {/* Tab 1: Tournament */}
+              <button
+                onClick={() => setActiveTab('tournaments')}
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2 px-1 sm:px-3 md:px-4 text-[10px] sm:text-xs font-black uppercase tracking-tight rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'tournaments'
+                    ? 'bg-primary text-black shadow-md shadow-primary/25 scale-[1.01]'
+                    : 'text-text-muted hover:text-foreground'
+                }`}
+              >
+                <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden xs:inline-block" />
+                <span className="whitespace-nowrap">Tournament</span>
+                <span
+                  className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 ${
+                    activeTab === 'tournaments' ? 'bg-black/20 text-black' : 'bg-foreground/10 text-foreground/70'
+                  }`}
+                >
+                  {userTournaments.length}
+                </span>
+              </button>
+
+              {/* Tab 2: Matches */}
+              <button
+                onClick={() => setActiveTab('matches')}
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2 px-1 sm:px-3 md:px-4 text-[10px] sm:text-xs font-black uppercase tracking-tight rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'matches'
+                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 scale-[1.01]'
+                    : 'text-text-muted hover:text-foreground'
+                }`}
+              >
+                <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden xs:inline-block" />
+                <span className="whitespace-nowrap">Matches</span>
+                <span
+                  className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 ${
+                    activeTab === 'matches' ? 'bg-black/20 text-black' : 'bg-foreground/10 text-foreground/70'
+                  }`}
+                >
+                  {userMatches.length}
+                </span>
+              </button>
+
+              {/* Tab 3: Umpiring */}
+              <button
+                onClick={() => setActiveTab('umpiring')}
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2 px-1 sm:px-3 md:px-4 text-[10px] sm:text-xs font-black uppercase tracking-tight rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'umpiring'
+                    ? 'bg-red-500 text-white shadow-md shadow-red-500/25 scale-[1.01]'
+                    : 'text-text-muted hover:text-foreground'
+                }`}
+              >
+                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 hidden xs:inline-block" />
+                <span className="whitespace-nowrap">Umpiring</span>
+                <span
+                  className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.2 rounded-full font-mono font-bold shrink-0 ${
+                    activeTab === 'umpiring' ? 'bg-black/20 text-white' : 'bg-foreground/10 text-foreground/70'
+                  }`}
+                >
+                  {umpireMatches.length}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Sub-bar: Search & Filter Pills */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 pt-2 border-t border-border/40 w-full max-w-full overflow-hidden">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72 min-w-0 shrink-0">
+              <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder={
+                  activeTab === 'tournaments'
+                    ? 'Search tournaments or locations...'
+                    : activeTab === 'matches'
+                    ? 'Search matches, teams...'
+                    : 'Search umpiring fixtures...'
+                }
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-background border border-border/80 pl-9 pr-3 py-1.5 rounded-xl text-xs font-medium text-foreground placeholder:text-text-muted/60 focus:outline-none focus:border-primary transition-all"
+              />
+            </div>
+
+            {/* Filter Pills based on active tab */}
+            {activeTab === 'tournaments' && (
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 hide-scrollbar max-w-full">
+                {(
+                  [
+                    { id: 'ALL', label: 'All Tournaments', count: userTournaments.length },
+                    {
+                      id: 'COMPLETED',
+                      label: 'Finished',
+                      count: userTournaments.filter((t) => t.status === 'COMPLETED').length,
+                    },
+                    {
+                      id: 'LIVE',
+                      label: 'Live / Active',
+                      count: userTournaments.filter((t) => t.status === 'LIVE' || t.status === 'ONGOING').length,
+                    },
+                    {
+                      id: 'REGISTERED',
+                      label: 'Registered',
+                      count: userTournaments.filter((t) => t.status === 'REGISTERED').length,
+                    },
+                  ] as const
+                ).map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setTournamentFilter(f.id)}
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 border shrink-0 ${
+                      tournamentFilter === f.id
+                        ? 'bg-primary/15 text-primary border-primary/40 shadow-sm'
+                        : 'bg-surface border-border/70 text-text-muted hover:text-foreground'
+                    }`}
+                  >
+                    <span>{f.label}</span>
+                    <span className="text-[10px] opacity-70 font-mono">({f.count})</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'matches' && (
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 hide-scrollbar max-w-full">
+                {(
+                  [
+                    { id: 'ALL', label: 'All Matches', count: userMatches.length },
+                    {
+                      id: 'LIVE',
+                      label: 'Live',
+                      count: liveMatches.length,
+                    },
+                    {
+                      id: 'UPCOMING',
+                      label: 'Upcoming',
+                      count: upcomingMatches.length,
+                    },
+                    {
+                      id: 'COMPLETED',
+                      label: 'Finished',
+                      count: completedMatches.length,
+                    },
+                  ] as const
+                ).map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setMatchFilter(f.id)}
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 border shrink-0 ${
+                      matchFilter === f.id
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-sm'
+                        : 'bg-surface border-border/70 text-text-muted hover:text-foreground'
+                    }`}
+                  >
+                    <span>{f.label}</span>
+                    <span className="text-[10px] opacity-70 font-mono">({f.count})</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MAIN CONTENT AREA
+         ══════════════════════════════════════════════════════════════════════ */}
+      <main className="max-w-7xl mx-auto p-3 sm:p-4 md:px-8 md:py-8 w-full max-w-full overflow-x-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center py-28 text-text-muted">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-9 h-9 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+              <p className="text-xs font-bold uppercase tracking-wider">Loading tournaments &amp; matches...</p>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* ═════════════════════════════════════════════════════════════════
+                TAB 1: TOURNAMENTS (Participated & Finished)
+               ═════════════════════════════════════════════════════════════════ */}
+            {activeTab === 'tournaments' && (
+              <div className="space-y-6">
+                {filteredTournaments.length === 0 ? (
+                  <div className="text-center py-20 rounded-3xl border border-dashed border-border p-8 space-y-4 bg-surface/50">
+                    <Trophy className="w-12 h-12 text-text-muted/30 mx-auto" />
+                    <h3 className="text-base font-black text-foreground uppercase tracking-wide">
+                      No Tournaments Found
+                    </h3>
+                    <p className="text-xs text-text-muted max-w-sm mx-auto">
+                      {searchQuery
+                        ? `No tournaments matching "${searchQuery}".`
+                        : "You haven't participated in any tournaments yet under this filter."}
+                    </p>
+                    <Link
+                      href="/home/tournaments"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl hover:scale-105 transition-all shadow-md shadow-primary/20"
+                    >
+                      Browse Upcoming Tournaments <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 ) : (
-                  userMatches
-                    .filter((m) => m.status !== 'WAITING_FOR_LINEUPS')
-                    .map((match) => {
-                      const { date, time } = formatMatchDateTime(match);
-                      const isLive = match.status === 'LIVE';
-                      const isCompleted = match.status === 'COMPLETED';
+                  <div className="grid grid-cols-1 gap-6">
+                    {filteredTournaments.map((tour) => {
+                      const isCompleted = tour.status === 'COMPLETED';
+                      const isLive = tour.status === 'LIVE';
+                      const isOngoing = tour.status === 'ONGOING';
+                      const tournamentTargetUrl = `/tournaments/${tour.tournamentUuid || tour.id}`;
 
                       return (
                         <div
-                          key={match.id}
-                          className="relative bg-surface-elevated border border-border/80 rounded-2xl p-6 flex flex-col gap-5 hover:border-primary/50 shadow-md transition-all group overflow-hidden"
+                          key={tour.id}
+                          className="bg-surface-elevated border border-border/80 rounded-3xl p-5 md:p-7 shadow-xl hover:border-primary/40 transition-all group overflow-hidden relative"
                         >
-                          <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-primary to-emerald-400"></div>
+                          {/* Top Status Gradient Bar */}
+                          <div
+                            className={`absolute top-0 left-0 right-0 h-1.5 ${
+                              isCompleted
+                                ? 'bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500'
+                                : isLive
+                                ? 'bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 animate-pulse'
+                                : 'bg-gradient-to-r from-primary to-emerald-400'
+                            }`}
+                          />
 
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-3 flex-wrap">
-                              <span
-                                className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
-                                  isLive
-                                    ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                                    : isCompleted
-                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                    : 'bg-primary/10 text-primary border border-primary/20'
-                                }`}
-                              >
-                                {isLive ? 'LIVE NOW' : match.status || 'SCHEDULED'}
-                              </span>
-                              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
-                                {match.sportType || 'Badminton'} {match.poolName ? `• ${match.poolName}` : ''}
-                              </span>
-                            </div>
+                          {/* Tournament Header */}
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-border/60">
+                            <div className="space-y-2 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {/* Status Badge */}
+                                <span
+                                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5 border ${
+                                    isCompleted
+                                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-sm'
+                                      : isLive
+                                      ? 'bg-red-500/15 text-red-400 border-red-500/30 animate-pulse shadow-sm'
+                                      : isOngoing
+                                      ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                                      : 'bg-primary/15 text-primary border-primary/30'
+                                  }`}
+                                >
+                                  {isCompleted && <Trophy className="w-3 h-3 text-amber-400" />}
+                                  {isLive && <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />}
+                                  {isCompleted
+                                    ? 'TOURNAMENT FINISHED'
+                                    : isLive
+                                    ? 'LIVE TOURNAMENT'
+                                    : isOngoing
+                                    ? 'IN PROGRESS'
+                                    : 'REGISTERED ENTRY'}
+                                </span>
 
-                            <h3 className="text-xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors mb-2">
-                              {match.tournamentName || `Tournament #${match.tournamentId}`}
-                            </h3>
+                                {tour.sport && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-background border border-border text-text-muted">
+                                    {tour.sport}
+                                  </span>
+                                )}
 
-                            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-text-muted mt-2">
-                              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-lg border border-border/40">
-                                <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                                <span>{date}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-lg border border-border/40">
-                                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span>{time}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-lg border border-border/40">
-                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                <span>{match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="relative bg-gradient-to-r from-surface/90 via-surface-elevated to-surface/90 p-4 rounded-2xl border border-border/80 shadow-inner overflow-hidden">
-                            <div className="flex items-center justify-between mb-3 px-1">
-                              <span className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-                                <Trophy className="w-3.5 h-3.5 text-primary" /> Head-to-Head Matchup
-                              </span>
-                              <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                                Court Ready
-                              </span>
-                            </div>
-
-                            <div className="relative flex items-center justify-between gap-3 px-1">
-                              <div className="flex-1 min-w-0 pr-1">
-                                {renderTeamName(match.teamAName, 'Team A', 'left')}
+                                {tour.tournamentType && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-surface border border-border/70 text-text-muted">
+                                    {tour.tournamentType.replace(/_/g, ' ')}
+                                  </span>
+                                )}
                               </div>
 
-                              <div className="shrink-0 z-10 mx-1">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary via-emerald-400 to-cyan-400 text-black font-black text-xs flex items-center justify-center shadow-lg shadow-primary/25 border-2 border-background ring-4 ring-background">
-                                  VS
+                              <h2 className="text-xl md:text-2xl font-black text-foreground tracking-tight group-hover:text-primary transition-colors">
+                                {tour.name}
+                              </h2>
+
+                              {/* Dates & Location */}
+                              <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-text-muted">
+                                <div className="flex items-center gap-1.5">
+                                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                                  <span>
+                                    {tour.startDate
+                                      ? new Date(tour.startDate).toLocaleDateString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                        })
+                                      : 'Date TBA'}
+                                  </span>
                                 </div>
-                              </div>
 
-                              <div className="flex-1 min-w-0 pl-1">
-                                {renderTeamName(match.teamBName, 'Team B', 'right')}
+                                <div className="flex items-center gap-1.5">
+                                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>{tour.location || 'Venue TBA'}</span>
+                                </div>
+
+                                {tour.registration && (
+                                  <div className="flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/20 text-primary">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>
+                                      Entry: {tour.registration.teamName || tour.registration.category || 'Registered'}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
+                            </div>
+
+                            {/* CTA Action Buttons */}
+                            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                              <Link
+                                href={tournamentTargetUrl}
+                                className="px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-primary text-black hover:bg-primary-hover active:scale-95 transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
+                              >
+                                <Trophy className="w-4 h-4" />
+                                <span>View Full Result Page</span>
+                              </Link>
                             </div>
                           </div>
 
-                          {(isLive || isCompleted) && (
-                            <button
-                              onClick={() => router.push(`/live-score/${match.uuid}`)}
-                              className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 border ${
-                                isLive
-                                  ? 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 shadow-sm'
-                                  : 'bg-surface-elevated text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60 shadow-sm'
-                              }`}
-                            >
-                              <Trophy className="w-4 h-4" />
-                              {isLive ? 'Watch Live Court & Score' : 'View Match & Score Details'}
-                            </button>
-                          )}
+                          {/* User Matches Inside This Tournament */}
+                          <div className="pt-5 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-primary" />
+                                <h3 className="text-xs md:text-sm font-black uppercase tracking-wider text-foreground">
+                                  Your Matches in this Tournament ({tour.userMatches.length})
+                                </h3>
+                              </div>
+
+                              {isCompleted && (
+                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                  All Fixtures Concluded
+                                </span>
+                              )}
+                            </div>
+
+                            {tour.userMatches.length === 0 ? (
+                              <div className="bg-surface/50 border border-border/60 rounded-2xl p-6 text-center text-xs text-text-muted">
+                                Fixtures and match schedule for this tournament will appear once draws are generated.
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {tour.userMatches.map((m) => {
+                                  const { date, time } = formatMatchDateTime(m);
+                                  const mScores = parseSetScores(m.setScores);
+                                  const isMLive = m.status === 'LIVE' || m.status === 'IN_PROGRESS';
+                                  const isMCompleted = m.status === 'COMPLETED';
+
+                                  return (
+                                    <div
+                                      key={m.id || m.uuid}
+                                      className="bg-surface border border-border/80 rounded-2xl p-4 flex flex-col justify-between gap-3 hover:border-foreground/20 transition-all shadow-sm"
+                                    >
+                                      {/* Match Mini Header */}
+                                      <div className="flex items-center justify-between text-xs text-text-muted">
+                                        <span className="font-bold text-[10px] uppercase tracking-wider text-foreground/80">
+                                          {m.roundName || (m.roundNumber ? `Round ${m.roundNumber}` : 'Match Fixture')}
+                                        </span>
+                                        <span
+                                          className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
+                                            isMLive
+                                              ? 'bg-red-500/20 text-red-400 border-red-500/30 animate-pulse'
+                                              : isMCompleted
+                                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
+                                              : 'bg-foreground/5 text-text-muted border-foreground/10'
+                                          }`}
+                                        >
+                                          {isMLive ? '● LIVE' : m.status || 'SCHEDULED'}
+                                        </span>
+                                      </div>
+
+                                      {/* Teams Scoreboard Box */}
+                                      <div className="bg-background/80 border border-border/60 rounded-xl p-3 space-y-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex-1 min-w-0">
+                                            {renderTeamName(m.teamAName, 'Team A', 'left')}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-px flex-1 bg-border/60" />
+                                          <span className="text-[9px] font-mono font-bold text-text-muted uppercase px-1.5 py-0.5 bg-surface rounded">
+                                            VS
+                                          </span>
+                                          <div className="h-px flex-1 bg-border/60" />
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex-1 min-w-0">
+                                            {renderTeamName(m.teamBName, 'Team B', 'left')}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Scores if completed or live */}
+                                      {mScores.length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                          <span className="text-[10px] font-bold text-text-muted uppercase">
+                                            Scores:
+                                          </span>
+                                          {mScores.map((score, idx) => (
+                                            <span
+                                              key={idx}
+                                              className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-primary/10 text-primary border border-primary/25"
+                                            >
+                                              Set {idx + 1}: {score}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {/* Match Footer */}
+                                      <div className="flex items-center justify-between text-[11px] text-text-muted pt-2 border-t border-border/50">
+                                        <div className="flex items-center gap-1.5">
+                                          <Clock className="w-3 h-3 text-amber-400" />
+                                          <span>
+                                            {date} • {time}
+                                          </span>
+                                        </div>
+
+                                        {m.uuid && (
+                                          <Link
+                                            href={`/live-score/${m.uuid}`}
+                                            className="font-bold text-primary hover:underline inline-flex items-center gap-1"
+                                          >
+                                            Scorecard <ChevronRight className="w-3 h-3" />
+                                          </Link>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
-                    })
+                    })}
+                  </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Umpiring Tab */}
-          {!loading && activeTab === 'umpiring' && (
-            <div>
-              <h2 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">
-                Umpiring Assignments
-              </h2>
+            {/* ═════════════════════════════════════════════════════════════════
+                TAB 2: MATCHES (All, Live, Upcoming & Finished Fixtures)
+               ═════════════════════════════════════════════════════════════════ */}
+            {activeTab === 'matches' && (
+              <div className="space-y-8">
+                {/* 1. Action Required (Captain Lineups) */}
+                {pendingLineups.length > 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-xs md:text-sm font-black uppercase tracking-widest text-orange-500 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" /> Action Required: Team Lineups ({pendingLineups.length})
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {pendingLineups.map((match) => {
+                        const btnProps = getLineupButtonProps(match);
+                        const { date, time } = formatMatchDateTime(match);
 
-              {umpireMatches.length === 0 ? (
-                <div className="bg-surface border border-border rounded-2xl p-12 text-center text-text-muted">
-                  <Shield className="w-12 h-12 text-text-muted/40 mx-auto mb-3" />
-                  <p className="text-base font-bold text-foreground mb-1">No Umpiring Assignments</p>
-                  <p className="text-xs text-text-muted max-w-sm mx-auto">
-                    When a tournament organizer assigns your registered phone number as an umpire to a match, it will
-                    appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {umpireMatches.map((match) => {
-                    const { date, time } = formatMatchDateTime(match);
-                    const isLive = match.status === 'LIVE';
-                    const isCompleted = match.status === 'COMPLETED';
-
-                    return (
-                      <div
-                        key={match.id}
-                        className="relative bg-surface-elevated border border-border/80 hover:border-red-500/50 rounded-2xl p-6 flex flex-col gap-5 shadow-lg hover:shadow-red-500/5 transition-all group overflow-hidden"
-                      >
-                        <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-red-500 via-rose-500 to-amber-500"></div>
-
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-400 border border-red-500/30">
-                              <Shield className="w-3 h-3" /> Assigned Umpire
-                            </span>
-                            {match.sportType && (
-                              <span className="px-2.5 py-1 bg-surface border border-border rounded-md text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                                {match.sportType}
-                              </span>
-                            )}
-                            {isLive && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-red-500 text-white animate-pulse">
-                                LIVE NOW
-                              </span>
-                            )}
-                            {isCompleted && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                                <Trophy className="w-3 h-3" /> COMPLETED
-                              </span>
-                            )}
-                          </div>
-
-                          <h3 className="text-xl font-bold text-foreground tracking-tight group-hover:text-red-400 transition-colors mb-2">
-                            {match.tournamentName || `Tournament #${match.tournamentId}`}
-                          </h3>
-
-                          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-text-muted mt-3">
-                            <div className="flex items-center gap-1.5 bg-background/60 px-3 py-1.5 rounded-lg border border-border/50">
-                              <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                              <span>{date}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-background/60 px-3 py-1.5 rounded-lg border border-border/50">
-                              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              <span>{time}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-background/60 px-3 py-1.5 rounded-lg border border-border/50">
-                              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span>{match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="relative bg-gradient-to-r from-surface/90 via-surface-elevated to-surface/90 p-4 rounded-2xl border border-border/80 shadow-inner overflow-hidden">
-                          <div className="flex items-center justify-between mb-3 px-1">
-                            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-1.5">
-                              <Shield className="w-3.5 h-3.5 text-red-400" /> Umpire Fixture
-                            </span>
-                            <span className="text-[9px] font-black uppercase tracking-wider text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
-                              Assigned
-                            </span>
-                          </div>
-
-                          <div className="relative flex items-center justify-between gap-3 px-1">
-                            <div className="flex-1 min-w-0 pr-1">
-                              {renderTeamName(match.teamAName, 'Team A', 'left')}
-                            </div>
-
-                            <div className="shrink-0 z-10 mx-1">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-500 via-rose-500 to-amber-500 text-white font-black text-xs flex items-center justify-center shadow-lg shadow-red-500/30 border-2 border-background ring-4 ring-background">
-                                VS
-                              </div>
-                            </div>
-
-                            <div className="flex-1 min-w-0 pl-1">
-                              {renderTeamName(match.teamBName, 'Team B', 'right')}
-                            </div>
-                          </div>
-                        </div>
-
-                        {isCompleted ? (
-                          <button
-                            onClick={() => {
-                              const isTeamEvent =
-                                match.tournamentType === 'TEAM_EVENT' ||
-                                match.tournamentType === 'TEAM_LEAGUE' ||
-                                match.status === 'WAITING_FOR_LINEUPS';
-                              if (isTeamEvent) {
-                                router.push(`/home/team-events/${match.uuid}/score`);
-                              } else {
-                                router.push(`/live-score/${match.uuid}`);
-                              }
-                            }}
-                            className="w-full py-3.5 bg-surface-elevated hover:bg-surface border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
-                          >
-                            <Trophy className="w-4 h-4 text-emerald-400" /> View Match &amp; Score Details
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              const isTeamEvent =
-                                match.tournamentType === 'TEAM_EVENT' ||
-                                match.tournamentType === 'TEAM_LEAGUE' ||
-                                match.status === 'WAITING_FOR_LINEUPS';
-                              if (isTeamEvent) {
-                                router.push(`/home/team-events/${match.uuid}/score`);
-                                return;
-                              }
-
-                              const sport = match.sportType || 'Badminton';
-                              const teamAStr = match.teamAName
-                                ? encodeURIComponent(match.teamAName.replace(/\s*&\s*/g, ','))
-                                : '';
-                              const teamBStr = match.teamBName
-                                ? encodeURIComponent(match.teamBName.replace(/\s*&\s*/g, ','))
-                                : '';
-                              const teamANameStr = match.teamAName ? encodeURIComponent(match.teamAName) : '';
-                              const teamBNameStr = match.teamBName ? encodeURIComponent(match.teamBName) : '';
-                              const tournamentNameStr = match.tournamentName
-                                ? encodeURIComponent(match.tournamentName)
-                                : '';
-                              const courtNameStr = match.courtName
-                                ? encodeURIComponent(match.courtName)
-                                : match.courtId
-                                ? encodeURIComponent(`Court ${match.courtId}`)
-                                : '';
-
-                              router.push(
-                                `/match-setup?matchId=${match.uuid}&sport=${sport}&teamA=${teamAStr}&teamB=${teamBStr}&teamAName=${teamANameStr}&teamBName=${teamBNameStr}&tournamentName=${tournamentNameStr}&courtName=${courtNameStr}&fromUmpire=true`
-                              );
-                            }}
-                            className="w-full py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-500/20 active:scale-95 flex items-center justify-center gap-2"
-                          >
-                            <Activity className="w-4 h-4 animate-pulse" /> {isLive ? 'Resume Scoring' : 'Start Scoring'}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          2. DESKTOP VIEW ONLY (hidden on mobile, visible on md and above)
-             - SLEEK DESKTOP HORIZONTAL SCROLLING TRACKS FOR MATCHES & UMPIRING
-         ══════════════════════════════════════════════════════════════════════ */}
-      <div className="hidden md:block min-h-screen pb-20 bg-background">
-        {/* Desktop Header Command Bar */}
-        <div
-          className="border-b px-8 py-8 bg-gradient-to-b from-card/70 via-card/30 to-background"
-          style={{ borderColor: 'var(--athlon-border)' }}
-        >
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between gap-6 flex-wrap">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shadow-lg shadow-primary/10">
-                  <Activity className="w-5 h-5" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-black tracking-tight text-foreground">
-                    My Matches &amp; Schedule
-                  </h1>
-                  <p className="text-xs text-foreground/50">
-                    Track your upcoming tournament fixtures, playing schedule, and umpiring duties
-                  </p>
-                </div>
-              </div>
-
-              {/* Segmented Filter Pills */}
-              <div
-                className="p-1 rounded-2xl border flex items-center gap-1.5"
-                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-              >
-                <button
-                  onClick={() => setActiveTab('playing')}
-                  className={`flex items-center gap-2 py-2 px-5 rounded-xl text-xs font-black transition-all ${
-                    activeTab === 'playing'
-                      ? 'bg-primary text-black shadow-md shadow-primary/25 scale-[1.02]'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <Trophy className="w-3.5 h-3.5" />
-                  <span>Playing Matches</span>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-black shrink-0 ${
-                      activeTab === 'playing' ? 'bg-black/20 text-black' : 'bg-white/10 text-foreground/50'
-                    }`}
-                  >
-                    {userMatches.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('umpiring')}
-                  className={`flex items-center gap-2 py-2 px-5 rounded-xl text-xs font-black transition-all ${
-                    activeTab === 'umpiring'
-                      ? 'bg-red-500 text-white shadow-lg shadow-red-500/25 scale-[1.02]'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Umpiring Assignments</span>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-black shrink-0 ${
-                      activeTab === 'umpiring' ? 'bg-black/20 text-white' : 'bg-white/10 text-foreground/50'
-                    }`}
-                  >
-                    {umpireMatches.length}
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Main Tracks (Horizontal Scrolling) */}
-        <main className="max-w-7xl mx-auto px-8 py-8 space-y-12">
-          {loading ? (
-            <div className="py-24 text-center text-foreground/50 text-xs font-bold uppercase tracking-widest flex flex-col items-center justify-center gap-3">
-              <div className="w-9 h-9 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-              <span>Loading match schedule...</span>
-            </div>
-          ) : (
-            <div className="space-y-12">
-              {/* 1. Action Required: Pending Lineups (Horizontal Scroll) */}
-              {activeTab === 'playing' && pendingLineups.length > 0 && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 text-orange-500">
-                      <AlertCircle className="w-5 h-5" />
-                      <h2 className="text-base font-black uppercase tracking-wider">
-                        Action Required: Captain Lineups ({pendingLineups.length})
-                      </h2>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => scrollContainer(lineupsTrackRef, 'left')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => scrollContainer(lineupsTrackRef, 'right')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div
-                    ref={lineupsTrackRef}
-                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                  >
-                    {pendingLineups.map((match) => {
-                      const btnProps = getLineupButtonProps(match);
-                      const { date, time } = formatMatchDateTime(match);
-
-                      return (
-                        <div key={match.id} className="snap-start shrink-0 w-[380px]">
+                        return (
                           <div
-                            className={`p-6 rounded-[28px] border space-y-4 h-full flex flex-col justify-between shadow-xl transition-all ${btnProps.cardBg}`}
+                            key={match.id}
+                            className={`border rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all group ${btnProps.cardBg}`}
                           >
-                            <div className="flex items-center justify-between">
-                              <span
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${btnProps.badgeColor}`}
-                              >
-                                {btnProps.statusText}
-                              </span>
-                              <span className="text-xs text-foreground/50 font-bold">Team Tie Event</span>
-                            </div>
-
                             <div>
-                              <h3 className="text-base font-black text-foreground">
+                              <div className="flex items-center justify-between mb-2">
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${btnProps.badgeColor}`}
+                                >
+                                  {btnProps.statusText}
+                                </span>
+                                <span className="text-[10px] font-bold text-text-muted uppercase">Team Event</span>
+                              </div>
+
+                              <h3 className="text-base font-black tracking-tight mb-2 group-hover:text-primary transition-colors">
                                 {match.teamAName && match.teamBName
                                   ? `${match.teamAName} vs ${match.teamBName}`
-                                  : `Team Event #${match.id}`}
+                                  : `Team Event Match #${match.id}`}
                               </h3>
-                              <div className="flex flex-wrap items-center gap-3 text-xs text-foreground/60 mt-2">
+
+                              <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted">
                                 <div className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5 text-primary" /> {date}
+                                  <Calendar className="w-3 h-3 text-primary" /> {date}
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <Clock className="w-3.5 h-3.5 text-amber-400" /> {time}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />{' '}
-                                  {match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}
+                                  <Clock className="w-3 h-3 text-amber-400" /> {time}
                                 </div>
                               </div>
                             </div>
 
                             <button
                               onClick={() => router.push(`/home/team-events/${match.uuid}/lineup`)}
-                              className={`w-full py-2.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md ${btnProps.color}`}
+                              className={`w-full py-2.5 px-4 text-xs font-black uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all ${btnProps.color}`}
                             >
-                              {btnProps.icon} <span>{btnProps.text}</span>
+                              {btnProps.icon} {btnProps.text}
                             </button>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </section>
-              )}
+                )}
 
-              {/* 2. Playing Matches Track (Horizontal Scroll) */}
-              {activeTab === 'playing' && (
-                <section className="space-y-4">
+                {/* 2. Matches List */}
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <Trophy className="w-5 h-5 text-primary" />
-                      <div>
-                        <h2 className="text-lg font-black text-foreground">
-                          Playing Fixtures ({userMatches.filter((m) => m.status !== 'WAITING_FOR_LINEUPS').length})
-                        </h2>
-                        <p className="text-xs text-foreground/50">
-                          Upcoming court ties, active live games, and finished scorecards
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => scrollContainer(playingTrackRef, 'left')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => scrollContainer(playingTrackRef, 'right')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
+                    <div>
+                      <h2 className="text-base font-black uppercase tracking-wide text-foreground">
+                        Match Schedule &amp; Results ({filteredMatches.length})
+                      </h2>
+                      <p className="text-xs text-text-muted">
+                        Full match details, sets scorelines, courts, and verified scorecards
+                      </p>
                     </div>
                   </div>
 
-                  {userMatches.filter((m) => m.status !== 'WAITING_FOR_LINEUPS').length === 0 ? (
-                    <div
-                      className="text-center py-20 rounded-[32px] border p-8 space-y-3 bg-card"
-                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                    >
-                      <Trophy className="w-12 h-12 text-foreground/30 mx-auto" />
-                      <h3 className="text-base font-black text-foreground">No Playing Matches Scheduled</h3>
-                      <p className="text-xs text-foreground/50">
-                        When you register for a tournament or team championship, your match fixtures will appear here.
+                  {filteredMatches.length === 0 ? (
+                    <div className="text-center py-16 rounded-3xl border border-dashed border-border p-8 space-y-3 bg-surface/50">
+                      <Activity className="w-10 h-10 text-text-muted/30 mx-auto" />
+                      <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                        No Matches Found
+                      </h3>
+                      <p className="text-xs text-text-muted max-w-sm mx-auto">
+                        No match fixtures match your current filter criteria.
                       </p>
                     </div>
                   ) : (
-                    <div
-                      ref={playingTrackRef}
-                      className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                    >
-                      {userMatches
-                        .filter((m) => m.status !== 'WAITING_FOR_LINEUPS')
-                        .map((match) => {
-                          const { date, time } = formatMatchDateTime(match);
-                          const isLive = match.status === 'LIVE' || match.status === 'IN_PROGRESS';
-                          const isCompleted = match.status === 'COMPLETED';
-
-                          return (
-                            <div key={match.id} className="snap-start shrink-0 w-[380px]">
-                              <div
-                                className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-primary/50 transition-all group"
-                                style={{
-                                  backgroundColor: 'var(--athlon-card)',
-                                  borderColor: 'var(--athlon-border)',
-                                }}
-                              >
-                                <div
-                                  className={`h-1 w-full absolute top-0 left-0 right-0 ${
-                                    isLive
-                                      ? 'bg-red-500 animate-pulse'
-                                      : isCompleted
-                                      ? 'bg-emerald-500'
-                                      : 'bg-primary'
-                                  }`}
-                                />
-
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between text-xs pt-1">
-                                    <span
-                                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                        isLive
-                                          ? 'bg-red-500/15 text-red-400 border-red-500/25 animate-pulse'
-                                          : isCompleted
-                                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
-                                          : 'bg-primary/10 text-primary border border-primary/20'
-                                      }`}
-                                    >
-                                      {isLive ? '● LIVE NOW' : match.status || 'SCHEDULED'}
-                                    </span>
-                                    <span className="font-mono text-[11px] text-foreground/50">
-                                      {match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}
-                                    </span>
-                                  </div>
-
-                                  <h3 className="text-sm font-black text-foreground truncate">
-                                    {match.tournamentName || `Tournament #${match.tournamentId}`}
-                                  </h3>
-                                </div>
-
-                                <div
-                                  className="p-4 rounded-2xl border space-y-3 bg-surface/50"
-                                  style={{ borderColor: 'var(--athlon-border)' }}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="min-w-0">
-                                      {renderTeamName(match.teamAName, 'Team A', 'left')}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <div className="h-[1px] flex-1 bg-foreground/10" />
-                                    <span className="text-[9px] font-black text-primary uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-foreground/10">
-                                      VS
-                                    </span>
-                                    <div className="h-[1px] flex-1 bg-foreground/10" />
-                                  </div>
-
-                                  <div className="flex items-center justify-between">
-                                    <div className="min-w-0">
-                                      {renderTeamName(match.teamBName, 'Team B', 'right')}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div
-                                  className="flex items-center justify-between text-xs text-foreground/60 pt-2 border-t"
-                                  style={{ borderColor: 'var(--athlon-border)' }}
-                                >
-                                  <div className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                                    <span>
-                                      {date} • {time}
-                                    </span>
-                                  </div>
-
-                                  {(isLive || isCompleted) && (
-                                    <button
-                                      onClick={() => router.push(`/live-score/${match.uuid}`)}
-                                      className="text-[11px] font-black text-primary hover:underline flex items-center gap-0.5"
-                                    >
-                                      Scorecard <ChevronRight className="w-3.5 h-3.5" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {/* 3. Umpiring Assignments Track (Horizontal Scroll) */}
-              {activeTab === 'umpiring' && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <Shield className="w-5 h-5 text-red-400" />
-                      <div>
-                        <h2 className="text-lg font-black text-foreground">
-                          Umpiring Assignments ({umpireMatches.length})
-                        </h2>
-                        <p className="text-xs text-foreground/50">
-                          Digital scoring duties and court officiating console
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => scrollContainer(umpireTrackRef, 'left')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => scrollContainer(umpireTrackRef, 'right')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {umpireMatches.length === 0 ? (
-                    <div
-                      className="text-center py-20 rounded-[32px] border p-8 space-y-3 bg-card"
-                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                    >
-                      <Shield className="w-12 h-12 text-foreground/30 mx-auto" />
-                      <h3 className="text-base font-black text-foreground">No Umpiring Duties Assigned</h3>
-                      <p className="text-xs text-foreground/50">
-                        When an event organizer assigns your phone number as an official umpire, your matches will appear
-                        here with instant scoring controls.
-                      </p>
-                    </div>
-                  ) : (
-                    <div
-                      ref={umpireTrackRef}
-                      className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                    >
-                      {umpireMatches.map((match) => {
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {filteredMatches.map((match) => {
                         const { date, time } = formatMatchDateTime(match);
                         const isLive = match.status === 'LIVE' || match.status === 'IN_PROGRESS';
                         const isCompleted = match.status === 'COMPLETED';
+                        const mScores = parseSetScores(match.setScores);
 
                         return (
-                          <div key={match.id || match.uuid} className="snap-start shrink-0 w-[380px]">
+                          <div
+                            key={match.id || match.uuid}
+                            className="bg-surface-elevated border border-border/80 rounded-3xl p-5 flex flex-col justify-between gap-4 shadow-md hover:border-primary/50 transition-all group relative overflow-hidden"
+                          >
                             <div
-                              className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-red-500/50 transition-all group"
-                              style={{
-                                backgroundColor: 'var(--athlon-card)',
-                                borderColor: 'var(--athlon-border)',
-                              }}
-                            >
-                              <div className="h-1 w-full bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 absolute top-0 left-0 right-0" />
+                              className={`absolute top-0 left-0 right-0 h-1 ${
+                                isLive ? 'bg-red-500 animate-pulse' : isCompleted ? 'bg-emerald-500' : 'bg-primary'
+                              }`}
+                            />
 
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between text-xs pt-1">
-                                  <span
-                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                      isLive
-                                        ? 'bg-red-500/15 text-red-400 border-red-500/25 animate-pulse'
-                                        : isCompleted
-                                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
-                                        : 'bg-red-500/10 text-red-400 border-red-500/20'
-                                    }`}
-                                  >
-                                    {isLive ? '● LIVE' : isCompleted ? 'Completed' : 'Assigned Umpire'}
-                                  </span>
-                                  <span className="font-mono text-[11px] text-foreground/50">
-                                    {match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}
-                                  </span>
-                                </div>
-
-                                <h3 className="text-sm font-black text-foreground truncate">
-                                  {match.tournamentName || `Tournament #${match.tournamentId}`}
-                                </h3>
+                            <div>
+                              {/* Match Status & Tournament Name */}
+                              <div className="flex items-center justify-between gap-2 mb-2 pt-1">
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                                    isLive
+                                      ? 'bg-red-500/15 text-red-400 border-red-500/25 animate-pulse'
+                                      : isCompleted
+                                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
+                                      : 'bg-primary/10 text-primary border border-primary/20'
+                                  }`}
+                                >
+                                  {isLive ? '● LIVE NOW' : match.status || 'SCHEDULED'}
+                                </span>
+                                <span className="text-[11px] font-semibold text-text-muted truncate">
+                                  {match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}
+                                </span>
                               </div>
 
-                              <div
-                                className="p-4 rounded-2xl border space-y-3 bg-surface/50"
-                                style={{ borderColor: 'var(--athlon-border)' }}
-                              >
+                              <h3 className="text-base font-black text-foreground tracking-tight group-hover:text-primary transition-colors mb-1 truncate">
+                                {match.tournamentName || `Tournament #${match.tournamentId}`}
+                              </h3>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-3">
+                                {match.sportType || 'Badminton'} {match.roundName ? `• ${match.roundName}` : ''}
+                              </p>
+
+                              {/* Head to head box */}
+                              <div className="bg-background/80 border border-border/70 rounded-2xl p-3.5 space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                     {renderTeamName(match.teamAName, 'Team A', 'left')}
                                   </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  <div className="h-[1px] flex-1 bg-foreground/10" />
-                                  <span className="text-[9px] font-black text-red-400 uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-foreground/10">
+                                  <div className="h-px flex-1 bg-border/60" />
+                                  <span className="text-[9px] font-mono font-black text-primary uppercase px-2 py-0.5 bg-surface rounded-full border border-border">
                                     VS
                                   </span>
-                                  <div className="h-[1px] flex-1 bg-foreground/10" />
+                                  <div className="h-px flex-1 bg-border/60" />
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                     {renderTeamName(match.teamBName, 'Team B', 'right')}
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
-                                <div className="flex items-center justify-between text-xs text-foreground/60">
-                                  <div className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                                    <span>
-                                      {date} • {time}
+                              {/* Set Scores */}
+                              {mScores.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                                  <span className="text-[10px] font-bold text-text-muted uppercase">Set Scores:</span>
+                                  {mScores.map((s, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/20"
+                                    >
+                                      {s}
                                     </span>
-                                  </div>
+                                  ))}
                                 </div>
+                              )}
+                            </div>
 
-                                {isCompleted ? (
-                                  <button
-                                    onClick={() => {
-                                      const isTeamEvent =
-                                        match.tournamentType === 'TEAM_EVENT' ||
-                                        match.tournamentType === 'TEAM_LEAGUE' ||
-                                        match.status === 'WAITING_FOR_LINEUPS';
-                                      if (isTeamEvent) {
-                                        router.push(`/home/team-events/${match.uuid}/score`);
-                                      } else {
-                                        router.push(`/live-score/${match.uuid}`);
-                                      }
-                                    }}
-                                    className="w-full py-2.5 rounded-xl border border-emerald-500/30 text-emerald-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-500/10 transition-all"
+                            {/* Footer info & scorecard button */}
+                            <div className="space-y-3 pt-3 border-t border-border/60">
+                              <div className="flex items-center justify-between text-xs text-text-muted">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>
+                                    {date} • {time}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {match.uuid && (
+                                  <Link
+                                    href={`/live-score/${match.uuid}`}
+                                    className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-center flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+                                      isLive
+                                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                                        : 'bg-surface hover:bg-surface-elevated border border-emerald-500/30 text-emerald-400'
+                                    }`}
                                   >
-                                    <Trophy className="w-4 h-4" /> <span>View Scorecard</span>
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      const isTeamEvent =
-                                        match.tournamentType === 'TEAM_EVENT' ||
-                                        match.tournamentType === 'TEAM_LEAGUE' ||
-                                        match.status === 'WAITING_FOR_LINEUPS';
-                                      if (isTeamEvent) {
-                                        router.push(`/home/team-events/${match.uuid}/score`);
-                                        return;
-                                      }
+                                    <Trophy className="w-3.5 h-3.5" />
+                                    <span>{isLive ? 'Watch Live Score' : 'Full Scorecard'}</span>
+                                  </Link>
+                                )}
 
-                                      const sport = match.sportType || 'Badminton';
-                                      const teamAStr = match.teamAName
-                                        ? encodeURIComponent(match.teamAName.replace(/\s*&\s*/g, ','))
-                                        : '';
-                                      const teamBStr = match.teamBName
-                                        ? encodeURIComponent(match.teamBName.replace(/\s*&\s*/g, ','))
-                                        : '';
-                                      const teamANameStr = match.teamAName ? encodeURIComponent(match.teamAName) : '';
-                                      const teamBNameStr = match.teamBName ? encodeURIComponent(match.teamBName) : '';
-                                      const tournamentNameStr = match.tournamentName
-                                        ? encodeURIComponent(match.tournamentName)
-                                        : '';
-                                      const courtNameStr = match.courtName
-                                        ? encodeURIComponent(match.courtName)
-                                        : match.courtId
-                                        ? encodeURIComponent(`Court ${match.courtId}`)
-                                        : '';
-
-                                      router.push(
-                                        `/match-setup?matchId=${match.uuid}&sport=${sport}&teamA=${teamAStr}&teamB=${teamBStr}&teamAName=${teamANameStr}&teamBName=${teamBNameStr}&tournamentName=${tournamentNameStr}&courtName=${courtNameStr}&fromUmpire=true`
-                                      );
-                                    }}
-                                    className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-red-500/25 active:scale-95 transition-all"
+                                {(match.tournamentUuid || match.tournamentId) && (
+                                  <Link
+                                    href={`/tournaments/${match.tournamentUuid || match.tournamentId}`}
+                                    title="View Tournament Results"
+                                    className="p-2.5 rounded-xl border border-border/80 text-text-muted hover:text-foreground hover:bg-surface transition-all shrink-0"
                                   >
-                                    <Activity className="w-4 h-4 animate-pulse" />{' '}
-                                    <span>{isLive ? 'Resume Digital Scoring' : 'Start Scoring'}</span>
-                                  </button>
+                                    <ExternalLink className="w-4 h-4" />
+                                  </Link>
                                 )}
                               </div>
                             </div>
@@ -1122,12 +1170,175 @@ export default function PlayerMatchesPage() {
                       })}
                     </div>
                   )}
-                </section>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
+                </div>
+              </div>
+            )}
+
+            {/* ═════════════════════════════════════════════════════════════════
+                TAB 3: UMPIRING (Official Referee Assignments)
+               ═════════════════════════════════════════════════════════════════ */}
+            {activeTab === 'umpiring' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-base font-black uppercase tracking-wide text-foreground">
+                      Umpiring Assignments ({umpireMatches.length})
+                    </h2>
+                    <p className="text-xs text-text-muted">
+                      Digital scoring duties and court officiating console
+                    </p>
+                  </div>
+                </div>
+
+                {umpireMatches.length === 0 ? (
+                  <div className="bg-surface border border-border rounded-3xl p-16 text-center text-text-muted space-y-3">
+                    <Shield className="w-12 h-12 text-text-muted/30 mx-auto" />
+                    <h3 className="text-base font-black text-foreground">No Umpiring Assignments</h3>
+                    <p className="text-xs text-text-muted max-w-sm mx-auto">
+                      When a tournament organizer assigns your registered phone number as an official umpire, your
+                      matches will appear here with instant digital scoring controls.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {umpireMatches.map((match) => {
+                      const { date, time } = formatMatchDateTime(match);
+                      const isLive = match.status === 'LIVE' || match.status === 'IN_PROGRESS';
+                      const isCompleted = match.status === 'COMPLETED';
+
+                      return (
+                        <div
+                          key={match.id || match.uuid}
+                          className="bg-surface-elevated border border-border/80 rounded-3xl p-5 flex flex-col justify-between gap-4 shadow-md hover:border-red-500/50 transition-all group relative overflow-hidden"
+                        >
+                          <div className="h-1 w-full bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 absolute top-0 left-0 right-0" />
+
+                          <div>
+                            <div className="flex items-center justify-between text-xs pt-1 mb-2">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                                  isLive
+                                    ? 'bg-red-500/15 text-red-400 border-red-500/25 animate-pulse'
+                                    : isCompleted
+                                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
+                                    : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                }`}
+                              >
+                                {isLive ? '● LIVE' : isCompleted ? 'Completed' : 'Assigned Umpire'}
+                              </span>
+                              <span className="font-mono text-[11px] text-text-muted">
+                                {match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}
+                              </span>
+                            </div>
+
+                            <h3 className="text-base font-black text-foreground truncate mb-1">
+                              {match.tournamentName || `Tournament #${match.tournamentId}`}
+                            </h3>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-3">
+                              {match.sportType || 'Badminton'}
+                            </p>
+
+                            <div className="bg-background/80 border border-border/70 rounded-2xl p-3.5 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="min-w-0 flex-1">
+                                  {renderTeamName(match.teamAName, 'Team A', 'left')}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <div className="h-px flex-1 bg-border/60" />
+                                <span className="text-[9px] font-mono font-black text-red-400 uppercase px-2 py-0.5 bg-surface rounded-full border border-border">
+                                  VS
+                                </span>
+                                <div className="h-px flex-1 bg-border/60" />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div className="min-w-0 flex-1">
+                                  {renderTeamName(match.teamBName, 'Team B', 'right')}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3 pt-3 border-t border-border/60">
+                            <div className="flex items-center justify-between text-xs text-text-muted">
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                <span>
+                                  {date} • {time}
+                                </span>
+                              </div>
+                            </div>
+
+                            {isCompleted ? (
+                              <button
+                                onClick={() => {
+                                  const isTeamEvent =
+                                    match.tournamentType === 'TEAM_EVENT' ||
+                                    match.tournamentType === 'TEAM_LEAGUE' ||
+                                    match.status === 'WAITING_FOR_LINEUPS';
+                                  if (isTeamEvent) {
+                                    router.push(`/home/team-events/${match.uuid}/score`);
+                                  } else {
+                                    router.push(`/live-score/${match.uuid}`);
+                                  }
+                                }}
+                                className="w-full py-2.5 rounded-xl border border-emerald-500/30 text-emerald-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-500/10 transition-all"
+                              >
+                                <Trophy className="w-4 h-4" /> <span>View Scorecard</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  const isTeamEvent =
+                                    match.tournamentType === 'TEAM_EVENT' ||
+                                    match.tournamentType === 'TEAM_LEAGUE' ||
+                                    match.status === 'WAITING_FOR_LINEUPS';
+                                  if (isTeamEvent) {
+                                    router.push(`/home/team-events/${match.uuid}/score`);
+                                    return;
+                                  }
+
+                                  const sport = match.sportType || 'Badminton';
+                                  const teamAStr = match.teamAName
+                                    ? encodeURIComponent(match.teamAName.replace(/\s*&\s*/g, ','))
+                                    : '';
+                                  const teamBStr = match.teamBName
+                                    ? encodeURIComponent(match.teamBName.replace(/\s*&\s*/g, ','))
+                                    : '';
+                                  const teamANameStr = match.teamAName ? encodeURIComponent(match.teamAName) : '';
+                                  const teamBNameStr = match.teamBName ? encodeURIComponent(match.teamBName) : '';
+                                  const tournamentNameStr = match.tournamentName
+                                    ? encodeURIComponent(match.tournamentName)
+                                    : '';
+                                  const courtNameStr = match.courtName
+                                    ? encodeURIComponent(match.courtName)
+                                    : match.courtId
+                                    ? encodeURIComponent(`Court ${match.courtId}`)
+                                    : '';
+
+                                  router.push(
+                                    `/match-setup?matchId=${match.uuid}&sport=${sport}&teamA=${teamAStr}&teamB=${teamBStr}&teamAName=${teamANameStr}&teamBName=${teamBNameStr}&tournamentName=${tournamentNameStr}&courtName=${courtNameStr}&fromUmpire=true`
+                                  );
+                                }}
+                                className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-red-500/25 active:scale-95 transition-all"
+                              >
+                                <Activity className="w-4 h-4 animate-pulse" />
+                                <span>{isLive ? 'Resume Digital Scoring' : 'Start Scoring'}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
 
       <style
         dangerouslySetInnerHTML={{

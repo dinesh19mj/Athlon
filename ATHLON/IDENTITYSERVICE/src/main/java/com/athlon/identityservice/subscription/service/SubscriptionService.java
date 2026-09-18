@@ -100,13 +100,19 @@ public class SubscriptionService {
         return mapToResponse(subscription, pack);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public OrganizationSubscriptionResponse getActiveSubscription(UUID organizationUuid) {
         Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found with UUID: " + organizationUuid));
 
         OrganizationSubscription subscription = organizationSubscriptionRepository.findByOrganizationIdAndStatus(organization.getOrganizationId(), "ACTIVE")
                 .orElseThrow(() -> new ResourceNotFoundException("No active subscription found for Organization UUID: " + organizationUuid));
+
+        if (subscription.getEndDate() != null && subscription.getEndDate().isBefore(java.time.LocalDateTime.now())) {
+            subscription.setStatus("EXPIRED");
+            organizationSubscriptionRepository.save(subscription);
+            throw new ResourceNotFoundException("Active subscription has expired for Organization UUID: " + organizationUuid);
+        }
 
         SubscriptionPackage pack = subscriptionPackageRepository.findById(subscription.getPackageId())
                 .orElseThrow(() -> new ResourceNotFoundException("Associated Subscription Package not found"));

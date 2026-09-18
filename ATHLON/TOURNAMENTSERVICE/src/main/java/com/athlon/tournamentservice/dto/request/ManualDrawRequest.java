@@ -6,6 +6,15 @@ import java.util.UUID;
 public class ManualDrawRequest {
     private List<ManualPairing> pairings;
     private String drawType; // KNOCKOUT, etc.
+    private Long categoryId;
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
 
     public List<ManualPairing> getPairings() {
         return pairings;

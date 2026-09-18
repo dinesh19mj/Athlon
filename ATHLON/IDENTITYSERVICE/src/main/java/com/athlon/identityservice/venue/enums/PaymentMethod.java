@@ -1,0 +1,10 @@
+package com.athlon.identityservice.venue.enums;
+
+public enum PaymentMethod {
+    CASH,
+    UPI,
+    CARD,
+    BANK_TRANSFER,
+    ONLINE,
+    OTHER
+}

@@ -4,15 +4,13 @@ import React from 'react';
 import {
   Home,
   Trophy,
-  Building,
-  Calendar,
+  Building2,
+  CalendarDays,
   Radio,
   User,
   UserCheck,
-  ShieldCheck,
   Shield,
   BarChart3,
-  Swords,
   ClipboardList,
   GraduationCap,
   Users,
@@ -20,13 +18,14 @@ import {
   TrendingUp,
   CreditCard,
   Package,
-  MapPin,
   Settings,
   Video,
   SlidersHorizontal,
   Layers,
   Newspaper,
   Image as ImageIcon,
+  Tag,
+  TicketCheck,
 } from 'lucide-react';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 
@@ -47,6 +46,9 @@ export type Athlon3DIconType =
   | 'attendance'
   | 'schedule'
   | 'performance'
+  | 'reports'
+  | 'pricing'
+  | 'blocks'
   | 'finances'
   | 'inventory'
   | 'facilities'
@@ -76,9 +78,9 @@ function render2DIcon(type: Athlon3DIconType, active: boolean, size: number) {
     case 'tournaments':
       return <Trophy style={style} strokeWidth={strokeWidth} />;
     case 'academies':
-      return <Building style={style} strokeWidth={strokeWidth} />;
+      return <GraduationCap style={style} strokeWidth={strokeWidth} />;
     case 'bookings':
-      return <Calendar style={style} strokeWidth={strokeWidth} />;
+      return <TicketCheck style={style} strokeWidth={strokeWidth} />;
     case 'live-score':
       return <Radio style={style} strokeWidth={strokeWidth} />;
     case 'profile':
@@ -105,17 +107,22 @@ function render2DIcon(type: Athlon3DIconType, active: boolean, size: number) {
     case 'members':
       return <Users style={style} strokeWidth={strokeWidth} />;
     case 'attendance':
-      return <ClipboardList style={style} strokeWidth={strokeWidth} />;
+      return <UserCheck style={style} strokeWidth={strokeWidth} />;
     case 'schedule':
-      return <Calendar style={style} strokeWidth={strokeWidth} />;
+      return <CalendarDays style={style} strokeWidth={strokeWidth} />;
     case 'performance':
-      return <TrendingUp style={style} strokeWidth={strokeWidth} />;
+    case 'reports':
+      return <BarChart3 style={style} strokeWidth={strokeWidth} />;
+    case 'pricing':
+      return <Tag style={style} strokeWidth={strokeWidth} />;
+    case 'blocks':
+      return <Shield style={style} strokeWidth={strokeWidth} />;
     case 'finances':
       return <CreditCard style={style} strokeWidth={strokeWidth} />;
     case 'inventory':
       return <Package style={style} strokeWidth={strokeWidth} />;
     case 'facilities':
-      return <MapPin style={style} strokeWidth={strokeWidth} />;
+      return <Building2 style={style} strokeWidth={strokeWidth} />;
     case 'settings':
       return <Settings style={style} strokeWidth={strokeWidth} />;
     case 'livestream':
@@ -1129,6 +1136,7 @@ export function Athlon3DIcon({ type, className = '', size = 38, active = true, f
       );
 
     case 'performance':
+    case 'reports':
       return (
         <div
           className={`relative flex items-center justify-center transition-all ${
@@ -1496,6 +1504,86 @@ export function Athlon3DIcon({ type, className = '', size = 38, active = true, f
             <rect x="11" y="32" width="22" height="1.8" rx="0.9" fill="rgba(255,255,255,0.4)" />
             <rect x="11" y="36" width="12" height="1.8" rx="0.9" fill="rgba(255,255,255,0.25)" />
           </svg>
+        </div>
+      );
+
+    case 'pricing':
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_var(--athlon-primary-glow)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible transition-transform duration-300 group-hover:scale-110">
+            <defs>
+              <linearGradient id="tagGrad" x1="10" y1="10" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="30%" stopColor="var(--athlon-primary)" />
+                <stop offset="80%" stopColor="var(--athlon-primary-dark, #008770)" />
+                <stop offset="100%" stopColor="#042018" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="24" cy="43" rx="14" ry="2.5" fill="rgba(0,0,0,0.4)" />
+            {/* 3D Angled Price Tag */}
+            <path
+              d="M16 10L30 10L40 24L26 38L12 24L12 14C12 11.8 13.8 10 16 10Z"
+              fill="url(#tagGrad)"
+              stroke="#FFFFFF"
+              strokeWidth="1"
+              transform="rotate(-5 24 24)"
+              filter="drop-shadow(0 4px 8px rgba(0,0,0,0.5))"
+            />
+            {/* Metal Grommet Eyelet */}
+            <circle cx="18" cy="16" r="3" fill="var(--athlon-card)" stroke="#FFFFFF" strokeWidth="1" />
+            <circle cx="18" cy="16" r="1.5" fill="#FFFFFF" />
+            {/* Currency Symbol on Tag */}
+            <text x="27" y="27" fill="#FFFFFF" fontSize="12" fontWeight="900" textAnchor="middle" fontFamily="sans-serif">₹</text>
+          </svg>
+        </div>
+      );
+
+    case 'blocks':
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_rgba(244,63,94,0.45)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible transition-transform duration-300 group-hover:scale-110">
+            <defs>
+              <linearGradient id="blockShield" x1="12" y1="8" x2="36" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FDA4AF" />
+                <stop offset="40%" stopColor="#F43F5E" />
+                <stop offset="100%" stopColor="#881337" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="24" cy="43" rx="14" ry="2.5" fill="rgba(0,0,0,0.45)" />
+            {/* 3D Shield */}
+            <path
+              d="M24 6L38 12V24C38 33 24 41 24 41C24 41 10 33 10 24V12L24 6Z"
+              fill="url(#blockShield)"
+              stroke="#FFFFFF"
+              strokeWidth="1"
+            />
+            {/* Shield Barrier Stripe / Lock */}
+            <rect x="18" y="20" width="12" height="10" rx="2.5" fill="#FFFFFF" opacity="0.95" />
+            <path d="M21 20V17C21 15.3 22.3 14 24 14C25.7 14 27 15.3 27 17V20" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="24" cy="25" r="1.5" fill="#F43F5E" />
+          </svg>
+        </div>
+      );
+
+    default:
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_var(--athlon-primary-glow)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          {render2DIcon(type, active, size)}
         </div>
       );
   }

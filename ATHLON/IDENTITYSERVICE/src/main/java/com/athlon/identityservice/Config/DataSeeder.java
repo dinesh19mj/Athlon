@@ -19,128 +19,139 @@ import java.util.Map;
 @Configuration
 public class DataSeeder {
 
-    @Bean
-    CommandLineRunner initDatabase(
-            SubscriptionPackageRepository repository,
-            CountryRepository countryRepository,
-            StateRepository stateRepository,
-            DistrictRepository districtRepository) {
-        return args -> {
-            if (repository.count() == 0) {
-                repository.saveAll(List.of(
-                        new SubscriptionPackage("Tournament Organizer (Monthly Pro)", 
-                                "Host unlimited multi-sport tournaments, automate knockout & league brackets, and stream with live scoreboard overlays.", 
-                                new BigDecimal("1200"), 1, 
-                                "[\"Unlimited Tournaments per Month\", \"Knockout & League Format Engine\", \"Advanced Bracket Generation\", \"Umpiring Interface\", \"Live YouTube Streaming\"]"),
-                        new SubscriptionPackage("Tournament Organizer (Single Tournament)", 
-                                "Host a single complete knockout or league tournament with fixtures, live YouTube score overlay, and digital umpire console.", 
-                                new BigDecimal("499"), 1, 
-                                "[\"1 Complete Knockout/League Event\", \"Automated Bracket & Pool Generation\", \"Digital Umpire Console\", \"Live YouTube Score Overlay\"]"),
-                        new SubscriptionPackage("Team Championship & Live Auction Pass", 
-                                "Host premier franchise team championships with live player auctions, team purse bidding, multi-match tie lineups, and live broadcasting.", 
-                                new BigDecimal("2499"), 1, 
-                                "[\"1 Complete Team Championship Event\", \"Real-Time Live Player Auction & Bidding\", \"Franchise Purse & Squad Management\", \"Team vs Team Tie Multi-Match Lineups\", \"Live YouTube Auction & Score Overlays\"]"),
-                        new SubscriptionPackage("Freelance Coach & Trainer", 
-                                "Dedicated workspace for private coaches and personal trainers with trainee enrollment, custom pricing packages, credentials showcase, and schedule manager.", 
-                                new BigDecimal("2499"), 1, 
-                                "[\"Single-Sport Discipline Profile\", \"Trainee Roster & Enrolment\", \"Custom Coaching Rate Cards & Packages\", \"Verified Credentials & Certifications Showcase\", \"Daily Training Schedule & Attendance\"]"),
-                        new SubscriptionPackage("Academy Hub", 
-                                "End-to-end management for sports academies, student rosters, coaches, and training schedules.", 
-                                new BigDecimal("7900"), 1, 
-                                "[\"Student Roster & Profiles\", \"Billing & Invoicing\", \"Coach Assignments\", \"Performance Tracking\"]"),
-                        new SubscriptionPackage("Club Management", 
-                                "Run your local sports club efficiently with member management and facility booking.", 
-                                new BigDecimal("6300"), 1, 
-                                "[\"Member Directory\", \"Facility Booking\", \"Internal Club Tournaments\", \"Financial Analytics\"]"),
-                        new SubscriptionPackage("Court Provider", 
-                                "List your courts for booking, manage availability, and handle payments.", 
-                                new BigDecimal("3100"), 1, 
-                                "[\"Dynamic Court Scheduling\", \"Payment Processing\", \"Player Reviews\", \"Booking Analytics\"]")
-                ));
-            } else {
-                // Ensure Freelance Coach package exists in existing databases
-                boolean hasCoach = repository.findAll().stream()
-                        .anyMatch(p -> p.getName() != null && (p.getName().toLowerCase().contains("coach") || p.getName().toLowerCase().contains("trainer")));
-                if (!hasCoach) {
-                    repository.save(new SubscriptionPackage("Freelance Coach & Trainer", 
-                            "Dedicated workspace for private coaches and personal trainers with trainee enrollment, custom pricing packages, credentials showcase, and schedule manager.", 
-                            new BigDecimal("2499"), 1, 
-                            "[\"Single-Sport Discipline Profile\", \"Trainee Roster & Enrolment\", \"Custom Coaching Rate Cards & Packages\", \"Verified Credentials & Certifications Showcase\", \"Daily Training Schedule & Attendance\"]"));
-                }
-            }
+        @Bean
+        CommandLineRunner initDatabase(
+                        SubscriptionPackageRepository repository,
+                        CountryRepository countryRepository,
+                        StateRepository stateRepository,
+                        DistrictRepository districtRepository) {
+                return args -> {
+                        if (repository.count() == 0) {
+                                repository.saveAll(List.of(
+                                                new SubscriptionPackage("Tournament Organizer (Monthly Pro)",
+                                                                "Host unlimited multi-sport tournaments, automate knockout & league brackets, and stream with live scoreboard overlays.",
+                                                                new BigDecimal("1200"), 1,
+                                                                "[\"Unlimited Tournaments per Month\", \"Knockout & League Format Engine\", \"Advanced Bracket Generation\", \"Umpiring Interface\", \"Live YouTube Streaming\"]"),
+                                                new SubscriptionPackage("Tournament Organizer (Single Tournament)",
+                                                                "Host a single complete knockout or league tournament with fixtures, live YouTube score overlay, and digital umpire console.",
+                                                                new BigDecimal("499"), 1,
+                                                                "[\"1 Complete Knockout/League Event\", \"Automated Bracket & Pool Generation\", \"Digital Umpire Console\", \"Live YouTube Score Overlay\"]"),
+                                                new SubscriptionPackage("Team Championship & Live Auction Pass",
+                                                                "Host premier franchise team championships with live player auctions, team purse bidding, multi-match tie lineups, and live broadcasting.",
+                                                                new BigDecimal("2499"), 1,
+                                                                "[\"1 Complete Team Championship Event\", \"Real-Time Live Player Auction & Bidding\", \"Franchise Purse & Squad Management\", \"Team vs Team Tie Multi-Match Lineups\", \"Live YouTube Auction & Score Overlays\"]"),
+                                                new SubscriptionPackage("Freelance Coach & Trainer",
+                                                                "Dedicated workspace for private coaches and personal trainers with trainee enrollment, custom pricing packages, credentials showcase, and schedule manager.",
+                                                                new BigDecimal("2499"), 1,
+                                                                "[\"Single-Sport Discipline Profile\", \"Trainee Roster & Enrolment\", \"Custom Coaching Rate Cards & Packages\", \"Verified Credentials & Certifications Showcase\", \"Daily Training Schedule & Attendance\"]"),
+                                                new SubscriptionPackage("Academy Hub",
+                                                                "End-to-end management for sports academies, student rosters, coaches, and training schedules.",
+                                                                new BigDecimal("7900"), 1,
+                                                                "[\"Student Roster & Profiles\", \"Billing & Invoicing\", \"Coach Assignments\", \"Performance Tracking\"]"),
+                                                new SubscriptionPackage("Club Management",
+                                                                "Run your local sports club efficiently with member management and facility booking.",
+                                                                new BigDecimal("6300"), 1,
+                                                                "[\"Member Directory\", \"Facility Booking\", \"Internal Club Tournaments\", \"Financial Analytics\"]"),
+                                                new SubscriptionPackage("Venue Manager",
+                                                                "Turnkey sports facility, turf & arena management suite with live slot visual grid, multi-sport pricing tiers, recurring bookings, and 10-min checkout holds.",
+                                                                new BigDecimal("3100"), 1,
+                                                                "[\"Live Visual Slot Matrix & Booking Grid\", \"Multi-Sport Facilities & Turfs\", \"Dynamic Peak & Weekend Rate Rules\", \"10-Minute Cart Hold & Instant Payouts\", \"Recurring Academy/Club Reservation Series\", \"Maintenance Blocks & Financial Analytics\"]")));
+                        } else {
+                                // Ensure Freelance Coach package exists in existing databases
+                                boolean hasCoach = repository.findAll().stream()
+                                                .anyMatch(p -> p.getName() != null && (p.getName().toLowerCase()
+                                                                .contains("coach")
+                                                                || p.getName().toLowerCase().contains("trainer")));
+                                if (!hasCoach) {
+                                        repository.save(new SubscriptionPackage("Freelance Coach & Trainer",
+                                                        "Dedicated workspace for private coaches and personal trainers with trainee enrollment, custom pricing packages, credentials showcase, and schedule manager.",
+                                                        new BigDecimal("2499"), 1,
+                                                        "[\"Single-Sport Discipline Profile\", \"Trainee Roster & Enrolment\", \"Custom Coaching Rate Cards & Packages\", \"Verified Credentials & Certifications Showcase\", \"Daily Training Schedule & Attendance\"]"));
+                                }
 
-            // Seed Location Master Data
-            Country india = countryRepository.findAll().stream()
-                    .filter(c -> "India".equalsIgnoreCase(c.getName()) || "IN".equalsIgnoreCase(c.getIsoCode()))
-                    .findFirst()
-                    .orElseGet(() -> countryRepository.save(new Country("India", "IN", 1L)));
+                                // Migrate or rename legacy "Court Provider" or "ATHLON Venue Manager" package to "Venue Manager"
+                                repository.findAll().stream()
+                                                .filter(p -> p.getName() != null
+                                                                && (p.getName().equalsIgnoreCase("Court Provider")
+                                                                                || p.getName().toLowerCase().contains("court provider")
+                                                                                || p.getName().equalsIgnoreCase("ATHLON Venue Manager")
+                                                                                || p.getName().toLowerCase().contains("athlon venue manager")))
+                                                .forEach(courtPkg -> {
+                                                        courtPkg.setName("Venue Manager");
+                                                        courtPkg.setDescription(
+                                                                        "Turnkey sports facility, turf & arena management suite with live slot visual grid, multi-sport pricing tiers, recurring bookings, and 10-min checkout holds.");
+                                                        courtPkg.setFeatures(
+                                                                        "[\"Live Visual Slot Matrix & Booking Grid\", \"Multi-Sport Facilities & Turfs\", \"Dynamic Peak & Weekend Rate Rules\", \"10-Minute Cart Hold & Instant Payouts\", \"Recurring Academy/Club Reservation Series\", \"Maintenance Blocks & Financial Analytics\"]");
+                                                        repository.save(courtPkg);
+                                                });
+                        }
 
-            Map<String, List<String>> stateDistricts = Map.of(
-                    "Kerala", List.of(
-                            "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", 
-                            "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad", 
-                            "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"
-                    ),
-                    "Tamil Nadu", List.of(
-                            "Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", 
-                            "Tirunelveli", "Erode", "Vellore", "Kanyakumari", "Thanjavur"
-                    ),
-                    "Karnataka", List.of(
-                            "Bengaluru Urban", "Bengaluru Rural", "Mysuru", "Mangaluru (Dakshina Kannada)", 
-                            "Hubballi-Dharwad", "Belagavi", "Udupi", "Shimoga", "Tumakuru"
-                    ),
-                    "Maharashtra", List.of(
-                            "Mumbai City", "Mumbai Suburban", "Pune", "Nagpur", "Thane", 
-                            "Nashik", "Aurangabad", "Kolhapur", "Solapur"
-                    ),
-                    "Delhi", List.of(
-                            "Central Delhi", "East Delhi", "New Delhi", "North Delhi", 
-                            "South Delhi", "West Delhi"
-                    ),
-                    "Telangana", List.of(
-                            "Hyderabad", "Rangareddy", "Medchal-Malkajgiri", "Warangal", "Nizamabad"
-                    ),
-                    "Andhra Pradesh", List.of(
-                            "Visakhapatnam", "Vijayawada (NTR)", "Guntur", "Tirupati", "Nellore"
-                    ),
-                    "Gujarat", List.of(
-                            "Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar"
-                    ),
-                    "Rajasthan", List.of(
-                            "Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner"
-                    ),
-                    "Uttar Pradesh", List.of(
-                            "Lucknow", "Noida (Gautam Buddha Nagar)", "Kanpur", "Varanasi", "Agra", "Ghaziabad"
-                    )
-            );
+                        // Seed Location Master Data
+                        Country india = countryRepository.findAll().stream()
+                                        .filter(c -> "India".equalsIgnoreCase(c.getName())
+                                                        || "IN".equalsIgnoreCase(c.getIsoCode()))
+                                        .findFirst()
+                                        .orElseGet(() -> countryRepository.save(new Country("India", "IN", 1L)));
 
-            List<String> otherStates = List.of(
-                    "Assam", "Bihar", "Chhattisgarh", "Goa", "Haryana", 
-                    "Himachal Pradesh", "Jharkhand", "Madhya Pradesh", "Odisha", 
-                    "Punjab", "Uttarakhand", "West Bengal"
-            );
+                        Map<String, List<String>> stateDistricts = Map.of(
+                                        "Kerala", List.of(
+                                                        "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod",
+                                                        "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad",
+                                                        "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"),
+                                        "Tamil Nadu", List.of(
+                                                        "Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem",
+                                                        "Tirunelveli", "Erode", "Vellore", "Kanyakumari", "Thanjavur"),
+                                        "Karnataka", List.of(
+                                                        "Bengaluru Urban", "Bengaluru Rural", "Mysuru",
+                                                        "Mangaluru (Dakshina Kannada)",
+                                                        "Hubballi-Dharwad", "Belagavi", "Udupi", "Shimoga", "Tumakuru"),
+                                        "Maharashtra", List.of(
+                                                        "Mumbai City", "Mumbai Suburban", "Pune", "Nagpur", "Thane",
+                                                        "Nashik", "Aurangabad", "Kolhapur", "Solapur"),
+                                        "Delhi", List.of(
+                                                        "Central Delhi", "East Delhi", "New Delhi", "North Delhi",
+                                                        "South Delhi", "West Delhi"),
+                                        "Telangana", List.of(
+                                                        "Hyderabad", "Rangareddy", "Medchal-Malkajgiri", "Warangal",
+                                                        "Nizamabad"),
+                                        "Andhra Pradesh", List.of(
+                                                        "Visakhapatnam", "Vijayawada (NTR)", "Guntur", "Tirupati",
+                                                        "Nellore"),
+                                        "Gujarat", List.of(
+                                                        "Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar"),
+                                        "Rajasthan", List.of(
+                                                        "Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner"),
+                                        "Uttar Pradesh", List.of(
+                                                        "Lucknow", "Noida (Gautam Buddha Nagar)", "Kanpur", "Varanasi",
+                                                        "Agra", "Ghaziabad"));
 
-            for (Map.Entry<String, List<String>> entry : stateDistricts.entrySet()) {
-                String stateName = entry.getKey();
-                State state = stateRepository.findByNameIgnoreCase(stateName).orElseGet(() -> {
-                    State s = new State(india.getId(), india.getUuid(), stateName, 1L);
-                    return stateRepository.save(s);
-                });
+                        List<String> otherStates = List.of(
+                                        "Assam", "Bihar", "Chhattisgarh", "Goa", "Haryana",
+                                        "Himachal Pradesh", "Jharkhand", "Madhya Pradesh", "Odisha",
+                                        "Punjab", "Uttarakhand", "West Bengal");
 
-                for (String districtName : entry.getValue()) {
-                    if (!districtRepository.existsByNameAndStateId(districtName, state.getId())) {
-                        District d = new District(state.getId(), state.getUuid(), districtName, 1L);
-                        districtRepository.save(d);
-                    }
-                }
-            }
+                        for (Map.Entry<String, List<String>> entry : stateDistricts.entrySet()) {
+                                String stateName = entry.getKey();
+                                State state = stateRepository.findByNameIgnoreCase(stateName).orElseGet(() -> {
+                                        State s = new State(india.getId(), india.getUuid(), stateName, 1L);
+                                        return stateRepository.save(s);
+                                });
 
-            for (String stateName : otherStates) {
-                if (stateRepository.findByNameIgnoreCase(stateName).isEmpty()) {
-                    State s = new State(india.getId(), india.getUuid(), stateName, 1L);
-                    stateRepository.save(s);
-                }
-            }
-        };
-    }
+                                for (String districtName : entry.getValue()) {
+                                        if (!districtRepository.existsByNameAndStateId(districtName, state.getId())) {
+                                                District d = new District(state.getId(), state.getUuid(), districtName,
+                                                                1L);
+                                                districtRepository.save(d);
+                                        }
+                                }
+                        }
+
+                        for (String stateName : otherStates) {
+                                if (stateRepository.findByNameIgnoreCase(stateName).isEmpty()) {
+                                        State s = new State(india.getId(), india.getUuid(), stateName, 1L);
+                                        stateRepository.save(s);
+                                }
+                        }
+                };
+        }
 }

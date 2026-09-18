@@ -1,0 +1,11 @@
+package com.athlon.identityservice.rewards.enums;
+
+public enum CreditSourceType {
+    REFERRAL_BONUS,
+    REFEREE_WELCOME,
+    TOURNAMENT_ORGANIZED,
+    TOURNAMENT_PARTICIPATED,
+    ORGANIZER_SUBSCRIPTION_REDEEM,
+    FREE_TOURNAMENT_HOST_REDEEM,
+    ADMIN_ADJUSTMENT
+}

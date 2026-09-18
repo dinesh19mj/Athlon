@@ -61,22 +61,24 @@ public class FileStorageUtil {
 //    }
 	
 	public String saveFileToDir(MultipartFile file, String baseDir, String folder) throws IOException {
-
-	    File directory = new File(baseDir, folder);
+	    File directory = new File(baseDir, folder).getCanonicalFile();
 
 	    if (!directory.exists()) {
 	        directory.mkdirs();
 	    }
 
 	    String originalFilename = file.getOriginalFilename();
-
 	    if (originalFilename == null || originalFilename.isBlank()) {
 	        originalFilename = "uploaded_file";
 	    }
+	    String cleanName = new File(originalFilename).getName().replaceAll("[^a-zA-Z0-9._-]", "_");
+	    String fileName = System.currentTimeMillis() + "_" + cleanName;
 
-	    String fileName = System.currentTimeMillis() + "_" + originalFilename;
+	    File destination = new File(directory, fileName).getCanonicalFile();
+	    if (!destination.toPath().startsWith(directory.toPath())) {
+	        throw new SecurityException("Invalid file destination path");
+	    }
 
-	    File destination = new File(directory, fileName);
 	    file.transferTo(destination);
 
 	    return fileName;

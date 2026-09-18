@@ -46,6 +46,7 @@ import {
   Award,
   CalendarDays,
   Boxes,
+  Tag,
 } from 'lucide-react';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
@@ -62,28 +63,34 @@ import { UserService } from '@/lib/api/user';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
 import { CoachService, CoachDashboardSummary, CoachSchedule, CoachTrainee } from '@/lib/api/coach';
+import { VenueService, FacilityService, BookingService, VenueDto, FacilityDto, BookingDto } from '@/lib/api/venue';
 
 function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
   if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
-  if (n.includes('live') || n.includes('stream') || n.includes('broadcast') || n.includes('video')) return 'livestream';
+  if (n.includes('stream') || n.includes('broadcast') || n.includes('livestream') || (n.includes('live') && !n.includes('calendar') && !n.includes('score') && !n.includes('grid'))) return 'livestream';
   if (n.includes('post') || n.includes('blog') || n.includes('gallery') || n.includes('feed') || n.includes('media') || n.includes('article')) return 'posts';
+  if (n.includes('admission') || n.includes('intake') || n.includes('enroll')) return 'registered';
   if (n.includes('trainee') || n.includes('student') || n.includes('pupil') || n.includes('client') || n.includes('athlete')) return 'students';
-  if (n.includes('session') || n.includes('schedule') || n.includes('calendar') || n.includes('slot') || n.includes('booking') || n.includes('timetable')) return 'schedule';
-  if (n.includes('batch') || n.includes('group') || n.includes('squad') || n.includes('package')) return 'batches';
+  if (n.includes('calendar') || n.includes('session') || n.includes('schedule') || n.includes('slot') || n.includes('timetable')) return 'schedule';
+  if (n.includes('booking') || n.includes('reservation')) return 'bookings';
+  if (n.includes('batch') || n.includes('group') || n.includes('squad') || n.includes('package') || n.includes('recurring') || n.includes('series')) return 'batches';
   if (n.includes('coach') || n.includes('trainer') || n.includes('instructor')) return 'coaches';
   if (n.includes('member') || n.includes('staff') || n.includes('team')) return 'members';
   if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
-  if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic')) return 'performance';
+  if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic') || n.includes('report') || n.includes('occupancy') || n.includes('stat') || n.includes('metric')) return 'performance';
   if (n.includes('match') || n.includes('fixture') || n.includes('sparring')) return 'matches';
+  if (n.includes('block') || n.includes('maint') || n.includes('hold')) return 'blocks';
   if (n.includes('setup') || n.includes('console') || n.includes('officiat')) return 'setup';
   if (n.includes('umpire') || n.includes('referee')) return 'umpire';
   if (n.includes('leaderboard') || n.includes('rank') || n.includes('standing') || n.includes('result')) return 'rankings';
   if (n.includes('inventory') || n.includes('equipment') || n.includes('shuttle') || n.includes('gear')) return 'inventory';
+  if (n.includes('pricing') || n.includes('rate') || n.includes('tariff') || n.includes('price')) return 'pricing';
   if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card') || n.includes('ledger')) return 'finances';
   if (n.includes('centre') || n.includes('campus') || n.includes('branch')) return 'facilities';
-  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('map') || n.includes('venue')) return 'facilities';
-  if (n.includes('setting') || n.includes('config')) return 'settings';
+  if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('arena') || n.includes('map')) return 'facilities';
+  if (n.includes('profile') || n.includes('venue profile')) return 'profile';
+  if (n.includes('setting') || n.includes('config') || n.includes('preference')) return 'settings';
   if (n.includes('registration') || n.includes('register') || n.includes('approv') || n.includes('entry') || n.includes('pass')) return 'registered';
   if (n.includes('academ') || n.includes('club')) return 'academies';
   return 'home';
@@ -809,6 +816,11 @@ export default function OrganizationDashboard() {
     sport: 'Badminton',
   });
 
+  const [venueData, setVenueData] = useState<VenueDto | null>(null);
+  const [venueFacilities, setVenueFacilities] = useState<FacilityDto[]>([]);
+  const [venueBookings, setVenueBookings] = useState<BookingDto[]>([]);
+  const [venueTotalRevenue, setVenueTotalRevenue] = useState<number>(0);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleCheckInSession = async (sessionUuid: string) => {
@@ -841,6 +853,40 @@ export default function OrganizationDashboard() {
   useEffect(() => {
     if (org?.id) {
       setLoadingMetrics(true);
+
+      if (org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') {
+        VenueService.getVenuesByOrganization(org.id)
+          .then(async (vRes: any) => {
+            const vList = (vRes as any)?.data || vRes;
+            const v = Array.isArray(vList) ? vList[0] : vList;
+            if (v && (v.venueId || v.venueUuid)) {
+              setVenueData(v);
+              const [facRes, bookRes] = await Promise.allSettled([
+                FacilityService.getFacilitiesByVenue(v.venueId),
+                BookingService.getBookingsByVenue(v.venueId),
+              ]);
+              if (facRes.status === 'fulfilled') {
+                const flist = (facRes.value as any)?.data || facRes.value;
+                if (Array.isArray(flist)) setVenueFacilities(flist);
+              }
+              if (bookRes.status === 'fulfilled') {
+                const blist = (bookRes.value as any)?.data || bookRes.value;
+                if (Array.isArray(blist)) {
+                  setVenueBookings(blist);
+                  const rev = blist.reduce((acc: number, b: BookingDto) => {
+                    if (b.paymentStatus === 'PAID' || b.paymentStatus === 'PARTIALLY_PAID') {
+                      return acc + (Number(b.totalAmount) || 0);
+                    }
+                    return acc;
+                  }, 0);
+                  setVenueTotalRevenue(rev);
+                }
+              }
+            }
+          })
+          .catch(() => {});
+      }
+
       Promise.allSettled([
         ClubFinanceService.getSummary(org.id),
         OrganizationService.getMembers(org.id),
@@ -1398,39 +1444,94 @@ export default function OrganizationDashboard() {
       });
     }
 
-    if (org.type === 'COURT') {
-      actions.push({
-        id: `/org/${org.id}/tournaments`,
-        label: 'Tournaments',
-        description: 'Court tournaments & leagues',
-        icon: Trophy,
-        color: 'text-amber-400',
-        bg: 'bg-amber-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/livestream`,
-        label: 'Live Stream',
-        description: 'Court match broadcast',
-        icon: Video,
-        color: 'text-rose-400',
-        bg: 'bg-rose-500/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/bookings`,
-        label: 'Bookings',
-        description: 'Court slot management',
-        icon: Calendar,
-        color: 'text-primary',
-        bg: 'bg-primary/10',
-      });
-      actions.push({
-        id: `/org/${org.id}/facilities`,
-        label: 'Facilities',
-        description: 'Arena infrastructure',
-        icon: MapPin,
-        color: 'text-purple-400',
-        bg: 'bg-purple-500/10',
-      });
+    if (org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') {
+      return [
+        // 1. Daily Operations & Reservations
+        {
+          id: `/org/${org.id}/venue/calendar`,
+          label: 'Live Calendar',
+          shortLabel: 'Calendar',
+          description: 'Visual interactive slot grid & real-time holds',
+          icon: CalendarDays,
+          color: 'text-emerald-400',
+          bg: 'bg-emerald-500/10',
+        },
+        {
+          id: `/org/${org.id}/venue/bookings`,
+          label: 'Bookings',
+          shortLabel: 'Bookings',
+          description: 'Slot bookings, walk-ins & check-in',
+          icon: ClipboardList,
+          color: 'text-blue-400',
+          bg: 'bg-blue-500/10',
+        },
+        {
+          id: `/org/${org.id}/venue/recurring`,
+          label: 'Recurring Series',
+          shortLabel: 'Recurring',
+          description: 'Academy & club block series with conflict check',
+          icon: Layers,
+          color: 'text-amber-400',
+          bg: 'bg-amber-500/10',
+        },
+        // 2. Facility & Arena Setup
+        {
+          id: `/org/${org.id}/venue/facilities`,
+          label: 'Facilities',
+          shortLabel: 'Facilities',
+          description: 'Turfs, courts, pitches & multi-sport arenas',
+          icon: Building,
+          color: 'text-purple-400',
+          bg: 'bg-purple-500/10',
+        },
+        {
+          id: `/org/${org.id}/venue/pricing`,
+          label: 'Pricing Rules',
+          shortLabel: 'Pricing',
+          description: 'Dynamic peak, weekend & off-peak rate tiers',
+          icon: Tag,
+          color: 'text-rose-400',
+          bg: 'bg-rose-500/10',
+        },
+        {
+          id: `/org/${org.id}/venue/blocks`,
+          label: 'Blocks & Maint.',
+          shortLabel: 'Blocks',
+          description: 'Maintenance slots & admin closures',
+          icon: Shield,
+          color: 'text-red-400',
+          bg: 'bg-red-500/10',
+        },
+        // 3. Insights & Revenue
+        {
+          id: `/org/${org.id}/venue/reports`,
+          label: 'Reports & Revenue',
+          shortLabel: 'Reports',
+          description: 'Occupancy matrix & financial earnings',
+          icon: TrendingUp,
+          color: 'text-cyan-400',
+          bg: 'bg-cyan-500/10',
+        },
+        {
+          id: `/org/${org.id}/finances`,
+          label: 'Finances',
+          shortLabel: 'Finances',
+          description: 'Settlements & payouts',
+          icon: CreditCard,
+          color: 'text-primary',
+          bg: 'bg-primary/10',
+        },
+        // 4. Workspace Settings & Profile
+        {
+          id: `/org/${org.id}/settings`,
+          label: 'Settings',
+          shortLabel: 'Settings',
+          description: 'Workspace configuration, venue profile & hours',
+          icon: Settings,
+          color: 'text-foreground/60',
+          bg: 'bg-white/5',
+        },
+      ];
     }
 
     // Common actions for non-academy org types
@@ -1902,6 +2003,86 @@ export default function OrganizationDashboard() {
                     )}
                   </Link>
                 </>
+              ) : org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER' ? (
+                <>
+                  {/* 1. Facilities / Courts */}
+                  <Link
+                    href={`/org/${org.id}/venue/facilities`}
+                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <div
+                      className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
+                      style={{ color: 'var(--athlon-text-muted)' }}
+                    >
+                      <Building className="w-3 h-3 text-purple-400 shrink-0" />
+                      <span className="truncate">FACILITIES</span>
+                    </div>
+                    {loadingMetrics ? (
+                      <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
+                    ) : (
+                      <div
+                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        style={{ color: 'var(--athlon-text)' }}
+                      >
+                        <span>{venueFacilities.length || 1}</span>
+                        <span className="text-[8px] text-purple-600 dark:text-purple-400 font-semibold">Active</span>
+                      </div>
+                    )}
+                  </Link>
+
+                  {/* 2. Bookings */}
+                  <Link
+                    href={`/org/${org.id}/venue/bookings`}
+                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <div
+                      className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
+                      style={{ color: 'var(--athlon-text-muted)' }}
+                    >
+                      <CalendarDays className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span className="truncate">BOOKINGS</span>
+                    </div>
+                    {loadingMetrics ? (
+                      <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
+                    ) : (
+                      <div
+                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        style={{ color: 'var(--athlon-text)' }}
+                      >
+                        <span>{venueBookings.length}</span>
+                        <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">Slots</span>
+                      </div>
+                    )}
+                  </Link>
+
+                  {/* 3. Venue Revenue */}
+                  <Link
+                    href={`/org/${org.id}/venue/reports`}
+                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <div
+                      className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
+                      style={{ color: 'var(--athlon-text-muted)' }}
+                    >
+                      <TrendingUp className="w-3 h-3 text-rose-400 shrink-0" />
+                      <span className="truncate">REVENUE</span>
+                    </div>
+                    {loadingMetrics ? (
+                      <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
+                    ) : (
+                      <div
+                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        style={{ color: 'var(--athlon-text)' }}
+                      >
+                        <span>₹{Number(venueTotalRevenue || 0).toLocaleString('en-IN')}</span>
+                        <span className="text-[8px] text-rose-600 dark:text-rose-400 font-semibold">Earned</span>
+                      </div>
+                    )}
+                  </Link>
+                </>
               ) : (
                 <>
                   {/* 1. Members */}
@@ -2016,7 +2197,7 @@ export default function OrganizationDashboard() {
                   className="text-[10px] font-bold text-center transition-colors group-hover:text-primary max-w-[76px] truncate"
                   style={{ color: 'var(--athlon-text-secondary)' }}
                 >
-                  {action.label}
+                  {(action as any).shortLabel || action.label}
                 </span>
               </Link>
             ))}
@@ -2493,6 +2674,153 @@ export default function OrganizationDashboard() {
             </div>
           </>
         )}
+
+        {/* VENUE / COURT SPECIFIC MOBILE SECTIONS */}
+        {(org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') && (
+          <div className="px-6 max-w-7xl mx-auto mt-6 space-y-6">
+            {/* 1. Live Slot Matrix Fast Access */}
+            <div
+              className="p-5 rounded-[22px] border relative overflow-hidden bg-gradient-to-br from-card via-surface to-card shadow-lg group"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500">Live Booking Grid</span>
+                </div>
+                <span className="text-[10px] font-bold text-foreground/50">{venueFacilities.length} Facilities Active</span>
+              </div>
+              <h3 className="text-base font-black text-foreground mb-1">Visual Interactive Slot Calendar</h3>
+              <p className="text-xs text-foreground/60 mb-4">View real-time slot occupancy, book counter walk-ins, and manage 10-minute holds.</p>
+              <Link
+                href={`/org/${org.id}/venue/calendar`}
+                className="w-full py-2.5 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span>Open Live Calendar Matrix</span>
+              </Link>
+            </div>
+
+            {/* 2. Recent Bookings / Walk-ins */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <ClipboardList className="w-3.5 h-3.5" />
+                  </div>
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                    Recent Bookings
+                  </h2>
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-primary/15 text-primary border border-primary/25">
+                    {venueBookings.length}
+                  </span>
+                </div>
+                <Link
+                  href={`/org/${org.id}/venue/bookings`}
+                  className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                >
+                  <span>All Bookings</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {venueBookings.length > 0 ? (
+                <div className="space-y-2.5">
+                  {venueBookings.slice(0, 5).map((b, idx) => (
+                    <div
+                      key={b.bookingUuid || idx}
+                      className="p-3.5 rounded-2xl border bg-card flex items-center justify-between gap-3 shadow-sm"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-foreground truncate">{b.guestName || 'Walk-in Player'}</span>
+                          <span className={`px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider border ${
+                            b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                              : b.bookingStatus === 'HELD'
+                              ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                              : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                          }`}>
+                            {b.bookingStatus}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-foreground/50 mt-0.5 flex items-center gap-1.5">
+                          <span>{b.facilityName || 'Court'}</span>
+                          <span>•</span>
+                          <span>{b.bookingDate} ({b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)})</span>
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-black text-foreground block font-mono">₹{Number(b.totalAmount || 0).toLocaleString()}</span>
+                        <span className="text-[9px] font-bold text-emerald-500 block uppercase">{b.paymentStatus}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  className="p-5 rounded-2xl border text-center space-y-2"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <Calendar className="w-6 h-6 text-foreground/30 mx-auto" />
+                  <p className="text-xs font-bold text-foreground/70">No bookings recorded yet</p>
+                  <Link
+                    href={`/org/${org.id}/venue/calendar`}
+                    className="text-[11px] font-bold text-primary hover:underline inline-block"
+                  >
+                    + Book Counter Walk-in
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Facilities & Turfs Quick List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <Building className="w-3.5 h-3.5" />
+                  </div>
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                    Facilities &amp; Turfs
+                  </h2>
+                </div>
+                <Link
+                  href={`/org/${org.id}/venue/facilities`}
+                  className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                >
+                  <span>Manage</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {venueFacilities.map((fac) => (
+                  <div
+                    key={fac.facilityUuid}
+                    className="p-3.5 rounded-2xl border bg-card flex flex-col justify-between gap-2 shadow-sm"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-black uppercase text-primary tracking-wider">{fac.sports?.[0]?.sportName || fac.facilityType}</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      </div>
+                      <h4 className="text-xs font-black text-foreground truncate">{fac.name}</h4>
+                      <p className="text-[10px] text-foreground/50">{fac.surfaceType || 'Synthetic'} • {fac.facilityType}</p>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t text-[10px] font-bold" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <span className="text-foreground/60">Base Slot</span>
+                      <span className="text-primary font-mono font-bold">₹{fac.pricingRules?.[0]?.price ?? 500}/hr</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -2532,7 +2860,7 @@ export default function OrganizationDashboard() {
                   <div className="flex items-center gap-3">
                     <h1 className="text-3xl font-black text-foreground tracking-tight">{org.name}</h1>
                     <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/30">
-                      {org.type} Workspace
+                      {org.type === 'COURT' ? 'VENUE MANAGER' : `${org.type} Workspace`}
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${isAdmin
                       ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
@@ -2545,8 +2873,10 @@ export default function OrganizationDashboard() {
                   </div>
                   <p className="text-xs text-foreground/50">
                     {isAdmin
-                      ? 'Central management operations console, event coordination, and financial ledger'
-                      : 'Club portal • View member roster, matches, attendance history, and equipment catalog'}
+                      ? (org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER'
+                        ? 'Central sports facility operations console, visual slot matrix, dynamic pricing & bookings'
+                        : 'Central management operations console, event coordination, and financial ledger')
+                      : 'Sports portal • View schedule, booking history, and venue facilities'}
                   </p>
                 </div>
               </div>
@@ -2554,14 +2884,25 @@ export default function OrganizationDashboard() {
               {/* Action Buttons */}
               <div className="flex items-center gap-3">
                 {isAdmin && (
-                  <Link
-                    href={`/org/${org.id}/tournaments/create`}
-                    className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                    style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
-                  >
-                    <Trophy className="w-4 h-4" />
-                    <span>Create Tournament</span>
-                  </Link>
+                  org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER' ? (
+                    <Link
+                      href={`/org/${org.id}/venue/calendar`}
+                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                      style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                      <span>Live Booking Grid</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/org/${org.id}/tournaments/create`}
+                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                      style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                    >
+                      <Trophy className="w-4 h-4" />
+                      <span>Create Tournament</span>
+                    </Link>
+                  )
                 )}
 
                 <Link
@@ -2570,13 +2911,97 @@ export default function OrganizationDashboard() {
                   style={{ borderColor: 'var(--athlon-border)' }}
                 >
                   <Settings className="w-4 h-4 text-primary" />
-                  <span>{isAdmin ? 'Org Settings' : 'Club Info'}</span>
+                  <span>{isAdmin ? 'Settings' : 'Workspace Info'}</span>
                 </Link>
               </div>
             </div>
 
             {/* 4 Workspace Telemetry Highlight Cards */}
-            {org.type === 'ACADEMY' ? (
+            {org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER' ? (
+              <div className="grid grid-cols-4 gap-4">
+                <Link
+                  href={`/org/${org.id}/venue/calendar`}
+                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-emerald-500/40 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/50">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Live Slot Matrix</span>
+                    <CalendarDays className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-foreground font-mono">Live Grid</span>
+                    <span className="text-xs font-bold text-emerald-400 font-mono">Active</span>
+                  </div>
+                  <span className="text-[11px] text-foreground/45 block">15/30/60m Multi-Court Matrix</span>
+                </Link>
+
+                <Link
+                  href={`/org/${org.id}/venue/facilities`}
+                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-purple-500/40 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/50">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Active Facilities</span>
+                    <Building className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">
+                        {venueFacilities.length || 1}
+                      </span>
+                      <span className="text-xs font-bold text-purple-400 font-mono">Turfs &amp; Courts</span>
+                    </div>
+                  )}
+                  <span className="text-[11px] text-foreground/45 block">Configured Sports Facilities</span>
+                </Link>
+
+                <Link
+                  href={`/org/${org.id}/venue/bookings`}
+                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/50">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Total Bookings</span>
+                    <ClipboardList className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">
+                        {venueBookings.length}
+                      </span>
+                      <span className="text-xs font-bold text-blue-400 font-mono">Slots Reserved</span>
+                    </div>
+                  )}
+                  <span className="text-[11px] text-foreground/45 block">Online app &amp; walk-in bookings</span>
+                </Link>
+
+                <Link
+                  href={`/org/${org.id}/venue/reports`}
+                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-rose-500/40 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/50">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Venue Revenue</span>
+                    <TrendingUp className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  {loadingMetrics ? (
+                    <div className="h-8 w-28 bg-foreground/10 rounded animate-pulse my-1" />
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-foreground font-mono">
+                        ₹{Number(venueTotalRevenue || 0).toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-400 font-mono">Settled</span>
+                    </div>
+                  )}
+                  <span className="text-[11px] text-foreground/45 block">Collected slot booking revenue</span>
+                </Link>
+              </div>
+            ) : org.type === 'ACADEMY' ? (
               <div className="grid grid-cols-4 gap-4">
                 <Link
                   href={`/org/${org.id}/students`}
@@ -2961,8 +3386,170 @@ export default function OrganizationDashboard() {
             </div>
           </section>
 
-          {/* 2. ACADEMY-SPECIFIC TRACKS OR TOURNAMENT TRACKS */}
-          {org.type === 'ACADEMY' ? (
+          {/* 2. VENUE / COURT SPECIFIC TRACKS */}
+          {(org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') ? (
+            <>
+              {/* Today's Bookings Track */}
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <CalendarDays className="w-5 h-5 text-emerald-400" />
+                    <div>
+                      <h2 className="text-lg font-black text-foreground">Recent Slot Reservations &amp; Walk-ins</h2>
+                      <p className="text-xs text-foreground/50">
+                        {loadingMetrics ? 'Loading bookings...' : `${venueBookings.length} total bookings recorded • Real-time slot status`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/org/${org.id}/venue/bookings`}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    <span>View All Bookings</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                {venueBookings.length > 0 ? (
+                  <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8">
+                    {venueBookings.map((b, idx) => (
+                      <div key={b.bookingUuid || idx} className="snap-start shrink-0 w-[340px]">
+                        <div
+                          className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-emerald-500/40 transition-all group"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 absolute top-0 left-0 right-0" />
+
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                                b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
+                                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                  : b.bookingStatus === 'HELD'
+                                  ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                  : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                              }`}>
+                                {b.bookingStatus}
+                              </span>
+                              <span className="text-xs font-mono font-black text-foreground">₹{Number(b.totalAmount || 0).toLocaleString()}</span>
+                            </div>
+
+                            <div>
+                              <h3 className="text-base font-black text-foreground truncate group-hover:text-primary transition-colors">
+                                {b.guestName || 'Walk-in Player'}
+                              </h3>
+                              <p className="text-xs text-foreground/50 flex items-center gap-1.5 mt-0.5">
+                                <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>{b.bookingDate} ({b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)})</span>
+                              </p>
+                            </div>
+
+                            <div
+                              className="p-3 rounded-2xl border flex items-center justify-between text-xs"
+                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                            >
+                              <span className="font-bold text-foreground truncate">{b.facilityName || 'Main Facility'}</span>
+                              <span className="font-mono text-emerald-400 font-bold uppercase">{b.paymentStatus}</span>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t flex items-center justify-between text-xs font-black text-primary" style={{ borderColor: 'var(--athlon-border)' }}>
+                            <Link href={`/org/${org.id}/venue/bookings`} className="hover:underline flex items-center gap-1">
+                              <span>Booking Details</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                            <span className="text-[10px] text-foreground/40 uppercase">{b.bookingSource || 'APP'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 rounded-[24px] border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <Calendar className="w-10 h-10 text-foreground/30 mx-auto" />
+                    <p className="text-sm font-bold text-foreground/70">No bookings recorded in this venue yet</p>
+                    <Link
+                      href={`/org/${org.id}/venue/calendar`}
+                      className="px-4 py-2 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5"
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                      <span>Launch Slot Calendar</span>
+                    </Link>
+                  </div>
+                )}
+              </section>
+
+              {/* Facilities Track */}
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Building className="w-5 h-5 text-purple-400" />
+                    <div>
+                      <h2 className="text-lg font-black text-foreground">Configured Facilities &amp; Turfs</h2>
+                      <p className="text-xs text-foreground/50">
+                        {venueFacilities.length} multi-sport facilities configured for online &amp; counter booking
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/org/${org.id}/venue/facilities`}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    <span>Manage Facilities</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-3 gap-5">
+                  {venueFacilities.map((fac) => (
+                    <div
+                      key={fac.facilityUuid}
+                      className="p-5 rounded-[24px] border bg-card relative overflow-hidden flex flex-col justify-between shadow-lg space-y-3 hover:border-purple-500/40 transition-all group"
+                      style={{
+                        backgroundColor: 'var(--athlon-card)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                          {fac.sports?.[0]?.sportName || fac.facilityType}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase">● {fac.status || 'Active'}</span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-black text-foreground group-hover:text-primary transition-colors">
+                          {fac.name}
+                        </h3>
+                        <p className="text-xs text-foreground/50 mt-0.5">
+                          {fac.surfaceType || 'Synthetic'} surface • {fac.facilityType}
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-2xl border flex items-center justify-between text-xs" style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}>
+                        <span className="text-foreground/60 font-semibold">Base Slot Rate</span>
+                        <span className="font-mono font-black text-primary">₹{fac.pricingRules?.[0]?.price ?? 500}/hr</span>
+                      </div>
+
+                      <div className="pt-2 border-t flex items-center justify-between text-xs" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <Link href={`/org/${org.id}/venue/pricing`} className="text-[11px] font-bold text-foreground/60 hover:text-primary transition-colors">
+                          Pricing Rules &rarr;
+                        </Link>
+                        <Link href={`/org/${org.id}/venue/calendar`} className="text-[11px] font-black text-primary hover:underline">
+                          View Calendar
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          ) : org.type === 'ACADEMY' ? (
             <>
               {/* Today's Training Sessions Track */}
               <section className="space-y-4">

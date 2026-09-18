@@ -76,6 +76,10 @@ export default function InventoryPage() {
     return <OrganizerInventoryView orgUuid={orgUuid} orgName={org.name || 'Organizer'} />;
   }
 
+  return <ClubInventoryView orgUuid={orgUuid} orgName={org?.name || 'Club'} org={org} />;
+}
+
+function ClubInventoryView({ orgUuid, orgName, org }: { orgUuid: string; orgName: string; org?: any }) {
   const { role, isAdmin, canManage } = useOrgRole(orgUuid);
 
   const [items, setItems] = useState<ClubInventoryItem[]>([]);

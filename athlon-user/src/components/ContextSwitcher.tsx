@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useRouter, usePathname } from 'next/navigation';
-import { Building, Home, Users, ChevronDown, Check, Plus, Trophy, UserCheck } from 'lucide-react';
+import { Building, Home, Users, ChevronDown, Check, Plus, Trophy, UserCheck, MapPin } from 'lucide-react';
 
 export default function ContextSwitcher() {
   const router = useRouter();
@@ -42,7 +42,15 @@ export default function ContextSwitcher() {
     if (type === 'ASSOCIATION') return <Trophy className="w-4 h-4 text-yellow-500" />;
     if (type === 'CLUB') return <Users className="w-4 h-4 text-green-400" />;
     if (type === 'COACH') return <UserCheck className="w-4 h-4 text-amber-400" />;
+    if (type === 'COURT' || type === 'VENUE_MANAGER') return <MapPin className="w-4 h-4 text-rose-400" />;
     return <Building className="w-4 h-4 text-gray-400" />;
+  };
+
+  const formatOrgType = (type?: string) => {
+    if (!type) return 'Workspace';
+    if (type === 'COURT' || type === 'VENUE_MANAGER') return 'Venue Manager';
+    if (type === 'COACH') return 'Freelance Coach';
+    return type;
   };
 
   return (
@@ -61,7 +69,7 @@ export default function ContextSwitcher() {
         
         <div className="flex-1 text-left truncate">
           <div className="text-xs font-bold text-foreground/50 uppercase tracking-widest leading-none mb-1">
-            {isPersonal ? 'Personal Space' : activeOrg?.type}
+            {isPersonal ? 'Personal Space' : formatOrgType(activeOrg?.type)}
           </div>
           <div className="text-sm font-bold text-foreground leading-none truncate">
             {isPersonal ? personalProfile?.name : activeOrg?.name}
@@ -93,7 +101,7 @@ export default function ContextSwitcher() {
           {organizations.filter(org => org.id !== activeWorkspaceId).length > 0 && (
             <>
               <div className="px-3 py-1.5">
-                <div className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest mb-2">Organizations</div>
+                <div className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest mb-2">Workspaces &amp; Venues</div>
                 <div className="space-y-1">
                   {organizations
                     .filter((org) => org.id !== activeWorkspaceId)
@@ -114,9 +122,15 @@ export default function ContextSwitcher() {
           )}
           
           <div className="px-3 py-1.5">
-            <button className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                router.push('/subscription');
+              }}
+              className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+            >
               <Plus className="w-4 h-4" />
-              Create Organization
+              <span>Create / Add Workspace</span>
             </button>
           </div>
         </div>

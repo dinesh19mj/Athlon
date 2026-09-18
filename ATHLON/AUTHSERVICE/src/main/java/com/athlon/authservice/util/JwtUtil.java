@@ -20,13 +20,31 @@ public class JwtUtil {
     }
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+        byte[] keyBytes;
+        try {
+            keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtProperties.getSecret());
+            if (keyBytes.length < 32) {
+                keyBytes = jwtProperties.getSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception e) {
+            keyBytes = jwtProperties.getSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateAccessToken(String email, UUID userId) {
+        return generateAccessToken(email, userId, "USER");
+    }
+
+    public String generateAccessToken(String email, UUID userId, String role) {
         return Jwts.builder()
-                .setSubject(email)
-                .claim("userId", userId.toString())
+                .setSubject(userId != null ? userId.toString() : "")
+                .claim("userUuid", userId != null ? userId.toString() : "")
+                .claim("userId", userId != null ? userId.toString() : "")
+                .claim("email", email != null ? email : "")
+                .claim("role", role != null ? role : "USER")
+                .setIssuer("athlon-auth")
+                .setAudience("athlon-platform")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpirationMs()))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
@@ -34,8 +52,21 @@ public class JwtUtil {
     }
 
     public String getEmailFromToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(getSigningKey()).build()
-                .parseClaimsJws(token).getBody().getSubject();
+        try {
+            return Jwts.parserBuilder().setSigningKey(getSigningKey()).build()
+                    .parseClaimsJws(token).getBody().get("email", String.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String getUserUuidFromToken(String token) {
+        try {
+            return Jwts.parserBuilder().setSigningKey(getSigningKey()).build()
+                    .parseClaimsJws(token).getBody().getSubject();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {

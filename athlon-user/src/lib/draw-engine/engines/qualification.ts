@@ -50,11 +50,31 @@ export const QualificationEngine = {
       }
     }
 
-    // Sort by points, then by won
+    // Sort by points, then won matches, then head-to-head result, then seed/name
     return Array.from(standingsMap.values()).sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       if (b.won !== a.won) return b.won - a.won;
-      return 0; // Add Head-to-Head tiebreakers in future
+
+      // Head-to-Head tiebreaker
+      const h2hMatch = pool.fixtures.find(
+        (m) =>
+          m.status === MatchStatus.COMPLETED &&
+          m.winnerId &&
+          ((m.participant1?.id === a.participant.id && m.participant2?.id === b.participant.id) ||
+           (m.participant1?.id === b.participant.id && m.participant2?.id === a.participant.id))
+      );
+
+      if (h2hMatch && h2hMatch.winnerId) {
+        if (h2hMatch.winnerId === a.participant.id) return -1;
+        if (h2hMatch.winnerId === b.participant.id) return 1;
+      }
+
+      // Final fallback: Seed if present, otherwise participant name
+      const seedA = a.participant.seed ?? 999999;
+      const seedB = b.participant.seed ?? 999999;
+      if (seedA !== seedB) return seedA - seedB;
+
+      return a.participant.name.localeCompare(b.participant.name);
     });
   },
 

@@ -43,7 +43,7 @@ public class UserController {
     @PostMapping("/createUser")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(
             @Valid @RequestBody CreateUserRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         UserResponse response = userService.createUser(request, userId);
         return ResponseEntity.ok(ApiResponse.success("User created successfully", response));
     }
@@ -51,7 +51,7 @@ public class UserController {
     @PostMapping("/updateUser")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @Valid @RequestBody UpdateUserRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId) {
         UserResponse response = userService.updateUser(request, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("User updated successfully", response));
     }
@@ -60,7 +60,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponse>> uploadProfilePhoto(
             @RequestParam("userUuid") UUID userUuid,
             @RequestParam("file") MultipartFile file,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId) {
         UserResponse response = userService.updateUserPhoto(userUuid, file, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Profile photo uploaded successfully", response));
     }
@@ -69,7 +69,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponse>> uploadPhoto(
             @RequestParam("userUuid") UUID userUuid,
             @RequestParam("file") MultipartFile file,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId) {
         UserResponse response = userService.updateUserPhoto(userUuid, file, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Profile photo uploaded successfully", response));
     }
@@ -84,7 +84,7 @@ public class UserController {
             @RequestParam(value = "district", required = false) String district,
             @RequestParam(value = "state", required = false) String state,
             @RequestParam(value = "photo", required = false) MultipartFile photo,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId) {
         UserResponse response = userService.updateUserWithPhoto(
                 userUuid, firstName, lastName, phone, city, district, state, photo, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("User profile updated successfully", response));
@@ -94,9 +94,17 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponse>> updateUserPhoto(
             @PathVariable("uuid") UUID uuid,
             @RequestParam("photo") MultipartFile photo,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId) {
         UserResponse response = userService.updateUserPhoto(uuid, photo, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("User photo updated successfully", response));
+    }
+
+    @PostMapping("/deactivate/{uuid}")
+    public ResponseEntity<ApiResponse<Void>> deactivateUser(
+            @PathVariable("uuid") UUID uuid,
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId) {
+        userService.deleteUser(uuid, currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("User deactivated successfully", null));
     }
 
     @GetMapping("/photo/{fileName}")
@@ -111,8 +119,8 @@ public class UserController {
 
     @PostMapping("/deleteUser/{uuid}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(
-            @PathVariable UUID uuid,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long currentUserId) {
+            @PathVariable("uuid") UUID uuid,
+            @RequestHeader(value = "X-User-Id", required = false) Long currentUserId) {
         userService.deleteUser(uuid, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully", null));
     }

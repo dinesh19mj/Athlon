@@ -48,7 +48,7 @@ public class OrganizerInventoryController {
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<OrganizerInventoryItemResponse>> createItem(
             @Valid @RequestBody CreateOrganizerInventoryRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         OrganizerInventoryItemResponse response = inventoryService.createItem(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Organizer inventory item created successfully", response));
@@ -57,7 +57,7 @@ public class OrganizerInventoryController {
     @PostMapping("/update")
     public ResponseEntity<ApiResponse<OrganizerInventoryItemResponse>> updateItem(
             @Valid @RequestBody UpdateOrganizerInventoryRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         OrganizerInventoryItemResponse response = inventoryService.updateItem(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Organizer inventory item updated successfully", response));
@@ -66,7 +66,7 @@ public class OrganizerInventoryController {
     @PostMapping("/stock/adjust")
     public ResponseEntity<ApiResponse<OrganizerInventoryItemResponse>> adjustStock(
             @Valid @RequestBody AdjustOrganizerStockRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         OrganizerInventoryItemResponse response = inventoryService.adjustStock(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Stock adjusted successfully", response));

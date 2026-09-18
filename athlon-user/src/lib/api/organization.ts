@@ -125,14 +125,14 @@ export const OrganizationService = {
   updateSubscription: (orgId: number, status: string, paymentRef?: string) => 
     api.post<any>(`/organization/updateSubscription/${orgId}?status=${status}${paymentRef ? `&paymentRef=${paymentRef}` : ''}`, {}),
     
-  getById: (orgUuid: string) => 
-    api.get<any>(`/api/identity/organizations/getOrganizationByUuid/${orgUuid}`),
+  getById: (orgUuid: string, options?: RequestInit) => 
+    api.get<any>(`/api/identity/organizations/getOrganizationByUuid/${orgUuid}`, options),
     
-  getAll: () => 
-    api.get<any>('/api/identity/organizations/getAllOrganizations'),
+  getAll: (options?: RequestInit) => 
+    api.get<any>('/api/identity/organizations/getAllOrganizations', options),
     
-  getByUserUuid: (userUuid: string) => 
-    api.get<any>(`/api/identity/organizations/getByUserUuid/${userUuid}`),
+  getByUserUuid: (userUuid: string, options?: RequestInit) => 
+    api.get<any>(`/api/identity/organizations/getByUserUuid/${userUuid}`, options),
     
   getMembers: (orgUuid: string) => 
     api.get<OrganizationMemberResponse[]>(`/api/identity/organizations/${orgUuid}/members`),

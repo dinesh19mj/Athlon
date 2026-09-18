@@ -52,7 +52,7 @@ public class AcademyFinanceController {
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<AcademyFinanceResponse>> createFinance(
             @Valid @RequestBody CreateAcademyFinanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         AcademyFinanceResponse response = financeService.createFinance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Academy transaction recorded successfully", response));
@@ -61,7 +61,7 @@ public class AcademyFinanceController {
     @PostMapping("/update")
     public ResponseEntity<ApiResponse<AcademyFinanceResponse>> updateFinance(
             @Valid @RequestBody UpdateAcademyFinanceRequest request,
-            @RequestHeader(value = "X-User-Id", defaultValue = "1") Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
 
         AcademyFinanceResponse response = financeService.updateFinance(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Academy transaction updated successfully", response));

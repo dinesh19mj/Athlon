@@ -24,6 +24,11 @@ export interface Match {
   status?: string;
   teamALineupStatus?: string;
   teamBLineupStatus?: string;
+  setScores?: any;
+  roundName?: string | null;
+  roundNumber?: number | null;
+  winnerRegistrationId?: number | null;
+  winnerRegistrationUuid?: string | null;
 }
 
 export interface MatchCreateRequest {

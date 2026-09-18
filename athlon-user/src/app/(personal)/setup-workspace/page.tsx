@@ -234,11 +234,11 @@ function SetupWorkspaceForm() {
               'Internal Club Tournaments & Ladders',
               'Financial Accounts & Revenue Reports',
             ];
-          } else if (nameLower.includes('court')) {
+          } else if (nameLower.includes('court') || nameLower.includes('venue')) {
             type = 'COURT';
             icon = MapPin;
-            subtitle = 'Venue Booking & Turf Management';
-            badge = 'VENUE & TURF';
+            subtitle = 'Sports Facility, Turf & Arena Operations Hub';
+            badge = 'VENUE MANAGER';
             colorScheme = {
               accent: 'from-rose-500 to-pink-500',
               text: 'text-rose-500 dark:text-rose-400',
@@ -248,10 +248,11 @@ function SetupWorkspaceForm() {
               badgeText: 'text-rose-600 dark:text-rose-300',
             };
             defaultFeatures = [
-              'Dynamic Slot Pricing & Booking Matrix',
-              'Online UPI & Card Payment Gateway',
-              'Instant Check-in & Customer Ratings',
-              'Occupancy & Revenue Analytics',
+              'Real-Time Visual Booking Grid & Slot Matrix',
+              'Multi-Sport Facilities & Dynamic Peak Tiers',
+              '10-Minute Cart Hold & Instant UPI Checkout',
+              'Recurring Series with Conflict Detection',
+              'Admin Maintenance Blocks & Revenue Analytics',
             ];
           }
 

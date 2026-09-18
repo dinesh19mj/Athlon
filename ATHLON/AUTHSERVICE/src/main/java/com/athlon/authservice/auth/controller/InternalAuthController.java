@@ -20,8 +20,19 @@ public class InternalAuthController {
         this.authService = authService;
     }
 
+    @org.springframework.beans.factory.annotation.Value("${service.internal.key:athlon-internal-secure-key-2026}")
+    private String expectedInternalKey;
+
     @PostMapping("/credentials")
-    public ResponseEntity<ApiResponse<Void>> createCredential(@Valid @RequestBody CreateCredentialRequest request) {
+    public ResponseEntity<ApiResponse<Void>> createCredential(
+            @org.springframework.web.bind.annotation.RequestHeader(value = "X-Internal-Service-Key", required = false) String serviceKey,
+            @Valid @RequestBody CreateCredentialRequest request) {
+        if (expectedInternalKey != null && !expectedInternalKey.isEmpty()) {
+            if (serviceKey == null || !expectedInternalKey.equals(serviceKey)) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse<>(false, "Unauthorized internal access", null));
+            }
+        }
         authService.createCredential(request);
         return ResponseEntity.ok(new ApiResponse<>(true, "Credential created successfully", null));
     }

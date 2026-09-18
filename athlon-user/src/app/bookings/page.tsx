@@ -1,73 +1,110 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   Search,
   MapPin,
-  Star,
   ChevronRight,
-  ShieldCheck,
-  Dumbbell,
-  Navigation,
-  Phone,
-  Trophy,
-  Building2,
-  Building,
-  Tv,
-  Home,
-  ArrowRight,
-  Filter,
-  Sparkles,
-  CheckCircle2,
   Calendar,
   X,
   Clock,
-  Award,
   LayoutGrid,
   List,
   GalleryHorizontal,
   Check,
   Zap,
-  Users,
+  Sparkles,
+  RefreshCw,
+  Home,
+  Trophy,
+  Building2,
+  ArrowRight,
+  CheckCircle2,
+  Phone,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { venueApi, bookingApi, VenueDto, SlotDto } from '@/lib/api/venue';
+import { OrganizationService } from '@/lib/api/organization';
+import { matchSport, matchPlace, extractAvailablePlaces } from '@/lib/utils/homeFilter';
 
 interface Venue {
   id: number;
+  venueUuid?: string;
   name: string;
   sport: string;
-  rating: string;
-  reviews: string;
-  distance: string;
   location: string;
+  city: string;
   price: number;
   courts: number;
   tags: string[];
   image: string;
-  featured: boolean;
-  openTiming: string;
-  phone: string;
-  availableSlots: string[];
+  availableSlots: BookableSlot[];
+}
+
+interface BookableSlot {
+  key: string;
+  facilityId: number;
+  facilityName: string;
+  sport: string;
+  startTime: string;
+  endTime: string;
+  displayTime: string;
+  durationMinutes: number;
+  price: number;
+}
+
+const DEFAULT_CITIES = [
+  'All Locations',
+  'Bangalore',
+  'Chennai',
+  'Hyderabad',
+  'Mumbai',
+  'Delhi',
+  'Pune',
+  'Kolkata',
+];
+
+function formatSlotTime12H(timeStr: string): string {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  let hour = parseInt(parts[0], 10);
+  const minute = parts[1] || '00';
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${String(hour).padStart(2, '0')}:${minute} ${ampm}`;
 }
 
 export default function BookingsPage() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { isAuthenticated, userEmail } = useAuthStore();
 
-  // States
+  // Dynamic Location States
+  const [selectedCity, setSelectedCity] = useState('All Locations');
+  const [availableCities, setAvailableCities] = useState<string[]>(DEFAULT_CITIES);
+  const [cityModalOpen, setCityModalOpen] = useState(false);
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Filter States
   const [selectedSport, setSelectedSport] = useState('all');
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [timeFilter, setTimeFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'carousel'>('grid');
 
-  // Booking drawer modal state
+  // Booking Drawer Modal State
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [selectedCourtNum, setSelectedCourtNum] = useState<number>(1);
+  const [selectedSlot, setSelectedSlot] = useState<BookableSlot | null>(null);
+  const [selectedFacilityId, setSelectedFacilityId] = useState<number | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingRefId, setBookingRefId] = useState<string>('');
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [customerName, setCustomerName] = useState(userEmail ? userEmail.split('@')[0] : '');
+  const [customerPhone, setCustomerPhone] = useState('');
 
   // Generate the next 7 days for the interactive date picker
   const dateOptions = useMemo(() => {
@@ -86,15 +123,160 @@ export default function BookingsPage() {
       const dayNum = d.getDate();
       const monthName = d.toLocaleDateString('en-US', { month: 'short' });
 
+      // ISO date string format: YYYY-MM-DD
+      const dateString = d.toISOString().split('T')[0];
+
       dates.push({
         label: dayName,
         dayNum,
         monthName,
+        dateString,
         fullDate: d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
       });
     }
     return dates;
   }, []);
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Fetch dynamic venues from backend API
+  useEffect(() => {
+    let active = true;
+
+    const fetchAllDynamicData = async () => {
+      try {
+        setLoading(true);
+
+        // 1. Fetch organizations to identify & filter out non-venue workspaces (academies, coaches, clubs, organizers, associations)
+        const orgRes = await OrganizationService.getAll().catch(() => ({ success: false, data: [] }));
+        const orgList = Array.isArray(orgRes?.data) ? orgRes.data : Array.isArray(orgRes) ? orgRes : [];
+        const nonVenueOrgUuids = new Set<string>();
+        const nonVenueOrgIds = new Set<string>();
+        const nonVenueOrgNames = new Set<string>();
+
+        orgList.forEach((org: any) => {
+          const type = (org.type || '').toUpperCase();
+          if (type !== 'COURT' && type !== 'VENUE' && type !== 'VENUE_MANAGER') {
+            if (org.uuid) nonVenueOrgUuids.add(String(org.uuid).toLowerCase());
+            if (org.organizationUuid) nonVenueOrgUuids.add(String(org.organizationUuid).toLowerCase());
+            if (org.id) nonVenueOrgIds.add(String(org.id).toLowerCase());
+            if (org.orgId) nonVenueOrgIds.add(String(org.orgId).toLowerCase());
+            if (org.organizationId) nonVenueOrgIds.add(String(org.organizationId).toLowerCase());
+            if (org.name) nonVenueOrgNames.add(String(org.name).trim().toLowerCase());
+          }
+        });
+
+        // 2. Fetch public venues
+        const queryCity = selectedCity === 'All Locations' || selectedCity === 'All Cities' ? undefined : selectedCity;
+        const targetDateStr = dateOptions[selectedDateIndex]?.dateString || new Date().toISOString().split('T')[0];
+
+        const venueRes = await venueApi.getPublicVenues(queryCity).catch(() => ({ data: [] }));
+        const rawVenues: VenueDto[] = Array.isArray(venueRes?.data) ? venueRes.data : Array.isArray(venueRes) ? (venueRes as any) : [];
+
+        // 3. Extract dynamic locations strictly from live venues
+        const extracted = extractAvailablePlaces([], [], rawVenues, [], []);
+        const mergedCities = Array.from(new Set(['All Locations', ...extracted, ...DEFAULT_CITIES.filter((c) => c !== 'All Locations')]));
+        setAvailableCities(mergedCities);
+
+        // 4. Strictly filter out non-venue workspaces (academies, coaches, tournament organizers, clubs)
+        const validVenues = rawVenues.filter((v: any) => {
+          if (v.bookingEnabled === false) return false;
+          const vType = (v.venueType || v.type || '').toUpperCase();
+          if (vType === 'ACADEMY' || vType === 'COACH' || vType === 'CLUB' || vType === 'ORGANIZER' || vType === 'ASSOCIATION' || vType === 'PERSONAL') {
+            return false;
+          }
+
+          const orgUuid = String(v.organizationUuid || v.uuid || '').toLowerCase();
+          const orgId = String(v.organizationId || v.id || v.orgId || '').toLowerCase();
+          if (orgUuid && nonVenueOrgUuids.has(orgUuid)) return false;
+          if (orgId && nonVenueOrgIds.has(orgId)) return false;
+
+          const vName = String(v.name || '').trim().toLowerCase();
+          if (vName && nonVenueOrgNames.has(vName)) return false;
+
+          return true;
+        });
+
+        const mappedVenues: Venue[] = [];
+
+        if (validVenues && validVenues.length > 0) {
+          for (const v of validVenues) {
+            if (!v.name) continue;
+            let activeSlots: BookableSlot[] = [];
+            let facilitiesCount = 0;
+
+            try {
+              const availability = await venueApi.getVenueAvailability(v.venueId, targetDateStr);
+              const facilities = availability?.data?.facilities || [];
+              facilitiesCount = facilities.length;
+
+              activeSlots = facilities.flatMap((facility) =>
+                (facility.slots || [])
+                  .filter((slot: SlotDto) => slot.isAvailable)
+                  .map((slot: SlotDto) => ({
+                    key: `${facility.facilityId}-${slot.startTime}-${slot.endTime}`,
+                    facilityId: facility.facilityId,
+                    facilityName: facility.facilityName,
+                    sport: slot.sportName || 'Sport',
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    displayTime: formatSlotTime12H(slot.startTime),
+                    durationMinutes: facility.slotDurationMinutes || 60,
+                    price: slot.price,
+                  }))
+              );
+            } catch (availErr) {
+              console.warn(`Could not load availability for venue ${v.venueId}:`, availErr);
+            }
+
+            const lowestPrice = activeSlots.length
+              ? Math.min(...activeSlots.map((slot) => slot.price))
+              : (v as any).startingPrice
+              ? parseInt(String((v as any).startingPrice).replace(/[^\d]/g, ''), 10) || 0
+              : 0;
+
+            const slotSports = Array.from(new Set(activeSlots.map((slot) => slot.sport).filter(Boolean)));
+            const rawOffered = (v as any).sportsOffered;
+            const offeredSports = Array.isArray(rawOffered)
+              ? rawOffered
+              : typeof rawOffered === 'string'
+              ? (rawOffered as string).split(',').map((s) => s.trim())
+              : [];
+            const allSports = Array.from(new Set([...slotSports, ...offeredSports].filter(Boolean)));
+
+            mappedVenues.push({
+              id: v.venueId,
+              venueUuid: v.venueUuid,
+              name: v.name,
+              sport: allSports.join(', ') || 'Sports Facility',
+              location: [v.addressLine1, v.city, v.state].filter(Boolean).join(', ') || 'Location TBA',
+              city: v.city || '',
+              price: lowestPrice,
+              courts: facilitiesCount || 1,
+              tags: v.amenities?.map((a) => a.amenityName) || [],
+              image: v.images?.find((image) => image.isCover)?.imageUrl || v.images?.[0]?.imageUrl || (v as any).image || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80',
+              availableSlots: activeSlots,
+            });
+          }
+        }
+
+        if (!active) return;
+        setVenues(mappedVenues);
+      } catch (err) {
+        console.warn('Unable to load live venue availability:', err);
+        if (!active) return;
+        setVenues([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    fetchAllDynamicData();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedCity, selectedDateIndex, dateOptions, refreshTrigger]);
 
   const sportsList = [
     { id: 'all', label: 'All Sports', icon: '⚡' },
@@ -103,6 +285,7 @@ export default function BookingsPage() {
     { id: 'pickleball', label: 'Pickleball', icon: '🏓' },
     { id: 'football', label: 'Football / Turf', icon: '⚽' },
     { id: 'squash', label: 'Squash', icon: '🏐' },
+    { id: 'cricket', label: 'Cricket', icon: '🏏' },
   ];
 
   const timeFilterPills = [
@@ -114,128 +297,42 @@ export default function BookingsPage() {
     { id: 'top_rated', label: '⭐ 4.7+ Rated' },
   ];
 
-  const venues: Venue[] = [
-    {
-      id: 1,
-      name: 'Smash Arena Pro',
-      sport: 'Badminton',
-      rating: '4.9',
-      reviews: '128',
-      distance: '2.5 km',
-      location: 'Koramangala, Bangalore',
-      price: 500,
-      courts: 6,
-      tags: ['BWF Certified', 'Wooden Flooring', 'Showers'],
-      image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800&auto=format&fit=crop',
-      featured: true,
-      openTiming: '6:00 AM - 11:00 PM',
-      phone: '+91 98765 43210',
-      availableSlots: ['06:00 AM', '07:00 AM', '09:00 AM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'],
-    },
-    {
-      id: 2,
-      name: 'Elite Sports Club & Hub',
-      sport: 'Badminton',
-      rating: '4.7',
-      reviews: '84',
-      distance: '4.1 km',
-      location: 'HSR Layout, Bangalore',
-      price: 400,
-      courts: 4,
-      tags: ['Wooden Courts', 'Cafeteria', 'Pro Shop'],
-      image: 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?q=80&w=800&auto=format&fit=crop',
-      featured: false,
-      openTiming: '5:30 AM - 10:30 PM',
-      phone: '+91 98765 43211',
-      availableSlots: ['06:30 AM', '08:00 AM', '04:00 PM', '06:00 PM', '08:00 PM', '09:30 PM'],
-    },
-    {
-      id: 3,
-      name: 'Velocity Racket Club',
-      sport: 'Tennis',
-      rating: '4.8',
-      reviews: '96',
-      distance: '5.4 km',
-      location: 'Indiranagar, Bangalore',
-      price: 650,
-      courts: 3,
-      tags: ['Clay Courts', 'Floodlights', 'Equipment Rental'],
-      image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=800&auto=format&fit=crop',
-      featured: true,
-      openTiming: '6:00 AM - 10:00 PM',
-      phone: '+91 98765 43212',
-      availableSlots: ['06:00 AM', '07:30 AM', '05:00 PM', '06:30 PM', '08:00 PM'],
-    },
-    {
-      id: 4,
-      name: 'Apex Pickleball & Fitness',
-      sport: 'Pickleball',
-      rating: '4.8',
-      reviews: '64',
-      distance: '3.2 km',
-      location: 'Whitefield, Bangalore',
-      price: 350,
-      courts: 6,
-      tags: ['USA Pickleball Standard', 'Air Conditioned'],
-      image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800&auto=format&fit=crop',
-      featured: false,
-      openTiming: '6:00 AM - 11:00 PM',
-      phone: '+91 98765 43213',
-      availableSlots: ['07:00 AM', '08:30 AM', '05:00 PM', '07:00 PM', '09:00 PM'],
-    },
-    {
-      id: 5,
-      name: 'Champions Turf & Arena',
-      sport: 'Football',
-      rating: '4.6',
-      reviews: '112',
-      distance: '6.0 km',
-      location: 'JP Nagar, Bangalore',
-      price: 900,
-      courts: 2,
-      tags: ['FIFA Certified Turf', 'Dressing Rooms', 'Night Lights'],
-      image: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?q=80&w=800&auto=format&fit=crop',
-      featured: false,
-      openTiming: 'Open 24 Hours',
-      phone: '+91 98765 43214',
-      availableSlots: ['06:00 AM', '08:00 AM', '04:00 PM', '06:00 PM', '08:00 PM', '10:00 PM', '11:30 PM'],
-    },
-    {
-      id: 6,
-      name: 'Prime Court Sports Zone',
-      sport: 'Squash',
-      rating: '4.7',
-      reviews: '53',
-      distance: '4.8 km',
-      location: 'Bellandur, Bangalore',
-      price: 450,
-      courts: 3,
-      tags: ['Glass Back Courts', 'Physio Support', 'Parking'],
-      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&auto=format&fit=crop',
-      featured: false,
-      openTiming: '6:00 AM - 10:30 PM',
-      phone: '+91 98765 43215',
-      availableSlots: ['07:00 AM', '08:00 AM', '05:30 PM', '07:00 PM', '08:30 PM'],
-    },
-  ];
-
   // Filtered venues list
   const filteredVenues = useMemo(() => {
     return venues.filter((v) => {
+      // City / Place filter
+      if (selectedCity !== 'All Locations' && selectedCity !== 'All Cities') {
+        if (!matchPlace(v, selectedCity)) return false;
+      }
+
       // Sport filter
-      if (selectedSport !== 'all' && v.sport.toLowerCase() !== selectedSport.toLowerCase()) {
-        return false;
+      if (selectedSport !== 'all') {
+        if (
+          !matchSport(v.sport, selectedSport) &&
+          !matchSport(v.tags, selectedSport) &&
+          !v.name.toLowerCase().includes(selectedSport.toLowerCase())
+        ) {
+          return false;
+        }
       }
 
       // Time / feature pill filter
-      if (timeFilter === 'top_rated' && parseFloat(v.rating) < 4.7) return false;
       if (timeFilter === 'wooden' && !v.tags.some((t) => t.toLowerCase().includes('wood'))) return false;
       if (timeFilter === 'morning') {
-        const hasMorning = v.availableSlots.some((s) => s.includes('AM'));
+        const hasMorning = v.availableSlots.some((s) => s.displayTime.includes('AM'));
         if (!hasMorning) return false;
       }
       if (timeFilter === 'evening') {
-        const hasEvening = v.availableSlots.some((s) => s.includes('PM') && (s.startsWith('05') || s.startsWith('06') || s.startsWith('07') || s.startsWith('08') || s.startsWith('09') || s.startsWith('10')));
+        const hasEvening = v.availableSlots.some(
+          (s) =>
+            s.displayTime.includes('PM') &&
+            (s.displayTime.startsWith('05') ||
+              s.displayTime.startsWith('06') ||
+              s.displayTime.startsWith('07') ||
+              s.displayTime.startsWith('08') ||
+              s.displayTime.startsWith('09') ||
+              s.displayTime.startsWith('10'))
+        );
         if (!hasEvening) return false;
       }
 
@@ -251,21 +348,78 @@ export default function BookingsPage() {
     });
   }, [venues, selectedSport, timeFilter, searchQuery]);
 
-  const featuredVenue = filteredVenues.find((v) => v.featured) || filteredVenues[0];
+  const featuredVenue = filteredVenues[0];
 
-  const handleOpenBooking = (venue: Venue, slot?: string) => {
+  const bookingFacilities = useMemo(() => {
+    if (!selectedVenue) return [];
+
+    return Array.from(
+      selectedVenue.availableSlots.reduce((facilities, slot) => {
+        if (!facilities.has(slot.facilityId)) {
+          facilities.set(slot.facilityId, {
+            id: slot.facilityId,
+            name: slot.facilityName,
+            sport: slot.sport,
+            slots: [] as BookableSlot[],
+          });
+        }
+        facilities.get(slot.facilityId)!.slots.push(slot);
+        return facilities;
+      }, new Map<number, { id: number; name: string; sport: string; slots: BookableSlot[] }>()).values()
+    );
+  }, [selectedVenue]);
+
+  const selectedFacility = bookingFacilities.find((facility) => facility.id === selectedFacilityId) || bookingFacilities[0];
+  const selectedFacilitySlots = selectedFacility?.slots || [];
+
+  const handleOpenBooking = (venue: Venue, slot?: BookableSlot) => {
+    const initialSlot = slot || venue.availableSlots[0] || null;
     setSelectedVenue(venue);
-    setSelectedSlot(slot || venue.availableSlots[0] || '06:00 PM');
-    setSelectedCourtNum(1);
+    setSelectedSlot(initialSlot);
+    setSelectedFacilityId(initialSlot?.facilityId || null);
     setBookingSuccess(false);
+    setBookingRefId('');
   };
 
-  const handleConfirmBooking = () => {
-    setBookingSuccess(true);
-    setTimeout(() => {
-      setSelectedVenue(null);
-      setBookingSuccess(false);
-    }, 2200);
+  const handleConfirmBooking = async () => {
+    if (!selectedVenue || !selectedSlot) return;
+    setBookingSubmitting(true);
+    try {
+      const selectedDate = dateOptions[selectedDateIndex]?.dateString || new Date().toISOString().split('T')[0];
+
+      const payload = {
+        venueId: selectedVenue.id,
+        venueUuid: selectedVenue.venueUuid,
+        facilityId: selectedSlot.facilityId,
+        bookingDate: selectedDate,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime,
+        durationMinutes: selectedSlot.durationMinutes,
+        sportName: selectedSlot.sport,
+        guestName: customerName.trim(),
+        guestPhone: customerPhone.trim() || undefined,
+        guestEmail: userEmail || undefined,
+        baseAmount: selectedSlot.price,
+        totalAmount: selectedSlot.price,
+        bookingSource: 'ATHLON_APP',
+        paymentStatus: 'UNPAID',
+        notes: `${selectedSlot.facilityName} reservation via Athlon Marketplace`,
+      };
+
+      const res = await bookingApi.createBooking(payload);
+      if (!res?.data?.bookingNumber) throw new Error('The booking service did not return a confirmation number.');
+      setBookingRefId(res.data.bookingNumber);
+
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setSelectedVenue(null);
+        setBookingSuccess(false);
+        // Refresh dynamic availability
+        setRefreshTrigger((prev) => prev + 1);
+      }, 2500);
+    } finally {
+      setBookingSubmitting(false);
+    }
   };
 
   return (
@@ -309,17 +463,19 @@ export default function BookingsPage() {
             </div>
           </div>
 
+          {/* Dynamic City Selector Pill */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <div
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border"
+            <button
+              onClick={() => setCityModalOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all hover:border-primary active:scale-95"
               style={{
                 backgroundColor: 'var(--athlon-surface)',
                 borderColor: 'var(--athlon-border)',
               }}
             >
               <MapPin className="w-3 h-3 text-primary" />
-              <span className="text-foreground/80">Bangalore</span>
-            </div>
+              <span className="text-foreground/90">{selectedCity}</span>
+            </button>
           </div>
         </header>
 
@@ -500,7 +656,14 @@ export default function BookingsPage() {
 
           {/* 6. Venues Content List */}
           <div className="flex flex-col gap-3.5 pt-0.5">
-            {filteredVenues.length === 0 ? (
+            {loading ? (
+              <div className="py-20 text-center space-y-3">
+                <RefreshCw className="w-7 h-7 text-primary animate-spin mx-auto" />
+                <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+                  Loading Live Venues & Slots...
+                </p>
+              </div>
+            ) : filteredVenues.length === 0 ? (
               <div
                 className="py-12 px-4 text-center rounded-2xl border flex flex-col items-center justify-center space-y-3"
                 style={{
@@ -556,16 +719,12 @@ export default function BookingsPage() {
                         <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary text-black shadow-sm">
                           {venue.sport}
                         </span>
-                        <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 shadow-sm">
-                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                          <span className="text-[10px] font-bold text-white">{venue.rating}</span>
-                        </div>
                       </div>
 
                       {/* Price Tag */}
                       <div className="absolute top-2.5 right-2.5">
                         <span className="px-2.5 py-1 rounded-xl text-xs font-mono font-black tracking-tight text-primary bg-black/70 backdrop-blur-md border border-primary/30 shadow-md">
-                          ₹{venue.price}/hr
+                          {venue.price > 0 ? `From ₹${venue.price}` : 'Price on request'}
                         </span>
                       </div>
 
@@ -575,7 +734,7 @@ export default function BookingsPage() {
                           {venue.name}
                         </h3>
                         <p className="text-[10.5px] text-white/70 truncate mt-0.5">
-                          {venue.location} • {venue.distance} away
+                          {venue.location}
                         </p>
                       </div>
                     </div>
@@ -602,7 +761,7 @@ export default function BookingsPage() {
                                 borderColor: 'var(--athlon-border)',
                               }}
                             >
-                              {slot}
+                              {slot.displayTime}
                             </button>
                           ))}
                         </div>
@@ -658,10 +817,6 @@ export default function BookingsPage() {
                           alt={venue.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
-                        <div className="absolute bottom-0 inset-x-0 bg-black/70 py-0.2 flex items-center justify-center gap-0.5">
-                          <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                          <span className="text-[8.5px] font-bold text-white">{venue.rating}</span>
-                        </div>
                       </div>
 
                       {/* Info */}
@@ -682,7 +837,7 @@ export default function BookingsPage() {
 
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       <span className="text-[10px] font-mono font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">
-                        ₹{venue.price}/hr
+                        {venue.price > 0 ? `From ₹${venue.price}` : 'Price on request'}
                       </span>
                       <ChevronRight className="w-4 h-4 text-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                     </div>
@@ -719,18 +874,14 @@ export default function BookingsPage() {
 
                       <div className="relative z-10 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-black">
-                            ₹{featuredVenue.price}/hr
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-black">
+                            {featuredVenue.price > 0 ? `From ₹${featuredVenue.price}` : 'Price on request'}
                           </span>
-                          <div className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full text-[10px] font-bold text-white">
-                            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                            <span>{featuredVenue.rating}</span>
-                          </div>
                         </div>
 
                         <div>
                           <h3 className="text-sm font-black text-white leading-tight">{featuredVenue.name}</h3>
-                          <p className="text-[10px] text-white/70 mt-0.5">{featuredVenue.location} • {featuredVenue.distance}</p>
+                          <p className="text-[10px] text-white/70 mt-0.5">{featuredVenue.location}</p>
                         </div>
 
                         <button
@@ -775,13 +926,9 @@ export default function BookingsPage() {
                               alt={venue.name}
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold text-white">
-                              <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                              <span>{venue.rating}</span>
-                            </div>
                             <div className="absolute top-2 right-2">
                               <span className="px-2 py-0.5 rounded-lg text-[10px] font-black text-primary bg-black/70 font-mono">
-                                ₹{venue.price}/hr
+                                {venue.price > 0 ? `From ₹${venue.price}` : 'Price on request'}
                               </span>
                             </div>
                           </div>
@@ -790,7 +937,7 @@ export default function BookingsPage() {
                             <div>
                               <h4 className="text-xs font-black text-foreground truncate">{venue.name}</h4>
                               <p className="text-[10px] text-foreground/50 truncate mt-0.5">
-                                {venue.location} ({venue.distance})
+                                {venue.location}
                               </p>
                             </div>
 
@@ -849,54 +996,75 @@ export default function BookingsPage() {
                   </div>
                   <h4 className="text-base font-black text-foreground">Court Slot Reserved!</h4>
                   <p className="text-xs text-foreground/60 max-w-xs mx-auto">
-                    Your booking for <span className="text-primary font-bold">Court {selectedCourtNum}</span> at <span className="text-primary font-bold">{selectedSlot}</span> has been confirmed.
+                    Your booking for <span className="text-primary font-bold">{selectedSlot?.facilityName}</span> at <span className="text-primary font-bold">{selectedSlot?.displayTime}</span> has been confirmed.
                   </p>
+                  {bookingRefId && (
+                    <div className="inline-block px-3 py-1 rounded-xl bg-primary/10 border border-primary/25 text-primary text-xs font-mono font-bold">
+                      Ref: #{bookingRefId}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Select Court Number */}
-                  <div className="space-y-1.5">
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-foreground/60">
-                      1. Select Court Number
-                    </span>
-                    <div className="grid grid-cols-4 gap-2">
-                      {Array.from({ length: selectedVenue.courts }).map((_, idx) => {
-                        const courtNo = idx + 1;
-                        const isChosen = selectedCourtNum === courtNo;
+                  <div className="rounded-2xl border p-3 space-y-3" style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10.5px] font-black uppercase tracking-wider text-foreground/60">1. Choose a facility</p>
+                        <p className="text-[10px] text-foreground/45 mt-0.5">Only its live available slots are shown below.</p>
+                      </div>
+                      <span className="text-[9px] font-black rounded-full bg-primary/15 text-primary px-2 py-1">{bookingFacilities.length} available</span>
+                    </div>
+
+                    <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                      {bookingFacilities.map((facility) => {
+                        const isFacilityChosen = selectedFacility?.id === facility.id;
                         return (
                           <button
-                            key={courtNo}
-                            onClick={() => setSelectedCourtNum(courtNo)}
-                            className={`py-2 px-1 rounded-xl border text-xs font-bold text-center transition-all ${
-                              isChosen
-                                ? 'bg-primary text-black border-primary shadow-sm font-black'
-                                : 'text-foreground/70 hover:bg-white/5'
+                            key={facility.id}
+                            onClick={() => {
+                              setSelectedFacilityId(facility.id);
+                              setSelectedSlot(facility.slots[0] || null);
+                            }}
+                            className={`min-w-[132px] text-left rounded-xl border px-3 py-2.5 transition-all ${
+                              isFacilityChosen
+                                ? 'bg-primary text-black border-primary shadow-md shadow-primary/20'
+                                : 'text-foreground/75 hover:border-primary/50'
                             }`}
                             style={{
-                              backgroundColor: isChosen ? undefined : 'var(--athlon-surface)',
-                              borderColor: isChosen ? undefined : 'var(--athlon-border)',
+                              backgroundColor: isFacilityChosen ? undefined : 'var(--athlon-card)',
+                              borderColor: isFacilityChosen ? undefined : 'var(--athlon-border)',
                             }}
                           >
-                            Court {courtNo}
+                            <span className="block text-[11px] font-black truncate">{facility.name}</span>
+                            <span className={`block text-[9px] mt-0.5 ${isFacilityChosen ? 'text-black/65' : 'text-foreground/45'}`}>
+                              {facility.sport} · {facility.slots.length} slots
+                            </span>
                           </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* Select Slot Time */}
-                  <div className="space-y-1.5">
-                    <span className="text-[10.5px] font-black uppercase tracking-wider text-foreground/60">
-                      2. Select Time Slot
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10.5px] font-black uppercase tracking-wider text-foreground/60">
+                        2. Choose a time
+                      </span>
+                      {selectedFacility && <span className="text-[10px] font-bold text-primary truncate max-w-[55%]">{selectedFacility.name}</span>}
+                    </div>
+                    {selectedFacilitySlots.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-foreground/15 px-3 py-5 text-center text-xs text-foreground/50">
+                        No open slots are available for this facility on the selected date.
+                      </div>
+                    ) : (
                     <div className="grid grid-cols-3 gap-2">
-                      {selectedVenue.availableSlots.map((slot, sIdx) => {
-                        const isSlotChosen = selectedSlot === slot;
+                      {selectedFacilitySlots.map((slot) => {
+                        const isSlotChosen = selectedSlot?.key === slot.key;
                         return (
                           <button
-                            key={sIdx}
+                            key={slot.key}
                             onClick={() => setSelectedSlot(slot)}
-                            className={`py-2 px-1 rounded-xl border text-[11px] font-mono font-bold text-center transition-all ${
+                            className={`py-2.5 px-1 rounded-xl border text-[11px] font-mono font-bold text-center transition-all ${
                               isSlotChosen
                                 ? 'bg-primary text-black border-primary shadow-sm font-black'
                                 : 'text-foreground/70 hover:bg-white/5'
@@ -906,10 +1074,52 @@ export default function BookingsPage() {
                               borderColor: isSlotChosen ? undefined : 'var(--athlon-border)',
                             }}
                           >
-                            {slot}
+                            <span className="block">{slot.displayTime}</span>
+                            <span className="block text-[8px] opacity-70 mt-0.5">₹{slot.price}</span>
                           </button>
                         );
                       })}
+                    </div>
+                    )}
+                  </div>
+
+                  {/* Customer Information Form */}
+                  <div className="space-y-2 pt-1 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <span className="text-[10.5px] font-black uppercase tracking-wider text-foreground/60">
+                      3. Player Details
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <User className="w-3.5 h-3.5 text-foreground/40 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          placeholder="Your Name"
+                          className="w-full pl-8 pr-2.5 py-2 rounded-xl border text-xs font-medium outline-none focus:border-primary"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border)',
+                            color: 'var(--athlon-text)',
+                          }}
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <Phone className="w-3.5 h-3.5 text-foreground/40 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder="Phone Number"
+                          className="w-full pl-8 pr-2.5 py-2 rounded-xl border text-xs font-medium outline-none focus:border-primary"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border)',
+                            color: 'var(--athlon-text)',
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -922,8 +1132,8 @@ export default function BookingsPage() {
                     }}
                   >
                     <div className="flex items-center justify-between text-foreground/70">
-                      <span>Court Rate (1 hour):</span>
-                      <span className="font-mono font-bold">₹{selectedVenue.price}</span>
+                      <span>{selectedSlot?.facilityName || 'Facility'} · {selectedSlot?.displayTime || 'Select a slot'}</span>
+                      <span className="font-mono font-bold">₹{selectedSlot?.price || 0}</span>
                     </div>
                     <div className="flex items-center justify-between text-foreground/70">
                       <span>Convenience Fee:</span>
@@ -931,20 +1141,80 @@ export default function BookingsPage() {
                     </div>
                     <div className="flex items-center justify-between pt-1.5 border-t border-foreground/10 text-sm font-black text-foreground">
                       <span>Total Amount:</span>
-                      <span className="text-primary font-mono text-base">₹{selectedVenue.price}</span>
+                      <span className="text-primary font-mono text-base">₹{selectedSlot?.price || 0}</span>
                     </div>
                   </div>
 
                   {/* Confirm CTA */}
                   <button
                     onClick={handleConfirmBooking}
-                    className="w-full py-3 rounded-xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                    disabled={bookingSubmitting || !selectedSlot || !customerName.trim()}
+                    className="w-full py-3 rounded-xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
-                    <Check className="w-4 h-4" />
-                    <span>Confirm Booking (Court {selectedCourtNum} • {selectedSlot})</span>
+                    {bookingSubmitting ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Confirm Booking ({selectedSlot?.facilityName} • {selectedSlot?.displayTime})</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* City Selector Modal */}
+        {cityModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+            <div
+              className="w-full max-w-xs rounded-3xl border p-4 space-y-3 shadow-2xl"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-primary">
+                  <MapPin className="w-4 h-4" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-foreground">Select City</h3>
+                </div>
+                <button
+                  onClick={() => setCityModalOpen(false)}
+                  className="p-1 rounded-lg border text-foreground/60 hover:text-foreground"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1 max-h-64 overflow-y-auto">
+                {availableCities.map((city) => {
+                  const isCitySelected = selectedCity === city;
+                  return (
+                    <button
+                      key={city}
+                      onClick={() => {
+                        setSelectedCity(city);
+                        setCityModalOpen(false);
+                      }}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-center ${
+                        isCitySelected
+                          ? 'bg-primary text-black border-primary shadow-sm font-black'
+                          : 'text-foreground/75 hover:bg-white/5'
+                      }`}
+                      style={{
+                        backgroundColor: isCitySelected ? undefined : 'var(--athlon-surface)',
+                        borderColor: isCitySelected ? undefined : 'var(--athlon-border)',
+                      }}
+                    >
+                      {city}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -1077,6 +1347,19 @@ export default function BookingsPage() {
             </nav>
 
             <div className="flex items-center gap-3">
+              {/* City Pill */}
+              <button
+                onClick={() => setCityModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border hover:border-primary transition-all"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                <span>{selectedCity}</span>
+              </button>
+
               {isAuthenticated ? (
                 <Link
                   href="/home"
@@ -1126,7 +1409,7 @@ export default function BookingsPage() {
                 Reserve Verified Sports Courts in Real-Time
               </h2>
               <p className="text-sm text-foreground/60">
-                Choose your sport, select an open time slot, and lock in your reservation with zero hassle.
+                Choose your sport, select an open time slot, and lock in your reservation with zero hassle in {selectedCity}.
               </p>
             </div>
 
@@ -1201,19 +1484,15 @@ export default function BookingsPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-                  <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-primary text-black">
-                      {venue.sport}
-                    </span>
-                    <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-white">
-                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                      <span>{venue.rating}</span>
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-primary text-black">
+                        {venue.sport}
+                      </span>
                     </div>
-                  </div>
 
                   <div className="absolute top-3 right-3">
                     <span className="px-3 py-1 rounded-xl text-sm font-mono font-black text-primary bg-black/70 backdrop-blur-md border border-primary/30">
-                      ₹{venue.price}/hr
+                      {venue.price > 0 ? `From ₹${venue.price}` : 'Price on request'}
                     </span>
                   </div>
 
@@ -1221,7 +1500,7 @@ export default function BookingsPage() {
                     <h3 className="text-lg font-black text-white leading-tight drop-shadow">
                       {venue.name}
                     </h3>
-                    <p className="text-xs text-white/70 mt-0.5">{venue.location} • {venue.distance}</p>
+                    <p className="text-xs text-white/70 mt-0.5">{venue.location}</p>
                   </div>
                 </div>
 
@@ -1242,7 +1521,7 @@ export default function BookingsPage() {
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
-                          {slot}
+                          {slot.displayTime}
                         </button>
                       ))}
                     </div>

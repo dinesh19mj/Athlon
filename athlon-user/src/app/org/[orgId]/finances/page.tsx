@@ -95,6 +95,10 @@ export default function FinancesPage() {
     return <OrganizerFinancesView orgUuid={orgUuid} orgName={org.name || 'Organizer Workspace'} />;
   }
 
+  return <ClubFinancesView orgUuid={orgUuid} orgName={org?.name || 'Club'} org={org} />;
+}
+
+function ClubFinancesView({ orgUuid, orgName, org }: { orgUuid: string; orgName: string; org?: any }) {
   const { role, isAdmin, canManage } = useOrgRole(orgUuid);
 
   const [finances, setFinances] = useState<ClubFinance[]>([]);
