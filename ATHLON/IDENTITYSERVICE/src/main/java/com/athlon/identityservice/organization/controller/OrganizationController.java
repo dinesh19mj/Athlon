@@ -56,9 +56,10 @@ public class OrganizationController {
         if (userUuidHeader != null && !userUuidHeader.trim().isEmpty() && !"undefined".equalsIgnoreCase(userUuidHeader) && !"null".equalsIgnoreCase(userUuidHeader)) {
             try {
                 UUID uuid = UUID.fromString(userUuidHeader.trim());
-                return userRepository.findByUserUuid(uuid)
+                Long uid = userRepository.findByUserUuid(uuid)
                         .map(com.athlon.identityservice.user.entity.User::getUserId)
                         .orElse(null);
+                if (uid != null) return uid;
             } catch (Exception ignored) {}
         }
         throw new BadRequestException("Authentication context missing: Valid user ID or UUID header is required");
@@ -73,9 +74,10 @@ public class OrganizationController {
         if (userIdHeader != null && !userIdHeader.trim().isEmpty() && !"undefined".equalsIgnoreCase(userIdHeader) && !"null".equalsIgnoreCase(userIdHeader)) {
             try {
                 Long uid = Long.parseLong(userIdHeader.trim());
-                return userRepository.findById(uid)
+                UUID uuid = userRepository.findById(uid)
                         .map(com.athlon.identityservice.user.entity.User::getUserUuid)
                         .orElse(null);
+                if (uuid != null) return uuid;
             } catch (Exception ignored) {}
         }
         throw new BadRequestException("Authentication context missing: Valid user UUID header is required");

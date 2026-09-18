@@ -65,7 +65,7 @@ public class OrganizationService {
         this.fileStorageUtil = fileStorageUtil;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public OrganizationResponse createOrganization(CreateOrganizationRequest request, Long userId, UUID userUuid) {
         if (organizationRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Organization already exists with name: " + request.getName());
@@ -80,13 +80,20 @@ public class OrganizationService {
                     .orElse(null);
         }
 
-        if ((finalUserUuid == null || "00000000-0000-0000-0000-000000000000".equals(finalUserUuid.toString())) && finalUserId != null) {
+        if (finalUserUuid == null && finalUserId != null) {
             finalUserUuid = userRepository.findById(finalUserId)
                     .map(com.athlon.identityservice.user.entity.User::getUserUuid)
-                    .orElse(finalUserUuid);
+                    .orElse(null);
         }
 
-        if (finalUserId == null) finalUserId = 1L;
+        if (finalUserId == null || finalUserUuid == null) {
+            throw new ResourceNotFoundException("Authenticated user not found in database. User identity context is required.");
+        }
+
+        // Verify the user actually exists in the database
+        Long verifiedUserId = finalUserId;
+        userRepository.findById(verifiedUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + verifiedUserId));
 
         Organization organization = new Organization(
             request.getName(), 
