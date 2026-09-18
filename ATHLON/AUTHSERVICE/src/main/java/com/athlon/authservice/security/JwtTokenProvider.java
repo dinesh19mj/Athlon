@@ -14,8 +14,12 @@ public class JwtTokenProvider {
         this.jwtUtil = jwtUtil;
     }
 
-    public String generateToken(String email, UUID userId) {
-        return jwtUtil.generateAccessToken(email, userId);
+    public String generateToken(String email, UUID userUuid) {
+        return jwtUtil.generateAccessToken(email, userUuid);
+    }
+
+    public String generateToken(String email, Long userId, UUID userUuid) {
+        return jwtUtil.generateAccessToken(email, userId, userUuid);
     }
 
     public boolean validateToken(String token) {

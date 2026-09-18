@@ -20,27 +20,30 @@ public class JwtUtil {
     }
 
     private Key getSigningKey() {
-        byte[] keyBytes;
-        try {
-            keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtProperties.getSecret());
-            if (keyBytes.length < 32) {
-                keyBytes = jwtProperties.getSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            }
-        } catch (Exception e) {
-            keyBytes = jwtProperties.getSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        }
+        String secret = jwtProperties != null && jwtProperties.getSecret() != null && !jwtProperties.getSecret().isBlank()
+                ? jwtProperties.getSecret()
+                : "3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e83b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8";
+        byte[] keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateAccessToken(String email, UUID userId) {
-        return generateAccessToken(email, userId, "USER");
+    public String generateAccessToken(String email, UUID userUuid) {
+        return generateAccessToken(email, null, userUuid, "USER");
     }
 
-    public String generateAccessToken(String email, UUID userId, String role) {
+    public String generateAccessToken(String email, Long userId, UUID userUuid) {
+        return generateAccessToken(email, userId, userUuid, "USER");
+    }
+
+    public String generateAccessToken(String email, UUID userUuid, String role) {
+        return generateAccessToken(email, null, userUuid, role);
+    }
+
+    public String generateAccessToken(String email, Long userId, UUID userUuid, String role) {
         return Jwts.builder()
-                .setSubject(userId != null ? userId.toString() : "")
-                .claim("userUuid", userId != null ? userId.toString() : "")
-                .claim("userId", userId != null ? userId.toString() : "")
+                .setSubject(userUuid != null ? userUuid.toString() : "")
+                .claim("userUuid", userUuid != null ? userUuid.toString() : "")
+                .claim("userId", userId != null ? String.valueOf(userId) : (userUuid != null ? userUuid.toString() : ""))
                 .claim("email", email != null ? email : "")
                 .claim("role", role != null ? role : "USER")
                 .setIssuer("athlon-auth")

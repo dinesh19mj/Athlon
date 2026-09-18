@@ -53,8 +53,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             logger.debug("Authenticated User: Id={}, UUID={}, Email={}, Role={}", userId, userUuid, email, role);
 
             // Inject verified headers for downstream microservices
-            if (userId != null && !userId.isBlank() && !userId.equals("null") && userId.matches("\\d+")) {
-                requestWrapper.addHeader("X-User-Id", userId);
+            if (userId != null && !userId.isBlank() && !userId.equals("null")) {
+                if (userId.matches("\\d+")) {
+                    requestWrapper.addHeader("X-User-Id", userId);
+                } else if (userUuid == null || userUuid.isBlank() || userUuid.equals("null")) {
+                    userUuid = userId;
+                }
             }
             if (userUuid != null && !userUuid.isBlank() && !userUuid.equals("null")) {
                 requestWrapper.addHeader("X-User-Uuid", userUuid);

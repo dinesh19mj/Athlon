@@ -72,13 +72,21 @@ public class OrganizationService {
         }
 
         UUID finalUserUuid = userUuid;
-        Long finalUserId = userId != null ? userId : 1L;
+        Long finalUserId = userId;
+
+        if (finalUserId == null && finalUserUuid != null) {
+            finalUserId = userRepository.findByUserUuid(finalUserUuid)
+                    .map(com.athlon.identityservice.user.entity.User::getUserId)
+                    .orElse(null);
+        }
 
         if ((finalUserUuid == null || "00000000-0000-0000-0000-000000000000".equals(finalUserUuid.toString())) && finalUserId != null) {
             finalUserUuid = userRepository.findById(finalUserId)
                     .map(com.athlon.identityservice.user.entity.User::getUserUuid)
                     .orElse(finalUserUuid);
         }
+
+        if (finalUserId == null) finalUserId = 1L;
 
         Organization organization = new Organization(
             request.getName(), 

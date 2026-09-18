@@ -116,12 +116,12 @@ public class AuthService {
 		loginHistoryRepository.save(
 				new LoginHistory(creds.getCredentialId(), creds.getCredentialUuid(), ipAddress, userAgent, "SUCCESS"));
 
-		String jwt = jwtService.generateAccessToken(creds.getEmail(), creds.getUserUuid());
-		String refreshToken = refreshTokenService.createRefreshToken(creds.getCredentialId(), creds.getCredentialUuid())
-				.getToken();
-
 		User user = userRepository.findByUserUuid(creds.getUserUuid())
 				.orElseThrow(() -> new AuthenticationException("User not found"));
+
+		String jwt = jwtService.generateAccessToken(creds.getEmail(), user.getUserId(), creds.getUserUuid());
+		String refreshToken = refreshTokenService.createRefreshToken(creds.getCredentialId(), creds.getCredentialUuid())
+				.getToken();
 
 		return new LoginResponse(jwt, refreshToken, user.getUserId(), user.getUserUuid());
 	}
@@ -138,7 +138,10 @@ public class AuthService {
 		Credentials credentials = credentialsRepository.findById(refreshToken.getCredentialsId())
 				.orElseThrow(() -> new AuthenticationException("User not found"));
 
-		String token = jwtService.generateAccessToken(credentials.getEmail(), credentials.getUserUuid());
+		User user = userRepository.findByUserUuid(credentials.getUserUuid())
+				.orElseThrow(() -> new AuthenticationException("User not found"));
+
+		String token = jwtService.generateAccessToken(credentials.getEmail(), user.getUserId(), credentials.getUserUuid());
 		return new RefreshTokenResponse(token, refreshToken.getToken());
 	}
 

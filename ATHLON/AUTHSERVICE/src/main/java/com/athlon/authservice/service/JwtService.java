@@ -13,7 +13,11 @@ public class JwtService {
         this.tokenProvider = tokenProvider;
     }
 
-    public String generateAccessToken(String email, UUID userId) {
-        return tokenProvider.generateToken(email, userId);
+    public String generateAccessToken(String email, UUID userUuid) {
+        return tokenProvider.generateToken(email, userUuid);
+    }
+
+    public String generateAccessToken(String email, Long userId, UUID userUuid) {
+        return tokenProvider.generateToken(email, userId, userUuid);
     }
 }

@@ -69,16 +69,8 @@ public class JwtUtil {
     private SecretKey getSigningKey() {
         String secret = (jwtProperties != null && jwtProperties.getSecret() != null && !jwtProperties.getSecret().isBlank())
                 ? jwtProperties.getSecret()
-                : "3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8";
-        byte[] keyBytes;
-        try {
-            keyBytes = Decoders.BASE64.decode(secret);
-            if (keyBytes.length < 32) {
-                keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            }
-        } catch (Exception e) {
-            keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        }
+                : "3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e83b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8";
+        byte[] keyBytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

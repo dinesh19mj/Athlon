@@ -9,8 +9,8 @@ import java.util.Objects;
 @ConfigurationProperties(prefix = "athlon.jwt")
 public class JwtProperties {
 
-    @org.springframework.beans.factory.annotation.Value("${athlon.jwt.secret:3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8}")
-    private String secret = "3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8";
+    @org.springframework.beans.factory.annotation.Value("${athlon.jwt.secret:3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e83b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8}")
+    private String secret = "3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e83b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8";
 
     @org.springframework.beans.factory.annotation.Value("${athlon.jwt.access-token-expiry:900000}")
     private long expirationMs = 900000L;
@@ -19,7 +19,7 @@ public class JwtProperties {
     }
 
     public String getSecret() {
-        return secret != null && !secret.isBlank() ? secret : "3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8";
+        return secret != null && !secret.isBlank() ? secret : "3b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e83b7d2eaf8c1d4f8e9a5c6b7d8e9f0a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8";
     }
 
     public void setSecret(String secret) {
