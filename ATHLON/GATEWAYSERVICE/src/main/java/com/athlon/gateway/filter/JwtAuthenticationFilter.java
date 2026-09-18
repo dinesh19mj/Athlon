@@ -37,14 +37,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         String token = RequestUtil.extractBearerToken(request);
 
-        HeaderMapRequestWrapper requestWrapper = new HeaderMapRequestWrapper(request);
-        // Strip caller-supplied identity headers by default
-        requestWrapper.removeHeader("x-user-id");
-        requestWrapper.removeHeader("x-user-uuid");
-        requestWrapper.removeHeader("x-user-email");
-        requestWrapper.removeHeader("x-user-role");
-
         if (token != null && jwtUtil.validateToken(token)) {
+            HeaderMapRequestWrapper requestWrapper = new HeaderMapRequestWrapper(request);
+            // Strip caller-supplied identity headers to replace with cryptographically verified ones
+            requestWrapper.removeHeader("x-user-id");
+            requestWrapper.removeHeader("x-user-uuid");
+            requestWrapper.removeHeader("x-user-email");
+            requestWrapper.removeHeader("x-user-role");
+
             String userId = jwtUtil.extractUserId(token);
             String userUuid = jwtUtil.extractUserUuid(token);
             String email = jwtUtil.extractEmail(token);
@@ -74,7 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        filterChain.doFilter(requestWrapper, response);
+        filterChain.doFilter(request, response);
     }
 
     private static class HeaderMapRequestWrapper extends HttpServletRequestWrapper {
