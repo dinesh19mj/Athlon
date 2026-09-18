@@ -29,7 +29,8 @@ import {
   Flame,
   Globe,
   Ticket,
-  Crown
+  Crown,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -71,13 +72,14 @@ function SetupWorkspaceForm() {
   const initialBilling = (searchParams.get('billing') as BillingCycle) || 'monthly';
   
   const { addOrganization, setActiveWorkspace } = useWorkspaceStore();
-  const { userEmail, userId } = useAuthStore();
+  const { userEmail, userId, isAuthenticated } = useAuthStore();
 
   const [selectedModule, setSelectedModule] = useState<WorkspaceModule | null>(null);
   const [orgName, setOrgName] = useState('');
   const [selectedBilling, setSelectedBilling] = useState<BillingCycle>(initialBilling);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!packageId) {
@@ -341,40 +343,42 @@ function SetupWorkspaceForm() {
 
   const handleCreateWorkspace = async () => {
     if (!selectedModule || !orgName.trim() || isCreating) return;
+    setErrorMessage(null);
+
+    if (!isAuthenticated || !userId) {
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
 
     setIsCreating(true);
 
-    let newOrgIdStr = `org_${Date.now()}`;
-    let finalOrgName = orgName.trim();
-    let finalOrgType = selectedModule.type;
-
     try {
       const orgRes = await OrganizationService.create({
-        name: finalOrgName,
-        type: finalOrgType,
+        name: orgName.trim(),
+        type: selectedModule.type,
         subscriptionPackageUuid: selectedModule.id,
       });
 
       if (orgRes && orgRes.data && orgRes.data.uuid) {
-        newOrgIdStr = orgRes.data.uuid;
-        finalOrgName = orgRes.data.name || finalOrgName;
-        finalOrgType = (orgRes.data.type as WorkspaceType) || finalOrgType;
+        const newOrg: Organization = {
+          id: orgRes.data.uuid,
+          name: orgRes.data.name || orgName.trim(),
+          type: (orgRes.data.type as WorkspaceType) || selectedModule.type,
+        };
+
+        addOrganization(newOrg);
+        setActiveWorkspace(orgRes.data.uuid);
+        router.push(`/org/${orgRes.data.uuid}/dashboard`);
+      } else {
+        throw new Error(orgRes?.message || 'Failed to create organization. Please try again.');
       }
-    } catch (err) {
-      console.warn('API Create Organization failed, proceeding with local store', err);
+    } catch (err: any) {
+      console.error('API Create Organization failed:', err);
+      const apiMsg = err?.data?.message || err?.message || 'Failed to create organization. Please ensure your account has active session credentials.';
+      setErrorMessage(apiMsg);
+    } finally {
+      setIsCreating(false);
     }
-
-    const newOrg: Organization = {
-      id: newOrgIdStr,
-      name: finalOrgName,
-      type: finalOrgType,
-    };
-
-    addOrganization(newOrg);
-    setActiveWorkspace(newOrgIdStr);
-
-    setIsCreating(false);
-    router.push(`/org/${newOrgIdStr}/dashboard`);
   };
 
   if (isLoading) {
@@ -517,6 +521,16 @@ function SetupWorkspaceForm() {
                   Name your sports organization and confirm your license cycle.
                 </p>
               </div>
+
+              {errorMessage && (
+                <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400 flex items-start gap-3 text-xs sm:text-sm">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-bold block mb-0.5">Workspace Setup Error</span>
+                    <span>{errorMessage}</span>
+                  </div>
+                </div>
+              )}
 
               {/* ── Field 1: Organization Name ─────────────────────────────── */}
               <div className="mb-8">

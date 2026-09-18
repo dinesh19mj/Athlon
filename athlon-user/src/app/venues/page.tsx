@@ -33,167 +33,7 @@ import { OrganizationService } from '@/lib/api/organization';
 import { VenueMarketplaceCard } from '@/components/marketplace/VenueMarketplaceCard';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 
-/* ─── Rich Fallback Mock Venues ─────────────────────────────────────────── */
 
-const FALLBACK_PUBLIC_VENUES: any[] = [
-  {
-    venueId: 101,
-    venueUuid: 'v-bangalore-playzone-1',
-    name: 'Playzone Badminton & Turf Arena',
-    venueType: 'MIXED',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    addressLine1: 'Koramangala 4th Block, 80 Feet Road',
-    totalFacilities: 6,
-    startingPrice: '₹450/hr',
-    rating: '4.9',
-    reviewCount: 184,
-    sportsOffered: ['Badminton', 'Football Turf', 'Pickleball'],
-    bookingEnabled: true,
-    featured: true,
-    amenities: [
-      { id: 1, amenityName: 'Floodlights' },
-      { id: 2, amenityName: 'Air Conditioned' },
-      { id: 3, amenityName: 'Changing Rooms' },
-      { id: 4, amenityName: 'Parking' },
-      { id: 5, amenityName: 'RO Water' },
-    ],
-    operatingHours: [
-      { dayOfWeek: 'MONDAY', openingTime: '06:00:00', closingTime: '23:00:00', isClosed: false },
-    ],
-    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    venueId: 102,
-    venueUuid: 'v-chennai-apex-turf-2',
-    name: 'Apex Arena Football & Cricket Turf',
-    venueType: 'OUTDOOR',
-    city: 'Chennai',
-    state: 'Tamil Nadu',
-    addressLine1: 'Velachery Bypass Road',
-    totalFacilities: 4,
-    startingPrice: '₹800/hr',
-    rating: '4.8',
-    reviewCount: 142,
-    sportsOffered: ['Football Turf', 'Cricket Nets'],
-    bookingEnabled: true,
-    featured: true,
-    amenities: [
-      { id: 1, amenityName: 'Floodlights' },
-      { id: 2, amenityName: 'Equipment Rental' },
-      { id: 3, amenityName: 'Parking' },
-      { id: 4, amenityName: 'Cafeteria' },
-    ],
-    operatingHours: [
-      { dayOfWeek: 'MONDAY', openingTime: '05:30:00', closingTime: '23:30:00', isClosed: false },
-    ],
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    venueId: 103,
-    venueUuid: 'v-hyderabad-elite-court-3',
-    name: 'Elite Sports Hub & Wooden Courts',
-    venueType: 'INDOOR',
-    city: 'Hyderabad',
-    state: 'Telangana',
-    addressLine1: 'Gachibowli Stadium Road',
-    totalFacilities: 8,
-    startingPrice: '₹500/hr',
-    rating: '4.9',
-    reviewCount: 210,
-    sportsOffered: ['Badminton', 'Tennis', 'Squash'],
-    bookingEnabled: true,
-    featured: false,
-    amenities: [
-      { id: 1, amenityName: 'Air Conditioned' },
-      { id: 2, amenityName: 'Showers' },
-      { id: 3, amenityName: 'Locker Rooms' },
-      { id: 4, amenityName: 'Pro Shop' },
-    ],
-    operatingHours: [
-      { dayOfWeek: 'MONDAY', openingTime: '06:00:00', closingTime: '22:30:00', isClosed: false },
-    ],
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    venueId: 104,
-    venueUuid: 'v-mumbai-smash-court-4',
-    name: 'Smash City Multi-Sport Arena',
-    venueType: 'MIXED',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    addressLine1: 'Andheri West, Sports Complex Link Rd',
-    totalFacilities: 5,
-    startingPrice: '₹600/hr',
-    rating: '4.7',
-    reviewCount: 96,
-    sportsOffered: ['Badminton', 'Pickleball', 'Basketball'],
-    bookingEnabled: true,
-    featured: false,
-    amenities: [
-      { id: 1, amenityName: 'Floodlights' },
-      { id: 2, amenityName: 'Air Conditioned' },
-      { id: 3, amenityName: 'Showers' },
-      { id: 4, amenityName: 'Wi-Fi' },
-    ],
-    operatingHours: [
-      { dayOfWeek: 'MONDAY', openingTime: '06:00:00', closingTime: '23:00:00', isClosed: false },
-    ],
-    image: 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    venueId: 105,
-    venueUuid: 'v-bangalore-prime-turf-5',
-    name: 'Prime Ground 7v7 FIFA Certified Turf',
-    venueType: 'OUTDOOR',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    addressLine1: 'HSR Layout Sector 2, Outer Ring Road',
-    totalFacilities: 3,
-    startingPrice: '₹950/hr',
-    rating: '4.9',
-    reviewCount: 168,
-    sportsOffered: ['Football Turf', 'Cricket Nets'],
-    bookingEnabled: true,
-    featured: true,
-    amenities: [
-      { id: 1, amenityName: 'Floodlights' },
-      { id: 2, amenityName: 'Cafeteria' },
-      { id: 3, amenityName: 'Parking' },
-      { id: 4, amenityName: 'Changing Rooms' },
-    ],
-    operatingHours: [
-      { dayOfWeek: 'MONDAY', openingTime: '05:00:00', closingTime: '23:59:00', isClosed: false },
-    ],
-    image: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    venueId: 106,
-    venueUuid: 'v-delhi-grand-slam-6',
-    name: 'Grand Slam Clay & Synthetic Tennis Club',
-    venueType: 'OUTDOOR',
-    city: 'Delhi NCR',
-    state: 'Delhi',
-    addressLine1: 'Vasant Kunj Sports Enclave',
-    totalFacilities: 6,
-    startingPrice: '₹750/hr',
-    rating: '4.8',
-    reviewCount: 115,
-    sportsOffered: ['Tennis', 'Pickleball'],
-    bookingEnabled: true,
-    featured: false,
-    amenities: [
-      { id: 1, amenityName: 'Floodlights' },
-      { id: 2, amenityName: 'Pro Shop' },
-      { id: 3, amenityName: 'Showers' },
-      { id: 4, amenityName: 'Parking' },
-    ],
-    operatingHours: [
-      { dayOfWeek: 'MONDAY', openingTime: '06:00:00', closingTime: '22:00:00', isClosed: false },
-    ],
-    image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1200&q=80',
-  },
-];
 
 const POPULAR_CITIES = ['All Cities', 'Bangalore', 'Chennai', 'Hyderabad', 'Mumbai', 'Delhi NCR', 'Pune'];
 
@@ -266,18 +106,18 @@ export default function PublicVenuesDiscoveryPage() {
           const merged = rawList.map((v: any, idx: number) => ({
             ...v,
             rating: v.rating || '4.8',
-            reviewCount: v.reviewCount || (100 + idx * 15),
-            sportsOffered: v.sportsOffered || ['Badminton', 'Football Turf'],
-            featured: idx === 0,
-            image: v.images?.[0]?.imageUrl || v.image || (FALLBACK_PUBLIC_VENUES[idx % FALLBACK_PUBLIC_VENUES.length]?.image || '/venue-placeholder.jpg'),
+            reviewCount: v.reviewCount || 0,
+            sportsOffered: v.sportsOffered || (v.facilities?.map((f: any) => f.sportType).filter(Boolean) || ['Badminton']),
+            featured: v.featured ?? (idx === 0),
+            image: v.images?.[0]?.imageUrl || v.image || '/venue-placeholder.jpg',
           }));
           setVenues(merged);
         } else {
-          setVenues(FALLBACK_PUBLIC_VENUES);
+          setVenues([]);
         }
       } catch (err) {
-        console.warn('Using fallback venue discovery data:', err);
-        setVenues(FALLBACK_PUBLIC_VENUES);
+        console.error('Failed to load public venues:', err);
+        setVenues([]);
       } finally {
         setLoading(false);
       }

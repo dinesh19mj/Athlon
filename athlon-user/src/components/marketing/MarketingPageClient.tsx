@@ -215,66 +215,6 @@ export function MarketingPageClient() {
         );
         setPublicCoaches(enrichedCoaches);
 
-        // Fallback rich bookable venues
-        const FALLBACK_PUBLIC_VENUES = [
-          {
-            venueId: 101,
-            venueUuid: 'v-bangalore-playzone-1',
-            name: 'Playzone Badminton & Turf Arena',
-            venueType: 'MIXED',
-            city: 'Bangalore',
-            state: 'Karnataka',
-            addressLine1: 'Koramangala 4th Block, 80 Feet Road',
-            totalFacilities: 6,
-            startingPrice: '₹450/hr',
-            amenities: [{ amenityName: 'Floodlights' }, { amenityName: 'AC Arena' }, { amenityName: 'Parking' }],
-            sportsOffered: ['Badminton', 'Football Turf', 'Cricket', 'Pickleball'],
-            image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80',
-          },
-          {
-            venueId: 102,
-            venueUuid: 'v-chennai-apex-turf-2',
-            name: 'Apex Arena Football & Cricket Turf',
-            venueType: 'OUTDOOR',
-            city: 'Chennai',
-            state: 'Tamil Nadu',
-            addressLine1: 'Velachery Bypass Road',
-            totalFacilities: 4,
-            startingPrice: '₹800/hr',
-            amenities: [{ amenityName: 'Floodlights' }, { amenityName: 'Equipment Rental' }, { amenityName: 'Parking' }],
-            sportsOffered: ['Football Turf', 'Cricket Nets'],
-            image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80',
-          },
-          {
-            venueId: 103,
-            venueUuid: 'v-hyderabad-elite-court-3',
-            name: 'Elite Sports Hub & Wooden Courts',
-            venueType: 'INDOOR',
-            city: 'Hyderabad',
-            state: 'Telangana',
-            addressLine1: 'Gachibowli Stadium Road',
-            totalFacilities: 8,
-            startingPrice: '₹500/hr',
-            amenities: [{ amenityName: 'Air Conditioned' }, { amenityName: 'Showers' }, { amenityName: 'Pro Shop' }],
-            sportsOffered: ['Badminton', 'Tennis', 'Squash'],
-            image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1200&q=80',
-          },
-          {
-            venueId: 104,
-            venueUuid: 'v-bangalore-prime-turf-4',
-            name: 'Prime Ground 7v7 FIFA Certified Turf',
-            venueType: 'OUTDOOR',
-            city: 'Bangalore',
-            state: 'Karnataka',
-            addressLine1: 'HSR Layout Sector 2, Outer Ring Road',
-            totalFacilities: 3,
-            startingPrice: '₹950/hr',
-            amenities: [{ amenityName: 'Floodlights' }, { amenityName: 'Cafeteria' }, { amenityName: 'Parking' }],
-            sportsOffered: ['Football Turf', 'Cricket Nets'],
-            image: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=1200&q=80',
-          },
-        ];
-
         // Fetch Venues strictly for slot booking
         const publicRes = await venueApi.getPublicVenues().catch(() => ({ data: [] }));
         const rawVenues: any[] = Array.isArray(publicRes?.data) ? publicRes.data : Array.isArray(publicRes) ? publicRes : [];
@@ -355,16 +295,12 @@ export function MarketingPageClient() {
             return true;
           });
 
-          if (validVenues.length > 0) {
-            setPublicVenues(validVenues);
-          } else {
-            setPublicVenues(FALLBACK_PUBLIC_VENUES);
-          }
+          setPublicVenues(validVenues);
         } else {
-          setPublicVenues(FALLBACK_PUBLIC_VENUES);
+          setPublicVenues([]);
         }
       } catch {
-        // Fallback
+        setPublicVenues([]);
       }
     };
 
