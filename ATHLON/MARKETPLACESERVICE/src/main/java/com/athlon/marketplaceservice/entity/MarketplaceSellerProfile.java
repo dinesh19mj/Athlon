@@ -38,6 +38,9 @@ public class MarketplaceSellerProfile {
 
     private Integer totalSales = 0;
 
+    @Column(name = "status")
+    private String status = "ACTIVE";
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -48,6 +51,7 @@ public class MarketplaceSellerProfile {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.status == null) this.status = "ACTIVE";
         if (this.verifiedTournamentsCount == null) this.verifiedTournamentsCount = 0;
         if (this.tournamentEligibilityVerified == null) this.tournamentEligibilityVerified = false;
         if (this.isSubscriptionActive == null) this.isSubscriptionActive = false;
@@ -94,6 +98,9 @@ public class MarketplaceSellerProfile {
 
     public Integer getTotalSales() { return totalSales; }
     public void setTotalSales(Integer totalSales) { this.totalSales = totalSales; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

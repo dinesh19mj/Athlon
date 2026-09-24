@@ -22,18 +22,18 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
 
     @Query("SELECT p FROM MarketplaceProduct p WHERE " +
            "(:status IS NULL OR p.status = :status) AND " +
-           "(:sport IS NULL OR LOWER(p.sport) = LOWER(:sport)) AND " +
-           "(:category IS NULL OR LOWER(p.category) = LOWER(:category)) AND " +
-           "(:condition IS NULL OR LOWER(p.condition) = LOWER(:condition)) AND " +
+           "(:sport IS NULL OR LOWER(p.sport) = :sport) AND " +
+           "(:category IS NULL OR LOWER(p.category) = :category) AND " +
+           "(:condition IS NULL OR LOWER(p.condition) = :condition) AND " +
            "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
            "(:maxPrice IS NULL OR p.price <= :maxPrice) AND " +
            "(:isVerified IS NULL OR p.isVerified = :isVerified) AND " +
-           "(:location IS NULL OR LOWER(p.location) LIKE LOWER(CONCAT('%', :location, '%'))) AND " +
+           "(:location IS NULL OR LOWER(p.location) LIKE :location) AND " +
            "(:query IS NULL OR (" +
-               "LOWER(p.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-               "LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-               "LOWER(p.brand) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-               "LOWER(p.tags) LIKE LOWER(CONCAT('%', :query, '%'))" +
+               "LOWER(p.title) LIKE :query OR " +
+               "LOWER(p.description) LIKE :query OR " +
+               "LOWER(p.brand) LIKE :query OR " +
+               "LOWER(p.tags) LIKE :query" +
            "))")
     Page<MarketplaceProduct> searchProducts(
             @Param("status") String status,

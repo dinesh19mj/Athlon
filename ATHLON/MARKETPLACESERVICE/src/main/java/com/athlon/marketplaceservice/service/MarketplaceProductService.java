@@ -45,11 +45,16 @@ public class MarketplaceProductService {
 
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), sort);
 
-        String normalizedSport = (sport != null && !sport.equalsIgnoreCase("all") && !sport.trim().isEmpty()) ? sport : null;
-        String normalizedCategory = (category != null && !category.equalsIgnoreCase("all") && !category.trim().isEmpty()) ? category : null;
-        String normalizedCondition = (condition != null && !condition.equalsIgnoreCase("all") && !condition.trim().isEmpty()) ? condition : null;
-        String normalizedQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
-        String normalizedLocation = (location != null && !location.trim().isEmpty()) ? location.trim() : null;
+        String normalizedSport = (sport != null && !sport.equalsIgnoreCase("all") && !sport.trim().isEmpty())
+                ? sport.trim().toLowerCase() : null;
+        String normalizedCategory = (category != null && !category.equalsIgnoreCase("all") && !category.trim().isEmpty())
+                ? category.trim().toLowerCase() : null;
+        String normalizedCondition = (condition != null && !condition.equalsIgnoreCase("all") && !condition.trim().isEmpty())
+                ? condition.trim().toLowerCase() : null;
+        String normalizedQuery = (query != null && !query.trim().isEmpty())
+                ? "%" + query.trim().toLowerCase() + "%" : null;
+        String normalizedLocation = (location != null && !location.trim().isEmpty())
+                ? "%" + location.trim().toLowerCase() + "%" : null;
 
         Page<MarketplaceProduct> products = productRepository.searchProducts(
                 "AVAILABLE", normalizedSport, normalizedCategory, normalizedCondition,

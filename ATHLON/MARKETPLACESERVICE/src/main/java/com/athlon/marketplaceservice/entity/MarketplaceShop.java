@@ -33,6 +33,18 @@ public class MarketplaceShop {
     private String contactPhone;
     private String contactEmail;
 
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "business_email")
+    private String businessEmail;
+
+    @Column(name = "contact_number")
+    private String contactNumber;
+
+    @Column(name = "location")
+    private String location;
+
     @Column(nullable = false)
     private Boolean isVerified = false;
 
@@ -58,12 +70,30 @@ public class MarketplaceShop {
         if (this.rating == null) this.rating = BigDecimal.valueOf(5.00);
         if (this.totalReviews == null) this.totalReviews = 0;
         if (this.status == null) this.status = "ACTIVE";
+        syncLegacyColumns();
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        syncLegacyColumns();
     }
+
+    private void syncLegacyColumns() {
+        if (this.name == null || this.name.isEmpty()) this.name = this.shopName;
+        if (this.shopName == null || this.shopName.isEmpty()) this.shopName = this.name;
+        if (this.businessEmail == null || this.businessEmail.isEmpty()) this.businessEmail = this.contactEmail;
+        if (this.contactEmail == null || this.contactEmail.isEmpty()) this.contactEmail = this.businessEmail;
+        if (this.contactNumber == null || this.contactNumber.isEmpty()) this.contactNumber = this.contactPhone;
+        if (this.contactPhone == null || this.contactPhone.isEmpty()) this.contactPhone = this.contactNumber;
+        if (this.location == null || this.location.isEmpty()) {
+            this.location = (this.city != null ? this.city : "") + (this.state != null ? ", " + this.state : "");
+            if (this.location.trim().isEmpty()) this.location = "Chennai, Tamil Nadu";
+        }
+    }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -101,6 +131,15 @@ public class MarketplaceShop {
 
     public String getContactEmail() { return contactEmail; }
     public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
+
+    public String getName() { return name != null ? name : shopName; }
+    public void setName(String name) { this.name = name; }
+
+    public String getBusinessEmail() { return businessEmail != null ? businessEmail : contactEmail; }
+    public void setBusinessEmail(String businessEmail) { this.businessEmail = businessEmail; }
+
+    public String getContactNumber() { return contactNumber != null ? contactNumber : contactPhone; }
+    public void setContactNumber(String contactNumber) { this.contactNumber = contactNumber; }
 
     public Boolean getIsVerified() { return isVerified; }
     public void setIsVerified(Boolean isVerified) { this.isVerified = isVerified; }

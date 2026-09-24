@@ -17,7 +17,7 @@ public class MarketplaceSellerEligibilityController {
 
     @GetMapping
     public ResponseEntity<SellerEligibilityResponse> checkEligibility(
-            @RequestParam(required = false) String userId,
+            @RequestParam(name = "userId", required = false) String userId,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {
         String effectiveUserId = userId != null && !userId.isEmpty() ? userId : headerUserId;
@@ -26,7 +26,7 @@ public class MarketplaceSellerEligibilityController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<SellerEligibilityResponse> checkEligibilityForUser(@PathVariable String userId) {
+    public ResponseEntity<SellerEligibilityResponse> checkEligibilityForUser(@PathVariable("userId") String userId) {
         SellerEligibilityResponse response = eligibilityService.checkEligibility(userId);
         return ResponseEntity.ok(response);
     }
