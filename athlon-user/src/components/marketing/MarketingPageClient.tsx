@@ -52,6 +52,7 @@ import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 import HomeSearchFilterBar from '@/components/home/HomeSearchFilterBar';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
 import {
   matchSport,
   matchPlace,
@@ -479,7 +480,10 @@ export function MarketingPageClient() {
           1. MOBILE VIEW ONLY (hidden on md and above)
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-28">
-        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-5 pt-2">
+        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-4 pt-2">
+          {/* ─── Top-Level App Mode Switcher (ATHLON ↔ MARKET) ─── */}
+          <AppModeSwitcher />
+
           {/* ═══════════════════════════════════════════════════════════════════
               HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive)
              ═══════════════════════════════════════════════════════════════════ */}
@@ -1479,9 +1483,10 @@ export function MarketingPageClient() {
           className="sticky top-0 z-50 w-full border-b backdrop-blur-xl bg-background/85 transition-all duration-300"
           style={{ borderColor: 'var(--athlon-border)' }}
         >
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
-            {/* Brand Logo */}
-            <Link href="/" className="flex items-center gap-3 group">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+            {/* Brand Logo & App Mode Switcher */}
+            <div className="flex items-center gap-5">
+              <Link href="/" className="flex items-center gap-3 group">
               <div
                 className="w-11 h-11 rounded-2xl flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-lg"
                 style={{
@@ -1504,6 +1509,11 @@ export function MarketingPageClient() {
                 </span>
               </div>
             </Link>
+
+            <div className="hidden lg:block w-72">
+              <AppModeSwitcher showNotifications={false} />
+            </div>
+          </div>
 
             {/* Center Navigation Links */}
             <nav className="flex items-center gap-1 bg-surface/40 p-1.5 rounded-2xl border border-foreground/5 backdrop-blur-md">

@@ -67,6 +67,7 @@ import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
+import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
 import HomeSearchFilterBar from '@/components/home/HomeSearchFilterBar';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 import {
@@ -890,6 +891,11 @@ export default function PersonalHomePage() {
               <source src={backgroundVideo} type="video/mp4" />
             </video>
           </div>
+        </div>
+
+        {/* TOP-LEVEL APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
+        <div className="px-4 mb-3">
+          <AppModeSwitcher />
         </div>
 
         {/* ROLE SWITCHER HEADER ─────────────────────── */}
@@ -2292,6 +2298,13 @@ export default function PersonalHomePage() {
           <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-7xl mx-auto px-8 py-8">
+            {/* Top-Level App Mode Switcher (ATHLON ↔ MARKET) */}
+            <div className="mb-6 flex items-center justify-between">
+              <div className="w-80">
+                <AppModeSwitcher showNotifications={false} />
+              </div>
+            </div>
+
             <div className="flex items-center justify-between gap-6 flex-wrap">
               {/* Profile Card Block */}
               <div className="flex items-center gap-4">
