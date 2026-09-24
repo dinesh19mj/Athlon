@@ -15,6 +15,8 @@ import {
   User,
   ShieldCheck,
   Zap,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { MarketplaceApi, SellerEligibility, MarketShop } from '@/lib/api/marketplace';
 import { useAuthStore } from '@/lib/store/useAuthStore';
@@ -30,6 +32,13 @@ export default function MarketSellGatewayPage() {
   const [selectedSellerIdentity, setSelectedSellerIdentity] = useState<'PERSONAL' | string>('PERSONAL');
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Plan Subscription Modal State
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState('SHOP_PRO');
+  const [activatingPlan, setActivatingPlan] = useState(false);
+  const [planSuccess, setPlanSuccess] = useState(false);
 
   useEffect(() => {
     async function checkEligibility() {
@@ -48,6 +57,32 @@ export default function MarketSellGatewayPage() {
     }
     checkEligibility();
   }, [isAuthenticated]);
+
+  const openPlansModal = async () => {
+    setIsPlanModalOpen(true);
+    const availablePlans = await MarketplaceApi.getSubscriptionPlans();
+    setPlans(availablePlans);
+  };
+
+  const handleActivatePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActivatingPlan(true);
+    try {
+      await MarketplaceApi.activateSubscription(selectedPlanId, useAuthStore.getState().userId || undefined);
+      setPlanSuccess(true);
+      // Refresh eligibility
+      const refreshed = await MarketplaceApi.getSellerEligibility();
+      setEligibility(refreshed);
+      setTimeout(() => {
+        setPlanSuccess(false);
+        setIsPlanModalOpen(false);
+      }, 1500);
+    } catch {
+      alert('Could not activate plan. Please try again.');
+    } finally {
+      setActivatingPlan(false);
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -288,13 +323,109 @@ export default function MarketSellGatewayPage() {
             <p className="text-xs text-foreground/60">
               Want to start selling right away without tournament requirements?
             </p>
-            <Link
-              href="/subscription?plan=MARKETPLACE_SELLER"
-              className="w-full py-3 rounded-2xl text-xs font-black border border-primary text-primary hover:bg-primary/10 flex items-center justify-center gap-2 transition-all"
+            <button
+              type="button"
+              onClick={openPlansModal}
+              className="w-full py-3 rounded-2xl text-xs font-black border border-primary text-primary hover:bg-primary/10 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
             >
               <Zap className="w-4 h-4" />
               <span>Get ATHLON Seller Subscription</span>
-            </Link>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Plan Selection & Activation Modal ─── */}
+      {isPlanModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="w-full max-w-lg rounded-3xl p-6 border bg-card space-y-4 max-h-[90vh] overflow-y-auto" style={{ borderColor: 'var(--athlon-border)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-black text-foreground">ATHLON Market Seller Plans</h3>
+                <p className="text-xs text-foreground/60">Select an instant commercial or athlete selling pass</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPlanModalOpen(false)}
+                className="p-1 rounded-full text-foreground/50 hover:text-foreground cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {planSuccess ? (
+              <div className="p-6 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-center space-y-2">
+                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+                <h4 className="text-sm font-black text-foreground">Plan Activated!</h4>
+                <p className="text-xs text-foreground/70">Your seller privileges are now active. Redirecting...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleActivatePlan} className="space-y-4">
+                <div className="space-y-2.5">
+                  {plans.map((p) => {
+                    const isSelected = selectedPlanId === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => setSelectedPlanId(p.id)}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 shadow-md'
+                            : 'border-white/10 bg-surface/50 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-0.5">
+                            <span className="text-xs font-black text-foreground block">{p.name}</span>
+                            <span className="text-[11px] text-foreground/60 block">{p.description}</span>
+                          </div>
+                          <div className="text-right shrink-0 ml-3">
+                            <span className="text-sm font-black text-primary">₹{p.priceMonthly}</span>
+                            <span className="text-[10px] text-foreground/40 block">/month</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5 pt-2 mt-2 border-t border-white/5">
+                          {p.features?.map((f: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/5 text-foreground/70 flex items-center gap-1"
+                            >
+                              <CheckCircle2 className="w-2.5 h-2.5 text-primary" />
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPlanModalOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-foreground/70 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={activatingPlan}
+                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {activatingPlan ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Activating...</span>
+                      </>
+                    ) : (
+                      <span>Activate &amp; Start Selling</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

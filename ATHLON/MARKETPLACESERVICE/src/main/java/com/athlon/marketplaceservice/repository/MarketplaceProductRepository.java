@@ -49,4 +49,6 @@ public interface MarketplaceProductRepository extends JpaRepository<MarketplaceP
     );
 
     long countBySellerId(String sellerId);
+
+    long countByStatus(String status);
 }

@@ -17,4 +17,10 @@ public interface MarketplaceOrderRepository extends JpaRepository<MarketplaceOrd
     List<MarketplaceOrder> findBySellerUserIdOrderByCreatedAtDesc(String sellerUserId);
 
     List<MarketplaceOrder> findByShopIdOrderByCreatedAtDesc(Long shopId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM MarketplaceOrder o")
+    java.math.BigDecimal getTotalGrossSales();
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(o.commissionAmount), 0) FROM MarketplaceOrder o")
+    java.math.BigDecimal getTotalCommissions();
 }

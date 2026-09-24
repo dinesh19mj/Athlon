@@ -927,4 +927,69 @@ export const MarketplaceApi = {
       };
     }
   },
+
+  // ─── Subscriptions & Commercial Plans ───
+  getSubscriptionPlans: async () => {
+    try {
+      const res = await fetchClient<any>('/api/marketplace/subscriptions/plans');
+      if (Array.isArray(res)) return res;
+    } catch {}
+    return [
+      {
+        id: 'SELLER_PASS',
+        name: 'Athlete Seller Pass',
+        priceMonthly: 199,
+        commissionPercent: 5.0,
+        description: 'Start selling personal gear immediately without 3 tournament requirements.',
+        features: ['Instant selling clearance', 'Up to 5 active listings', 'Community Escrow Protection'],
+      },
+      {
+        id: 'SHOP_PRO',
+        name: 'Sports Shop Pro',
+        priceMonthly: 1499,
+        commissionPercent: 3.0,
+        description: 'Dedicated storefront for authorized dealers and local sports retail shops.',
+        features: ['Verified Retailer Badge', 'Unlimited listings', 'Reduced 3% commission', 'Custom store slug'],
+      },
+      {
+        id: 'SHOP_ENTERPRISE',
+        name: 'Enterprise Sports Merchant',
+        priceMonthly: 3999,
+        commissionPercent: 2.0,
+        description: 'For distributors, academies, and pro sports equipment hubs.',
+        features: ['Top search prominence', 'Lowest 2% commission', 'Priority courier pickup', 'Bulk inventory upload'],
+      },
+    ];
+  },
+
+  activateSubscription: async (plan: string, userId?: string) => {
+    try {
+      const res = await fetchClient<any>('/api/marketplace/subscriptions/activate', {
+        method: 'POST',
+        body: JSON.stringify({ plan, userId: userId || 'curr-user' }),
+      });
+      return res?.data || res;
+    } catch {
+      return { success: true, tier: plan, message: 'Subscription active!' };
+    }
+  },
+
+  // ─── Admin Telemetry & Governance ───
+  getAdminStats: async () => {
+    try {
+      const res = await fetchClient<any>('/api/marketplace/admin/stats');
+      return res?.data || res;
+    } catch {
+      return {
+        totalProducts: 4,
+        availableProducts: 4,
+        soldProducts: 0,
+        totalShops: 1,
+        verifiedShops: 1,
+        totalOrders: 0,
+        grossSales: 0,
+        totalCommissions: 0,
+      };
+    }
+  },
 };

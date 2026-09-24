@@ -17,4 +17,6 @@ public interface MarketplaceShopRepository extends JpaRepository<MarketplaceShop
     List<MarketplaceShop> findByStatusOrderByCreatedAtDesc(String status);
 
     boolean existsBySlug(String slug);
+
+    long countByIsVerifiedTrue();
 }
