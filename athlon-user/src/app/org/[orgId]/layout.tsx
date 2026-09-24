@@ -33,6 +33,7 @@ import {
   ClipboardList,
   Tag,
   Boxes,
+  Lock,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -216,6 +217,18 @@ export default function OrganizationLayout({ children }: { children: React.React
         { name: 'Settings', href: `/org/${orgId}/settings`, icon: Settings },
       ];
     }
+    if (activeOrg.type === 'COMMUNITY') {
+      return [
+        ...base,
+        { name: "Let's Play", href: `/org/${orgId}/sessions`, icon: CalendarDays },
+        { name: 'Members', href: `/org/${orgId}/community-members`, icon: Users },
+        { name: 'Feed', href: `/org/${orgId}/feed`, icon: Newspaper },
+        { name: 'Matches', href: `/org/${orgId}/teams`, icon: Activity },
+        { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy },
+        { name: 'Kitty / Expenses', href: `/org/${orgId}/expenses`, icon: CreditCard },
+        { name: 'Settings', href: `/org/${orgId}/settings`, icon: Settings },
+      ];
+    }
     return base;
   };
 
@@ -340,6 +353,34 @@ export default function OrganizationLayout({ children }: { children: React.React
           title: 'Settings & Administration',
           items: [
             { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
+          ],
+        },
+      ];
+    }
+
+    if (activeOrg.type === 'COMMUNITY') {
+      return [
+        {
+          title: 'Play & Sessions',
+          items: [
+            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: "Let's Play Sessions", href: `/org/${orgId}/sessions`, icon: CalendarDays, badge: 'Live RSVP', isLive: false },
+            { name: 'Members & Roles', href: `/org/${orgId}/community-members`, icon: Users, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Social & Feed',
+          items: [
+            { name: 'Community Feed & Polls', href: `/org/${orgId}/feed`, icon: Newspaper, badge: null, isLive: false },
+            { name: 'Matches', href: `/org/${orgId}/teams`, icon: Activity, badge: null, isLive: false },
+            { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy, badge: 'PRO', isLive: false },
+          ],
+        },
+        {
+          title: 'Kitty & Management',
+          items: [
+            { name: 'Expenses & Kitty', href: `/org/${orgId}/expenses`, icon: CreditCard, badge: null, isLive: false },
+            { name: 'Community Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
           ],
         },
       ];
@@ -489,12 +530,15 @@ export default function OrganizationLayout({ children }: { children: React.React
                     {!isSidebarCollapsed && item.badge && (
                       <span
                         className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                          item.isLive
+                          item.badge === 'PRO'
+                            ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-sm'
+                            : item.isLive
                             ? 'bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse'
                             : 'bg-primary/10 text-primary border border-primary/20'
                         }`}
                       >
-                        {item.badge}
+                        {item.badge === 'PRO' && <Lock className="w-2.5 h-2.5" />}
+                        <span>{item.badge}</span>
                       </span>
                     )}
 
@@ -580,13 +624,13 @@ export default function OrganizationLayout({ children }: { children: React.React
       {/* ══════════════════════════════════════════════════════════════════════
           MAIN CONTENT AREA
          ══════════════════════════════════════════════════════════════════════ */}
-      <main className="flex-1 overflow-y-auto overscroll-y-contain overflow-x-hidden min-w-0 w-full max-w-full bg-background md:pb-0 pb-28">{children}</main>
+      <main className="flex-1 overflow-y-auto overscroll-y-contain overscroll-x-none overflow-x-hidden min-w-0 w-full max-w-full bg-background md:pb-0 pb-28">{children}</main>
 
       {/* ══════════════════════════════════════════════════════════════════════
           MOBILE BOTTOM NAV
          ══════════════════════════════════════════════════════════════════════ */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto fixed-bottom-nav"
+        className="md:hidden fixed bottom-0 inset-x-0 h-16 backdrop-blur-xl border-t z-40 px-4 flex items-center justify-around max-w-lg mx-auto fixed-bottom-nav"
         style={{
           backgroundColor: 'var(--athlon-navigation)',
           borderColor: 'var(--athlon-border)',
@@ -598,13 +642,13 @@ export default function OrganizationLayout({ children }: { children: React.React
         {navItems[0] && (
           <Link
             href={navItems[0].href}
-            className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-              pathname === navItems[0].href ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+            className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+              pathname === navItems[0].href ? 'opacity-100' : 'opacity-70 hover:opacity-100'
             }`}
           >
-            <Athlon3DIcon type="home" size={32} active={pathname === navItems[0].href} />
+            <Athlon3DIcon type="home" size={26} active={pathname === navItems[0].href} />
             <span
-              className={`text-[9.5px] font-bold leading-tight ${
+              className={`text-[10px] font-bold leading-tight tracking-tight ${
                 pathname === navItems[0].href ? 'text-primary' : ''
               }`}
               style={{ color: pathname === navItems[0].href ? undefined : 'var(--athlon-text-muted)' }}
@@ -618,17 +662,17 @@ export default function OrganizationLayout({ children }: { children: React.React
         {navItems[1] && (
           <Link
             href={navItems[1].href}
-            className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-              pathname === navItems[1].href ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+            className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+              pathname === navItems[1].href ? 'opacity-100' : 'opacity-70 hover:opacity-100'
             }`}
           >
             <Athlon3DIcon
               type={getOrg3DIconType(navItems[1].name)}
-              size={32}
+              size={26}
               active={pathname === navItems[1].href}
             />
             <span
-              className={`text-[9.5px] font-bold leading-tight ${
+              className={`text-[10px] font-bold leading-tight tracking-tight ${
                 pathname === navItems[1].href ? 'text-primary' : ''
               }`}
               style={{ color: pathname === navItems[1].href ? undefined : 'var(--athlon-text-muted)' }}
@@ -642,11 +686,11 @@ export default function OrganizationLayout({ children }: { children: React.React
         <div className="relative -top-5 flex items-center justify-center">
           <Link
             href="/practice"
-            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+            className="w-[56px] h-[56px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
             style={{
               backgroundColor: 'var(--athlon-primary)',
               borderColor: 'var(--athlon-navigation)',
-              boxShadow: '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
+              boxShadow: '0 8px 24px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
             }}
           >
             {/* 3D Glass Specular Reflection Arc */}
@@ -655,7 +699,7 @@ export default function OrganizationLayout({ children }: { children: React.React
             <img
               src="/umpire.png"
               alt="Umpire"
-              className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+              className="w-7 h-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
             />
           </Link>
         </div>
@@ -664,17 +708,17 @@ export default function OrganizationLayout({ children }: { children: React.React
         {navItems[2] && (
           <Link
             href={navItems[2].href}
-            className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-              pathname === navItems[2].href ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+            className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+              pathname === navItems[2].href ? 'opacity-100' : 'opacity-70 hover:opacity-100'
             }`}
           >
             <Athlon3DIcon
               type={getOrg3DIconType(navItems[2].name)}
-              size={32}
+              size={26}
               active={pathname === navItems[2].href}
             />
             <span
-              className={`text-[9.5px] font-bold leading-tight ${
+              className={`text-[10px] font-bold leading-tight tracking-tight ${
                 pathname === navItems[2].href ? 'text-primary' : ''
               }`}
               style={{ color: pathname === navItems[2].href ? undefined : 'var(--athlon-text-muted)' }}
@@ -687,13 +731,13 @@ export default function OrganizationLayout({ children }: { children: React.React
         {/* Profile */}
         <Link
           href={`/org/${orgId}/profile`}
-          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-            pathname === `/org/${orgId}/profile` ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+            pathname === `/org/${orgId}/profile` ? 'opacity-100' : 'opacity-70 hover:opacity-100'
           }`}
         >
-          <Athlon3DIcon type="profile" size={32} active={pathname === `/org/${orgId}/profile`} />
+          <Athlon3DIcon type="profile" size={26} active={pathname === `/org/${orgId}/profile`} />
           <span
-            className={`text-[9.5px] font-bold leading-tight ${
+            className={`text-[10px] font-bold leading-tight tracking-tight ${
               pathname === `/org/${orgId}/profile` ? 'text-primary' : ''
             }`}
             style={{ color: pathname === `/org/${orgId}/profile` ? undefined : 'var(--athlon-text-muted)' }}

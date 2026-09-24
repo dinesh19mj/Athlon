@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Building2,
   MapPin,
@@ -27,13 +28,17 @@ import {
   Check,
   Award,
   ChevronDown,
+  LayoutGrid,
+  List,
+  GraduationCap,
+  Loader2,
 } from 'lucide-react';
 import { venueApi, VenueDto } from '@/lib/api/venue';
 import { OrganizationService } from '@/lib/api/organization';
 import { VenueMarketplaceCard } from '@/components/marketplace/VenueMarketplaceCard';
+import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
-
-
 
 const POPULAR_CITIES = ['All Cities', 'Bangalore', 'Chennai', 'Hyderabad', 'Mumbai', 'Delhi NCR', 'Pune'];
 
@@ -50,7 +55,17 @@ const SPORTS_CATEGORIES = [
 const QUICK_AMENITIES = ['Floodlights', 'Air Conditioned', 'Parking', 'Equipment Rental', 'Showers', 'Cafeteria'];
 
 export default function PublicVenuesDiscoveryPage() {
+  const router = useRouter();
   const { mode, themeKey } = useAthlonTheme();
+  const { isAuthenticated } = useAuthStore();
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(isAuthenticated ? '/home' : '/');
+    }
+  };
   const [venues, setVenues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cityFilter, setCityFilter] = useState('All Cities');
@@ -59,6 +74,7 @@ export default function PublicVenuesDiscoveryPage() {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'recommended' | 'price_asc' | 'price_desc' | 'courts'>('recommended');
   const [quickFilter, setQuickFilter] = useState<'all' | 'instant' | 'ac' | 'floodlight'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
 
   useEffect(() => {
     async function loadVenues() {
@@ -208,32 +224,121 @@ export default function PublicVenuesDiscoveryPage() {
       });
   }, [venues, cityFilter, searchTerm, selectedSport, quickFilter, selectedAmenities, sortBy]);
 
-  return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
-      {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md)
-          - Theme-Aware Sticky App Bar & Hub Switcher
-          - Clean Sport Pill Carousel & Fast Filters
-          - High-contrast Venue Cards
-         ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-24">
-        {/* Sticky Mobile App Bar (100% Theme-Aware) */}
-        <div className="sticky top-0 z-30 px-4 py-3 border-b border-border bg-background/95 backdrop-blur-xl transition-colors">
-          <div className="flex items-center justify-between gap-2 mb-2.5">
-            <Link
-              href="/home"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-surface text-foreground text-xs font-bold transition-all shadow-sm active:scale-95"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Home</span>
-            </Link>
+  const isFiltered =
+    cityFilter !== 'All Cities' ||
+    searchTerm.trim().length > 0 ||
+    selectedSport !== 'ALL' ||
+    quickFilter !== 'all' ||
+    selectedAmenities.length > 0;
 
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedSport('ALL');
+    setCityFilter('All Cities');
+    setQuickFilter('all');
+    setSelectedAmenities([]);
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground pb-24 md:pb-12">
+      {/* ── SLEEK MOBILE-FIRST HEADER & SEARCH HUB ── */}
+      <section className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-card/90 via-surface/60 to-background pt-3 sm:pt-6 pb-4 sm:pb-6 px-3.5 sm:px-6">
+        {/* Subtle Ambient Glow */}
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 relative z-10">
+          {/* Top Bar: Back Button, Title, and View Mode Switcher */}
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={handleBack}
+                title="Go Back"
+                className="w-9 h-9 rounded-xl border border-border/80 bg-surface/80 hover:bg-surface text-foreground/80 hover:text-foreground flex items-center justify-center transition-all active:scale-95 shadow-xs shrink-0 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    Athlon Venues
+                  </span>
+                  <span className="hidden xs:inline-block text-[10px] text-foreground/40 font-semibold">•</span>
+                  <span className="hidden xs:inline-block text-[10px] text-foreground/50 font-bold truncate">
+                    Courts &amp; Turfs
+                  </span>
+                </div>
+                <h1 className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight truncate mt-0.5">
+                  Courts, Turfs &amp; Arenas
+                </h1>
+              </div>
+            </div>
+
+            {/* View Mode Switcher (Grid / List) */}
+            <div className="flex items-center p-1 rounded-xl bg-surface/80 border border-border/80 shrink-0 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                title="Grid Card View"
+                className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-primary text-black font-black shadow-xs scale-105'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('compact')}
+                title="Compact List View"
+                className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                  viewMode === 'compact'
+                    ? 'bg-primary text-black font-black shadow-xs scale-105'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Hub Switcher Bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-0.5">
+            <Link
+              href="/venues"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-black bg-primary text-black flex items-center gap-1.5 shadow-xs shrink-0"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Courts &amp; Turfs</span>
+            </Link>
+            <Link
+              href="/academies"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/70 hover:text-foreground border border-border/70 hover:bg-surface flex items-center gap-1.5 shrink-0 transition-all"
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-primary" />
+              <span>Academies</span>
+            </Link>
+            <Link
+              href="/coaches"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/70 hover:text-foreground border border-border/70 hover:bg-surface flex items-center gap-1.5 shrink-0 transition-all"
+            >
+              <Award className="w-3.5 h-3.5 text-amber-500" />
+              <span>Coaches</span>
+            </Link>
+          </div>
+
+          {/* Search & City Input Bar */}
+          <div className="flex items-center gap-2">
             {/* City Selector Pill */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <select
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
-                className="appearance-none pl-7 pr-7 py-1.5 rounded-full text-xs font-bold border border-border bg-card hover:bg-surface text-foreground shadow-sm outline-none focus:border-primary transition-colors cursor-pointer"
+                className="appearance-none pl-7 pr-6 py-2 rounded-xl text-xs font-bold border border-border/80 bg-surface/80 hover:bg-surface text-foreground shadow-inner outline-none focus:border-primary transition-all cursor-pointer"
               >
                 {POPULAR_CITIES.map((c) => (
                   <option key={c} value={c} className="bg-card text-foreground">
@@ -241,120 +346,142 @@ export default function PublicVenuesDiscoveryPage() {
                   </option>
                 ))}
               </select>
-              <MapPin className="w-3.5 h-3.5 text-primary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <ChevronDown className="w-3 h-3 text-foreground/50 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <MapPin className="w-3.5 h-3.5 text-primary absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3 h-3 text-foreground/50 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Search Input Bar */}
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search court name, area, turf..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-surface/80 border border-border/80 rounded-xl pl-8.5 pr-8 py-2 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-foreground/35 font-medium transition-all shadow-inner"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground/10 text-foreground/60 flex items-center justify-center hover:bg-foreground/20 text-[10px]"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Unified Hub Navigation Switcher */}
-          <div className="flex items-center p-1 rounded-2xl border border-border bg-card shadow-sm">
-            <Link
-              href="/venues"
-              className="flex-1 py-1.5 rounded-xl text-[11px] font-black tracking-wide text-center bg-primary text-primary-foreground flex items-center justify-center gap-1.5 shadow-md transition-all"
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Courts &amp; Turfs</span>
-            </Link>
-            <Link
-              href="/academies"
-              className="flex-1 py-1.5 rounded-xl text-[11px] font-bold text-center text-foreground/70 hover:text-foreground hover:bg-surface/60 flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <span>Academies</span>
-            </Link>
-            <Link
-              href="/coaches"
-              className="flex-1 py-1.5 rounded-xl text-[11px] font-bold text-center text-foreground/70 hover:text-foreground hover:bg-surface/60 flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <span>Coaches</span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Mobile Search & Quick Filters Container */}
-        <div className="px-4 pt-3.5 space-y-3">
-          {/* Mobile Search Input */}
-          <div className="relative rounded-2xl border border-border bg-card shadow-sm p-1 flex items-center">
-            <Search className="w-4 h-4 ml-3 text-foreground/40 shrink-0" />
-            <input
-              type="text"
-              placeholder="Search court name, area, turf..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent px-2.5 py-2 text-xs font-bold text-foreground outline-none placeholder:text-foreground/35"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="p-1 mr-1.5 rounded-full bg-foreground/10 text-foreground/60 hover:text-foreground"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Horizontal Sports Chips Carousel */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar -mx-4 px-4 snap-x">
+          {/* Filter Chips Carousel (Horizontal scroll on mobile) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-0.5 pt-0.5">
             {SPORTS_CATEGORIES.map((cat) => {
               const isSelected = selectedSport === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedSport(cat.id)}
-                  className={`snap-start shrink-0 px-3.5 py-2 rounded-2xl text-xs font-black flex items-center gap-1.5 transition-all border ${isSelected
-                      ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]'
-                      : 'border-border bg-card hover:bg-surface text-foreground/75 hover:text-foreground'
-                    }`}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 border active:scale-95 flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-primary text-black border-primary shadow-xs font-black'
+                      : 'bg-surface/70 border-border/70 text-foreground/70 hover:bg-surface hover:text-foreground'
+                  }`}
                 >
                   <span>{cat.icon}</span>
                   <span>{cat.label}</span>
                 </button>
               );
             })}
-          </div>
 
-          {/* Quick Filter Tags */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar -mx-4 px-4">
+            <div className="w-[1px] h-5 bg-border/80 shrink-0 mx-0.5" />
+
+            {/* Quick Filter Tags */}
             <button
               onClick={() => setQuickFilter(quickFilter === 'instant' ? 'all' : 'instant')}
-              className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors flex items-center gap-1 ${quickFilter === 'instant'
-                  ? 'bg-primary/15 text-primary border-primary font-black'
-                  : 'bg-card border-border text-foreground/65 hover:text-foreground'
-                }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 border active:scale-95 flex items-center gap-1 ${
+                quickFilter === 'instant'
+                  ? 'bg-primary text-black border-primary shadow-xs font-black'
+                  : 'bg-surface/70 border-border/70 text-foreground/70 hover:bg-surface hover:text-foreground'
+              }`}
             >
-              <Zap className="w-3 h-3 text-primary" /> Instant Slot
+              <Zap className="w-3 h-3 text-amber-500" />
+              <span>Instant Slot</span>
             </button>
+
             <button
               onClick={() => setQuickFilter(quickFilter === 'ac' ? 'all' : 'ac')}
-              className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors flex items-center gap-1 ${quickFilter === 'ac'
-                  ? 'bg-primary/15 text-primary border-primary font-black'
-                  : 'bg-card border-border text-foreground/65 hover:text-foreground'
-                }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 border active:scale-95 flex items-center gap-1 ${
+                quickFilter === 'ac'
+                  ? 'bg-primary text-black border-primary shadow-xs font-black'
+                  : 'bg-surface/70 border-border/70 text-foreground/70 hover:bg-surface hover:text-foreground'
+              }`}
             >
-              ❄️ AC Courts
+              <span>❄️ AC Courts</span>
             </button>
+
             <button
               onClick={() => setQuickFilter(quickFilter === 'floodlight' ? 'all' : 'floodlight')}
-              className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors flex items-center gap-1 ${quickFilter === 'floodlight'
-                  ? 'bg-primary/15 text-primary border-primary font-black'
-                  : 'bg-card border-border text-foreground/65 hover:text-foreground'
-                }`}
+              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 border active:scale-95 flex items-center gap-1 ${
+                quickFilter === 'floodlight'
+                  ? 'bg-primary text-black border-primary shadow-xs font-black'
+                  : 'bg-surface/70 border-border/70 text-foreground/70 hover:bg-surface hover:text-foreground'
+              }`}
             >
-              💡 Floodlights
+              <span>💡 Floodlights</span>
             </button>
+
+            {/* Extra Amenities Toggle */}
+            {QUICK_AMENITIES.filter((a) => !['Floodlights', 'Air Conditioned'].includes(a)).map((amenity) => {
+              const active = selectedAmenities.includes(amenity);
+              return (
+                <button
+                  key={amenity}
+                  onClick={() => toggleAmenity(amenity)}
+                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 border active:scale-95 flex items-center gap-1 ${
+                    active
+                      ? 'bg-primary text-black border-primary shadow-xs font-black'
+                      : 'bg-surface/70 border-border/70 text-foreground/70 hover:bg-surface hover:text-foreground'
+                  }`}
+                >
+                  {active && <Check className="w-3 h-3 text-black" />}
+                  <span>{amenity}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── VENUES DIRECTORY LIST / GRID ── */}
+      <main className="max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-6 space-y-4 pb-28 sm:pb-16">
+        {/* Results Counter & Sort Bar */}
+        <div className="flex items-center justify-between text-xs gap-2">
+          <div className="flex items-center gap-1.5 text-foreground/80 font-bold min-w-0">
+            <Building2 className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-xs font-black text-foreground truncate">
+              {loading
+                ? 'Discovering venues...'
+                : `${filteredVenues.length} ${filteredVenues.length === 1 ? 'Venue' : 'Venues'} Available`}
+            </span>
+            {cityFilter !== 'All Cities' && (
+              <span className="text-foreground/50 text-[11px] hidden xs:inline truncate">in {cityFilter}</span>
+            )}
           </div>
 
-          {/* Section Header Count Bar (Clean, Zero Overlap) */}
-          <div className="flex items-center justify-between pt-1 border-t border-border">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <h2 className="text-[11px] font-black text-foreground uppercase tracking-widest">
-                Available Venues ({filteredVenues.length})
-              </h2>
-            </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {isFiltered && (
+              <button
+                onClick={resetFilters}
+                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Reset</span>
+              </button>
+            )}
+
+            {/* Sort Dropdown */}
             <select
               value={sortBy}
               onChange={(e: any) => setSortBy(e.target.value)}
-              className="text-[10px] font-bold bg-card border border-border rounded-lg px-2 py-1 text-foreground outline-none cursor-pointer"
+              className="text-[11px] font-bold bg-surface/80 border border-border/80 rounded-xl px-2.5 py-1 text-foreground outline-none cursor-pointer shadow-xs"
             >
               <option value="recommended">⚡ Best Match</option>
               <option value="price_asc">💰 Price: Low to High</option>
@@ -364,300 +491,133 @@ export default function PublicVenuesDiscoveryPage() {
           </div>
         </div>
 
-        {/* Mobile Venues List */}
-        <div className="px-4 pt-3 space-y-4">
-          {loading ? (
-            <div className="space-y-4 animate-pulse">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-64 rounded-3xl border border-border bg-card/60"
-                />
-              ))}
+        {/* Loading State */}
+        {loading ? (
+          <div className="py-16 sm:py-24 flex flex-col items-center justify-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
+              <Loader2 className="w-5 h-5 animate-spin" />
             </div>
-          ) : filteredVenues.length === 0 ? (
-            <div className="p-10 text-center rounded-3xl border border-border bg-card space-y-3">
-              <Building2 className="w-10 h-10 text-foreground/30 mx-auto" />
-              <h3 className="text-sm font-black text-foreground">No Venues Found</h3>
-              <p className="text-xs text-foreground/50 max-w-xs mx-auto">
+            <p className="text-xs font-bold text-foreground/50">Discovering courts &amp; turfs...</p>
+          </div>
+        ) : venues.length === 0 ? (
+          /* Empty Directory State */
+          <div className="py-12 sm:py-16 text-center space-y-3 bg-surface/50 border border-border/80 rounded-3xl p-6 sm:p-8 max-w-md mx-auto shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary mx-auto">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-black text-foreground">No Venues Registered Yet</h3>
+              <p className="text-xs text-foreground/60 leading-relaxed max-w-xs mx-auto">
+                There are currently no sports arenas or turf complexes registered in the directory. Verified courts will appear here once onboarded.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Link
+                href={isAuthenticated ? '/home' : '/'}
+                className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider shadow-sm hover:brightness-110 inline-flex items-center gap-2 active:scale-95 transition-all"
+              >
+                <span>Back to Home</span>
+              </Link>
+            </div>
+          </div>
+        ) : filteredVenues.length === 0 ? (
+          /* Search / Filter Mismatch State */
+          <div className="py-12 sm:py-16 text-center space-y-3 bg-surface/50 border border-border/80 rounded-3xl p-6 sm:p-8 max-w-md mx-auto shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-foreground/5 border border-border/80 flex items-center justify-center text-foreground/40 mx-auto">
+              <Search className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-foreground">No Venues Found</h3>
+              <p className="text-xs text-foreground/50 leading-relaxed max-w-xs mx-auto">
                 No arenas match your filters in {cityFilter}. Try resetting filters or choosing &quot;All Cities&quot;.
               </p>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedSport('ALL');
-                  setCityFilter('All Cities');
-                  setQuickFilter('all');
-                  setSelectedAmenities([]);
-                }}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-md"
-              >
-                Reset All Filters
-              </button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredVenues.map((venue: any) => (
-                <VenueMarketplaceCard
-                  key={venue.venueUuid || venue.venueId || venue.id}
-                  venue={venue}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          2. DESKTOP VIEW ONLY (>= md)
-          - Theme-Aware Hero Banner with Dynamic Gradient
-          - Wide Multi-Field Search & City Console
-          - Multi-Select Amenities Filter Bar & Sorting
-          - 3-Column Responsive Marketplace Cards Grid
-         ══════════════════════════════════════════════════════════════════════ */}
-      <div className="hidden md:block pb-28">
-        {/* Desktop Hero Showcase Banner (Theme-Aware) */}
-        <div className="relative border-b border-border overflow-hidden pt-10 pb-16 px-8 lg:px-12 bg-gradient-to-b from-card via-surface/70 to-background">
-          {/* Subtle Ambient Glows */}
-          <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-            {/* Top Navigation Row */}
-            <div className="flex items-center justify-between">
-              <Link
-                href="/home"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card hover:bg-surface text-foreground text-xs font-bold transition-all shadow-sm hover:border-primary/50 group"
-              >
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-                <span>Return to Home</span>
-              </Link>
-
-              {/* Hub Category Switcher */}
-              <div className="inline-flex items-center gap-1.5 p-1.5 rounded-full border border-border bg-card shadow-md">
-                <Link
-                  href="/venues"
-                  className="px-4 py-1.5 rounded-full text-xs font-black bg-primary text-primary-foreground flex items-center gap-2 shadow-sm"
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span>Courts &amp; Turfs</span>
-                </Link>
-                <Link
-                  href="/academies"
-                  className="px-4 py-1.5 rounded-full text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-surface flex items-center gap-2 transition-colors"
-                >
-                  <span>Academies</span>
-                </Link>
-                <Link
-                  href="/coaches"
-                  className="px-4 py-1.5 rounded-full text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-surface flex items-center gap-2 transition-colors"
-                >
-                  <span>Coaches</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Headline & Value Proposition */}
-            <div className="text-center max-w-3xl mx-auto space-y-4">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-[11px] font-black uppercase tracking-widest">
-                <Sparkles className="w-3.5 h-3.5" />
-                Real-Time Slot Discovery &amp; Instant Booking
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
-                Find &amp; Book Top Sports Venues
-              </h1>
-              <p className="text-sm lg:text-base text-foreground/60 font-medium max-w-2xl mx-auto">
-                Real-time hourly court booking for synthetic Badminton courts, floodlit Football turfs, Cricket box nets, and Tennis arenas.
-              </p>
-
-              {/* Quality Value Badges */}
-              <div className="flex flex-wrap items-center justify-center gap-6 pt-2 text-xs font-bold text-foreground/70">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Instant Live Confirmation
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-primary" /> 100% Verified Quality Courts
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-amber-500" /> Zero Cancellation Stress
-                </span>
-              </div>
-            </div>
-
-            {/* Desktop Unified Search & City Console */}
-            <div className="max-w-4xl mx-auto p-2.5 rounded-3xl border border-border bg-card shadow-xl flex items-center gap-3">
-              {/* Search Query Input */}
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
-                <input
-                  type="text"
-                  placeholder="Search court name, area, turf or sport..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-11 pr-8 py-3 rounded-2xl bg-surface text-xs font-bold text-foreground outline-none border border-border focus:border-primary transition-colors"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* City Selector */}
-              <div className="relative w-56">
-                <MapPin className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-primary" />
-                <select
-                  value={cityFilter}
-                  onChange={(e) => setCityFilter(e.target.value)}
-                  className="w-full pl-10 pr-8 py-3 rounded-2xl bg-surface text-xs font-bold text-foreground outline-none border border-border focus:border-primary appearance-none cursor-pointer transition-colors"
-                >
-                  {POPULAR_CITIES.map((c) => (
-                    <option key={c} value={c} className="bg-card text-foreground">
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" />
-              </div>
-
-              {/* Search CTA */}
-              <button
-                onClick={() => { }}
-                className="px-6 py-3 rounded-2xl bg-primary text-primary-foreground text-xs font-black shadow-lg shadow-primary/25 hover:bg-primary-hover active:scale-95 transition-all flex items-center gap-2 shrink-0"
-              >
-                <Search className="w-4 h-4" />
-                <span>Find Courts</span>
-              </button>
-            </div>
+            <button
+              onClick={resetFilters}
+              className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider shadow-sm hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+            >
+              Reset All Filters
+            </button>
           </div>
+        ) : viewMode === 'compact' ? (
+          /* Compact List View (Mobile-First) */
+          <div className="space-y-2.5 max-w-2xl mx-auto">
+            {filteredVenues.map((venue: any) => (
+              <div key={venue.venueUuid || venue.venueId || venue.id}>
+                <VenueMarketplaceCard venue={venue} variant="compact" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Grid View (Mobile-Optimized Cards) */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {filteredVenues.map((venue: any) => (
+              <div key={venue.venueUuid || venue.venueId || venue.id} className="h-full">
+                <VenueMarketplaceCard venue={venue} variant="card" className="h-full shadow-xs" />
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Mobile Fixed Bottom Nav */}
+      <nav
+        className="fixed bottom-0 inset-x-0 h-20 backdrop-blur-xl border-t z-50 px-5 flex items-center justify-between max-w-lg mx-auto fixed-bottom-nav md:hidden"
+        style={{
+          backgroundColor: 'var(--athlon-navigation)',
+          borderColor: 'var(--athlon-border)',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
+        }}
+      >
+        <Link href="/" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+          <Athlon3DIcon type="home" size={32} active={false} />
+          <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+            Home
+          </span>
+        </Link>
+
+        <Link href="/tournaments" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+          <Athlon3DIcon type="tournaments" size={32} active={false} />
+          <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+            Tournaments
+          </span>
+        </Link>
+
+        {/* 3D Circular Elevated Umpire Button */}
+        <div className="relative -top-5 flex items-center justify-center">
+          <Link
+            href="/practice"
+            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
+            style={{
+              backgroundColor: 'var(--athlon-primary)',
+              borderColor: 'var(--athlon-navigation)',
+              boxShadow: '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div className="absolute inset-x-1 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/40 via-white/10 to-transparent pointer-events-none" />
+            <img
+              src="/umpire.png"
+              alt="Umpire"
+              className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+            />
+          </Link>
         </div>
 
-        {/* Desktop Filter Toolbar & Sport Selector */}
-        <div className="max-w-7xl mx-auto px-8 lg:px-12 pt-8 space-y-6">
-          {/* Sports Category Tabs */}
-          <div className="flex items-center justify-between border-b border-border pb-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {SPORTS_CATEGORIES.map((cat) => {
-                const isSelected = selectedSport === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedSport(cat.id)}
-                    className={`px-4 py-2 rounded-2xl text-xs font-black flex items-center gap-2 transition-all border ${isSelected
-                        ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105'
-                        : 'border-border bg-card hover:bg-surface text-foreground/70 hover:text-foreground'
-                      }`}
-                  >
-                    <span>{cat.icon}</span>
-                    <span>{cat.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+        <Link href="/venues" className="flex flex-col items-center gap-0.5 w-16 group">
+          <Athlon3DIcon type="facilities" size={32} active={true} />
+          <span className="text-[9.5px] font-bold text-primary leading-tight">
+            Courts
+          </span>
+        </Link>
 
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-bold text-foreground/50">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e: any) => setSortBy(e.target.value)}
-                className="text-xs font-bold bg-card border border-border rounded-xl px-3 py-2 text-foreground outline-none cursor-pointer"
-              >
-                <option value="recommended">⚡ Best Match &amp; Rating</option>
-                <option value="price_asc">💰 Price: Low to High</option>
-                <option value="price_desc">💎 Price: High to Low</option>
-                <option value="courts">🏟️ Most Courts</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Secondary Amenities Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-extrabold uppercase text-[10px] tracking-widest text-foreground/40 mr-1 flex items-center gap-1">
-                <SlidersHorizontal className="w-3.5 h-3.5" /> Filters:
-              </span>
-              {QUICK_AMENITIES.map((amenity) => {
-                const active = selectedAmenities.includes(amenity);
-                return (
-                  <button
-                    key={amenity}
-                    onClick={() => toggleAmenity(amenity)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${active
-                        ? 'bg-primary/15 border-primary text-primary font-black shadow-sm'
-                        : 'bg-card border-border text-foreground/60 hover:bg-surface hover:text-foreground'
-                      }`}
-                  >
-                    {active && <Check className="w-3 h-3 text-primary" />}
-                    {amenity}
-                  </button>
-                );
-              })}
-              {selectedAmenities.length > 0 && (
-                <button
-                  onClick={() => setSelectedAmenities([])}
-                  className="text-[11px] font-bold text-red-500 hover:underline ml-2"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-bold text-foreground/50">
-              <Building2 className="w-4 h-4 text-primary" />
-              <span>
-                Showing <strong className="text-foreground">{filteredVenues.length}</strong> venues in{' '}
-                <strong className="text-foreground">{cityFilter}</strong>
-              </span>
-            </div>
-          </div>
-
-          {/* Desktop Venues Grid */}
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse pt-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="h-96 rounded-3xl border border-border bg-card/60"
-                />
-              ))}
-            </div>
-          ) : filteredVenues.length === 0 ? (
-            <div className="p-20 text-center rounded-3xl border border-border bg-card space-y-4 my-6">
-              <Building2 className="w-14 h-14 text-foreground/30 mx-auto" />
-              <h3 className="text-lg font-black text-foreground">No Venues Match Your Criteria</h3>
-              <p className="text-xs sm:text-sm text-foreground/50 max-w-md mx-auto">
-                We couldn&apos;t find any venues in {cityFilter} matching your search query or selected amenities.
-              </p>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedSport('ALL');
-                  setCityFilter('All Cities');
-                  setSelectedAmenities([]);
-                  setQuickFilter('all');
-                }}
-                className="px-6 py-2.5 rounded-2xl bg-primary text-primary-foreground text-xs font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all"
-              >
-                Reset Search Filters
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
-              {filteredVenues.map((venue: any) => (
-                <VenueMarketplaceCard
-                  key={venue.venueUuid || venue.venueId || venue.id}
-                  venue={venue}
-                  className="h-full"
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        <Link href={isAuthenticated ? '/home' : '/login'} className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+          <Athlon3DIcon type="profile" size={32} active={false} />
+          <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+            Profile
+          </span>
+        </Link>
+      </nav>
     </div>
   );
 }

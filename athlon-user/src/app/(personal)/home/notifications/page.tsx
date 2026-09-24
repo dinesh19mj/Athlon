@@ -138,58 +138,60 @@ export default function NotificationsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
          ══════════════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          1. MOBILE VIEW ONLY (< md) - COMPACT & REFINED
+         ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24">
         {/* Header */}
-        <header className="p-4 border-b border-foreground/5 bg-surface/50 backdrop-blur-md sticky top-0 z-20 flex justify-between items-end">
-          <div>
-            <h1 className="text-3xl font-black uppercase tracking-wide flex items-center gap-2">
-              <Bell className="w-7 h-7 text-[#3B82F6]" /> Notifications
+        <header className="px-4 py-3 border-b border-foreground/10 bg-surface/85 backdrop-blur-md sticky top-0 z-20 flex justify-between items-center">
+          <div className="space-y-0.5">
+            <h1 className="text-base font-black uppercase tracking-wide flex items-center gap-1.5 text-foreground">
+              <Bell className="w-4 h-4 text-[#3B82F6]" /> Notifications
             </h1>
-            <p className="text-foreground/50 font-bold mt-1 text-sm">
-              Stay updated on your upcoming matches and results.
+            <p className="text-text-muted font-medium text-[10px] leading-tight">
+              Match schedule adjustments, entries &amp; results
             </p>
           </div>
+
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllAsRead}
+              className="text-[9.5px] font-black uppercase tracking-wider text-primary hover:underline shrink-0 bg-primary/10 px-2 py-1 rounded-lg border border-primary/20"
+            >
+              Mark Read
+            </button>
+          )}
         </header>
 
         {/* Main Content */}
-        <main className="p-4 max-w-3xl mx-auto space-y-3">
-          {/* Mobile mark as read */}
-          <div className="flex justify-end mb-2">
-            <button
-              onClick={markAllAsRead}
-              className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] hover:underline"
-            >
-              Mark all as read
-            </button>
-          </div>
-
+        <main className="p-3.5 max-w-3xl mx-auto space-y-2.5">
           {notifications.map((notif) => (
             <div
               key={notif.id}
-              className={`bg-surface border rounded-2xl p-4 flex gap-4 transition-colors group relative overflow-hidden ${
-                !notif.read ? 'border-foreground/20 shadow-md' : 'border-foreground/5 opacity-80 hover:opacity-100'
+              className={`bg-surface border rounded-xl p-3 flex gap-3 transition-colors group relative overflow-hidden ${
+                !notif.read ? 'border-primary/30 shadow-sm bg-surface-elevated' : 'border-border/60 opacity-80 hover:opacity-100'
               }`}
             >
               {!notif.read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#3B82F6]" />}
 
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${notif.bgColor}`}>
-                <notif.icon className={`w-5 h-5 ${notif.color}`} />
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${notif.bgColor}`}>
+                <notif.icon className={`w-4 h-4 ${notif.color}`} />
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-1">
+                <div className="flex justify-between items-start mb-0.5">
                   <h3
-                    className={`text-sm font-black tracking-tight truncate pr-2 ${
+                    className={`text-xs font-black tracking-tight truncate pr-2 ${
                       !notif.read ? 'text-foreground' : 'text-foreground/80'
                     }`}
                   >
                     {notif.title}
                   </h3>
-                  <span className="text-[10px] font-bold text-foreground/40 shrink-0 mt-0.5">{notif.time}</span>
+                  <span className="text-[9px] font-bold text-text-muted shrink-0 mt-0.5">{notif.time}</span>
                 </div>
                 <p
-                  className={`text-xs leading-relaxed ${
-                    !notif.read ? 'font-bold text-foreground/70' : 'font-medium text-foreground/50'
+                  className={`text-[11px] leading-relaxed ${
+                    !notif.read ? 'font-medium text-foreground/80' : 'font-normal text-text-muted'
                   }`}
                 >
                   {notif.message}
@@ -199,12 +201,12 @@ export default function NotificationsPage() {
           ))}
 
           {notifications.length === 0 && (
-            <div className="bg-surface/50 border border-foreground/5 border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center mt-8">
-              <Bell className="w-12 h-12 text-foreground/20 mb-4" />
-              <h3 className="text-lg font-black uppercase tracking-widest text-foreground/70 mb-2">
+            <div className="bg-surface/50 border border-dashed border-border rounded-2xl p-8 text-center flex flex-col items-center justify-center mt-6">
+              <Bell className="w-8 h-8 text-text-muted/30 mb-2" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-foreground/80 mb-1">
                 You're all caught up!
               </h3>
-              <p className="text-xs font-bold text-foreground/40 max-w-sm">There are no new notifications at this time.</p>
+              <p className="text-[10px] text-text-muted max-w-xs">There are no new notifications at this time.</p>
             </div>
           )}
         </main>

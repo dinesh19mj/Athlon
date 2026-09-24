@@ -430,7 +430,7 @@ export default function BookingsPage() {
       <div className="block md:hidden pb-28 min-h-screen">
         {/* Sticky Mobile Top Header */}
         <header
-          className="sticky top-0 z-40 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b transition-all"
+          className="sticky top-0 z-40 flex items-center justify-between px-4 py-2.5 backdrop-blur-xl border-b transition-all"
           style={{
             backgroundColor: 'var(--athlon-navigation)',
             borderColor: 'var(--athlon-border)',
@@ -451,7 +451,7 @@ export default function BookingsPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <h1 className="text-xs font-black uppercase tracking-wider text-foreground truncate">
-                  Book Courts & Slots
+                  Book Courts &amp; Slots
                 </h1>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-primary/15 text-primary border border-primary/25 font-mono shrink-0">
                   {filteredVenues.length}
@@ -479,7 +479,7 @@ export default function BookingsPage() {
           </div>
         </header>
 
-        <main className="w-full max-w-lg mx-auto px-3.5 flex flex-col gap-3 pt-3">
+        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-3 pt-3">
           {/* 1. Date Selector Track (Horizontal 7 Days) */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-0.5">
@@ -1247,7 +1247,7 @@ export default function BookingsPage() {
           <div className="relative -top-5 flex items-center justify-center">
             <Link
               href="/practice"
-              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
               style={{
                 backgroundColor: 'var(--athlon-primary)',
                 borderColor: 'var(--athlon-navigation)',

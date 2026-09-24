@@ -44,6 +44,8 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
               category: category as any,
               bestOfSets: 3,
               pointBreak: 21,
+              deuce: searchParams.get('deuce') === 'true',
+              maxPointCap: searchParams.get('maxPointCap') ? parseInt(searchParams.get('maxPointCap')!) : 30,
               teamA: teamAParts,
               teamB: teamBParts,
               teamAName: m.teamAName,
@@ -176,6 +178,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
         games,
         currentGameIndex,
         matchWinner,
+        teamsFlipped,
         teamAScore: currentGame ? String(currentGame.scoreA) : '0',
         teamBScore: currentGame ? String(currentGame.scoreB) : '0',
         isFinal: !!matchWinner
@@ -183,7 +186,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
 
       ScoreService.sync(matchId, stateToSync).catch(err => console.error("Failed to sync score state:", err));
     }
-  }, [isOfficial, config, games, currentGameIndex, matchWinner, matchId]);
+  }, [isOfficial, config, games, currentGameIndex, matchWinner, matchId, teamsFlipped]);
 
   // Update local offline vault for quick/practice matches
   useEffect(() => {
@@ -261,6 +264,15 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
     const serverScore = isServeA ? currentGame.scoreA : currentGame.scoreB;
     const receiverScore = isServeA ? currentGame.scoreB : currentGame.scoreA;
 
+    if (currentGame.isIntervalBreak) {
+      const leadScore = Math.max(serverScore, receiverScore);
+      const trailScore = Math.min(serverScore, receiverScore);
+      if (currentGame.midGameCourtSwapped) {
+        return `Interval. Change ends. ${leadScore} - ${trailScore}.`;
+      }
+      return `Interval. ${leadScore} - ${trailScore}.`;
+    }
+
     let call = `${serverFullName} to ${receiverFullName}. `;
 
     const lastGame = store.history.length > 0 ? store.history[store.history.length - 1] : null;
@@ -271,10 +283,21 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
     }
 
     const ptBreak = config.pointBreak;
-    const isGamePointServer = serverScore >= (ptBreak - 1) && serverScore > receiverScore;
-    const isGamePointReceiver = receiverScore >= (ptBreak - 1) && receiverScore > serverScore;
-    const cap = ptBreak === 21 ? 30 : ptBreak === 15 ? 21 : 30;
-    const isCapPoint = serverScore === cap - 1 && receiverScore === cap - 1;
+    const isDeuceEnabled = Boolean(config.deuce);
+    const cap = config.maxPointCap ?? (ptBreak === 21 ? 30 : ptBreak === 15 ? 21 : ptBreak === 11 ? 15 : 30);
+
+    let isGamePointServer = false;
+    let isGamePointReceiver = false;
+    const isCapPoint = isDeuceEnabled && serverScore === cap - 1 && receiverScore === cap - 1;
+
+    if (isDeuceEnabled) {
+      // Must lead by 2 to win or reach cap
+      isGamePointServer = (serverScore >= ptBreak - 1 && serverScore - receiverScore >= 1) || isCapPoint;
+      isGamePointReceiver = (receiverScore >= ptBreak - 1 && receiverScore - serverScore >= 1) || isCapPoint;
+    } else {
+      isGamePointServer = serverScore === ptBreak - 1;
+      isGamePointReceiver = receiverScore === ptBreak - 1;
+    }
 
     const hasGamePoint = isGamePointServer || isGamePointReceiver || isCapPoint;
 
@@ -301,7 +324,11 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
     }
 
     if (serverScore === receiverScore) {
-      call += `${serverScore} all`;
+      if (isDeuceEnabled && serverScore >= ptBreak - 1) {
+        call += serverScore === cap - 1 ? `${serverScore} all. Sudden death point.` : `Deuce. ${serverScore} all.`;
+      } else {
+        call += `${serverScore} all`;
+      }
     } else {
       call += `${serverScore} - ${receiverScore}`;
     }
@@ -487,44 +514,44 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
       <button
         onClick={() => setIsThemeModalOpen(true)}
         title="Change Theme & Appearance"
-        className="w-10 h-10 bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95 text-primary"
+        className={`${isPortrait ? 'w-10 h-10' : 'w-8 h-8 sm:w-9 sm:h-9'} bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95 text-primary shrink-0`}
       >
-        <Palette className="w-5 h-5" />
+        <Palette className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'}`} />
       </button>
       <button
         onClick={() => setShowUmpireCall(!showUmpireCall)}
-        className="w-10 h-10 bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95"
+        className={`${isPortrait ? 'w-10 h-10' : 'w-8 h-8 sm:w-9 sm:h-9'} bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95 shrink-0`}
       >
-        <MessageSquare className={`w-5 h-5 ${showUmpireCall ? 'text-primary' : 'text-foreground/70'}`} />
+        <MessageSquare className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'} ${showUmpireCall ? 'text-primary' : 'text-foreground/70'}`} />
       </button>
       <button
         onClick={() => setIsMuted(!isMuted)}
-        className="w-10 h-10 bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95"
+        className={`${isPortrait ? 'w-10 h-10' : 'w-8 h-8 sm:w-9 sm:h-9'} bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95 shrink-0`}
       >
-        {isMuted ? <VolumeX className="w-5 h-5 text-foreground/70" /> : <Volume2 className="w-5 h-5 text-primary" />}
+        {isMuted ? <VolumeX className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'} text-foreground/70`} /> : <Volume2 className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'} text-primary`} />}
       </button>
     </>
   );
 
   const TopBarRightActions = () => (
     <>
-      <button onClick={store.undoPoint} disabled={store.history.length === 0 || !!matchWinner || currentGame.isGameOver} className="w-10 h-10 bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors disabled:opacity-30 shadow-sm active:scale-95">
-        <Undo2 className="w-5 h-5 text-foreground/70" />
+      <button onClick={store.undoPoint} disabled={store.history.length === 0 || !!matchWinner || currentGame.isGameOver} className={`${isPortrait ? 'w-10 h-10' : 'w-8 h-8 sm:w-9 sm:h-9'} bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors disabled:opacity-30 shadow-sm active:scale-95 shrink-0`}>
+        <Undo2 className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'} text-foreground/70`} />
       </button>
-      <button className="w-10 h-10 bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors opacity-30 cursor-not-allowed shadow-sm">
-        <Redo2 className="w-5 h-5 text-foreground/70" />
+      <button className={`${isPortrait ? 'w-10 h-10' : 'w-8 h-8 sm:w-9 sm:h-9'} bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors opacity-30 cursor-not-allowed shadow-sm shrink-0`}>
+        <Redo2 className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'} text-foreground/70`} />
       </button>
       <button
         onClick={() => setOrientationOverride(prev => {
           if (prev === 'auto') return isWindowPortrait ? 'landscape' : 'portrait';
           return prev === 'portrait' ? 'landscape' : 'portrait';
         })}
-        className="w-10 h-10 bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95"
+        className={`${isPortrait ? 'w-10 h-10' : 'w-8 h-8 sm:w-9 sm:h-9'} bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95 shrink-0`}
       >
-        <Smartphone className={`w-5 h-5 ${isPortrait ? 'text-foreground/70' : 'text-foreground/70 rotate-90'}`} />
+        <Smartphone className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'} ${isPortrait ? 'text-foreground/70' : 'text-foreground/70 rotate-90'}`} />
       </button>
-      <button onClick={() => router.push('/')} className="w-10 h-10 bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95">
-        <Menu className="w-5 h-5 text-foreground/70" />
+      <button onClick={() => router.push('/')} className={`${isPortrait ? 'w-10 h-10' : 'w-8 h-8 sm:w-9 sm:h-9'} bg-surface border border-foreground/10 rounded-xl flex items-center justify-center hover:bg-foreground/10 transition-colors shadow-sm active:scale-95 shrink-0`}>
+        <Menu className={`${isPortrait ? 'w-5 h-5' : 'w-4 h-4 sm:w-4.5 sm:h-4.5'} text-foreground/70`} />
       </button>
     </>
   );
@@ -569,54 +596,72 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
       <div style={containerStyle} className="flex flex-col text-foreground selection:bg-transparent overflow-hidden">
 
         {/* HEADER AREA */}
-        <div className={`flex items-start justify-between ${isPortrait ? 'p-2 lg:p-4' : 'px-4 pt-4 pb-2'} shrink-0 relative z-40`}>
+        <div className={`flex ${isPortrait ? 'items-start justify-between p-2 lg:p-4' : 'items-center justify-between px-3 pt-2 pb-1 sm:px-4 sm:pt-2.5'} shrink-0 relative z-40`}>
 
           {/* Landscape Left Actions */}
-          <div className={`${!isPortrait ? 'flex' : 'hidden'} gap-2`}>
+          <div className={`${!isPortrait ? 'flex flex-1 items-center justify-start' : 'hidden'} gap-1.5 sm:gap-2 min-w-0`}>
             <TopBarActions />
           </div>
 
           {/* CENTER SCOREBOARD PILL (High Contrast & Vibrant Theme Redesign) */}
-          <div className="flex-1 flex flex-col items-center relative mt-1">
+          <div className={`${isPortrait ? 'flex-1' : 'shrink-0'} flex flex-col items-center relative ${isPortrait ? 'mt-1' : ''}`}>
 
             {/* Timer HUD Pill */}
-            <div className="bg-white dark:bg-[#1a1f2c] border border-foreground/20 dark:border-foreground/15 text-foreground text-xs font-mono font-black px-3.5 py-1 rounded-full flex items-center gap-2 shadow-lg -mb-3 relative z-30">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--athlon-primary)]" />
-              <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className={`bg-white dark:bg-[#1a1f2c] border border-foreground/20 dark:border-foreground/15 text-foreground font-mono font-black rounded-full flex items-center shadow-lg relative z-30 ${
+              isPortrait
+                ? 'text-xs px-3.5 py-1 gap-2 -mb-3'
+                : 'text-[10px] sm:text-[11px] px-2.5 py-0.5 gap-1.5 -mb-2 shadow-md'
+            }`}>
+              <span className={`${isPortrait ? 'w-2 h-2' : 'w-1.5 h-1.5'} rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--athlon-primary)]`} />
+              <svg className={`${isPortrait ? 'w-3.5 h-3.5' : 'w-3 h-3'} text-primary`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="tracking-wider text-foreground font-black">{formatTime(elapsedSeconds)}</span>
+              {config?.deuce && currentGame && currentGame.scoreA >= (config.pointBreak - 1) && currentGame.scoreB >= (config.pointBreak - 1) && (
+                <span className={`ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 font-black uppercase tracking-wider animate-pulse border border-amber-500/30 ${
+                  isPortrait ? 'text-[9px]' : 'text-[8px] px-1 py-0.5'
+                }`}>
+                  Deuce
+                </span>
+              )}
             </div>
 
             {/* Main Scoreboard Card */}
-            <div className={`w-full max-w-[460px] bg-white dark:bg-[#141824] rounded-2xl ${!isPortrait ? 'py-1.5' : 'p-3.5'} border-2 border-foreground/15 dark:border-primary/30 shadow-[0_12px_32px_rgba(0,0,0,0.15)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] relative overflow-hidden flex flex-col gap-2 ring-1 ring-primary/20`}>
+            <div className={`bg-white dark:bg-[#141824] ${
+              isPortrait
+                ? 'w-full max-w-[460px] rounded-2xl p-3.5 border-2 gap-2 shadow-[0_12px_32px_rgba(0,0,0,0.15)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] overflow-hidden'
+                : 'w-max min-w-[260px] rounded-xl py-1.5 pl-3 pr-2.5 border gap-1 shadow-md'
+            } border-foreground/15 dark:border-primary/30 relative flex flex-col ring-1 ring-primary/20`}>
               {/* Dynamic Theme Left Accent Strip */}
-              <div className="absolute left-0 top-0 bottom-0 w-2 bg-primary shadow-[0_0_14px_var(--athlon-primary)]" />
+              <div className={`absolute left-0 top-0 bottom-0 bg-primary shadow-[0_0_14px_var(--athlon-primary)] ${isPortrait ? 'w-2' : 'w-1.5 rounded-l-xl'}`} />
 
               {/* Team A Row */}
-              <div className={`flex items-center justify-between relative pl-4 pr-3 ${!isPortrait ? 'py-1' : 'py-0.5'}`}>
-                <div className="flex items-center gap-2.5 min-w-0 pr-3">
+              <div className={`flex items-center justify-between relative ${isPortrait ? 'pl-4 pr-3 py-0.5' : 'pl-2 pr-0.5 py-0.5 gap-4'}`}>
+                <div className={`flex items-center shrink-0 ${isPortrait ? 'gap-2.5 pr-3 min-w-0' : 'gap-1.5 pr-2'}`}>
                   {isServeA ? (
-                    <span className="flex h-3 w-3 relative shrink-0">
+                    <span className={`flex relative shrink-0 ${isPortrait ? 'h-3 w-3' : 'h-2 w-2'}`}>
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary shadow-[0_0_10px_var(--athlon-primary)]" />
+                      <span className={`relative inline-flex rounded-full bg-primary shadow-[0_0_10px_var(--athlon-primary)] ${isPortrait ? 'h-3 w-3' : 'h-2 w-2'}`} />
                     </span>
                   ) : (
-                    <span className="w-3 h-3 rounded-full bg-foreground/15 shrink-0" />
+                    <span className={`rounded-full bg-foreground/15 shrink-0 ${isPortrait ? 'w-3 h-3' : 'w-2 h-2'}`} />
                   )}
-                  <span className="text-sm sm:text-base font-medium truncate text-foreground">
+                  <span className={`font-semibold text-foreground whitespace-nowrap ${isPortrait ? 'text-sm sm:text-base truncate' : 'text-xs'}`}>
                     {config.teamA.join(' / ')}
                   </span>
                 </div>
 
                 {/* Team A Set Scores */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className={`flex items-center shrink-0 ${isPortrait ? 'gap-1.5' : 'gap-1'}`}>
                   {Array.from({ length: config.bestOfSets }).map((_, i) => {
                     const g = games[i];
                     const isCurrent = i === currentGameIndex;
+                    const sizeClass = isPortrait
+                      ? 'w-7 h-7 rounded-lg text-sm'
+                      : 'w-5.5 h-5.5 rounded-md text-xs';
                     if (!g && i > currentGameIndex) {
                       return (
-                        <div key={i} className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-mono font-bold text-foreground/30 bg-foreground/5 border border-foreground/5">
+                        <div key={i} className={`${sizeClass} shrink-0 flex items-center justify-center font-mono font-bold text-foreground/30 bg-foreground/5 border border-foreground/5`}>
                           -
                         </div>
                       );
@@ -624,7 +669,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
                     return (
                       <div
                         key={i}
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-mono font-black transition-all ${
+                        className={`${sizeClass} shrink-0 flex items-center justify-center font-mono font-black transition-all ${
                           isCurrent
                             ? 'bg-primary text-black dark:text-black shadow-[0_0_12px_var(--athlon-primary)] border border-primary'
                             : 'bg-foreground/10 text-foreground font-black border border-foreground/10'
@@ -638,32 +683,35 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
               </div>
 
               {/* Divider */}
-              <div className="h-[1px] w-full bg-foreground/15 ml-4 pr-4" />
+              <div className={`h-[1px] bg-foreground/15 ${isPortrait ? 'w-full ml-4 pr-4 my-0.5' : 'mx-1.5 my-0.5'}`} />
 
               {/* Team B Row */}
-              <div className={`flex items-center justify-between relative pl-4 pr-3 ${!isPortrait ? 'py-1' : 'py-0.5'}`}>
-                <div className="flex items-center gap-2.5 min-w-0 pr-3">
+              <div className={`flex items-center justify-between relative ${isPortrait ? 'pl-4 pr-3 py-0.5' : 'pl-2 pr-0.5 py-0.5 gap-4'}`}>
+                <div className={`flex items-center shrink-0 ${isPortrait ? 'gap-2.5 pr-3 min-w-0' : 'gap-1.5 pr-2'}`}>
                   {isServeB ? (
-                    <span className="flex h-3 w-3 relative shrink-0">
+                    <span className={`flex relative shrink-0 ${isPortrait ? 'h-3 w-3' : 'h-2 w-2'}`}>
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary shadow-[0_0_10px_var(--athlon-primary)]" />
+                      <span className={`relative inline-flex rounded-full bg-primary shadow-[0_0_10px_var(--athlon-primary)] ${isPortrait ? 'h-3 w-3' : 'h-2 w-2'}`} />
                     </span>
                   ) : (
-                    <span className="w-3 h-3 rounded-full bg-foreground/15 shrink-0" />
+                    <span className={`rounded-full bg-foreground/15 shrink-0 ${isPortrait ? 'w-3 h-3' : 'w-2 h-2'}`} />
                   )}
-                  <span className="text-sm sm:text-base font-medium truncate text-foreground">
+                  <span className={`font-semibold text-foreground whitespace-nowrap ${isPortrait ? 'text-sm sm:text-base truncate' : 'text-xs'}`}>
                     {config.teamB.join(' / ')}
                   </span>
                 </div>
 
                 {/* Team B Set Scores */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className={`flex items-center shrink-0 ${isPortrait ? 'gap-1.5' : 'gap-1'}`}>
                   {Array.from({ length: config.bestOfSets }).map((_, i) => {
                     const g = games[i];
                     const isCurrent = i === currentGameIndex;
+                    const sizeClass = isPortrait
+                      ? 'w-7 h-7 rounded-lg text-sm'
+                      : 'w-5.5 h-5.5 rounded-md text-xs';
                     if (!g && i > currentGameIndex) {
                       return (
-                        <div key={i} className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-mono font-bold text-foreground/30 bg-foreground/5 border border-foreground/5">
+                        <div key={i} className={`${sizeClass} shrink-0 flex items-center justify-center font-mono font-bold text-foreground/30 bg-foreground/5 border border-foreground/5`}>
                           -
                         </div>
                       );
@@ -671,7 +719,7 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
                     return (
                       <div
                         key={i}
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-mono font-black transition-all ${
+                        className={`${sizeClass} shrink-0 flex items-center justify-center font-mono font-black transition-all ${
                           isCurrent
                             ? 'bg-primary text-black dark:text-black shadow-[0_0_12px_var(--athlon-primary)] border border-primary'
                             : 'bg-foreground/10 text-foreground font-black border border-foreground/10'
@@ -686,15 +734,15 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
             </div>
 
             {showUmpireCall && (
-              <div className={`${!isPortrait ? 'absolute top-full mt-2 z-50' : 'hidden'} bg-primary text-black font-medium text-xs px-4 py-2 rounded-xl shadow-lg whitespace-nowrap`}>
-                <div className="absolute left-8 -top-[6px] w-0 h-0 border-b-[6px] border-b-[var(--athlon-primary)] border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent" />
+              <div className={`${!isPortrait ? 'absolute top-full mt-1.5 z-50 left-1/2 -translate-x-1/2' : 'hidden'} bg-primary text-black font-semibold text-[11px] px-3 py-1.5 rounded-xl shadow-lg whitespace-nowrap`}>
+                <div className="absolute left-1/2 -translate-x-1/2 -top-[5px] w-0 h-0 border-b-[5px] border-b-[var(--athlon-primary)] border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent" />
                 {umpireCall}
               </div>
             )}
           </div>
 
           {/* Landscape Right Actions */}
-          <div className={`${!isPortrait ? 'flex' : 'hidden'} gap-2`}>
+          <div className={`${!isPortrait ? 'flex flex-1 items-center justify-end' : 'hidden'} gap-1.5 sm:gap-2 min-w-0`}>
             <TopBarRightActions />
           </div>
         </div>
@@ -875,9 +923,17 @@ export default function UmpireScoringPage({ params }: { params: Promise<{ matchI
               ) : currentGame.isIntervalBreak ? (
                 <>
                   <h2 className="text-2xl font-black mb-1 text-foreground uppercase tracking-widest">Interval</h2>
-                  <p className="text-sm font-bold text-foreground/60 mb-4">
-                    Players may wipe down & drink
+                  <p className="text-sm font-bold text-foreground/60 mb-3">
+                    Players may wipe down &amp; drink
                   </p>
+
+                  {currentGame.midGameCourtSwapped && (
+                    <div className="mb-4 px-3 py-2 rounded-xl bg-primary/10 border border-primary/25 text-primary text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2">
+                      <ArrowLeftRight className="w-4 h-4" />
+                      Court Change — Switch Ends
+                    </div>
+                  )}
+
                   <div className="mb-5">
                     <p className="text-xs text-foreground/50 font-bold uppercase tracking-widest mb-1">Break Time</p>
                     <p className="text-3xl font-black text-[#3B82F6] font-mono">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import {
   Trophy,
@@ -47,6 +47,9 @@ import {
   CalendarDays,
   Boxes,
   Tag,
+  Lock,
+  Zap,
+  Vote,
 } from 'lucide-react';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
@@ -64,6 +67,9 @@ import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
 import { CoachService, CoachDashboardSummary, CoachSchedule, CoachTrainee } from '@/lib/api/coach';
 import { VenueService, FacilityService, BookingService, VenueDto, FacilityDto, BookingDto } from '@/lib/api/venue';
+import { CommunityService, CommunityResponse, SessionResponse, CommunityPoll } from '@/lib/api/community';
+import { CommunitySessionCard } from '@/components/community/CommunitySessionCard';
+import { CommunityPollCard } from '@/components/community/CommunityPollCard';
 
 function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
@@ -76,23 +82,23 @@ function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   if (n.includes('booking') || n.includes('reservation')) return 'bookings';
   if (n.includes('batch') || n.includes('group') || n.includes('squad') || n.includes('package') || n.includes('recurring') || n.includes('series')) return 'batches';
   if (n.includes('coach') || n.includes('trainer') || n.includes('instructor')) return 'coaches';
-  if (n.includes('member') || n.includes('staff') || n.includes('team')) return 'members';
+  if (n.includes('team') || n.includes('match') || n.includes('fixture') || n.includes('sparring')) return 'matches';
+  if (n.includes('member') || n.includes('staff') || n.includes('user') || n.includes('roster')) return 'members';
   if (n.includes('attendance') || n.includes('check-in') || n.includes('roll')) return 'attendance';
+  if (n.includes('expense') || n.includes('kitty') || n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card') || n.includes('ledger')) return 'finances';
   if (n.includes('performance') || n.includes('telemetry') || n.includes('analytic') || n.includes('report') || n.includes('occupancy') || n.includes('stat') || n.includes('metric')) return 'performance';
-  if (n.includes('match') || n.includes('fixture') || n.includes('sparring')) return 'matches';
   if (n.includes('block') || n.includes('maint') || n.includes('hold')) return 'blocks';
   if (n.includes('setup') || n.includes('console') || n.includes('officiat')) return 'setup';
   if (n.includes('umpire') || n.includes('referee')) return 'umpire';
   if (n.includes('leaderboard') || n.includes('rank') || n.includes('standing') || n.includes('result')) return 'rankings';
   if (n.includes('inventory') || n.includes('equipment') || n.includes('shuttle') || n.includes('gear')) return 'inventory';
   if (n.includes('pricing') || n.includes('rate') || n.includes('tariff') || n.includes('price')) return 'pricing';
-  if (n.includes('finance') || n.includes('fee') || n.includes('billing') || n.includes('payout') || n.includes('revenue') || n.includes('card') || n.includes('ledger')) return 'finances';
   if (n.includes('centre') || n.includes('campus') || n.includes('branch')) return 'facilities';
   if (n.includes('facility') || n.includes('infrastructure') || n.includes('district') || n.includes('court') || n.includes('arena') || n.includes('map')) return 'facilities';
   if (n.includes('profile') || n.includes('venue profile')) return 'profile';
   if (n.includes('setting') || n.includes('config') || n.includes('preference')) return 'settings';
   if (n.includes('registration') || n.includes('register') || n.includes('approv') || n.includes('entry') || n.includes('pass')) return 'registered';
-  if (n.includes('academ') || n.includes('club')) return 'academies';
+  if (n.includes('academ') || n.includes('club') || n.includes('community')) return 'academies';
   return 'home';
 }
 
@@ -526,11 +532,10 @@ function CoachScheduleCard({
             <span>{session.timeSlot}</span>
           </span>
           <span
-            className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-              isDone
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                : 'bg-primary/15 text-primary border-primary/30'
-            }`}
+            className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${isDone
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+              : 'bg-primary/15 text-primary border-primary/30'
+              }`}
           >
             {isDone ? '✓ Checked In' : session.status}
           </span>
@@ -619,11 +624,10 @@ function CoachTraineeCard({
           </div>
 
           <span
-            className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${
-              isActive
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-            }`}
+            className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${isActive
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+              }`}
           >
             {isActive ? '● Active' : `● ${trainee.status}`}
           </span>
@@ -777,6 +781,7 @@ function CoachCredentialsCard({
 
 export default function OrganizationDashboard() {
   const params = useParams();
+  const router = useRouter();
   const orgId = (params?.orgId as string) || '';
   const { getActiveOrganization, organizations } = useWorkspaceStore();
   const { themeKey } = useAthlonTheme();
@@ -821,6 +826,106 @@ export default function OrganizationDashboard() {
   const [venueBookings, setVenueBookings] = useState<BookingDto[]>([]);
   const [venueTotalRevenue, setVenueTotalRevenue] = useState<number>(0);
 
+  const [communityDetails, setCommunityDetails] = useState<CommunityResponse | null>(null);
+  const [communitySessions, setCommunitySessions] = useState<SessionResponse[]>([]);
+  const [communityPolls, setCommunityPolls] = useState<CommunityPoll[]>([]);
+  const [loadingCommunityData, setLoadingCommunityData] = useState(false);
+
+  const loadCommunityData = async (targetId?: string) => {
+    const cId = targetId || org?.id || orgId;
+    if (!cId) return;
+    try {
+      setLoadingCommunityData(true);
+      const [sessRes, pollRes] = await Promise.allSettled([
+        CommunityService.getSessions(cId),
+        CommunityService.getPolls(cId),
+      ]);
+      if (sessRes.status === 'fulfilled') {
+        const data = (sessRes.value as any)?.data || sessRes.value;
+        setCommunitySessions(Array.isArray(data) ? data : []);
+      }
+      if (pollRes.status === 'fulfilled') {
+        const data = (pollRes.value as any)?.data || pollRes.value;
+        setCommunityPolls(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to load community dashboard data:', err);
+    } finally {
+      setLoadingCommunityData(false);
+    }
+  };
+
+  const handleCommunitySessionRsvp = async (sessionUuid: string, status: 'GOING' | 'NOT_GOING') => {
+    try {
+      await CommunityService.rsvpSession(sessionUuid, { status });
+      const cId = org?.id || orgId;
+      if (cId) {
+        const res = await CommunityService.getSessions(cId);
+        const data = (res as any)?.data || res;
+        setCommunitySessions(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to RSVP session:', err);
+    }
+  };
+
+  const handleCommunityPollVote = async (pollId: number, optionId: number) => {
+    try {
+      await CommunityService.votePoll(pollId, [optionId]);
+      const cId = org?.id || orgId;
+      if (cId) {
+        const res = await CommunityService.getPolls(cId);
+        const data = (res as any)?.data || res;
+        setCommunityPolls(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to vote in community poll:', err);
+    }
+  };
+
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isUpgradingCommunity, setIsUpgradingCommunity] = useState(false);
+
+  const handleUpgradeToPro = async () => {
+    try {
+      setIsUpgradingCommunity(true);
+      const targetOrgId = org?.id || orgId;
+      if (!targetOrgId) return;
+      const res = await CommunityService.updatePlan(targetOrgId, 'COMMUNITY_PRO');
+      const updated = (res as any)?.data || res;
+      setCommunityDetails(updated);
+      setIsUpgradeModalOpen(false);
+      setToastMessage('🎉 Successfully upgraded to Community PRO Workspace!');
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Failed to upgrade community plan:', err);
+      setToastMessage(err?.response?.data?.message || 'Failed to upgrade plan. Please try again.');
+      setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      setIsUpgradingCommunity(false);
+    }
+  };
+
+  const handleDowngradeToFree = async () => {
+    try {
+      setIsUpgradingCommunity(true);
+      const targetOrgId = org?.id || orgId;
+      if (!targetOrgId) return;
+      const res = await CommunityService.updatePlan(targetOrgId, 'COMMUNITY_FREE');
+      const updated = (res as any)?.data || res;
+      setCommunityDetails(updated);
+      setIsUpgradeModalOpen(false);
+      setToastMessage('Switched to Community Free Tier.');
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Failed to update plan:', err);
+      setToastMessage(err?.response?.data?.message || 'Failed to update plan. Please try again.');
+      setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      setIsUpgradingCommunity(false);
+    }
+  };
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleCheckInSession = async (sessionUuid: string) => {
@@ -854,6 +959,16 @@ export default function OrganizationDashboard() {
     if (org?.id) {
       setLoadingMetrics(true);
 
+      if (org.type === 'COMMUNITY') {
+        CommunityService.getCommunity(org.id)
+          .then((cRes: any) => {
+            const c = (cRes as any)?.data || cRes;
+            if (c) setCommunityDetails(c);
+          })
+          .catch(() => { });
+        loadCommunityData(org.id);
+      }
+
       if (org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') {
         VenueService.getVenuesByOrganization(org.id)
           .then(async (vRes: any) => {
@@ -884,7 +999,7 @@ export default function OrganizationDashboard() {
               }
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       }
 
       Promise.allSettled([
@@ -902,7 +1017,12 @@ export default function OrganizationDashboard() {
         org.type === 'COACH' ? CoachService.getTrainees(org.id).catch(() => []) : Promise.resolve([]),
         OrganizationService.getProfileByOrgUuid(org.id).catch(() => null),
         (org.type === 'ORGANIZER' || org.type === 'ASSOCIATION') ? OrganizerInventoryService.getSummary(org.id).catch(() => null) : Promise.resolve(null),
-      ]).then(([finRes, memRes, invRes, itemsRes, tournRes, acadRes, studRes, coachRes, matchesRes, coachDashRes, coachSchedRes, coachTrainRes, profRes, orgInvRes]) => {
+        org.type === 'COMMUNITY' ? CommunityService.getCommunity(org.id).catch(() => null) : Promise.resolve(null),
+      ]).then(([finRes, memRes, invRes, itemsRes, tournRes, acadRes, studRes, coachRes, matchesRes, coachDashRes, coachSchedRes, coachTrainRes, profRes, orgInvRes, commRes]) => {
+        if (commRes && commRes.status === 'fulfilled' && commRes.value) {
+          const c = (commRes.value as any)?.data || commRes.value;
+          if (c) setCommunityDetails(c as CommunityResponse);
+        }
         if (finRes.status === 'fulfilled') {
           const sum = (finRes.value as any)?.data || finRes.value;
           setFinanceSummary(sum);
@@ -1187,6 +1307,8 @@ export default function OrganizationDashboard() {
           key: 'tournaments',
           id: `/org/${org.id}/tournaments`,
           label: 'Tournaments',
+          shortLabel: 'Tournaments',
+          icon3d: 'tournaments',
           description: 'Internal leagues & draws',
           icon: Trophy,
           color: 'text-amber-400',
@@ -1196,6 +1318,8 @@ export default function OrganizationDashboard() {
           key: 'students',
           id: `/org/${org.id}/students`,
           label: 'Students',
+          shortLabel: 'Students',
+          icon3d: 'students',
           description: 'Enrollments & active roster',
           icon: GraduationCap,
           color: 'text-blue-400',
@@ -1205,6 +1329,8 @@ export default function OrganizationDashboard() {
           key: 'batches',
           id: `/org/${org.id}/batches`,
           label: 'Batches',
+          shortLabel: 'Batches',
+          icon3d: 'batches',
           description: 'Coaching groups & schedules',
           icon: Layers,
           color: 'text-indigo-400',
@@ -1214,6 +1340,8 @@ export default function OrganizationDashboard() {
           key: 'schedule',
           id: `/org/${org.id}/schedule`,
           label: 'Schedule',
+          shortLabel: 'Schedule',
+          icon3d: 'schedule',
           description: 'Training calendars & slots',
           icon: Calendar,
           color: 'text-orange-400',
@@ -1223,6 +1351,8 @@ export default function OrganizationDashboard() {
           key: 'attendance',
           id: `/org/${org.id}/attendance`,
           label: 'Attendance',
+          shortLabel: 'Attendance',
+          icon3d: 'attendance',
           description: 'Daily check-ins & roll call',
           icon: ClipboardList,
           color: 'text-emerald-400',
@@ -1232,6 +1362,8 @@ export default function OrganizationDashboard() {
           key: 'centres',
           id: `/org/${org.id}/centres`,
           label: 'Centres',
+          shortLabel: 'Centres',
+          icon3d: 'facilities',
           description: 'Campus branches & locations',
           icon: Building2,
           color: 'text-violet-400',
@@ -1241,6 +1373,8 @@ export default function OrganizationDashboard() {
           key: 'facilities',
           id: `/org/${org.id}/facilities`,
           label: 'Facilities',
+          shortLabel: 'Facilities',
+          icon3d: 'facilities',
           description: 'Courts, turfs & arenas',
           icon: MapPin,
           color: 'text-cyan-400',
@@ -1250,6 +1384,8 @@ export default function OrganizationDashboard() {
           key: 'coaches',
           id: `/org/${org.id}/coaches`,
           label: 'Coaches',
+          shortLabel: 'Coaches',
+          icon3d: 'coaches',
           description: 'Coaching staff & roster',
           icon: UserCheck,
           color: 'text-purple-400',
@@ -1259,6 +1395,8 @@ export default function OrganizationDashboard() {
           key: 'staff',
           id: `/org/${org.id}/staff`,
           label: 'Staff',
+          shortLabel: 'Staff',
+          icon3d: 'members',
           description: 'Administration & roles',
           icon: ShieldCheck,
           color: 'text-slate-400',
@@ -1268,6 +1406,8 @@ export default function OrganizationDashboard() {
           key: 'performance',
           id: `/org/${org.id}/performance`,
           label: 'Performance',
+          shortLabel: 'Progress',
+          icon3d: 'performance',
           description: 'Telemetry & analytics',
           icon: TrendingUp,
           color: 'text-blue-400',
@@ -1277,6 +1417,8 @@ export default function OrganizationDashboard() {
           key: 'matches',
           id: `/org/${org.id}/matches`,
           label: 'Matches',
+          shortLabel: 'Matches',
+          icon3d: 'matches',
           description: 'Internal academy sparring',
           icon: Activity,
           color: 'text-red-400',
@@ -1286,6 +1428,8 @@ export default function OrganizationDashboard() {
           key: 'inventory',
           id: `/org/${org.id}/inventory`,
           label: 'Inventory',
+          shortLabel: 'Inventory',
+          icon3d: 'inventory',
           description: 'Shuttles & equipment stock',
           icon: Package,
           color: 'text-orange-400',
@@ -1295,6 +1439,8 @@ export default function OrganizationDashboard() {
           key: 'posts',
           id: `/org/${org.id}/posts`,
           label: 'Feed & Gallery',
+          shortLabel: 'Feed',
+          icon3d: 'posts',
           description: 'Blogs, YouTube drills & photos',
           icon: Newspaper,
           color: 'text-pink-400',
@@ -1304,6 +1450,8 @@ export default function OrganizationDashboard() {
           key: 'finances',
           id: `/org/${org.id}/finances`,
           label: 'Finances',
+          shortLabel: 'Finances',
+          icon3d: 'finances',
           description: 'Fee collection & ledgers',
           icon: CreditCard,
           color: 'text-emerald-400',
@@ -1313,6 +1461,8 @@ export default function OrganizationDashboard() {
           key: 'settings',
           id: `/org/${org.id}/settings`,
           label: 'Settings',
+          shortLabel: 'Settings',
+          icon3d: 'settings',
           description: 'Academy configuration & preferences',
           icon: Settings,
           color: 'text-neutral-400',
@@ -1327,6 +1477,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/tournaments`,
         label: 'Tournaments',
+        shortLabel: 'Tournaments',
+        icon3d: 'tournaments',
         description: 'Club tournaments & draws',
         icon: Trophy,
         color: 'text-amber-400',
@@ -1335,6 +1487,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/members`,
         label: 'Members',
+        shortLabel: 'Members',
+        icon3d: 'members',
         description: 'Registered club members',
         icon: Users,
         color: 'text-[#3B82F6]',
@@ -1343,6 +1497,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/matches`,
         label: 'Matches',
+        shortLabel: 'Matches',
+        icon3d: 'matches',
         description: 'Club league fixtures',
         icon: Activity,
         color: 'text-red-400',
@@ -1351,6 +1507,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/attendance`,
         label: 'Attendance',
+        shortLabel: 'Attendance',
+        icon3d: 'attendance',
         description: 'Court bookings & check-ins',
         icon: ClipboardList,
         color: 'text-emerald-400',
@@ -1359,6 +1517,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/leaderboard`,
         label: 'Leaderboard',
+        shortLabel: 'Rankings',
+        icon3d: 'rankings',
         description: 'Club ELO rankings',
         icon: BarChart2,
         color: 'text-purple-400',
@@ -1367,6 +1527,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/inventory`,
         label: 'Inventory',
+        shortLabel: 'Inventory',
+        icon3d: 'inventory',
         description: 'Shuttles & equipment',
         icon: Package,
         color: 'text-orange-400',
@@ -1375,6 +1537,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/posts`,
         label: 'Feed & Gallery',
+        shortLabel: 'Feed',
+        icon3d: 'posts',
         description: 'Club blogs, highlights & photos',
         icon: Newspaper,
         color: 'text-pink-400',
@@ -1383,6 +1547,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/analytics`,
         label: 'Analytics',
+        shortLabel: 'Analytics',
+        icon3d: 'performance',
         description: 'Matches, attendance, stock & ledger',
         icon: TrendingUp,
         color: 'text-cyan-400',
@@ -1390,10 +1556,92 @@ export default function OrganizationDashboard() {
       });
     }
 
+    if (org.type === 'COMMUNITY') {
+      const isCommunityFree = !communityDetails?.planType || communityDetails?.planType === 'COMMUNITY_FREE';
+      return [
+        {
+          id: `/org/${org.id}/sessions`,
+          label: "Let's Play Sessions",
+          shortLabel: 'Sessions',
+          icon3d: 'schedule',
+          description: 'Weekly games, RSVP roster & attendance',
+          icon: CalendarDays,
+          color: 'text-primary',
+          bg: 'bg-primary/10',
+        },
+        {
+          id: `/org/${org.id}/community-members`,
+          label: 'Members',
+          shortLabel: 'Members',
+          icon3d: 'members',
+          description: 'Community roster, captains & roles',
+          icon: Users,
+          color: 'text-blue-400',
+          bg: 'bg-blue-500/10',
+        },
+        {
+          id: `/org/${org.id}/feed`,
+          label: 'Community Feed',
+          shortLabel: 'Feed',
+          icon3d: 'posts',
+          description: 'Photos, videos, match stories & polls',
+          icon: Newspaper,
+          color: 'text-pink-400',
+          bg: 'bg-pink-500/10',
+        },
+        {
+          id: `/org/${org.id}/teams`,
+          label: 'Matches',
+          shortLabel: 'Matches',
+          icon3d: 'matches',
+          description: 'Friendly squads & match scorecard',
+          icon: Activity,
+          color: 'text-amber-400',
+          bg: 'bg-amber-500/10',
+        },
+        {
+          id: `/org/${org.id}/tournaments`,
+          label: 'Tournaments',
+          shortLabel: 'Tournaments',
+          icon3d: 'tournaments',
+          description: isCommunityFree
+            ? 'PRO Feature: Community cups, draws & brackets'
+            : 'Community cups, draws & brackets',
+          icon: Trophy,
+          color: 'text-yellow-400',
+          bg: 'bg-yellow-500/10',
+          isLocked: isCommunityFree,
+          badge: isCommunityFree ? 'PRO' : undefined,
+        },
+        {
+          id: `/org/${org.id}/expenses`,
+          label: 'Kitty & Expenses',
+          shortLabel: 'Expenses',
+          icon3d: 'finances',
+          description: 'Shuttle purchases, court fees & shared kitty',
+          icon: CreditCard,
+          color: 'text-emerald-400',
+          bg: 'bg-emerald-500/10',
+        },
+        {
+          id: `/org/${org.id}/settings`,
+          label: 'Community Settings',
+          shortLabel: 'Settings',
+          icon3d: 'settings',
+          description: 'Privacy, join requests & sport profile',
+          icon: Settings,
+          color: 'text-neutral-400',
+          bg: 'bg-neutral-500/10',
+        },
+      ];
+    }
+
     if (org.type === 'COACH') {
       actions.push({
         id: `/org/${org.id}/students`,
         label: 'Trainees',
+        shortLabel: 'Trainees',
+        icon3d: 'students',
         description: 'Student Enrolment & Roster',
         icon: Users,
         color: 'text-primary',
@@ -1402,6 +1650,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/batches`,
         label: 'Sessions',
+        shortLabel: 'Sessions',
+        icon3d: 'batches',
         description: 'Training Slots & Calendar',
         icon: CalendarDays,
         color: 'text-amber-400',
@@ -1410,6 +1660,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/attendance`,
         label: 'Attendance',
+        shortLabel: 'Attendance',
+        icon3d: 'attendance',
         description: 'Daily Check-in & Logs',
         icon: ClipboardList,
         color: 'text-purple-400',
@@ -1418,6 +1670,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/fees`,
         label: 'Coaching Fees',
+        shortLabel: 'Fees',
+        icon3d: 'finances',
         description: 'Fee Tiers & Collections',
         icon: CreditCard,
         color: 'text-emerald-400',
@@ -1429,6 +1683,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/tournaments`,
         label: 'Tournaments',
+        shortLabel: 'Tournaments',
+        icon3d: 'tournaments',
         description: 'Championships, Draws & Schedules',
         icon: Trophy,
         color: 'text-yellow-400',
@@ -1437,6 +1693,8 @@ export default function OrganizationDashboard() {
       actions.push({
         id: `/org/${org.id}/inventory`,
         label: 'Inventory',
+        shortLabel: 'Inventory',
+        icon3d: 'inventory',
         description: 'Match gear, trophies & kits',
         icon: Boxes,
         color: 'text-blue-400',
@@ -1451,6 +1709,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/venue/calendar`,
           label: 'Live Calendar',
           shortLabel: 'Calendar',
+          icon3d: 'schedule',
           description: 'Visual interactive slot grid & real-time holds',
           icon: CalendarDays,
           color: 'text-emerald-400',
@@ -1460,6 +1719,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/venue/bookings`,
           label: 'Bookings',
           shortLabel: 'Bookings',
+          icon3d: 'bookings',
           description: 'Slot bookings, walk-ins & check-in',
           icon: ClipboardList,
           color: 'text-blue-400',
@@ -1469,6 +1729,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/venue/recurring`,
           label: 'Recurring Series',
           shortLabel: 'Recurring',
+          icon3d: 'batches',
           description: 'Academy & club block series with conflict check',
           icon: Layers,
           color: 'text-amber-400',
@@ -1479,6 +1740,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/venue/facilities`,
           label: 'Facilities',
           shortLabel: 'Facilities',
+          icon3d: 'facilities',
           description: 'Turfs, courts, pitches & multi-sport arenas',
           icon: Building,
           color: 'text-purple-400',
@@ -1488,6 +1750,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/venue/pricing`,
           label: 'Pricing Rules',
           shortLabel: 'Pricing',
+          icon3d: 'pricing',
           description: 'Dynamic peak, weekend & off-peak rate tiers',
           icon: Tag,
           color: 'text-rose-400',
@@ -1497,6 +1760,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/venue/blocks`,
           label: 'Blocks & Maint.',
           shortLabel: 'Blocks',
+          icon3d: 'blocks',
           description: 'Maintenance slots & admin closures',
           icon: Shield,
           color: 'text-red-400',
@@ -1507,6 +1771,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/venue/reports`,
           label: 'Reports & Revenue',
           shortLabel: 'Reports',
+          icon3d: 'reports',
           description: 'Occupancy matrix & financial earnings',
           icon: TrendingUp,
           color: 'text-cyan-400',
@@ -1516,6 +1781,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/finances`,
           label: 'Finances',
           shortLabel: 'Finances',
+          icon3d: 'finances',
           description: 'Settlements & payouts',
           icon: CreditCard,
           color: 'text-primary',
@@ -1526,6 +1792,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/settings`,
           label: 'Settings',
           shortLabel: 'Settings',
+          icon3d: 'settings',
           description: 'Workspace configuration, venue profile & hours',
           icon: Settings,
           color: 'text-foreground/60',
@@ -1538,6 +1805,8 @@ export default function OrganizationDashboard() {
     actions.push({
       id: `/org/${org.id}/finances`,
       label: 'Finances',
+      shortLabel: 'Finances',
+      icon3d: 'finances',
       description: 'Billing, payouts & revenue',
       icon: CreditCard,
       color: 'text-primary',
@@ -1546,6 +1815,8 @@ export default function OrganizationDashboard() {
     actions.push({
       id: `/org/${org.id}/settings`,
       label: 'Settings',
+      shortLabel: 'Settings',
+      icon3d: 'settings',
       description: 'Workspace configuration',
       icon: Settings,
       color: 'text-foreground/60',
@@ -1648,36 +1919,40 @@ export default function OrganizationDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL EXPERIENCE
+          1. MOBILE VIEW ONLY (< md) - COMPACT & REFINED DASHBOARD
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24 overflow-y-auto">
-        {/* HERO SECTION (Video Container) */}
-        <div className="px-6 relative z-10 mt-6 mb-6 max-w-7xl mx-auto">
-          <section className="relative w-full min-h-[160px] rounded-[24px] overflow-hidden bg-background border border-foreground/10 shadow-lg">
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-              <video
-                key={backgroundVideo}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-              >
-                <source src={backgroundVideo} type="video/mp4" />
-              </video>
-            </div>
-          </section>
+        {/* HERO VIDEO CARD */}
+        <div className="px-4 relative z-10 mt-3.5 mb-3.5 max-w-7xl mx-auto">
+          <div
+            className="relative w-full h-[175px] sm:h-[200px] rounded-[20px] overflow-hidden border shadow-md flex items-center justify-center"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <video
+              key={backgroundVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover rounded-[20px]"
+            >
+              <source src={backgroundVideo} type="video/mp4" />
+            </video>
+          </div>
         </div>
 
         {/* ROLE SWITCHER HEADER */}
-        <div className="px-6 mb-6 max-w-7xl mx-auto">
+        <div className="px-4 mb-3.5 max-w-7xl mx-auto">
           <HomeRoleHeader activeRole={org.id} organizations={organizations} showSearch={false} />
         </div>
 
         {/* UNIFIED ORG STATS & METRICS CARD */}
-        <div className="px-6 relative z-10 mb-4 max-w-7xl mx-auto">
+        <div className="px-4 relative z-10 mb-3.5 max-w-7xl mx-auto">
           <div
-            className="rounded-[18px] shadow-sm overflow-hidden border relative"
+            className="rounded-2xl shadow-sm overflow-hidden border relative"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
@@ -1687,13 +1962,13 @@ export default function OrganizationDashboard() {
 
             {/* Org Info Header */}
             <div
-              className="flex items-center justify-between p-3.5 border-b relative z-10"
+              className="flex items-center justify-between p-3 border-b relative z-10"
               style={{ borderColor: 'var(--athlon-border)' }}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <div className="relative">
                   <div
-                    className="w-9 h-9 rounded-xl border overflow-hidden shrink-0 shadow-inner flex items-center justify-center"
+                    className="w-8 h-8 rounded-xl border overflow-hidden shrink-0 shadow-inner flex items-center justify-center"
                     style={{
                       backgroundColor: 'var(--athlon-surface)',
                       borderColor: 'var(--athlon-border)',
@@ -1702,11 +1977,11 @@ export default function OrganizationDashboard() {
                     {org.logo ? (
                       <img src={org.logo} alt={org.name} className="w-full h-full object-cover" />
                     ) : (
-                      <OrgIcon className="w-4 h-4" style={{ color: 'var(--athlon-text-muted)' }} />
+                      <OrgIcon className="w-3.5 h-3.5" style={{ color: 'var(--athlon-text-muted)' }} />
                     )}
                   </div>
                   <div
-                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2"
+                    className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border-2"
                     style={{ borderColor: 'var(--athlon-card)' }}
                   />
                 </div>
@@ -1723,11 +1998,11 @@ export default function OrganizationDashboard() {
 
               {/* Role Capsule Badge */}
               <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-xl px-2 py-1 shrink-0">
-                  <span className="text-primary font-black text-[10px] leading-none">{org.type}</span>
-                  <OrgIcon className="w-3 h-3 text-primary shrink-0 opacity-90" />
+                <div className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-lg px-2 py-0.5 shrink-0">
+                  <span className="text-primary font-black text-[9.5px] leading-none">{org.type}</span>
+                  <OrgIcon className="w-2.5 h-2.5 text-primary shrink-0 opacity-90" />
                 </div>
-                <span className={`px-2 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider ${isAdmin
+                <span className={`px-2 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider ${isAdmin
                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25'
                   : isCoach
                     ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/25'
@@ -1751,25 +2026,25 @@ export default function OrganizationDashboard() {
                   {/* 1. Trainees */}
                   <Link
                     href={`/org/${org.id}/students`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Users className="w-3 h-3 text-primary shrink-0" />
+                      <Users className="w-2.5 h-2.5 text-primary shrink-0" />
                       <span className="truncate">TRAINEES</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{coachDashboard?.activeTraineesCount ?? coachTrainees.length}</span>
-                        <span className="text-[8px] text-primary font-semibold">Active</span>
+                        <span className="text-[7.5px] text-primary font-semibold">Active</span>
                       </div>
                     )}
                   </Link>
@@ -1777,25 +2052,25 @@ export default function OrganizationDashboard() {
                   {/* 2. Today's Sessions */}
                   <Link
                     href={`/org/${org.id}/batches`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <CalendarDays className="w-3 h-3 text-amber-400 shrink-0" />
+                      <CalendarDays className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                       <span className="truncate">SESSIONS</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{coachDashboard?.totalSessionsToday ?? coachSchedules.length} Slots</span>
-                        <span className="text-[8px] text-amber-500 font-semibold">Today</span>
+                        <span className="text-[7.5px] text-amber-500 font-semibold">Today</span>
                       </div>
                     )}
                   </Link>
@@ -1803,21 +2078,21 @@ export default function OrganizationDashboard() {
                   {/* 3. Fee Earnings / Cash */}
                   <Link
                     href={`/org/${org.id}/fees`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <CreditCard className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <CreditCard className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
                       <span className="truncate">FEES</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>
@@ -1826,7 +2101,7 @@ export default function OrganizationDashboard() {
                             ? Number(coachDashboard.monthlyRevenuePaid).toLocaleString('en-IN')
                             : Number(financeSummary?.netBalance || 0).toLocaleString('en-IN')}
                         </span>
-                        <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">Month</span>
+                        <span className="text-[7.5px] text-emerald-600 dark:text-emerald-400 font-semibold">Month</span>
                       </div>
                     )}
                   </Link>
@@ -1836,25 +2111,25 @@ export default function OrganizationDashboard() {
                   {/* 1. Students */}
                   <Link
                     href={`/org/${org.id}/students`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <GraduationCap className="w-3 h-3 text-blue-400 shrink-0" />
+                      <GraduationCap className="w-2.5 h-2.5 text-blue-400 shrink-0" />
                       <span className="truncate">STUDENTS</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{studentsCount || academyDashboard?.activeStudents || 0}</span>
-                        <span className="text-[8px] text-blue-600 dark:text-blue-400 font-semibold">Enrolled</span>
+                        <span className="text-[7.5px] text-blue-600 dark:text-blue-400 font-semibold">Enrolled</span>
                       </div>
                     )}
                   </Link>
@@ -1862,25 +2137,25 @@ export default function OrganizationDashboard() {
                   {/* 2. Coaches */}
                   <Link
                     href={`/org/${org.id}/coaches`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <UserCheck className="w-3 h-3 text-purple-400 shrink-0" />
+                      <UserCheck className="w-2.5 h-2.5 text-purple-400 shrink-0" />
                       <span className="truncate">COACHES</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{coachesCount || academyDashboard?.activeCoaches || 0}</span>
-                        <span className="text-[8px] text-purple-600 dark:text-purple-400 font-semibold">Coaches</span>
+                        <span className="text-[7.5px] text-purple-600 dark:text-purple-400 font-semibold">Coaches</span>
                       </div>
                     )}
                   </Link>
@@ -1888,25 +2163,25 @@ export default function OrganizationDashboard() {
                   {/* 3. Staff */}
                   <Link
                     href={`/org/${org.id}/staff`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Users className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <Users className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
                       <span className="truncate">STAFF</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{members.length}</span>
-                        <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">Staff</span>
+                        <span className="text-[7.5px] text-emerald-600 dark:text-emerald-400 font-semibold">Staff</span>
                       </div>
                     )}
                   </Link>
@@ -1916,25 +2191,25 @@ export default function OrganizationDashboard() {
                   {/* 1. Tournaments */}
                   <Link
                     href={`/org/${org.id}/tournaments`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+                      <Trophy className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                       <span className="truncate">TOURNAMENTS</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{tournaments.length}</span>
-                        <span className="text-[8px] text-amber-500 font-semibold">Hosted</span>
+                        <span className="text-[7.5px] text-amber-500 font-semibold">Hosted</span>
                       </div>
                     )}
                   </Link>
@@ -1942,21 +2217,21 @@ export default function OrganizationDashboard() {
                   {/* 2. Active Tournaments */}
                   <Link
                     href={`/org/${org.id}/tournaments`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Activity className="w-3 h-3 text-blue-400 shrink-0" />
+                      <Activity className="w-2.5 h-2.5 text-blue-400 shrink-0" />
                       <span className="truncate">ACTIVE</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1 truncate max-w-[90px]"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1 truncate max-w-[90px]"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>
@@ -1966,7 +2241,7 @@ export default function OrganizationDashboard() {
                             ).length
                           }
                         </span>
-                        <span className="text-[8px] text-blue-500 font-semibold">Ongoing</span>
+                        <span className="text-[7.5px] text-blue-500 font-semibold">Ongoing</span>
                       </div>
                     )}
                   </Link>
@@ -1974,21 +2249,21 @@ export default function OrganizationDashboard() {
                   {/* 3. Inventory Assets */}
                   <Link
                     href={`/org/${org.id}/inventory`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Package className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <Package className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
                       <span className="truncate">INVENTORY</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>
@@ -1996,7 +2271,7 @@ export default function OrganizationDashboard() {
                             inventorySummary?.totalQuantity ??
                             inventoryItems.length}
                         </span>
-                        <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <span className="text-[7.5px] text-emerald-600 dark:text-emerald-400 font-semibold">
                           Assets
                         </span>
                       </div>
@@ -2008,25 +2283,25 @@ export default function OrganizationDashboard() {
                   {/* 1. Facilities / Courts */}
                   <Link
                     href={`/org/${org.id}/venue/facilities`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Building className="w-3 h-3 text-purple-400 shrink-0" />
+                      <Building className="w-2.5 h-2.5 text-purple-400 shrink-0" />
                       <span className="truncate">FACILITIES</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{venueFacilities.length || 1}</span>
-                        <span className="text-[8px] text-purple-600 dark:text-purple-400 font-semibold">Active</span>
+                        <span className="text-[7.5px] text-purple-600 dark:text-purple-400 font-semibold">Active</span>
                       </div>
                     )}
                   </Link>
@@ -2034,25 +2309,25 @@ export default function OrganizationDashboard() {
                   {/* 2. Bookings */}
                   <Link
                     href={`/org/${org.id}/venue/bookings`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <CalendarDays className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <CalendarDays className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
                       <span className="truncate">BOOKINGS</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{venueBookings.length}</span>
-                        <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">Slots</span>
+                        <span className="text-[7.5px] text-emerald-600 dark:text-emerald-400 font-semibold">Slots</span>
                       </div>
                     )}
                   </Link>
@@ -2060,25 +2335,25 @@ export default function OrganizationDashboard() {
                   {/* 3. Venue Revenue */}
                   <Link
                     href={`/org/${org.id}/venue/reports`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <TrendingUp className="w-3 h-3 text-rose-400 shrink-0" />
+                      <TrendingUp className="w-2.5 h-2.5 text-rose-400 shrink-0" />
                       <span className="truncate">REVENUE</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>₹{Number(venueTotalRevenue || 0).toLocaleString('en-IN')}</span>
-                        <span className="text-[8px] text-rose-600 dark:text-rose-400 font-semibold">Earned</span>
+                        <span className="text-[7.5px] text-rose-600 dark:text-rose-400 font-semibold">Earned</span>
                       </div>
                     )}
                   </Link>
@@ -2087,26 +2362,26 @@ export default function OrganizationDashboard() {
                 <>
                   {/* 1. Members */}
                   <Link
-                    href={`/org/${org.id}/members`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    href={org.type === 'COMMUNITY' ? `/org/${org.id}/community-members` : `/org/${org.id}/members`}
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Users className="w-3 h-3 text-blue-400 shrink-0" />
+                      <Users className="w-2.5 h-2.5 text-blue-400 shrink-0" />
                       <span className="truncate">MEMBERS</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>{members.length}</span>
-                        <span className="text-[8px] text-blue-600 dark:text-blue-400 font-semibold">Roster</span>
+                        <span className="text-[7.5px] text-blue-600 dark:text-blue-400 font-semibold">Roster</span>
                       </div>
                     )}
                   </Link>
@@ -2114,25 +2389,25 @@ export default function OrganizationDashboard() {
                   {/* 2. Top Rank / Leaderboard */}
                   <Link
                     href={`/org/${org.id}/leaderboard`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+                      <Trophy className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                       <span className="truncate">RANK #1</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1 truncate max-w-[90px]"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1 truncate max-w-[90px]"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span className="truncate">{allTimeTopThree[0]?.fullName?.split(' ')[0] || 'Top 3'}</span>
-                        <span className="text-[8px] text-amber-500 font-bold shrink-0">
+                        <span className="text-[7.5px] text-amber-500 font-bold shrink-0">
                           {allTimeTopThree[0]?.points ? `${allTimeTopThree[0].points} pts` : '🏆'}
                         </span>
                       </div>
@@ -2142,25 +2417,25 @@ export default function OrganizationDashboard() {
                   {/* 3. Available Cash */}
                   <Link
                     href={`/org/${org.id}/finances`}
-                    className="flex flex-col items-center justify-center py-2.5 px-1.5 gap-0.5 hover:opacity-80 transition-opacity text-center"
+                    className="flex flex-col items-center justify-center py-2 px-1 gap-0.5 hover:opacity-80 transition-opacity text-center"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div
                       className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase"
                       style={{ color: 'var(--athlon-text-muted)' }}
                     >
-                      <CreditCard className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <CreditCard className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
                       <span className="truncate">CASH</span>
                     </div>
                     {loadingMetrics ? (
                       <div className="h-4 w-8 bg-foreground/10 rounded animate-pulse my-0.5" />
                     ) : (
                       <div
-                        className="font-bold text-xs leading-tight flex items-baseline gap-1"
+                        className="font-black text-xs leading-tight flex items-baseline gap-1"
                         style={{ color: 'var(--athlon-text)' }}
                       >
                         <span>₹{Number(financeSummary?.netBalance || 0).toLocaleString('en-IN')}</span>
-                        <span className="text-[8px] text-emerald-600 dark:text-emerald-400 font-semibold">Balance</span>
+                        <span className="text-[7.5px] text-emerald-600 dark:text-emerald-400 font-semibold">Balance</span>
                       </div>
                     )}
                   </Link>
@@ -2171,44 +2446,66 @@ export default function OrganizationDashboard() {
         </div>
 
         {/* Management Tools & Modules (Mobile) */}
-        <div className="px-6 max-w-7xl mx-auto mt-6 space-y-3">
+        <div className="px-4 max-w-7xl mx-auto mt-4 space-y-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h2 className="text-xs font-black uppercase tracking-wider text-foreground">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <h2 className="text-[11px] font-black uppercase tracking-wider text-foreground">
                 Management Tools &amp; Modules
               </h2>
             </div>
-            <span className="text-[10px] font-bold text-foreground/50">
+            <span className="text-[9.5px] font-bold text-foreground/50">
               {quickActions.length} Tools
             </span>
           </div>
 
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 hide-scrollbar -mx-6 px-6">
-            {quickActions.map((action) => (
-              <Link key={action.id} href={action.id} className="flex flex-col items-center gap-1.5 shrink-0 group">
+          <div className="flex items-start gap-3 overflow-x-auto pb-2 pt-1 hide-scrollbar snap-x snap-mandatory">
+            {quickActions.map((action) => {
+              const isLocked = (action as any).isLocked;
+              return (
                 <div
-                  className="w-[72px] h-[72px] rounded-[20px] flex flex-col items-center justify-center transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95 border"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                  key={action.id}
+                  onClick={() => {
+                    if (isLocked) {
+                      setIsUpgradeModalOpen(true);
+                    } else {
+                      router.push(action.id);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1.5 shrink-0 snap-start w-[calc((100%-36px)/4)] group cursor-pointer"
                 >
-                  <Athlon3DIcon type={getOrg3DIconType(action.label)} size={40} active={true} />
+                  <div
+                    className="relative w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] max-w-full rounded-[18px] flex flex-col items-center justify-center transition-all shadow-md hover:scale-105 active:scale-95 border"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: isLocked ? 'rgba(234, 179, 8, 0.45)' : 'var(--athlon-border)',
+                    }}
+                  >
+                    <Athlon3DIcon type={(action as any).icon3d || getOrg3DIconType(action.label)} size={36} active={!isLocked} />
+                    {isLocked && (
+                      <div className="absolute -top-1.5 -right-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[7.5px] font-black uppercase tracking-wider shadow-md flex items-center gap-0.5 border border-amber-300">
+                        <Lock className="w-2 h-2" strokeWidth={3} />
+                        <span>PRO</span>
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className="text-[11px] font-bold text-center transition-colors group-hover:text-primary w-full truncate leading-tight"
+                    style={{ color: isLocked ? 'var(--athlon-text-muted)' : 'var(--athlon-text-secondary)' }}
+                  >
+                    {(action as any).shortLabel || action.label}
+                  </span>
                 </div>
-                <span
-                  className="text-[10px] font-bold text-center transition-colors group-hover:text-primary max-w-[76px] truncate"
-                  style={{ color: 'var(--athlon-text-secondary)' }}
-                >
-                  {(action as any).shortLabel || action.label}
-                </span>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* COACH SPECIFIC MOBILE SECTIONS */}
         {org.type === 'COACH' && (
-          <div className="px-6 max-w-7xl mx-auto mt-6 space-y-6">
+          <div className="px-4 max-w-7xl mx-auto mt-4 space-y-4">
             {/* 1. Today's Coaching Schedule & Slots */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between pl-1 pr-1">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -2231,7 +2528,7 @@ export default function OrganizationDashboard() {
               </div>
 
               {coachSchedules.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {coachSchedules.map((session, sIdx) => (
                     <CoachScheduleCard
                       key={`mob-${session.sessionUuid || (session as any).id || sIdx}`}
@@ -2243,7 +2540,7 @@ export default function OrganizationDashboard() {
                 </div>
               ) : (
                 <div
-                  className="p-5 rounded-2xl border text-center space-y-2"
+                  className="p-4 rounded-2xl border text-center space-y-1.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
                   <CalendarDays className="w-6 h-6 text-foreground/30 mx-auto" />
@@ -2259,7 +2556,7 @@ export default function OrganizationDashboard() {
             </div>
 
             {/* 2. Enrolled Trainees & Active Clients */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between pl-1 pr-1">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -2282,7 +2579,7 @@ export default function OrganizationDashboard() {
               </div>
 
               {coachTrainees.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {coachTrainees.map((trainee, tIdx) => (
                     <CoachTraineeCard
                       key={`mob-trainee-${trainee.traineeUuid || (trainee as any).id || tIdx}`}
@@ -2293,7 +2590,7 @@ export default function OrganizationDashboard() {
                 </div>
               ) : (
                 <div
-                  className="p-5 rounded-2xl border text-center space-y-2"
+                  className="p-4 rounded-2xl border text-center space-y-1.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
                   <Users className="w-6 h-6 text-foreground/30 mx-auto" />
@@ -2315,7 +2612,7 @@ export default function OrganizationDashboard() {
 
         {/* CLUB SPECIFIC MOBILE SECTIONS */}
         {org.type === 'CLUB' && (
-          <div className="px-6 max-w-7xl mx-auto mt-6 space-y-6">
+          <div className="px-4 max-w-7xl mx-auto mt-4 space-y-4">
             {/* 1. All-Time Top 3 Leaderboard (Mobile) */}
             <ClubLeaderboardPodiumCard
               topThree={allTimeTopThree}
@@ -2324,7 +2621,7 @@ export default function OrganizationDashboard() {
             />
 
             {/* 2. Low Stock Inventory Alerts (Mobile) */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between pl-1 pr-1">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -2347,12 +2644,12 @@ export default function OrganizationDashboard() {
               </div>
 
               {loadingMetrics ? (
-                <div className="p-4 rounded-3xl bg-surface border border-foreground/5 animate-pulse space-y-3">
-                  <div className="h-10 bg-foreground/10 rounded-2xl" />
-                  <div className="h-20 bg-foreground/5 rounded-2xl" />
+                <div className="p-3.5 rounded-2xl bg-surface border border-foreground/5 animate-pulse space-y-2.5">
+                  <div className="h-9 bg-foreground/10 rounded-xl" />
+                  <div className="h-16 bg-foreground/5 rounded-xl" />
                 </div>
               ) : lowStockItems.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {lowStockItems.map((item) => (
                     <ClubInventoryAlertCard
                       key={`mob-${item.itemUuid}`}
@@ -2363,13 +2660,135 @@ export default function OrganizationDashboard() {
                 </div>
               ) : (
                 <div
-                  className="rounded-[22px] border p-6 text-center space-y-2"
+                  className="rounded-[18px] border p-4 text-center space-y-1.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Package className="w-8 h-8 text-emerald-500 mx-auto" />
+                  <Package className="w-7 h-7 text-emerald-500 mx-auto" />
                   <p className="text-xs font-bold text-foreground/80">All club supplies &amp; gear in good stock</p>
                   <Link href={`/org/${org.id}/inventory`} className="text-[11px] font-bold text-primary hover:underline inline-block">
                     View Supplies Catalog &rarr;
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* COMMUNITY SPECIFIC MOBILE SECTIONS */}
+        {org.type === 'COMMUNITY' && (
+          <div className="px-4 max-w-7xl mx-auto mt-4 space-y-6">
+            {/* 1. Upcoming Community Sessions */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                    Community Sessions
+                  </h2>
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-primary/15 text-primary border border-primary/25">
+                    {communitySessions.length}
+                  </span>
+                </div>
+                <Link
+                  href={`/org/${org.id}/sessions`}
+                  className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                >
+                  <span>+ Host Session</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {loadingCommunityData ? (
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] h-[260px] rounded-3xl border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                  ))}
+                </div>
+              ) : communitySessions.length > 0 ? (
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
+                  {communitySessions.map((session) => (
+                    <div
+                      key={session.sessionUuid}
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] max-w-[350px] flex"
+                    >
+                      <CommunitySessionCard
+                        session={session}
+                        communityName={org.name}
+                        canManage={true}
+                        onRsvp={handleCommunitySessionRsvp}
+                        className="w-full h-full shadow-md"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 rounded-3xl border text-center space-y-2" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                  <p className="text-xs text-foreground/50">No upcoming sessions scheduled yet.</p>
+                  <Link
+                    href={`/org/${org.id}/sessions`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all"
+                  >
+                    <span>Schedule First Session</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Active Member Polls & Votes */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between pl-1 pr-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <Vote className="w-3.5 h-3.5" />
+                  </div>
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                    Active Member Polls
+                  </h2>
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-primary/15 text-primary border border-primary/25">
+                    {communityPolls.length}
+                  </span>
+                </div>
+                <Link
+                  href={`/org/${org.id}/feed`}
+                  className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
+                >
+                  <span>+ Launch Poll</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {loadingCommunityData ? (
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] h-[220px] rounded-3xl border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                  ))}
+                </div>
+              ) : communityPolls.length > 0 ? (
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
+                  {communityPolls.map((poll) => (
+                    <div
+                      key={poll.pollId}
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] max-w-[350px] flex"
+                    >
+                      <CommunityPollCard
+                        poll={poll}
+                        communityName={org.name}
+                        onVote={handleCommunityPollVote}
+                        className="w-full h-full shadow-md"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 rounded-3xl border text-center space-y-2" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                  <p className="text-xs text-foreground/50">No active polls running right now.</p>
+                  <Link
+                    href={`/org/${org.id}/feed`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all"
+                  >
+                    <span>Launch a Poll</span>
                   </Link>
                 </div>
               )}
@@ -2381,12 +2800,12 @@ export default function OrganizationDashboard() {
         {org.type === 'ACADEMY' && (
           <>
             {/* 1. Today's Scheduled Coaching Sessions (Mobile) */}
-            <div className="px-6 max-w-7xl mx-auto mt-6">
-              <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
+            <div className="px-4 max-w-7xl mx-auto mt-4">
+              <div className="flex items-center justify-between mb-2.5 pl-1 pr-1">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-primary" />
-                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
-                    Today's Scheduled Coaching Sessions
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                    Today's Coaching Sessions
                   </h2>
                 </div>
                 <span className="text-[10px] font-bold text-primary tracking-wider">
@@ -2395,13 +2814,13 @@ export default function OrganizationDashboard() {
               </div>
 
               {loadingMetrics ? (
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
                   {[1, 2].map((i) => (
-                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] h-[180px] rounded-[22px] border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] h-[160px] rounded-[18px] border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
                   ))}
                 </div>
               ) : (academyDashboard?.upcomingBatches && academyDashboard.upcomingBatches.length > 0) ? (
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
                   {academyDashboard.upcomingBatches.map((batch) => {
                     const enrolled = Number(batch.enrolledCount || 0);
                     const max = Number(batch.maxCapacity || 1);
@@ -2410,52 +2829,52 @@ export default function OrganizationDashboard() {
                     return (
                       <div
                         key={batch.batchUuid}
-                        className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                        className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                       >
                         <div
-                          className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
+                          className="relative rounded-[18px] overflow-hidden shadow-lg border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
                           style={{
                             backgroundColor: 'var(--athlon-card)',
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
                           {/* Top Theme Primary Accent Line */}
-                          <div className="h-[3px] w-full bg-primary" />
+                          <div className="h-[2.5px] w-full bg-primary" />
 
-                          <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                          <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
                             {/* Header Row: Level Badge, Sport & Capacity Tag */}
-                            <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
+                            <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2">
                               <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
                                   <Sparkles className="w-2.5 h-2.5 text-primary" />
                                   {batch.level || 'COACHING'}
                                 </span>
 
-                                <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-surface border border-foreground/10 text-foreground/70 shrink-0">
+                                <span className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider bg-surface border border-foreground/10 text-foreground/70 shrink-0">
                                   {batch.sportType || 'Badminton'}
                                 </span>
                               </div>
 
                               {/* Slot Tag */}
-                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-black tracking-tight text-primary bg-primary/10 border border-primary/25 shrink-0">
-                                {enrolled} / {max} Enrolled
+                              <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-mono font-black tracking-tight text-primary bg-primary/10 border border-primary/25 shrink-0">
+                                {enrolled}/{max}
                               </span>
                             </div>
 
                             {/* Batch Name & Time */}
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
-                                <Calendar className="w-4 h-4 text-primary" />
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
+                                <Calendar className="w-3.5 h-3.5 text-primary" />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <h3
-                                  className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug"
+                                  className="text-xs sm:text-[13px] font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug"
                                   title={batch.batchName}
                                 >
                                   {batch.batchName}
                                 </h3>
-                                <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/50 truncate mt-0.5">
-                                  <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <div className="flex items-center gap-1 text-[9.5px] font-bold text-foreground/50 truncate mt-0.5">
+                                  <Clock className="w-3 h-3 text-primary shrink-0" />
                                   <span className="truncate">
                                     {batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} {batch.daysOfWeek ? `(${batch.daysOfWeek})` : ''}
                                   </span>
@@ -2465,7 +2884,7 @@ export default function OrganizationDashboard() {
 
                             {/* Bento Detail Bar: Coach, Court & Fill Progress */}
                             <div
-                              className="rounded-xl p-2.5 border space-y-2.5 text-[11px]"
+                              className="rounded-xl p-2 border space-y-2 text-[10.5px]"
                               style={{
                                 backgroundColor: 'var(--athlon-surface)',
                                 borderColor: 'var(--athlon-border)',
@@ -2473,13 +2892,13 @@ export default function OrganizationDashboard() {
                             >
                               <div className="grid grid-cols-2 gap-2">
                                 {/* Coach Info */}
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[9px] shrink-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <div className="w-5 h-5 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[8.5px] shrink-0">
                                     {(batch.coachName || 'C').charAt(0)}
                                   </div>
                                   <div className="min-w-0">
-                                    <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Coach</span>
-                                    <span className="text-[11px] font-black text-primary truncate block mt-0.5">
+                                    <span className="text-[8px] uppercase font-bold text-foreground/40 block leading-none">Coach</span>
+                                    <span className="text-[10px] font-black text-primary truncate block mt-0.5">
                                       {batch.coachName || 'Unassigned'}
                                     </span>
                                   </div>
@@ -2487,10 +2906,10 @@ export default function OrganizationDashboard() {
 
                                 {/* Court Location */}
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                                   <div className="min-w-0">
-                                    <span className="text-[8.5px] uppercase font-bold text-foreground/40 block leading-none">Court</span>
-                                    <span className="text-[10.5px] font-bold text-foreground/80 truncate block mt-0.5">
+                                    <span className="text-[8px] uppercase font-bold text-foreground/40 block leading-none">Court</span>
+                                    <span className="text-[10px] font-bold text-foreground/80 truncate block mt-0.5">
                                       {batch.courtName?.split('(')[0]?.trim() || 'Court 1'}
                                     </span>
                                   </div>
@@ -2499,11 +2918,11 @@ export default function OrganizationDashboard() {
 
                               {/* Batch Capacity Bar */}
                               <div className="space-y-1 pt-1 border-t border-foreground/5">
-                                <div className="flex items-center justify-between text-[9px] font-bold text-foreground/50">
+                                <div className="flex items-center justify-between text-[8.5px] font-bold text-foreground/50">
                                   <span>Batch Capacity</span>
                                   <span className="font-mono text-primary">{capacityPercent}% full</span>
                                 </div>
-                                <div className="h-1.5 w-full rounded-full bg-foreground/10 overflow-hidden">
+                                <div className="h-1 w-full rounded-full bg-foreground/10 overflow-hidden">
                                   <div
                                     className="h-full bg-primary rounded-full transition-all duration-500"
                                     style={{ width: `${capacityPercent}%` }}
@@ -2516,19 +2935,19 @@ export default function OrganizationDashboard() {
                             <div className="grid grid-cols-2 gap-2 pt-1 border-t border-foreground/5">
                               <Link
                                 href={`/org/${org.id}/attendance`}
-                                className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 active:scale-95 transition-all text-center"
+                                className="py-2 rounded-xl bg-primary text-black font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm shadow-primary/20 active:scale-95 transition-all text-center"
                               >
-                                <ClipboardList className="w-3.5 h-3.5" />
+                                <ClipboardList className="w-3 h-3" />
                                 <span>Roll Call</span>
                               </Link>
 
                               <Link
                                 href={`/org/${org.id}/batches`}
-                                className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 active:scale-95 transition-all text-center"
+                                className="py-2 rounded-xl bg-surface border text-foreground/80 font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 active:scale-95 transition-all text-center"
                                 style={{ borderColor: 'var(--athlon-border)' }}
                               >
                                 <span>Batch Info</span>
-                                <ChevronRight className="w-3.5 h-3.5" />
+                                <ChevronRight className="w-3 h-3" />
                               </Link>
                             </div>
                           </div>
@@ -2539,10 +2958,10 @@ export default function OrganizationDashboard() {
                 </div>
               ) : (
                 <div
-                  className="rounded-[22px] border p-6 text-center space-y-2"
+                  className="rounded-[18px] border p-4 text-center space-y-1.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Calendar className="w-8 h-8 text-foreground/30 mx-auto" />
+                  <Calendar className="w-6 h-6 text-foreground/30 mx-auto" />
                   <p className="text-xs font-bold text-foreground/70">No coaching batches scheduled today</p>
                   <Link href={`/org/${org.id}/batches`} className="text-[11px] font-bold text-primary hover:underline inline-block">
                     Create / Manage Batches &rarr;
@@ -2552,12 +2971,12 @@ export default function OrganizationDashboard() {
             </div>
 
             {/* 2. Academy Campuses & Training Arenas (Mobile) */}
-            <div className="px-6 max-w-7xl mx-auto mt-6">
-              <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
+            <div className="px-4 max-w-7xl mx-auto mt-4">
+              <div className="flex items-center justify-between mb-2.5 pl-1 pr-1">
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-primary" />
-                  <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
-                    Academy Campuses &amp; Training Arenas
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                    Academy Campuses
                   </h2>
                 </div>
                 <Link
@@ -2570,52 +2989,52 @@ export default function OrganizationDashboard() {
               </div>
 
               {loadingMetrics ? (
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
                   {[1, 2].map((i) => (
-                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] h-[180px] rounded-[22px] border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                    <div key={i} className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] h-[160px] rounded-[18px] border bg-surface/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
                   ))}
                 </div>
               ) : (academyDashboard?.centres && academyDashboard.centres.length > 0) ? (
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4">
                   {academyDashboard.centres.map((centre) => (
                     <div
                       key={centre.centreUuid}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                     >
                       <div
-                        className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
+                        className="relative rounded-[18px] overflow-hidden shadow-lg border h-full flex flex-col justify-between transition-all duration-300 group hover:border-primary/50"
                         style={{
                           backgroundColor: 'var(--athlon-card)',
                           borderColor: 'var(--athlon-border)',
                         }}
                       >
                         {/* Top Theme Primary Accent Line */}
-                        <div className="h-[3px] w-full bg-primary" />
+                        <div className="h-[2.5px] w-full bg-primary" />
 
-                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                        <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
                           {/* Header Row */}
-                          <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
+                          <div className="flex items-center justify-between gap-2 border-b border-foreground/5 pb-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shrink-0">
                               <Building className="w-2.5 h-2.5 text-primary" />
                               Campus Arena
                             </span>
 
-                            <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            <span className="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                               {centre.status || 'Active'}
                             </span>
                           </div>
 
                           {/* Centre Name & Location */}
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
-                              <Building className="w-4 h-4 text-primary" />
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-primary/20 transition-all">
+                              <Building className="w-3.5 h-3.5 text-primary" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug">
+                              <h3 className="text-xs sm:text-[13px] font-black text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1 leading-snug">
                                 {centre.name}
                               </h3>
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-foreground/45 truncate mt-0.5">
-                                <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <div className="flex items-center gap-1 text-[9.5px] font-bold text-foreground/45 truncate mt-0.5">
+                                <MapPin className="w-3 h-3 text-primary shrink-0" />
                                 <span className="truncate">{centre.city || 'Campus'}{centre.operatingHours ? ` • ${centre.operatingHours}` : ''}</span>
                               </div>
                             </div>
@@ -2623,35 +3042,35 @@ export default function OrganizationDashboard() {
 
                           {/* Bento Metric Strip */}
                           <div
-                            className="grid grid-cols-3 gap-2 p-2.5 rounded-xl border text-center"
+                            className="grid grid-cols-3 gap-2 p-2 rounded-xl border text-center"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
                             <div>
-                              <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Courts</span>
+                              <span className="text-[8px] uppercase font-bold text-foreground/40 block">Courts</span>
                               <span className="text-xs font-black text-foreground font-mono">{centre.facilitiesCount ?? 0}</span>
                             </div>
                             <div>
-                              <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Batches</span>
+                              <span className="text-[8px] uppercase font-bold text-foreground/40 block">Batches</span>
                               <span className="text-xs font-black text-foreground font-mono">{centre.activeBatchesCount ?? 0}</span>
                             </div>
                             <div>
-                              <span className="text-[8.5px] uppercase font-bold text-foreground/40 block">Students</span>
+                              <span className="text-[8px] uppercase font-bold text-foreground/40 block">Students</span>
                               <span className="text-xs font-black text-primary font-mono">{centre.activeStudentsCount ?? 0}</span>
                             </div>
                           </div>
 
                           {/* Footer */}
                           <div className="flex items-center justify-between pt-1 border-t border-foreground/5">
-                            <span className="text-[9.5px] text-foreground/50 truncate max-w-[65%]">
+                            <span className="text-[9px] text-foreground/50 truncate max-w-[65%]">
                               Sports: <span className="text-foreground font-bold">{centre.sportsAvailable || 'Badminton'}</span>
                             </span>
 
                             <Link
                               href={`/org/${org.id}/facilities?centreUuid=${centre.centreUuid}`}
-                              className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-0.5 hover:underline shrink-0"
+                              className="text-[9.5px] font-black uppercase tracking-wider text-primary flex items-center gap-0.5 hover:underline shrink-0"
                             >
                               <span>Courts</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
+                              <ChevronRight className="w-3 h-3" />
                             </Link>
                           </div>
                         </div>
@@ -2661,10 +3080,10 @@ export default function OrganizationDashboard() {
                 </div>
               ) : (
                 <div
-                  className="rounded-[22px] border p-6 text-center space-y-2"
+                  className="rounded-[18px] border p-4 text-center space-y-1.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Building className="w-8 h-8 text-foreground/30 mx-auto" />
+                  <Building className="w-6 h-6 text-foreground/30 mx-auto" />
                   <p className="text-xs font-bold text-foreground/70">No campus locations registered</p>
                   <Link href={`/org/${org.id}/centres`} className="text-[11px] font-bold text-primary hover:underline inline-block">
                     Add Campus Centre &rarr;
@@ -2677,32 +3096,32 @@ export default function OrganizationDashboard() {
 
         {/* VENUE / COURT SPECIFIC MOBILE SECTIONS */}
         {(org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') && (
-          <div className="px-6 max-w-7xl mx-auto mt-6 space-y-6">
+          <div className="px-4 max-w-7xl mx-auto mt-4 space-y-4">
             {/* 1. Live Slot Matrix Fast Access */}
             <div
-              className="p-5 rounded-[22px] border relative overflow-hidden bg-gradient-to-br from-card via-surface to-card shadow-lg group"
+              className="p-4 rounded-[18px] border relative overflow-hidden bg-gradient-to-br from-card via-surface to-card shadow-md group"
               style={{ borderColor: 'var(--athlon-border)' }}
             >
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500">Live Booking Grid</span>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-emerald-500">Live Booking Grid</span>
                 </div>
-                <span className="text-[10px] font-bold text-foreground/50">{venueFacilities.length} Facilities Active</span>
+                <span className="text-[9.5px] font-bold text-foreground/50">{venueFacilities.length} Active</span>
               </div>
-              <h3 className="text-base font-black text-foreground mb-1">Visual Interactive Slot Calendar</h3>
-              <p className="text-xs text-foreground/60 mb-4">View real-time slot occupancy, book counter walk-ins, and manage 10-minute holds.</p>
+              <h3 className="text-sm font-black text-foreground mb-0.5">Visual Slot Calendar</h3>
+              <p className="text-[11px] text-foreground/60 mb-3">View real-time slot occupancy, book counter walk-ins, and manage holds.</p>
               <Link
                 href={`/org/${org.id}/venue/calendar`}
-                className="w-full py-2.5 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="w-full py-2 rounded-xl bg-primary text-black text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm shadow-primary/20 active:scale-95 transition-all"
               >
-                <CalendarDays className="w-4 h-4" />
+                <CalendarDays className="w-3.5 h-3.5" />
                 <span>Open Live Calendar Matrix</span>
               </Link>
             </div>
 
             {/* 2. Recent Bookings / Walk-ins */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between pl-1 pr-1">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -2719,33 +3138,32 @@ export default function OrganizationDashboard() {
                   href={`/org/${org.id}/venue/bookings`}
                   className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
                 >
-                  <span>All Bookings</span>
+                  <span>All</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
               {venueBookings.length > 0 ? (
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {venueBookings.slice(0, 5).map((b, idx) => (
                     <div
                       key={b.bookingUuid || idx}
-                      className="p-3.5 rounded-2xl border bg-card flex items-center justify-between gap-3 shadow-sm"
+                      className="p-3 rounded-xl border bg-card flex items-center justify-between gap-2.5 shadow-sm"
                       style={{ borderColor: 'var(--athlon-border)' }}
                     >
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span className="text-xs font-black text-foreground truncate">{b.guestName || 'Walk-in Player'}</span>
-                          <span className={`px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider border ${
-                            b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                              : b.bookingStatus === 'HELD'
+                          <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider border ${b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                            : b.bookingStatus === 'HELD'
                               ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                               : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                          }`}>
+                            }`}>
                             {b.bookingStatus}
                           </span>
                         </div>
-                        <p className="text-[10px] text-foreground/50 mt-0.5 flex items-center gap-1.5">
+                        <p className="text-[9.5px] text-foreground/50 mt-0.5 flex items-center gap-1">
                           <span>{b.facilityName || 'Court'}</span>
                           <span>•</span>
                           <span>{b.bookingDate} ({b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)})</span>
@@ -2754,17 +3172,17 @@ export default function OrganizationDashboard() {
 
                       <div className="text-right shrink-0">
                         <span className="text-xs font-black text-foreground block font-mono">₹{Number(b.totalAmount || 0).toLocaleString()}</span>
-                        <span className="text-[9px] font-bold text-emerald-500 block uppercase">{b.paymentStatus}</span>
+                        <span className="text-[8.5px] font-bold text-emerald-500 block uppercase">{b.paymentStatus}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div
-                  className="p-5 rounded-2xl border text-center space-y-2"
+                  className="p-4 rounded-xl border text-center space-y-1.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Calendar className="w-6 h-6 text-foreground/30 mx-auto" />
+                  <Calendar className="w-5 h-5 text-foreground/30 mx-auto" />
                   <p className="text-xs font-bold text-foreground/70">No bookings recorded yet</p>
                   <Link
                     href={`/org/${org.id}/venue/calendar`}
@@ -2777,7 +3195,7 @@ export default function OrganizationDashboard() {
             </div>
 
             {/* 3. Facilities & Turfs Quick List */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between pl-1 pr-1">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -2796,23 +3214,23 @@ export default function OrganizationDashboard() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 {venueFacilities.map((fac) => (
                   <div
                     key={fac.facilityUuid}
-                    className="p-3.5 rounded-2xl border bg-card flex flex-col justify-between gap-2 shadow-sm"
+                    className="p-3 rounded-xl border bg-card flex flex-col justify-between gap-2 shadow-sm"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] font-black uppercase text-primary tracking-wider">{fac.sports?.[0]?.sportName || fac.facilityType}</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-[8.5px] font-black uppercase text-primary tracking-wider">{fac.sports?.[0]?.sportName || fac.facilityType}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       </div>
                       <h4 className="text-xs font-black text-foreground truncate">{fac.name}</h4>
-                      <p className="text-[10px] text-foreground/50">{fac.surfaceType || 'Synthetic'} • {fac.facilityType}</p>
+                      <p className="text-[9.5px] text-foreground/50">{fac.surfaceType || 'Synthetic'} • {fac.facilityType}</p>
                     </div>
-                    <div className="flex items-center justify-between pt-2 border-t text-[10px] font-bold" style={{ borderColor: 'var(--athlon-border)' }}>
-                      <span className="text-foreground/60">Base Slot</span>
+                    <div className="flex items-center justify-between pt-1.5 border-t text-[9.5px] font-bold" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <span className="text-foreground/60">Base</span>
                       <span className="text-primary font-mono font-bold">₹{fac.pricingRules?.[0]?.price ?? 500}/hr</span>
                     </div>
                   </div>
@@ -3239,7 +3657,7 @@ export default function OrganizationDashboard() {
                 </Link>
 
                 <Link
-                  href={`/org/${org.id}/members`}
+                  href={org.type === 'COMMUNITY' ? `/org/${org.id}/community-members` : `/org/${org.id}/members`}
                   className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
@@ -3353,36 +3771,53 @@ export default function OrganizationDashboard() {
               ref={toolsTrackRef}
               className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
             >
-              {quickActions.map((action) => (
-                <Link
-                  key={action.id}
-                  href={action.id}
-                  className="snap-start shrink-0 w-[240px] p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-2xl transition-all group"
-                  style={{
-                    backgroundColor: 'var(--athlon-card)',
-                    borderColor: 'var(--athlon-border)',
-                  }}
-                >
-                  <div className="space-y-3">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-surface border border-white/10 shadow-inner group-hover:scale-110 transition-transform shrink-0">
-                      <Athlon3DIcon type={getOrg3DIconType(action.label)} size={36} active={true} />
+              {quickActions.map((action) => {
+                const isLocked = (action as any).isLocked;
+                return (
+                  <div
+                    key={action.id}
+                    onClick={() => {
+                      if (isLocked) {
+                        setIsUpgradeModalOpen(true);
+                      } else {
+                        router.push(action.id);
+                      }
+                    }}
+                    className="snap-start shrink-0 w-[240px] p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-2xl transition-all group cursor-pointer"
+                    style={{
+                      backgroundColor: 'var(--athlon-card)',
+                      borderColor: isLocked ? 'rgba(234, 179, 8, 0.4)' : 'var(--athlon-border)',
+                    }}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-surface border border-white/10 shadow-inner group-hover:scale-110 transition-transform shrink-0">
+                          <Athlon3DIcon type={(action as any).icon3d || getOrg3DIconType(action.label)} size={36} active={!isLocked} />
+                        </div>
+                        {isLocked && (
+                          <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[9px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1 border border-amber-300">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>PRO</span>
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
+                          {action.label}
+                        </h3>
+                        <p className="text-xs text-foreground/50 mt-1 leading-relaxed line-clamp-2">
+                          {action.description}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
-                        {action.label}
-                      </h3>
-                      <p className="text-xs text-foreground/50 mt-1 leading-relaxed line-clamp-2">
-                        {action.description}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-1 text-xs font-bold text-primary pt-3 border-t mt-4" style={{ borderColor: 'var(--athlon-border)' }}>
-                    <span>Open Tool</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                    <div className="flex items-center gap-1 text-xs font-bold text-primary pt-3 border-t mt-4" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <span>{isLocked ? 'Upgrade to Unlock' : 'Open Tool'}</span>
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                    </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </section>
 
@@ -3426,13 +3861,12 @@ export default function OrganizationDashboard() {
 
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
-                                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                  : b.bookingStatus === 'HELD'
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
+                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                : b.bookingStatus === 'HELD'
                                   ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                   : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                              }`}>
+                                }`}>
                                 {b.bookingStatus}
                               </span>
                               <span className="text-xs font-mono font-black text-foreground">₹{Number(b.totalAmount || 0).toLocaleString()}</span>
@@ -3547,6 +3981,117 @@ export default function OrganizationDashboard() {
                     </div>
                   ))}
                 </div>
+              </section>
+            </>
+          ) : org.type === 'COMMUNITY' ? (
+            <>
+              {/* 1. Upcoming Community Sessions Track */}
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <div>
+                      <h2 className="text-lg font-black text-foreground">Upcoming Community Sessions</h2>
+                      <p className="text-xs text-foreground/50">
+                        Casual matches, open rosters &amp; weekly club runs for {org.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/org/${org.id}/sessions`}
+                      className="px-3.5 py-1.5 rounded-xl bg-primary text-black text-xs font-black hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>+ Host Session</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {loadingCommunityData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-64 rounded-3xl bg-surface/50 border animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                    ))}
+                  </div>
+                ) : communitySessions.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {communitySessions.map((session) => (
+                      <CommunitySessionCard
+                        key={session.sessionUuid}
+                        session={session}
+                        communityName={org.name}
+                        canManage={true}
+                        onRsvp={handleCommunitySessionRsvp}
+                        className="w-full h-full shadow-lg"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 rounded-3xl border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <p className="text-sm text-foreground/60">No upcoming community sessions scheduled yet.</p>
+                    <Link
+                      href={`/org/${org.id}/sessions`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all"
+                    >
+                      Schedule First Session
+                    </Link>
+                  </div>
+                )}
+              </section>
+
+              {/* 2. Active Member Polls & Votes Track */}
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Vote className="w-5 h-5 text-primary" />
+                    <div>
+                      <h2 className="text-lg font-black text-foreground">Active Member Polls &amp; Votes</h2>
+                      <p className="text-xs text-foreground/50">
+                        Live voting, member opinions and club decisions for {org.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/org/${org.id}/feed`}
+                      className="px-3.5 py-1.5 rounded-xl bg-primary text-black text-xs font-black hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>+ Launch Poll</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {loadingCommunityData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-56 rounded-3xl bg-surface/50 border animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                    ))}
+                  </div>
+                ) : communityPolls.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {communityPolls.map((poll) => (
+                      <CommunityPollCard
+                        key={poll.pollId}
+                        poll={poll}
+                        communityName={org.name}
+                        onVote={handleCommunityPollVote}
+                        className="w-full h-full shadow-lg"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 rounded-3xl border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <p className="text-sm text-foreground/60">No active polls running in this community right now.</p>
+                    <Link
+                      href={`/org/${org.id}/feed`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all"
+                    >
+                      Launch a Poll
+                    </Link>
+                  </div>
+                )}
               </section>
             </>
           ) : org.type === 'ACADEMY' ? (
@@ -4317,6 +4862,238 @@ export default function OrganizationDashboard() {
                 className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-40"
               >
                 {isUsageSubmitting ? 'Logging...' : 'Confirm Usage'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Community Upgrade / Plan Modal */}
+      {/* ─── Redesigned Luxury Community PRO Upgrade Modal ─── */}
+      {/* ─── Community PRO Upgrade Modal (Light & Dark Theme Adaptive) ─── */}
+      {isUpgradeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 dark:bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div
+            className="w-full max-w-lg rounded-[32px] border border-amber-500/30 shadow-2xl relative overflow-hidden text-foreground p-5 sm:p-7 space-y-5 animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto hide-scrollbar"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'rgba(245, 158, 11, 0.35)',
+            }}
+          >
+            {/* Ambient Multi-Layer Glow Rays */}
+            <div className="absolute -top-24 -right-24 w-60 h-60 rounded-full bg-gradient-to-br from-amber-500/15 dark:from-amber-500/25 via-yellow-500/10 dark:via-yellow-500/15 to-transparent blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 -left-20 w-48 h-48 rounded-full bg-amber-600/10 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 right-1/4 w-56 h-56 rounded-full bg-yellow-500/10 blur-3xl pointer-events-none" />
+
+            {/* Top Close Button */}
+            <button
+              onClick={() => setIsUpgradeModalOpen(false)}
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 rounded-full border flex items-center justify-center text-foreground/60 hover:text-foreground transition-all z-20 cursor-pointer active:scale-95"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header Hero Section */}
+            <div className="relative z-10 text-center space-y-3 pt-1 sm:pt-2">
+              {/* Floating Glowing Badge */}
+              <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-amber-400 to-yellow-500 opacity-25 dark:opacity-35 blur-lg animate-pulse" />
+                <div className="relative w-full h-full rounded-2xl sm:rounded-3xl bg-gradient-to-b from-amber-300 via-amber-400 to-yellow-500 p-[1.5px] shadow-2xl shadow-amber-500/30">
+                  <div
+                    className="w-full h-full rounded-[14px] sm:rounded-[22px] flex items-center justify-center"
+                    style={{ backgroundColor: 'var(--athlon-surface)' }}
+                  >
+                    <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-amber-500 dark:text-amber-400 filter drop-shadow-[0_4px_10px_rgba(245,158,11,0.4)]" />
+                    <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md">
+                      <Crown className="w-3.5 h-3.5 text-black fill-black" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Title & Tagline */}
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest shadow-sm">
+                  <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+                  <span>ATHLON SPORTS PRO TIER</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                  {communityDetails?.planType === 'COMMUNITY_PRO' ? (
+                    'Community PRO Workspace Active'
+                  ) : (
+                    <>
+                      Upgrade to{' '}
+                      <span className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 dark:from-amber-200 dark:via-yellow-400 dark:to-amber-500 bg-clip-text text-transparent">
+                        Community PRO
+                      </span>
+                    </>
+                  )}
+                </h3>
+                <p className="text-xs text-foreground/65 max-w-sm mx-auto leading-relaxed font-medium">
+                  {communityDetails?.planType === 'COMMUNITY_PRO'
+                    ? 'Your circle has full championship tournament access, ref desk live scoring & leaderboards.'
+                    : 'Turn your casual sports circle into a competitive tournament powerhouse.'}
+                </p>
+              </div>
+            </div>
+
+            {/* 2x2 Feature Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 relative z-10">
+              {/* Feature 1 */}
+              <div
+                className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <h4 className="text-xs font-black text-foreground">Knockout Cups</h4>
+                  <p className="text-[10.5px] text-foreground/60 leading-tight">
+                    Single &amp; double elimination brackets with automated seeding.
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 2 */}
+              <div
+                className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="w-9 h-9 rounded-xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <h4 className="text-xs font-black text-foreground">League Pool Draws</h4>
+                  <p className="text-[10.5px] text-foreground/60 leading-tight">
+                    Round-robin groups with live standings &amp; points tables.
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 3 */}
+              <div
+                className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <h4 className="text-xs font-black text-foreground">Live Court Ref Desk</h4>
+                  <p className="text-[10.5px] text-foreground/60 leading-tight">
+                    Point-by-point referee desk with public live spectator scoreboard.
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 4 */}
+              <div
+                className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="w-9 h-9 rounded-xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400 shrink-0 group-hover:scale-105 transition-transform">
+                  <Medal className="w-4 h-4" />
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <h4 className="text-xs font-black text-foreground">Leaderboard &amp; Badges</h4>
+                  <p className="text-[10.5px] text-foreground/60 leading-tight">
+                    Elo rankings, championship hall of fame &amp; winner medals.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Tier Comparison Strip */}
+            <div
+              className="p-3 rounded-2xl border flex items-center justify-between text-xs relative z-10"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
+                <span className="text-[11px] text-foreground/60 font-semibold">Free Tier:</span>
+                <span className="text-[11px] text-foreground font-bold">Casual Play &amp; Feed</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-black text-[11px]">
+                <span>PRO:</span>
+                <span className="underline decoration-amber-500/40">Tournaments Unlocked</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2.5 relative z-10 pt-1">
+              {communityDetails?.planType !== 'COMMUNITY_PRO' ? (
+                <button
+                  type="button"
+                  disabled={isUpgradingCommunity}
+                  onClick={handleUpgradeToPro}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_4px_20px_rgba(245,158,11,0.35)] dark:shadow-[0_4px_25px_rgba(245,158,11,0.45)] hover:shadow-[0_6px_30px_rgba(245,158,11,0.55)] flex items-center justify-center gap-2.5 active:scale-98 transition-all disabled:opacity-50 cursor-pointer group"
+                >
+                  {isUpgradingCommunity ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      <span>Upgrading Workspace...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Crown className="w-4 h-4 fill-black group-hover:scale-110 transition-transform" />
+                      <span>Upgrade to PRO (Instant Unlock)</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUpgradeModalOpen(false);
+                      router.push(`/org/${org.id}/tournaments`);
+                    }}
+                    className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-xs uppercase tracking-wider hover:opacity-95 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    <span>Open Tournaments</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isUpgradingCommunity}
+                    onClick={handleDowngradeToFree}
+                    className="py-3.5 px-4 rounded-2xl border text-foreground/75 hover:text-foreground font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    Switch to Free
+                  </button>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsUpgradeModalOpen(false)}
+                className="w-full py-1.5 text-center text-xs font-bold text-foreground/50 hover:text-foreground transition-colors cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>

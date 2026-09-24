@@ -7,6 +7,7 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { ClubMatchService, ClubMatch } from '@/lib/api/clubMatch';
 import { UserService } from '@/lib/api/user';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import {
   Trophy,
   Medal,
@@ -828,15 +829,12 @@ export default function LeaderboardPage() {
       </div>
 
       {/* ── MOBILE FLOATING ACTION BUTTON (FAB) ── */}
-      <div className="fixed bottom-24 right-5 md:hidden z-40">
-        <Link
-          href={`/org/${orgUuid}/matches`}
-          className="w-13 h-13 rounded-full bg-primary text-black flex items-center justify-center shadow-[0_8px_25px_rgba(255,200,0,0.4)] border border-primary/50 active:scale-90 transition-transform hover:scale-105"
-          title="Record Match"
-        >
-          <Plus className="w-6 h-6 stroke-[3]" />
-        </Link>
-      </div>
+      <Athlon3DFAB
+        href={`/org/${orgUuid}/matches`}
+        label="Record Match"
+        title="Record Match"
+        ariaLabel="Record Match"
+      />
     </div>
   );
 }

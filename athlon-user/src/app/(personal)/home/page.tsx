@@ -42,6 +42,7 @@ import {
   UserCheck,
   Search,
   Filter,
+  Vote,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore, Organization } from '@/lib/store/useWorkspaceStore';
@@ -52,6 +53,10 @@ import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamC
 import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
 import { CoachMarketplaceCard } from '@/components/marketplace/CoachMarketplaceCard';
 import { VenueMarketplaceCard } from '@/components/marketplace/VenueMarketplaceCard';
+import { CommunitySessionCard } from '@/components/community/CommunitySessionCard';
+import { CommunityPollCard } from '@/components/community/CommunityPollCard';
+import { SportCardSkeletonBackground } from '@/components/common/SportCardSkeletonBackground';
+import { CommunityService, SessionResponse, CommunityPoll, CommunityResponse } from '@/lib/api/community';
 import { venueApi, facilityApi, VenueDto } from '@/lib/api/venue';
 import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { MatchService, Match } from '@/lib/api/matches';
@@ -86,6 +91,7 @@ const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments
 function orgIcon(type: string, cls = 'w-7 h-7') {
   if (type === 'ACADEMY') return <GraduationCap className={cls} strokeWidth={1.5} />;
   if (type === 'CLUB') return <Users className={cls} strokeWidth={1.5} />;
+  if (type === 'COMMUNITY') return <Users className={cls} strokeWidth={1.5} />;
   if (type === 'ASSOCIATION') return <Trophy className={cls} strokeWidth={1.5} />;
   if (type === 'COACH') return <UserCheck className={cls} strokeWidth={1.5} />;
   if (type === 'COURT' || type === 'VENUE_MANAGER') return <MapPin className={cls} strokeWidth={1.5} />;
@@ -120,6 +126,10 @@ export default function PersonalHomePage() {
   const [publicAcademies, setPublicAcademies] = useState<any[]>([]);
   const [publicCoaches, setPublicCoaches] = useState<any[]>([]);
   const [publicVenues, setPublicVenues] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<SessionResponse[]>([]);
+  const [myCommunities, setMyCommunities] = useState<CommunityResponse[]>([]);
+  const [memberPolls, setMemberPolls] = useState<{ poll: CommunityPoll; communityName: string }[]>([]);
+  const [loadingMemberPolls, setLoadingMemberPolls] = useState<boolean>(false);
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [finishedScores, setFinishedScores] = useState<LiveScore[]>([]);
   const [userMatches, setUserMatches] = useState<any[]>([]);
@@ -132,6 +142,10 @@ export default function PersonalHomePage() {
   const liveScrollRef = useRef<HTMLDivElement>(null);
   const champsScrollRef = useRef<HTMLDivElement>(null);
   const tournsScrollRef = useRef<HTMLDivElement>(null);
+  const sessionsScrollRef = useRef<HTMLDivElement>(null);
+  const mobileSessionsScrollRef = useRef<HTMLDivElement>(null);
+  const pollsScrollRef = useRef<HTMLDivElement>(null);
+  const mobilePollsScrollRef = useRef<HTMLDivElement>(null);
   const venuesScrollRef = useRef<HTMLDivElement>(null);
   const academiesScrollRef = useRef<HTMLDivElement>(null);
   const coachesScrollRef = useRef<HTMLDivElement>(null);
@@ -362,6 +376,116 @@ export default function PersonalHomePage() {
     loadPublicChampionships();
     const champInterval = setInterval(loadPublicChampionships, 15000);
 
+    // Public Community Sessions & Member Polls with auto-polling
+    const loadCommunityData = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      try {
+        const [sessRes, myCommsRes] = await Promise.allSettled([
+          CommunityService.getAllSessions(),
+          userUuid ? CommunityService.getMyCommunities() : Promise.resolve({ data: [] }),
+        ]);
+
+        const globalSessions: SessionResponse[] =
+          sessRes.status === 'fulfilled'
+            ? Array.isArray(sessRes.value)
+              ? sessRes.value
+              : Array.isArray((sessRes.value as any)?.data)
+              ? (sessRes.value as any).data
+              : []
+            : [];
+
+        const myComms: CommunityResponse[] =
+          myCommsRes.status === 'fulfilled'
+            ? Array.isArray(myCommsRes.value)
+              ? myCommsRes.value
+              : Array.isArray((myCommsRes.value as any)?.data)
+              ? (myCommsRes.value as any).data
+              : []
+            : [];
+
+        setMyCommunities(myComms);
+
+        // Build unique map of communities the user is associated with
+        const myCommsMap = new Map<string, { communityUuid: string; name: string }>();
+        myComms.forEach((c) => {
+          if (c.communityUuid) {
+            myCommsMap.set(c.communityUuid, { communityUuid: c.communityUuid, name: c.name });
+          }
+        });
+        const currentOrgs = useWorkspaceStore.getState().organizations || [];
+        currentOrgs.forEach((o) => {
+          if (o.type === 'COMMUNITY' && o.id) {
+            myCommsMap.set(o.id, { communityUuid: o.id, name: o.name });
+          }
+        });
+
+        // Merge sessions from global feed and user's community workspaces
+        const sessionMap = new Map<string, SessionResponse>();
+        globalSessions.forEach((s) => {
+          if (s.sessionUuid) sessionMap.set(s.sessionUuid, s);
+        });
+
+        const activeComms = Array.from(myCommsMap.values());
+        if (activeComms.length > 0) {
+          setLoadingMemberPolls(true);
+          const pollsAccumulator: { poll: CommunityPoll; communityName: string }[] = [];
+          await Promise.allSettled(
+            activeComms.map(async (comm) => {
+              try {
+                const [cSessRes, pollRes] = await Promise.allSettled([
+                  CommunityService.getSessions(comm.communityUuid),
+                  CommunityService.getPolls(comm.communityUuid),
+                ]);
+                if (cSessRes.status === 'fulfilled') {
+                  const cList: SessionResponse[] = Array.isArray(cSessRes.value)
+                    ? cSessRes.value
+                    : Array.isArray((cSessRes.value as any)?.data)
+                    ? (cSessRes.value as any).data
+                    : [];
+                  cList.forEach((s) => {
+                    if (s.sessionUuid) {
+                      if (!s.communityName) s.communityName = comm.name;
+                      sessionMap.set(s.sessionUuid, s);
+                    }
+                  });
+                }
+                if (pollRes.status === 'fulfilled') {
+                  const pList: CommunityPoll[] = Array.isArray(pollRes.value)
+                    ? pollRes.value
+                    : Array.isArray((pollRes.value as any)?.data)
+                    ? (pollRes.value as any).data
+                    : [];
+                  pList.forEach((poll) => {
+                    if (poll.pollId) {
+                      pollsAccumulator.push({ poll, communityName: comm.name });
+                    }
+                  });
+                }
+              } catch (e) {
+                // ignore
+              }
+            })
+          );
+
+          pollsAccumulator.sort((a, b) => {
+            if (a.poll.isClosed !== b.poll.isClosed) return a.poll.isClosed ? 1 : -1;
+            return new Date(b.poll.createdAt || 0).getTime() - new Date(a.poll.createdAt || 0).getTime();
+          });
+          setMemberPolls(pollsAccumulator);
+          setLoadingMemberPolls(false);
+        } else {
+          setMemberPolls([]);
+        }
+
+        setSessions(Array.from(sessionMap.values()));
+      } catch (err) {
+        console.error('Failed to load community data for user:', err);
+      }
+    };
+
+    loadCommunityData();
+    const sessionInterval = setInterval(loadCommunityData, 20000);
+
     // Fetch real organizations from API and sync to store
     if (userUuid) {
       OrganizationService.getByUserUuid(userUuid)
@@ -386,6 +510,7 @@ export default function PersonalHomePage() {
 
     return () => {
       clearInterval(champInterval);
+      clearInterval(sessionInterval);
       if (typeof window !== 'undefined') {
         window.removeEventListener('athlon-org-updated', handleOrgSync);
       }
@@ -633,6 +758,70 @@ export default function PersonalHomePage() {
     });
   }, [publicCoaches, selectedSport, selectedPlace, searchQuery]);
 
+  const filteredSessions = useMemo(() => {
+    return sessions.filter((s) => {
+      const matchesSport = selectedSport === 'All' || !selectedSport || (s.sport || '').toLowerCase().includes(selectedSport.toLowerCase());
+      const matchesPlace = selectedPlace === 'All' || !selectedPlace || `${s.venueName || ''} ${s.city || ''} ${s.state || ''}`.toLowerCase().includes(selectedPlace.toLowerCase());
+      const matchesQuery = matchSearchQuery(`${s.title || ''} ${s.sport || ''} ${s.venueName || ''} ${s.city || ''} ${s.state || ''}`, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [sessions, selectedSport, selectedPlace, searchQuery]);
+
+  const handleSessionRsvp = async (sessionUuid: string, status: 'GOING' | 'NOT_GOING') => {
+    try {
+      await CommunityService.rsvpSession(sessionUuid, { status });
+      const res: any = await CommunityService.getAllSessions();
+      const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+      setSessions((prev) => {
+        const map = new Map<string, SessionResponse>();
+        prev.forEach((s: SessionResponse) => map.set(s.sessionUuid, s));
+        list.forEach((s: SessionResponse) => map.set(s.sessionUuid, s));
+        return Array.from(map.values());
+      });
+    } catch (err) {
+      console.error('Failed to RSVP session:', err);
+    }
+  };
+
+  const handleMemberPollVote = async (pollId: number, optionId: number) => {
+    try {
+      await CommunityService.votePoll(pollId, [optionId]);
+      // Immediately refresh member polls
+      const myCommsMap = new Map<string, { communityUuid: string; name: string }>();
+      myCommunities.forEach((c) => {
+        if (c.communityUuid) myCommsMap.set(c.communityUuid, { communityUuid: c.communityUuid, name: c.name });
+      });
+      const currentOrgs = useWorkspaceStore.getState().organizations || [];
+      currentOrgs.forEach((o) => {
+        if (o.type === 'COMMUNITY' && o.id) myCommsMap.set(o.id, { communityUuid: o.id, name: o.name });
+      });
+      const activeComms = Array.from(myCommsMap.values());
+      const pollsAccumulator: { poll: CommunityPoll; communityName: string }[] = [];
+      await Promise.allSettled(
+        activeComms.map(async (comm) => {
+          try {
+            const pollRes: any = await CommunityService.getPolls(comm.communityUuid);
+            const pList: CommunityPoll[] = Array.isArray(pollRes)
+              ? pollRes
+              : Array.isArray(pollRes?.data)
+              ? pollRes.data
+              : [];
+            pList.forEach((poll) => {
+              if (poll.pollId) pollsAccumulator.push({ poll, communityName: comm.name });
+            });
+          } catch {}
+        })
+      );
+      pollsAccumulator.sort((a, b) => {
+        if (a.poll.isClosed !== b.poll.isClosed) return a.poll.isClosed ? 1 : -1;
+        return new Date(b.poll.createdAt || 0).getTime() - new Date(a.poll.createdAt || 0).getTime();
+      });
+      setMemberPolls(pollsAccumulator);
+    } catch (err) {
+      console.error('Failed to vote in community poll:', err);
+    }
+  };
+
   const filteredLiveScores = useMemo(() => {
     return liveScores.filter((s) => {
       const cfg = s.scoreMeta?.config || {};
@@ -676,31 +865,35 @@ export default function PersonalHomePage() {
     selectedPlace.toLowerCase() !== 'all';
 
   return (
-    <div className="bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-black min-h-screen w-full max-w-full overflow-x-hidden">
+    <div className="bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-primary-foreground min-h-screen w-full max-w-full overflow-x-hidden">
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden h-[calc(100vh-80px)] overflow-y-auto hide-scrollbar overscroll-contain max-w-full">
-        {/* HERO VIDEO */}
-        <div className="px-6 relative z-10 mt-6 mb-4">
-          <section className="relative w-full min-h-[160px] rounded-[24px] overflow-hidden bg-background border border-foreground/10 shadow-lg">
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-              <video
-                key={backgroundVideo}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-              >
-                <source src={backgroundVideo} type="video/mp4" />
-              </video>
-            </div>
-          </section>
+      <div className="block md:hidden h-[calc(100vh-64px)] overflow-y-auto hide-scrollbar overscroll-contain max-w-full pb-8">
+        {/* HERO VIDEO CARD */}
+        <div className="px-4 relative z-10 mt-3 mb-3">
+          <div
+            className="relative w-full h-[175px] sm:h-[200px] rounded-[20px] overflow-hidden border shadow-md flex items-center justify-center"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <video
+              key={backgroundVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover rounded-[20px]"
+            >
+              <source src={backgroundVideo} type="video/mp4" />
+            </video>
+          </div>
         </div>
 
         {/* ROLE SWITCHER HEADER ─────────────────────── */}
-        <div className="px-6 mb-5">
+        <div className="px-4 mb-3">
           <HomeRoleHeader
             activeRole={activeRole}
             onSelectRole={selectRole}
@@ -717,9 +910,9 @@ export default function PersonalHomePage() {
           <>
             {/* Profile Stats Card */}
             {/* 👤 ATHLON PROFILE HERO CARD */}
-            <div className="px-6 mb-3.5">
+            <div className="px-4 mb-3">
               <div
-                className="rounded-[18px] shadow-sm overflow-hidden border relative transition-colors"
+                className="rounded-[16px] shadow-sm overflow-hidden border relative transition-colors"
                 style={{
                   backgroundColor: 'var(--athlon-card)',
                   borderColor: 'var(--athlon-border)',
@@ -727,16 +920,16 @@ export default function PersonalHomePage() {
               >
                 {/* Top Subtle Ambient Glow */}
                 <div
-                  className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl pointer-events-none opacity-20"
+                  className="absolute top-0 right-0 w-28 h-28 rounded-full blur-2xl pointer-events-none opacity-20"
                   style={{ backgroundColor: 'var(--athlon-primary)' }}
                 />
 
                 {/* Profile Info Header */}
-                <div className="flex items-center justify-between p-3.5 sm:p-4 border-b relative z-10" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="flex items-center justify-between p-3 border-b relative z-10" style={{ borderColor: 'var(--athlon-border)' }}>
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="relative">
                       <div
-                        className="w-9 h-9 rounded-xl overflow-hidden shrink-0 shadow-inner flex items-center justify-center border"
+                        className="w-8 h-8 rounded-lg overflow-hidden shrink-0 shadow-inner flex items-center justify-center border"
                         style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                       >
                         <img
@@ -759,16 +952,16 @@ export default function PersonalHomePage() {
                   </div>
 
                   {/* Win Rate Capsule */}
-                  <div className="flex items-center gap-2 bg-primary/10 border border-primary/25 rounded-xl px-2.5 py-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/25 rounded-lg px-2 py-1 shrink-0">
                     <div className="flex flex-col items-end">
-                      <span className="text-[7.5px] font-extrabold tracking-widest uppercase text-primary/80 leading-none mb-0.5">
+                      <span className="text-[7px] font-extrabold tracking-widest uppercase text-primary/80 leading-none mb-0.5">
                         WIN RATE
                       </span>
-                      <span className="text-primary font-black text-sm sm:text-base leading-none">
+                      <span className="text-primary font-black text-xs sm:text-sm leading-none font-mono">
                         {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
                       </span>
                     </div>
-                    <TrendingUp className="w-3.5 h-3.5 text-primary shrink-0 opacity-90" />
+                    <TrendingUp className="w-3 h-3 text-primary shrink-0 opacity-90" />
                   </div>
                 </div>
 
@@ -787,11 +980,11 @@ export default function PersonalHomePage() {
                   ].map((s) => (
                     <div
                       key={s.label}
-                      className="flex flex-col items-center justify-center py-2.5 px-2 gap-1"
+                      className="flex flex-col items-center justify-center py-2 px-1.5 gap-0.5"
                       style={{ borderColor: 'var(--athlon-border)' }}
                     >
-                      <div className="flex items-center gap-1 text-[8px] font-extrabold tracking-wider uppercase" style={{ color: 'var(--athlon-icon-muted)' }}>
-                        <s.icon className="w-3 h-3" style={{ color: 'var(--athlon-icon-muted)' }} />
+                      <div className="flex items-center gap-1 text-[7.5px] font-extrabold tracking-wider uppercase" style={{ color: 'var(--athlon-icon-muted)' }}>
+                        <s.icon className="w-2.5 h-2.5" style={{ color: 'var(--athlon-icon-muted)' }} />
                         <span>{s.label}</span>
                       </div>
                       <div className="text-foreground font-black text-xs sm:text-sm leading-tight font-mono">{s.value}</div>
@@ -801,20 +994,18 @@ export default function PersonalHomePage() {
               </div>
             </div>
 
-
-
             {/* Quick Actions */}
-            <div className="px-6 pt-2 pb-3 mb-2 overflow-hidden">
+            <div className="px-4 pt-1 pb-3 mb-1.5 overflow-hidden">
               <section className="flex items-center justify-between">
                 {quickActions.map((action) => (
                   <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0 group">
                     <div
-                      className="w-[68px] h-[68px] rounded-[18px] flex flex-col items-center justify-center transition-all shadow-lg cursor-pointer hover:scale-105 active:scale-95 border"
+                      className="w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-[18px] flex flex-col items-center justify-center transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95 border"
                       style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                     >
-                      <Athlon3DIcon type={action.icon3d} size={40} active={true} />
+                      <Athlon3DIcon type={action.icon3d} size={36} active={true} />
                     </div>
-                    <span className="text-[10.5px] font-semibold transition-colors group-hover:text-primary" style={{ color: 'var(--athlon-text-secondary)' }}>
+                    <span className="text-[11px] font-bold transition-colors group-hover:text-primary" style={{ color: 'var(--athlon-text-secondary)' }}>
                       {action.label}
                     </span>
                   </Link>
@@ -824,20 +1015,20 @@ export default function PersonalHomePage() {
 
             {/* My Clubs & Workspaces (Role-Aware) */}
             {organizations && organizations.length > 0 && (
-              <div className="px-6 pb-4 pt-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+              <div className="px-4 pb-3.5 pt-0.5 overflow-hidden">
+                <div className="flex items-center justify-between mb-2 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Membership
                     </h2>
                   </div>
-                  <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                  <span className="text-[9.5px] font-bold text-foreground/45 uppercase tracking-wider">
                     {organizations.length} {organizations.length === 1 ? 'Org' : 'Orgs'}
                   </span>
                 </div>
 
-                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-2.5 overflow-x-auto pb-1 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {organizations.map((orgItem) => {
                     const roleUpper = (orgItem.role || 'MEMBER').toUpperCase();
                     const isAdmin = roleUpper === 'ADMIN' || roleUpper === 'OWNER' || roleUpper === 'MANAGER';
@@ -847,20 +1038,20 @@ export default function PersonalHomePage() {
                     return (
                       <div
                         key={orgItem.id}
-                        className="snap-start shrink-0 w-[220px] sm:w-[240px]"
+                        className="snap-start shrink-0 w-[200px] sm:w-[220px]"
                       >
                         <button
                           onClick={() => {
                             setActiveWorkspace(orgItem.id);
                             router.push(`/org/${orgItem.id}/dashboard`);
                           }}
-                          className="w-full text-left p-3.5 rounded-[20px] border bg-gradient-to-br from-surface via-surface to-background/60 hover:border-primary/50 transition-all group shadow-md flex flex-col justify-between h-full space-y-2.5"
+                          className="w-full text-left p-3 rounded-[16px] border bg-gradient-to-br from-surface via-surface to-background/60 hover:border-primary/50 transition-all group shadow-sm flex flex-col justify-between h-full space-y-2"
                           style={{
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <div className="w-9 h-9 rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform text-primary">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 overflow-hidden flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform text-primary">
                               {orgItem.logo ? (
                                 <img src={orgItem.logo} alt={orgItem.name} className="w-full h-full object-cover" />
                               ) : (
@@ -876,7 +1067,7 @@ export default function PersonalHomePage() {
                                             ? 'facilities'
                                             : 'tournaments'
                                   }
-                                  size={22}
+                                  size={20}
                                   active={true}
                                 />
                               )}
@@ -884,7 +1075,7 @@ export default function PersonalHomePage() {
 
                             {/* Role Badge */}
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${isAdmin
+                              className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border ${isAdmin
                                 ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30'
                                 : isCoach
                                   ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-500/20 dark:text-purple-400 dark:border-purple-500/30'
@@ -901,12 +1092,12 @@ export default function PersonalHomePage() {
                             <h4 className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">
                               {orgItem.name}
                             </h4>
-                            <span className="text-[9.5px] font-bold text-foreground/70 dark:text-foreground/40 uppercase tracking-wider block mt-0.5">
+                            <span className="text-[9px] font-bold text-foreground/70 dark:text-foreground/40 uppercase tracking-wider block mt-0.5">
                               {orgItem.type === 'COURT' || (orgItem.type as string) === 'VENUE_MANAGER' ? 'Venue Manager' : orgItem.type === 'COACH' ? 'Freelance Coach' : orgItem.type}
                             </span>
                           </div>
 
-                          <div className="pt-2 border-t border-foreground/5 flex items-center justify-between text-[10px] font-extrabold text-primary">
+                          <div className="pt-1.5 border-t border-foreground/5 flex items-center justify-between text-[9.5px] font-extrabold text-primary">
                             <span>Open</span>
                             <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                           </div>
@@ -919,7 +1110,7 @@ export default function PersonalHomePage() {
             )}
 
             {/* 🔍 DISCOVERY SEARCH & FILTRATION (SPORTS & LOCATION) ────────────── */}
-            <div className="px-6 pb-2 pt-1">
+            <div className="px-4 pb-1.5 pt-0.5">
               <HomeSearchFilterBar
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -936,16 +1127,16 @@ export default function PersonalHomePage() {
             {/* Empty State when Search/Filter returns 0 results */}
             {isFilteringActive && totalFilteredMatches === 0 && (
               <div
-                className="mx-6 my-4 p-8 rounded-[24px] border border-dashed text-center space-y-3 shadow-sm backdrop-blur-md"
+                className="mx-4 my-3 p-6 rounded-[20px] border border-dashed text-center space-y-2.5 shadow-sm backdrop-blur-md"
                 style={{
                   backgroundColor: 'var(--athlon-card)',
                   borderColor: 'var(--athlon-border)',
                 }}
               >
-                <Search className="w-8 h-8 text-foreground/30 mx-auto" />
+                <Search className="w-7 h-7 text-foreground/30 mx-auto" />
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black text-foreground">No matches found</h3>
-                  <p className="text-xs text-foreground/50 max-w-xs mx-auto">
+                  <h3 className="text-xs font-black text-foreground">No matches found</h3>
+                  <p className="text-[11px] text-foreground/50 max-w-xs mx-auto">
                     No tournaments, turfs, academies, or live matches found for{' '}
                     {selectedSport !== 'All' && <span className="text-primary font-bold">{selectedSport} </span>}
                     {selectedPlace !== 'All' && <span className="text-emerald-400 font-bold">in {selectedPlace} </span>}
@@ -954,7 +1145,7 @@ export default function PersonalHomePage() {
                 </div>
                 <button
                   onClick={handleResetFilters}
-                  className="px-4 py-2 rounded-xl text-xs font-black bg-primary text-black hover:scale-105 active:scale-95 transition-all shadow-md"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-black bg-primary text-black hover:scale-105 active:scale-95 transition-all shadow-sm"
                 >
                   Reset All Filters
                 </button>
@@ -963,70 +1154,70 @@ export default function PersonalHomePage() {
 
             {/* ── SECTION 0: LIVE PLAYER AUCTIONS (MOBILE) ── */}
             {filteredLiveAuctionChampionships.length > 0 && (
-              <div className="px-6 pb-4 pt-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                    <h2 className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+              <div className="px-4 pb-3.5 pt-0.5 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                    <h2 className="text-[10.5px] font-black text-red-500 uppercase tracking-wider">
                       Live Player Auctions ({filteredLiveAuctionChampionships.length})
                     </h2>
                   </div>
-                  <span className="text-[9px] font-black text-red-400 uppercase tracking-wider">
+                  <span className="text-[8.5px] font-black text-red-400 uppercase tracking-wider">
                     🔴 Broadcasting
                   </span>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredLiveAuctionChampionships.map((champ) => (
                     <div
                       key={champ.championshipUuid}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                     >
                       <Link
                         href={`/home/team-championship/${champ.championshipUuid}/auction`}
-                        className="block h-full rounded-[22px] overflow-hidden shadow-xl border relative transition-all hover:border-red-500/50 group"
+                        className="block h-full rounded-[18px] overflow-hidden shadow-lg border relative transition-all hover:border-red-500/50 group"
                         style={{
                           backgroundColor: 'var(--athlon-card)',
                           borderColor: 'rgba(239, 68, 68, 0.4)',
                         }}
                       >
                         <div className="h-[2px] w-full bg-gradient-to-r from-red-500 via-rose-500 to-primary animate-pulse" />
-                        <div className="p-4 space-y-3 flex flex-col justify-between h-full">
+                        <div className="p-3.5 space-y-2.5 flex flex-col justify-between h-full">
                           <div className="flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" /> Live Auction
                             </span>
-                            <span className="text-[9px] font-bold text-foreground/45 uppercase tracking-wider truncate max-w-[140px]">
+                            <span className="text-[8.5px] font-bold text-foreground/45 uppercase tracking-wider truncate max-w-[140px]">
                               {champ.sport || 'Badminton'}
                             </span>
                           </div>
 
-                          <div className="space-y-1">
-                            <h3 className="text-sm font-black text-foreground tracking-tight line-clamp-1">
+                          <div className="space-y-0.5">
+                            <h3 className="text-xs sm:text-[13px] font-black text-foreground tracking-tight line-clamp-1">
                               {champ.name}
                             </h3>
-                            <p className="text-[11px] text-foreground/60 line-clamp-1">
+                            <p className="text-[10.5px] text-foreground/60 line-clamp-1">
                               {champ.location || champ.venue || 'Arena'} • Live Draft Floor
                             </p>
                           </div>
 
                           <div
-                            className="rounded-xl p-2.5 border flex items-center justify-between text-xs"
+                            className="rounded-lg p-2 border flex items-center justify-between text-xs"
                             style={{
                               backgroundColor: 'var(--athlon-surface)',
                               borderColor: 'var(--athlon-border-subtle)',
                             }}
                           >
-                            <span className="text-foreground/60 font-semibold text-[11px]">Franchises:</span>
+                            <span className="text-foreground/60 font-semibold text-[10.5px]">Franchises:</span>
                             <span className="font-mono font-black text-primary text-xs">
                               {champ.registeredTeamsCount || champ.maxTeams || 0} Teams
                             </span>
                           </div>
 
-                          <div className="w-full py-2.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-red-500/25">
+                          <div className="w-full py-2 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-lg flex items-center justify-center gap-1.5 shadow-sm shadow-red-500/25">
                             <Gavel className="w-3.5 h-3.5" />
                             <span>Enter Live Arena</span>
-                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                           </div>
                         </div>
                       </Link>
@@ -1038,17 +1229,17 @@ export default function PersonalHomePage() {
 
             {/* ── SECTION 1: LIVE SCORES (MOBILE) ── */}
             {filteredLiveScores.length > 0 && (
-              <div className="px-6 pb-4 pt-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
+              <div className="px-4 pb-3.5 pt-0.5 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">Live Now</h2>
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">Live Now</h2>
                   </div>
-                  <Link href="/live-score" className="text-[10px] font-bold text-red-500 hover:underline uppercase tracking-wider">
+                  <Link href="/live-score" className="text-[9.5px] font-bold text-red-500 hover:underline uppercase tracking-wider">
                     See All ({filteredLiveScores.length})
                   </Link>
                 </div>
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredLiveScores.map((score) => {
                     const meta = score.scoreMeta || {};
                     const config = meta.config || {};
@@ -1065,42 +1256,42 @@ export default function PersonalHomePage() {
                     const setsWonB = games.filter((g: any) => g.winner === 'B').length;
                     const isServing = cur.currentServer;
                     return (
-                      <div key={score.scoreId} className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[340px] md:w-[360px] max-w-[380px]">
+                      <div key={score.scoreId} className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] md:w-[340px] max-w-[360px]">
                         <Link
                           href={`/live-score/${score.matchUuid}`}
-                          className="block h-full rounded-[22px] overflow-hidden shadow-md group relative transition-all hover:scale-[1.02] border"
+                          className="block h-full rounded-[18px] overflow-hidden shadow-sm group relative transition-all hover:scale-[1.01] border"
                           style={{
                             backgroundColor: 'var(--athlon-card)',
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
-                          <div className="relative rounded-[22px] overflow-hidden h-full flex flex-col justify-between">
+                          <div className="relative rounded-[18px] overflow-hidden h-full flex flex-col justify-between">
                             <div>
-                              <div className="flex items-center justify-between px-4 pt-3.5 pb-2 border-b" style={{ borderColor: 'var(--athlon-border)' }}>
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[9px] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/25">
+                              <div className="flex items-center justify-between px-3.5 pt-3 pb-2 border-b" style={{ borderColor: 'var(--athlon-border)' }}>
+                                <span className="inline-flex items-center gap-1.5 px-2 py-[2px] rounded-full text-[8.5px] font-black uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/25">
                                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
                                 </span>
-                                <div className="flex items-center gap-2 text-[9px] font-bold text-foreground/75 dark:text-foreground/50 uppercase tracking-wider">
+                                <div className="flex items-center gap-1.5 text-[8.5px] font-bold text-foreground/75 dark:text-foreground/50 uppercase tracking-wider">
                                   <span>{config.courtName || 'Court'}</span>
                                   <span className="text-foreground/30">•</span>
                                   <span>Game {gi + 1}</span>
                                 </div>
                               </div>
 
-                              <div className="px-4 py-3">
-                                <div className="flex items-stretch gap-3">
-                                  <div className="flex-1 min-w-0 space-y-1.5">
-                                    <div className="flex items-center gap-2 mb-2">
+                              <div className="px-3.5 py-2.5">
+                                <div className="flex items-stretch gap-2.5">
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <div className="flex items-center gap-1.5 mb-1.5">
                                       <div
-                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'A'
+                                        className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${isServing === 'A'
                                           ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/40 border'
                                           : 'bg-surface text-foreground/70 border border-border'
                                           }`}
                                       >
-                                        {isServing === 'A' ? <Zap className="w-3.5 h-3.5" /> : 'A'}
+                                        {isServing === 'A' ? <Zap className="w-3 h-3" /> : 'A'}
                                       </div>
                                       <span
-                                        className={`text-2xl font-black tabular-nums font-mono ${Number(scoreA) > Number(scoreB) ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
+                                        className={`text-xl font-black tabular-nums font-mono ${Number(scoreA) > Number(scoreB) ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
                                           }`}
                                       >
                                         {scoreA}
@@ -1109,23 +1300,23 @@ export default function PersonalHomePage() {
                                     {teamAPlayers.length > 0 ? (
                                       teamAPlayers.map((p: string, i: number) => (
                                         <div key={i} className="flex items-center gap-1.5">
-                                          <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 flex items-center justify-center shrink-0">
-                                            <span className="text-[8px] font-black text-emerald-800 dark:text-emerald-400">{p.charAt(0)}</span>
+                                          <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 flex items-center justify-center shrink-0">
+                                            <span className="text-[7.5px] font-black text-emerald-800 dark:text-emerald-400">{p.charAt(0)}</span>
                                           </div>
-                                          <span className="text-[11px] font-bold text-foreground/90 truncate">{p}</span>
+                                          <span className="text-[10.5px] font-bold text-foreground/90 truncate">{p}</span>
                                         </div>
                                       ))
                                     ) : (
-                                      <span className="text-[11px] font-bold text-foreground/90 truncate block">{teamAName}</span>
+                                      <span className="text-[10.5px] font-bold text-foreground/90 truncate block">{teamAName}</span>
                                     )}
                                   </div>
 
-                                  <div className="flex flex-col items-center justify-center gap-2 px-1">
-                                    <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center">
-                                      <span className="text-[9px] font-black text-foreground/60 dark:text-foreground/40 uppercase">vs</span>
+                                  <div className="flex flex-col items-center justify-center gap-1.5 px-1">
+                                    <div className="w-7 h-7 rounded-full bg-surface border border-border flex items-center justify-center">
+                                      <span className="text-[8.5px] font-black text-foreground/60 dark:text-foreground/40 uppercase">vs</span>
                                     </div>
                                     {games.length > 1 && (
-                                      <div className="flex flex-col items-center gap-[3px]">
+                                      <div className="flex flex-col items-center gap-[2px]">
                                         {games.map((_: any, idx: number) => (
                                           <div
                                             key={idx}
@@ -1143,41 +1334,41 @@ export default function PersonalHomePage() {
                                     )}
                                   </div>
 
-                                  <div className="flex-1 min-w-0 space-y-1.5 text-right">
-                                    <div className="flex items-center justify-end gap-2 mb-2">
+                                  <div className="flex-1 min-w-0 space-y-1 text-right">
+                                    <div className="flex items-center justify-end gap-1.5 mb-1.5">
                                       <span
-                                        className={`text-2xl font-black tabular-nums font-mono ${Number(scoreB) > Number(scoreA) ? 'text-amber-800 dark:text-amber-400' : 'text-foreground'
+                                        className={`text-xl font-black tabular-nums font-mono ${Number(scoreB) > Number(scoreA) ? 'text-amber-800 dark:text-amber-400' : 'text-foreground'
                                           }`}
                                       >
                                         {scoreB}
                                       </span>
                                       <div
-                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 ${isServing === 'B'
+                                        className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${isServing === 'B'
                                           ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/40 border'
                                           : 'bg-surface text-foreground/70 border border-border'
                                           }`}
                                       >
-                                        {isServing === 'B' ? <Zap className="w-3.5 h-3.5" /> : 'B'}
+                                        {isServing === 'B' ? <Zap className="w-3 h-3" /> : 'B'}
                                       </div>
                                     </div>
                                     {teamBPlayers.length > 0 ? (
                                       teamBPlayers.map((p: string, i: number) => (
                                         <div key={i} className="flex items-center justify-end gap-1.5">
-                                          <span className="text-[11px] font-bold text-foreground/90 truncate">{p}</span>
-                                          <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 flex items-center justify-center shrink-0">
-                                            <span className="text-[8px] font-black text-amber-800 dark:text-amber-400">{p.charAt(0)}</span>
+                                          <span className="text-[10.5px] font-bold text-foreground/90 truncate">{p}</span>
+                                          <div className="w-4 h-4 rounded-full bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 flex items-center justify-center shrink-0">
+                                            <span className="text-[7.5px] font-black text-amber-800 dark:text-amber-400">{p.charAt(0)}</span>
                                           </div>
                                         </div>
                                       ))
                                     ) : (
-                                      <span className="text-[11px] font-bold text-foreground/90 truncate block">{teamBName}</span>
+                                      <span className="text-[10.5px] font-bold text-foreground/90 truncate block">{teamBName}</span>
                                     )}
                                   </div>
                                 </div>
                               </div>
 
                               {(setsWonA > 0 || setsWonB > 0) && (
-                                <div className="mx-4 mb-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-foreground/40">
+                                <div className="mx-3.5 mb-2 flex items-center gap-2 text-[8.5px] font-black uppercase tracking-wider text-foreground/40">
                                   <span className="text-emerald-500 dark:text-emerald-400 font-bold">{setsWonA}</span>
                                   <div className="flex-1 h-[2px] rounded-full bg-foreground/10 overflow-hidden">
                                     <div
@@ -1197,12 +1388,12 @@ export default function PersonalHomePage() {
                               )}
                             </div>
 
-                            <div className="flex items-center justify-between px-4 py-2.5 bg-surface/50 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
-                              <span className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider truncate max-w-[60%]">
+                            <div className="flex items-center justify-between px-3.5 py-2 bg-surface/50 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                              <span className="text-[8.5px] font-bold text-foreground/50 uppercase tracking-wider truncate max-w-[60%]">
                                 {config.tournamentName || 'Live Match'}
                               </span>
-                              <span className="text-[9px] font-black text-red-500 uppercase tracking-widest flex items-center gap-0.5 group-hover:text-red-400 transition-colors">
-                                Watch <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                              <span className="text-[8.5px] font-black text-red-500 uppercase tracking-wider flex items-center gap-0.5 group-hover:text-red-400 transition-colors">
+                                Watch <ChevronRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
                               </span>
                             </div>
                           </div>
@@ -1216,27 +1407,27 @@ export default function PersonalHomePage() {
 
             {/* ── SECTION 2: Book Courts & Turfs ── */}
             {filteredVenues.length > 0 && (
-              <div className="px-6 pb-4 pt-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+              <div className="px-4 pb-3.5 pt-0.5 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Book Courts &amp; Turfs ({filteredVenues.length})
                     </h2>
                   </div>
-                  <Link href="/venues" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                  <Link href="/venues" className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
                     <span>Explore</span>
                     <ChevronRight className="w-3 h-3" />
                   </Link>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredVenues.map((venue: any) => (
                     <div
                       key={venue.venueUuid || venue.venueId || venue.id}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                     >
-                      <VenueMarketplaceCard venue={venue} className="h-full shadow-md" />
+                      <VenueMarketplaceCard venue={venue} className="h-full shadow-sm" />
                     </div>
                   ))}
                 </div>
@@ -1245,27 +1436,27 @@ export default function PersonalHomePage() {
 
             {/* ── SECTION 3: Featured Sports Academies & Coaching Centers ── */}
             {filteredAcademies.length > 0 && (
-              <div className="px-6 pb-4 pt-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+              <div className="px-4 pb-3.5 pt-0.5 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Training Academies ({filteredAcademies.length})
                     </h2>
                   </div>
-                  <Link href="/academies?type=ACADEMY" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                  <Link href="/academies?type=ACADEMY" className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
                     <span>Explore</span>
                     <ChevronRight className="w-3 h-3" />
                   </Link>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredAcademies.map((acad: any) => (
                     <div
                       key={acad.uuid || acad.id}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                     >
-                      <AcademyMarketplaceCard academy={acad} className="h-full shadow-md" />
+                      <AcademyMarketplaceCard academy={acad} className="h-full shadow-sm" />
                     </div>
                   ))}
                 </div>
@@ -1274,52 +1465,161 @@ export default function PersonalHomePage() {
 
             {/* ── SECTION 4: Professional Coaches & Mentors ── */}
             {filteredCoaches.length > 0 && (
-              <div className="px-6 pb-4 pt-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+              <div className="px-4 pb-3.5 pt-0.5 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Professional Coaches ({filteredCoaches.length})
                     </h2>
                   </div>
-                  <Link href="/coaches" className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                  <Link href="/coaches" className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
                     <span>Explore</span>
                     <ChevronRight className="w-3 h-3" />
                   </Link>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredCoaches.map((coach: any) => (
                     <div
                       key={coach.uuid || coach.id}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                     >
-                      <CoachMarketplaceCard coach={coach} className="h-full shadow-md" />
+                      <CoachMarketplaceCard coach={coach} className="h-full shadow-sm" />
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* ── SECTION: Sports Communities & Game Circles ── */}
+            <div className="px-4 pb-4 pt-1 overflow-hidden">
+              <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-primary" />
+                  <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
+                    Sports Communities &amp; Circles
+                  </h2>
+                </div>
+                <Link href="/communities" className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                  <span>Explore</span>
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              {/* ── Ultra-Stylish Community Showcase Card ── */}
+              <div
+                className="relative rounded-[22px] border p-4 sm:p-5 overflow-hidden transition-all duration-300 hover:shadow-xl group"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                {/* Top Subtle Brand Gradient Line */}
+                <div className="h-1 w-full bg-gradient-to-r from-primary/70 via-primary to-primary/20 absolute top-0 left-0 right-0" />
+
+                {/* Ambient Decorative Glow */}
+                <div className="absolute -top-10 -right-10 w-36 h-36 bg-primary/15 dark:bg-primary/25 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/30 transition-all duration-500" />
+
+                <div className="relative z-10 space-y-3.5">
+                  {/* Header Row: Icon + Title + Live Status */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-surface border border-primary/30 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">
+                        <Athlon3DIcon type="members" size={30} active={true} />
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3 className="text-sm sm:text-base font-black text-foreground tracking-tight line-clamp-1 group-hover:text-primary transition-colors">
+                          Local Playing Circles
+                        </h3>
+                        <p className="text-[11px] text-foreground/60 font-medium line-clamp-1">
+                          Let&apos;s Play games
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25 shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      <span>Active</span>
+                    </span>
+                  </div>
+
+                  {/* Feature Highlights: 2-Column Clean Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div
+                      className="p-2.5 rounded-xl border flex items-center gap-2"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                    >
+                      <span className="text-sm shrink-0">🏸</span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black text-foreground truncate">Live RSVPs</p>
+                        <p className="text-[8.5px] text-foreground/50 truncate">Weekly game slots</p>
+                      </div>
+                    </div>
+
+                    <div
+                      className="p-2.5 rounded-xl border flex items-center gap-2"
+                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                    >
+                      <span className="text-sm shrink-0">📊</span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black text-foreground truncate">Squad Matches</p>
+                        <p className="text-[8.5px] text-foreground/50 truncate">Scorecards &amp; kitty</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Action & Social Proof Bar */}
+                  <div className="pt-2 border-t flex items-center justify-between gap-2" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="flex items-center -space-x-1.5 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-primary/20 border border-card text-[8px] font-black flex items-center justify-center text-primary">
+                          DK
+                        </div>
+                        <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-card text-[8px] font-black flex items-center justify-center text-blue-400">
+                          AR
+                        </div>
+                        <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-card text-[8px] font-black flex items-center justify-center text-amber-400">
+                          SK
+                        </div>
+                      </div>
+                      <span className="text-[9.5px] font-bold text-foreground/60 truncate">
+                        Players nearby
+                      </span>
+                    </div>
+
+                    <Link
+                      href="/communities"
+                      className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-black font-black text-xs inline-flex items-center gap-1 transition-all shadow-[0_2px_8px_var(--athlon-primary-glow)] active:scale-95 shrink-0"
+                    >
+                      <span>Explore</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Finished Match Results */}
             {filteredFinishedScores.length > 0 && (
-              <div className="px-6 pb-6 pt-3 mt-4 overflow-hidden">
-                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+              <div className="px-4 pb-4 pt-1 mt-2 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Recent Match Results
                     </h2>
                   </div>
                   <Link
                     href="/live-score"
-                    className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
+                    className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
                   >
                     View All ({filteredFinishedScores.length}) <ChevronRight className="w-3 h-3 ml-0.5" />
                   </Link>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredFinishedScores.map((score) => {
                     const meta = score.scoreMeta || {};
                     const config = meta.config || {};
@@ -1335,38 +1635,39 @@ export default function PersonalHomePage() {
                     return (
                       <div
                         key={score.scoreId}
-                        className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                        className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                       >
                         <Link
                           href={`/live-score/${score.matchUuid}`}
-                          className="block h-full rounded-[22px] overflow-hidden shadow-xl border relative transition-all hover:border-primary/50 group"
+                          className="block h-full rounded-[18px] overflow-hidden shadow-sm border relative transition-all hover:border-primary/50 group"
                           style={{
                             backgroundColor: 'var(--athlon-card)',
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
-                          <div className="h-[2px] w-full bg-primary shadow-[0_0_8px_var(--athlon-primary)]" />
-                          <div className="p-4 space-y-3 flex flex-col justify-between h-full">
+                          <SportCardSkeletonBackground sport={config.sport || config.category || (score as any).sport || 'Badminton'} />
+                          <div className="h-[2px] w-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] relative z-10" />
+                          <div className="p-3.5 space-y-2.5 flex flex-col justify-between h-full relative z-10">
                             <div className="flex items-center justify-between">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
                                 <CheckCircle2 className="w-2.5 h-2.5 text-primary" /> Completed
                               </span>
-                              <span className="text-[9px] font-bold text-foreground/75 dark:text-foreground/45 uppercase tracking-wider truncate max-w-[150px]">
+                              <span className="text-[8.5px] font-bold text-foreground/75 dark:text-foreground/45 uppercase tracking-wider truncate max-w-[150px]">
                                 {config.tournamentName || 'Tournament Match'}
                               </span>
                             </div>
 
                             {/* Teams & Scores */}
                             <div
-                              className="rounded-xl p-3 border space-y-2"
+                              className="rounded-lg p-2.5 border space-y-1.5"
                               style={{
                                 backgroundColor: 'var(--athlon-surface)',
                                 borderColor: 'var(--athlon-border-subtle)',
                               }}
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-black text-primary shrink-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <div className="w-5 h-5 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-[9px] font-black text-primary shrink-0">
                                     {teamAName.charAt(0)}
                                   </div>
                                   <span
@@ -1385,11 +1686,11 @@ export default function PersonalHomePage() {
                               </div>
 
                               <div
-                                className="flex items-center justify-between gap-2 border-t pt-2"
+                                className="flex items-center justify-between gap-2 border-t pt-1.5"
                                 style={{ borderColor: 'var(--athlon-border-subtle)' }}
                               >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <div className="w-6 h-6 rounded-lg bg-surface border border-border flex items-center justify-center text-[10px] font-bold text-foreground/70 shrink-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <div className="w-5 h-5 rounded bg-surface border border-border flex items-center justify-center text-[9px] font-bold text-foreground/70 shrink-0">
                                     {teamBName.charAt(0)}
                                   </div>
                                   <span
@@ -1410,24 +1711,24 @@ export default function PersonalHomePage() {
 
                             {/* Sets breakdown & CTA */}
                             <div
-                              className="flex items-center justify-between pt-2 border-t text-[10px]"
+                              className="flex items-center justify-between pt-1.5 border-t text-[9.5px]"
                               style={{ borderColor: 'var(--athlon-border-subtle)' }}
                             >
                               {games.length > 0 ? (
-                                <div className="flex items-center gap-1.5 flex-wrap text-foreground/80 dark:text-foreground/60">
-                                  <span className="font-bold text-foreground/60 dark:text-foreground/40 text-[9px] uppercase">Sets:</span>
+                                <div className="flex items-center gap-1 flex-wrap text-foreground/80 dark:text-foreground/60">
+                                  <span className="font-bold text-foreground/60 dark:text-foreground/40 text-[8.5px] uppercase">Sets:</span>
                                   {games.map((g: any, gIdx: number) => (
-                                    <span key={gIdx} className="px-1.5 py-0.2 rounded bg-surface border border-border font-mono font-bold text-[9px] text-foreground">
+                                    <span key={gIdx} className="px-1 py-0.2 rounded bg-surface border border-border font-mono font-bold text-[8.5px] text-foreground">
                                       {g.scoreA ?? 0}–{g.scoreB ?? 0}
                                     </span>
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-[9px] text-foreground/60 dark:text-foreground/40 font-bold uppercase">Finished</span>
+                                <span className="text-[8.5px] text-foreground/60 dark:text-foreground/40 font-bold uppercase">Finished</span>
                               )}
 
-                              <span className="text-[9px] font-bold text-primary flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2">
-                                Scorecard <ChevronRight className="w-3 h-3" />
+                              <span className="text-[8.5px] font-bold text-primary flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2">
+                                Scorecard <ChevronRight className="w-2.5 h-2.5" />
                               </span>
                             </div>
                           </div>
@@ -1441,27 +1742,27 @@ export default function PersonalHomePage() {
 
             {/* Team Championships (Auctions & Leagues) */}
             {filteredChampionships.length > 0 && (
-              <div className="px-6 pb-6 pt-2 overflow-hidden">
-                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+              <div className="px-4 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Team Championships ({filteredChampionships.length})
                     </h2>
                   </div>
                   <Link
                     href="/tournaments"
-                    className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
+                    className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
                   >
                     View All <ChevronRight className="w-3 h-3 ml-0.5" />
                   </Link>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredChampionships.map((c) => (
                     <div
                       key={c.championshipId || c.championshipUuid}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                     >
                       <PublicTeamChampionshipCard championship={c} />
                     </div>
@@ -1472,27 +1773,27 @@ export default function PersonalHomePage() {
 
             {/* Tournaments (Open, Ongoing & Finished) */}
             {filteredTournaments.length > 0 && (
-              <div className="px-6 pb-6 pt-2 overflow-hidden">
-                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/70 uppercase tracking-widest">
+              <div className="px-4 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Tournaments ({filteredTournaments.length})
                     </h2>
                   </div>
                   <Link
                     href="/home/tournaments"
-                    className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
+                    className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
                   >
                     View All <ChevronRight className="w-3 h-3 ml-0.5" />
                   </Link>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {filteredTournaments.map((t) => (
                     <div
                       key={t.tournamentId || t.tournamentUuid}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
                     >
                       <PublicTournamentCard tournament={t} />
                     </div>
@@ -1501,22 +1802,95 @@ export default function PersonalHomePage() {
               </div>
             )}
 
+            {/* ── MOBILE SECTION: COMMUNITY GAME SESSIONS ── */}
+            {filteredSessions.length > 0 && (
+              <div className="px-4 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
+                      Community Sessions ({filteredSessions.length})
+                    </h2>
+                  </div>
+                  <span className="text-[9.5px] font-bold text-primary/80 uppercase tracking-wider">
+                    1-Tap RSVP
+                  </span>
+                </div>
+
+                <div
+                  ref={mobileSessionsScrollRef}
+                  className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0"
+                >
+                  {filteredSessions.map((session) => (
+                    <div
+                      key={session.sessionUuid}
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] max-w-[350px] flex"
+                    >
+                      <CommunitySessionCard
+                        session={session}
+                        isLoggedIn={true}
+                        onRsvp={handleSessionRsvp}
+                        communityName={session.communityName || myCommunities.find((c) => c.communityUuid === session.communityUuid)?.name}
+                        className="w-full h-full shadow-md"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── MOBILE SECTION: ACTIVE MEMBER POLLS & VOTES ── */}
+            {memberPolls.length > 0 && (
+              <div className="px-4 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Vote className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
+                      Active Member Polls &amp; Votes ({memberPolls.length})
+                    </h2>
+                  </div>
+                  <span className="text-[9.5px] font-bold text-primary/80 uppercase tracking-wider">
+                    1-Tap Vote
+                  </span>
+                </div>
+
+                <div
+                  ref={mobilePollsScrollRef}
+                  className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0"
+                >
+                  {memberPolls.map(({ poll, communityName }) => (
+                    <div
+                      key={poll.pollId}
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] max-w-[350px] flex"
+                    >
+                      <CommunityPollCard
+                        poll={poll}
+                        communityName={communityName}
+                        onVote={handleMemberPollVote}
+                        className="w-full h-full shadow-md"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Action Required: Pending Lineups */}
             {pendingLineups.length > 0 && (
-              <div className="px-6 pb-6 pt-2">
-                <div className="flex items-center justify-between mb-3.5 pl-1 pr-1">
-                  <div className="flex items-center gap-2">
+              <div className="px-4 pb-4 pt-1">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                    <h2 className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Action Required</h2>
+                    <h2 className="text-[10.5px] font-black text-orange-500 uppercase tracking-wider">Action Required</h2>
                   </div>
                   <Link
                     href="/home/matches"
-                    className="text-[10px] font-bold text-orange-500 hover:underline uppercase tracking-wider flex items-center"
+                    className="text-[9.5px] font-bold text-orange-500 hover:underline uppercase tracking-wider flex items-center"
                   >
                     View All <ChevronRight className="w-3 h-3 ml-0.5" />
                   </Link>
                 </div>
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {pendingLineups.map((match) => {
                     const isAApproved = match.teamALineupStatus === 'APPROVED';
                     const isBApproved = match.teamBLineupStatus === 'APPROVED';
@@ -1556,33 +1930,33 @@ export default function PersonalHomePage() {
                     return (
                       <div
                         key={match.id}
-                        className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[340px] md:w-[360px] max-w-[380px]"
+                        className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
                       >
-                        <div className={`rounded-[18px] border p-4 flex flex-col gap-3 h-full transition-all ${cardBgClass}`}>
+                        <div className={`rounded-[16px] border p-3.5 flex flex-col gap-2.5 h-full transition-all ${cardBgClass}`}>
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5">
                               <span
-                                className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${statusBadgeClass}`}
+                                className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${statusBadgeClass}`}
                               >
                                 {statusBadgeText}
                               </span>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-foreground/40">
                                 Team Event
                               </span>
                             </div>
                             <AlertCircle
-                              className={`w-4 h-4 shrink-0 ${bothApproved ? 'text-emerald-400' : hasSubmitted ? 'text-primary' : 'text-orange-500'
+                              className={`w-3.5 h-3.5 shrink-0 ${bothApproved ? 'text-emerald-400' : hasSubmitted ? 'text-primary' : 'text-orange-500'
                                 }`}
                             />
                           </div>
 
-                          <h3 className="text-sm font-black tracking-tight text-foreground">
+                          <h3 className="text-xs sm:text-[13px] font-black tracking-tight text-foreground truncate">
                             {match.teamAName && match.teamBName
                               ? `${match.teamAName} vs ${match.teamBName}`
                               : `Team Event Match #${match.id}`}
                           </h3>
 
-                          <div className="flex flex-wrap items-center gap-3 text-[10px] font-semibold text-foreground/50">
+                          <div className="flex flex-wrap items-center gap-2.5 text-[9.5px] font-semibold text-foreground/50">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3 text-primary" /> {formattedDate}
                             </div>
@@ -1597,7 +1971,7 @@ export default function PersonalHomePage() {
 
                           <button
                             onClick={() => router.push(`/home/team-events/${match.uuid}/lineup`)}
-                            className={`mt-auto w-full py-2.5 text-xs font-black uppercase tracking-widest rounded-xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 ${bothApproved
+                            className={`mt-auto w-full py-2 text-xs font-black uppercase tracking-wider rounded-lg active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5 ${bothApproved
                               ? 'bg-emerald-500 hover:bg-emerald-600 text-black'
                               : hasSubmitted
                                 ? 'bg-primary hover:bg-primary-hover text-black'
@@ -1606,11 +1980,11 @@ export default function PersonalHomePage() {
                           >
                             {hasSubmitted ? (
                               <>
-                                <CheckCircle2 className="w-4 h-4" /> View Lineup
+                                <CheckCircle2 className="w-3.5 h-3.5" /> View Lineup
                               </>
                             ) : (
                               <>
-                                <ClipboardList className="w-4 h-4" /> Submit Lineup
+                                <ClipboardList className="w-3.5 h-3.5" /> Submit Lineup
                               </>
                             )}
                           </button>
@@ -1624,45 +1998,45 @@ export default function PersonalHomePage() {
 
             {/* Matches */}
             {userMatches.length > 0 && (
-              <div className="px-6 pb-8">
-                <div className="flex items-center justify-between mb-4 pl-1 pr-2">
-                  <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-primary" />
-                    <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">
+              <div className="px-4 pb-6">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-primary" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Matches ({userMatches.length})
                     </h2>
                   </div>
                   <Link
                     href="/home/matches"
-                    className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center hover:underline"
+                    className="text-[9.5px] font-bold text-primary uppercase tracking-wider flex items-center hover:underline"
                   >
                     View All <ChevronRight className="w-3 h-3 ml-0.5" />
                   </Link>
                 </div>
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {userMatches.map((match) => (
                     <div
                       key={match.id}
-                      className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[340px] md:w-[360px] max-w-[380px]"
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
                     >
                       <div
-                        className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between"
+                        className="relative rounded-[18px] overflow-hidden shadow-sm border h-full flex flex-col justify-between"
                         style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                       >
-                        <div className="h-[3px] w-full bg-gradient-to-r from-primary via-amber-400 to-emerald-400" />
-                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                          <div className="flex items-start justify-between gap-3 border-b border-foreground/5 pb-2.5">
+                        <div className="h-[2px] w-full bg-gradient-to-r from-primary via-amber-400 to-emerald-400" />
+                        <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                          <div className="flex items-start justify-between gap-2 border-b border-foreground/5 pb-2">
                             <div className="space-y-0.5 min-w-0 flex-1">
-                              <span className="text-[10px] font-black text-foreground/40 uppercase tracking-widest block truncate">
+                              <span className="text-[9px] font-black text-foreground/40 uppercase tracking-wider block truncate">
                                 {match.tournament}
                               </span>
-                              <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
-                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                              <div className="flex items-center gap-1 text-xs font-bold text-primary">
+                                <MapPin className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{match.court}</span>
                               </div>
                             </div>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${match.status === 'LIVE' || match.status === 'IN_PROGRESS'
+                              className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border shrink-0 ${match.status === 'LIVE' || match.status === 'IN_PROGRESS'
                                 ? 'bg-red-500/10 text-red-400 border-red-500/20 animate-pulse'
                                 : 'bg-primary/10 text-primary border-primary/20'
                                 }`}
@@ -1671,15 +2045,15 @@ export default function PersonalHomePage() {
                             </span>
                           </div>
                           <div
-                            className="rounded-xl p-3 border space-y-2"
+                            className="rounded-lg p-2.5 border space-y-1.5"
                             style={{
                               backgroundColor: 'var(--athlon-surface)',
                               borderColor: 'var(--athlon-border-subtle)',
                             }}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <div className="w-6 h-6 rounded bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-[10px] shrink-0">
                                   {match.teamAName.charAt(0)}
                                 </div>
                                 <span className="text-xs font-extrabold text-foreground truncate">{match.teamAName}</span>
@@ -1687,14 +2061,14 @@ export default function PersonalHomePage() {
                             </div>
                             <div className="flex items-center gap-2 my-0.5">
                               <div className="h-[1px] flex-1 bg-foreground/10" />
-                              <span className="text-[9px] font-black text-primary uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-foreground/10 shrink-0">
+                              <span className="text-[8px] font-black text-primary uppercase tracking-wider bg-surface px-1.5 py-0.2 rounded-full border border-foreground/10 shrink-0">
                                 VS
                               </span>
                               <div className="h-[1px] flex-1 bg-foreground/10" />
                             </div>
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <div className="w-7 h-7 rounded-lg bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-xs shrink-0">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <div className="w-6 h-6 rounded bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-[10px] shrink-0">
                                   {match.teamBName.charAt(0)}
                                 </div>
                                 <span className="text-xs font-extrabold text-foreground truncate">{match.teamBName}</span>
@@ -1702,9 +2076,9 @@ export default function PersonalHomePage() {
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-xs pt-1 border-t border-foreground/5">
-                            <span className="text-[9px] font-bold text-foreground/40 uppercase tracking-wider">Time</span>
-                            <div className="flex items-center gap-1.5 text-foreground/80 font-bold bg-background px-2.5 py-1 rounded-lg border border-foreground/5 text-[11px]">
-                              <Clock className="w-3 h-3 text-primary" />
+                            <span className="text-[8.5px] font-bold text-foreground/40 uppercase tracking-wider">Time</span>
+                            <div className="flex items-center gap-1 text-foreground/80 font-bold bg-background px-2 py-0.5 rounded border border-foreground/5 text-[10.5px]">
+                              <Clock className="w-2.5 h-2.5 text-primary" />
                               <span>{match.date}</span>
                             </div>
                           </div>
@@ -1718,23 +2092,23 @@ export default function PersonalHomePage() {
 
             {/* Umpiring Assignments */}
             {umpireMatches.length > 0 && (
-              <div className="px-6 pb-8">
-                <div className="flex items-center justify-between mb-4 pl-1 pr-2">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-red-400" />
-                    <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest">
+              <div className="px-4 pb-6">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-red-400" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
                       Umpiring Assignments ({umpireMatches.length})
                     </h2>
                   </div>
                   <Link
                     href="/home/matches"
-                    className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center hover:underline"
+                    className="text-[9.5px] font-bold text-red-400 uppercase tracking-wider flex items-center hover:underline"
                   >
                     View All <ChevronRight className="w-3 h-3 ml-0.5" />
                   </Link>
                 </div>
 
-                <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                   {umpireMatches.map((match) => {
                     const isLive = match.status === 'LIVE' || match.status === 'IN_PROGRESS';
                     const isCompleted = match.status === 'COMPLETED';
@@ -1750,25 +2124,25 @@ export default function PersonalHomePage() {
                     return (
                       <div
                         key={match.id || match.uuid}
-                        className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[340px] md:w-[360px] max-w-[380px]"
+                        className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
                       >
                         <div
-                          className="relative rounded-[22px] overflow-hidden shadow-xl border h-full flex flex-col justify-between"
+                          className="relative rounded-[18px] overflow-hidden shadow-sm border h-full flex flex-col justify-between"
                           style={{
                             backgroundColor: 'var(--athlon-card)',
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
-                          <div className="h-[3px] w-full bg-gradient-to-r from-red-500 via-rose-500 to-amber-500" />
+                          <div className="h-[2px] w-full bg-gradient-to-r from-red-500 via-rose-500 to-amber-500" />
 
-                          <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                            <div className="flex items-start justify-between gap-3 border-b border-foreground/5 pb-2.5">
+                          <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                            <div className="flex items-start justify-between gap-2 border-b border-foreground/5 pb-2">
                               <div className="space-y-0.5 min-w-0 flex-1">
-                                <span className="text-[10px] font-black text-foreground/40 uppercase tracking-widest block truncate">
+                                <span className="text-[9px] font-black text-foreground/40 uppercase tracking-wider block truncate">
                                   {match.tournamentName || 'Tournament Match'}
                                 </span>
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-red-400">
-                                  <MapPin className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                                <div className="flex items-center gap-1 text-xs font-bold text-red-400">
+                                  <MapPin className="w-3 h-3 shrink-0 text-amber-400" />
                                   <span className="truncate">
                                     {match.courtName || (match.courtId ? `Court ${match.courtId}` : 'Court TBD')}
                                   </span>
@@ -1776,7 +2150,7 @@ export default function PersonalHomePage() {
                               </div>
 
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shrink-0 ${isLive
+                                className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider border shrink-0 ${isLive
                                   ? 'bg-red-500/15 text-red-400 border-red-500/30 animate-pulse'
                                   : isCompleted
                                     ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
@@ -1788,15 +2162,15 @@ export default function PersonalHomePage() {
                             </div>
 
                             <div
-                              className="rounded-xl p-3 border space-y-2"
+                              className="rounded-lg p-2.5 border space-y-1.5"
                               style={{
                                 backgroundColor: 'var(--athlon-surface)',
                                 borderColor: 'var(--athlon-border-subtle)',
                               }}
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <div className="w-7 h-7 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 font-black text-xs shrink-0">
+                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                  <div className="w-6 h-6 rounded bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 font-black text-[10px] shrink-0">
                                     {(match.teamAName || 'A').charAt(0)}
                                   </div>
                                   <span className="text-xs font-extrabold text-foreground truncate">
@@ -1807,15 +2181,15 @@ export default function PersonalHomePage() {
 
                               <div className="flex items-center gap-2 my-0.5">
                                 <div className="h-[1px] flex-1 bg-foreground/10" />
-                                <span className="text-[9px] font-black text-red-400 uppercase tracking-widest bg-surface px-2 py-0.5 rounded-full border border-foreground/10 shrink-0">
+                                <span className="text-[8px] font-black text-red-400 uppercase tracking-wider bg-surface px-1.5 py-0.2 rounded-full border border-foreground/10 shrink-0">
                                   VS
                                 </span>
                                 <div className="h-[1px] flex-1 bg-foreground/10" />
                               </div>
 
                               <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <div className="w-7 h-7 rounded-lg bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-xs shrink-0">
+                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                  <div className="w-6 h-6 rounded bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-[10px] shrink-0">
                                     {(match.teamBName || 'B').charAt(0)}
                                   </div>
                                   <span className="text-xs font-extrabold text-foreground truncate">
@@ -1825,13 +2199,13 @@ export default function PersonalHomePage() {
                               </div>
                             </div>
 
-                            <div className="space-y-2.5 pt-1 border-t border-foreground/5">
+                            <div className="space-y-2 pt-1 border-t border-foreground/5">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-[9px] font-bold text-foreground/40 uppercase tracking-wider">
+                                <span className="text-[8.5px] font-bold text-foreground/40 uppercase tracking-wider">
                                   Time
                                 </span>
-                                <div className="flex items-center gap-1.5 text-foreground/80 font-bold bg-background px-2.5 py-1 rounded-lg border border-foreground/5 text-[11px]">
-                                  <Clock className="w-3 h-3 text-amber-400" />
+                                <div className="flex items-center gap-1 text-foreground/80 font-bold bg-background px-2 py-0.5 rounded border border-foreground/5 text-[10.5px]">
+                                  <Clock className="w-2.5 h-2.5 text-amber-400" />
                                   <span>{formattedTime}</span>
                                 </div>
                               </div>
@@ -1849,7 +2223,7 @@ export default function PersonalHomePage() {
                                       router.push(`/live-score/${match.uuid}`);
                                     }
                                   }}
-                                  className="w-full py-2.5 rounded-xl bg-surface-elevated hover:bg-surface border border-emerald-500/30 text-emerald-400 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+                                  className="w-full py-2 rounded-lg bg-surface-elevated hover:bg-surface border border-emerald-500/30 text-emerald-400 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
                                 >
                                   <Trophy className="w-3.5 h-3.5 text-emerald-400" />
                                   <span>Match Results</span>
@@ -1888,7 +2262,7 @@ export default function PersonalHomePage() {
                                       `/match-setup?matchId=${match.uuid}&sport=${sport}&teamA=${teamAStr}&teamB=${teamBStr}&teamAName=${teamANameStr}&teamBName=${teamBNameStr}&tournamentName=${tournamentNameStr}&courtName=${courtNameStr}&fromUmpire=true`
                                     );
                                   }}
-                                  className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-red-500/25 active:scale-95 flex items-center justify-center gap-1.5"
+                                  className="w-full py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider transition-all shadow-sm shadow-red-500/25 active:scale-95 flex items-center justify-center gap-1.5"
                                 >
                                   <Activity className="w-3.5 h-3.5 animate-pulse" />
                                   <span>{isLive ? 'Resume Scoring' : 'Start Scoring'}</span>
@@ -2217,8 +2591,9 @@ export default function PersonalHomePage() {
                           borderColor: 'var(--athlon-border)',
                         }}
                       >
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse" />
-                        <div className="flex items-center justify-between text-xs pb-3 border-b" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <SportCardSkeletonBackground sport={config.sport || config.category || (score as any).sport || 'Badminton'} />
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse z-10" />
+                        <div className="flex items-center justify-between text-xs pb-3 border-b relative z-10" style={{ borderColor: 'var(--athlon-border)' }}>
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/25 flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                             Live Game {gi + 1}
@@ -2228,7 +2603,7 @@ export default function PersonalHomePage() {
                           </span>
                         </div>
 
-                        <div className="p-4 my-3 rounded-2xl border space-y-3 bg-surface/50" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <div className="p-4 my-3 rounded-2xl border space-y-3 bg-surface/50 relative z-10" style={{ borderColor: 'var(--athlon-border)' }}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <span className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center ${isServing === 'A' ? 'bg-emerald-500 text-black' : 'bg-foreground/10 text-foreground/60'}`}>
@@ -2425,6 +2800,111 @@ export default function PersonalHomePage() {
                 {filteredTournaments.map((t) => (
                   <div key={t.tournamentId || t.tournamentUuid} className="snap-start shrink-0 w-[360px]">
                     <PublicTournamentCard tournament={t} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── SECTION: 🏸 WEEKLY "LET'S PLAY" COMMUNITY SESSIONS (HORIZONTAL SCROLL) ── */}
+          {filteredSessions.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Users className="w-5 h-5 text-primary" />
+                  <div>
+                    <h2 className="text-base font-black text-foreground">
+                      Weekly &quot;Let&apos;s Play&quot; Community Sessions ({filteredSessions.length})
+                    </h2>
+                    <p className="text-xs text-foreground/50">
+                      Casual games, open rosters &amp; weekly club runs. Joining automatically makes you part of the community!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => scrollContainer(sessionsScrollRef, 'left')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollContainer(sessionsScrollRef, 'right')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                ref={sessionsScrollRef}
+                className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+              >
+                {filteredSessions.map((session) => (
+                  <div key={session.sessionUuid} className="snap-start shrink-0 w-[350px]">
+                    <CommunitySessionCard
+                      session={session}
+                      isLoggedIn={true}
+                      onRsvp={handleSessionRsvp}
+                      communityName={session.communityName || myCommunities.find((c) => c.communityUuid === session.communityUuid)?.name}
+                      className="w-full h-full shadow-md"
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── SECTION: 🗳️ ACTIVE MEMBER POLLS & VOTES (HORIZONTAL SCROLL) ── */}
+          {memberPolls.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Vote className="w-5 h-5 text-primary" />
+                  <div>
+                    <h2 className="text-base font-black text-foreground">
+                      Active Member Polls &amp; Votes ({memberPolls.length})
+                    </h2>
+                    <p className="text-xs text-foreground/50">
+                      Shape decisions, pick match days &amp; cast votes for communities you belong to!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => scrollContainer(pollsScrollRef, 'left')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollContainer(pollsScrollRef, 'right')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                ref={pollsScrollRef}
+                className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+              >
+                {memberPolls.map(({ poll, communityName }) => (
+                  <div key={poll.pollId} className="snap-start shrink-0 w-[350px]">
+                    <CommunityPollCard
+                      poll={poll}
+                      communityName={communityName}
+                      onVote={handleMemberPollVote}
+                      className="w-full h-full shadow-md"
+                    />
                   </div>
                 ))}
               </div>
@@ -2634,8 +3114,8 @@ export default function PersonalHomePage() {
                       <button
                         onClick={() => {
                           const sport = match.sportType || 'Badminton';
-                          const teamAStr = match.teamAName ? encodeURIComponent(match.teamAName.replace(/\s*&\s*/g, ',')) : '';
-                          const teamBStr = match.teamBName ? encodeURIComponent(match.teamBName.replace(/\s*&\s*/g, ',')) : '';
+                          const teamAStr = match.teamAName ? encodeURIComponent(match.teamAName.replace(/\s*(?:\/|&|\+|,|\band\b)\s*/g, ',')) : '';
+                          const teamBStr = match.teamBName ? encodeURIComponent(match.teamBName.replace(/\s*(?:\/|&|\+|,|\band\b)\s*/g, ',')) : '';
                           router.push(`/match-setup?matchId=${match.uuid}&sport=${sport}&teamA=${teamAStr}&teamB=${teamBStr}&fromUmpire=true`);
                         }}
                         className="w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-red-500/25 cursor-pointer"
@@ -2685,7 +3165,7 @@ export default function PersonalHomePage() {
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <CheckCircle2 className="w-5 h-5 text-primary" />
                   <div>
                     <h2 className="text-base font-black text-foreground">
                       Recent Match Results ({filteredFinishedScores.length})
@@ -2734,17 +3214,18 @@ export default function PersonalHomePage() {
                     <div key={score.scoreId} className="snap-start shrink-0 w-[360px]">
                       <Link
                         href={`/live-score/${score.matchUuid}`}
-                        className="block h-full p-5 rounded-[24px] border bg-card space-y-3.5 hover:border-primary/50 transition-all shadow-lg group"
+                        className="block h-full p-5 rounded-[24px] border bg-card space-y-3.5 hover:border-primary/50 transition-all shadow-lg group relative overflow-hidden"
                         style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                       >
-                        <div className="flex items-center justify-between text-xs">
+                        <SportCardSkeletonBackground sport={config.sport || config.category || (score as any).sport || 'Badminton'} />
+                        <div className="flex items-center justify-between text-xs relative z-10">
                           <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-black uppercase">
                             Finished
                           </span>
                           <span className="text-[11px] text-foreground/50 truncate max-w-[180px]">{config.tournamentName || 'Tournament'}</span>
                         </div>
 
-                        <div className="p-3.5 rounded-2xl border space-y-2 bg-surface/50" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <div className="p-3.5 rounded-2xl border space-y-2 bg-surface/50 relative z-10" style={{ borderColor: 'var(--athlon-border)' }}>
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-black text-foreground truncate">{teamAName}</span>
                             <span className="font-mono font-black text-sm text-primary">{setsWonA}</span>
@@ -2755,7 +3236,7 @@ export default function PersonalHomePage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] text-foreground/50 pt-1">
+                        <div className="flex items-center justify-between text-[11px] text-foreground/50 pt-1 relative z-10">
                           <span>Scorecard View</span>
                           <span className="text-primary font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                             Details <ChevronRight className="w-3 h-3" />

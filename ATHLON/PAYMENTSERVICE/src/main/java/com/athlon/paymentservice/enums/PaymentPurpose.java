@@ -1,0 +1,13 @@
+package com.athlon.paymentservice.enums;
+
+public enum PaymentPurpose {
+    ATHLON_SUBSCRIPTION,
+    TOURNAMENT_REGISTRATION,
+    TEAM_EVENT_REGISTRATION,
+    CHAMPIONSHIP_REGISTRATION,
+    ACADEMY_FEE,
+    CLUB_MEMBERSHIP,
+    VENUE_BOOKING,
+    COACH_BOOKING,
+    OTHER
+}

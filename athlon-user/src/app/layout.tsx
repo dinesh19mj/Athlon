@@ -47,6 +47,9 @@ export const viewport: Viewport = {
   themeColor: '#040806',
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 };
 
 // Inline script: apply full theme token matrix before hydration to prevent flash
@@ -141,9 +144,45 @@ const themeInitScript = `
     root.style.setProperty('--athlon-live', semantic.live);
 
     if (mode === 'light') {
+      root.style.setProperty('--sport-skel-stroke', c.primary);
+      root.style.setProperty('--sport-skel-fill', c.primarySoft);
+      root.style.setProperty('--sport-skel-fill-solid', c.primary);
+      root.style.setProperty('--sport-skel-dot', c.primary);
+      root.style.setProperty('--sport-skel-dot-opacity', '0.14');
+      root.style.setProperty('--sport-skel-turf', c.primary);
+      root.style.setProperty('--sport-skel-turf-opacity', '0.035');
+      root.style.setProperty('--sport-skel-beam', c.primary);
+      root.style.setProperty('--sport-skel-beam-opacity', '0.25');
+      root.style.setProperty('--sport-skel-rail', c.primary);
+      root.style.setProperty('--sport-skel-rail-opacity', '0.75');
+      root.style.setProperty('--sport-skel-text', c.primary);
+      root.style.setProperty('--sport-skel-halo-1', 'radial-gradient(circle, ' + c.primary + ' 0%, rgba(52, 211, 153, 0.3) 40%, transparent 75%)');
+      root.style.setProperty('--sport-skel-halo-opacity-1', '0.35');
+      root.style.setProperty('--sport-skel-halo-2', 'radial-gradient(circle, ' + c.primaryLight + ' 0%, rgba(34, 197, 94, 0.2) 50%, transparent 80%)');
+      root.style.setProperty('--sport-skel-halo-opacity-2', '0.18');
+      root.style.setProperty('--sport-skel-spark', c.primary);
+      root.style.setProperty('--sport-skel-spark-opacity', '0.6');
       root.classList.add('light');
       root.classList.remove('dark');
     } else {
+      root.style.setProperty('--sport-skel-stroke', '#475569');
+      root.style.setProperty('--sport-skel-fill', 'rgba(255, 255, 255, 0.03)');
+      root.style.setProperty('--sport-skel-fill-solid', '#334155');
+      root.style.setProperty('--sport-skel-dot', '#334155');
+      root.style.setProperty('--sport-skel-dot-opacity', '0.22');
+      root.style.setProperty('--sport-skel-turf', '#1E293B');
+      root.style.setProperty('--sport-skel-turf-opacity', '0.05');
+      root.style.setProperty('--sport-skel-beam', '#334155');
+      root.style.setProperty('--sport-skel-beam-opacity', '0.14');
+      root.style.setProperty('--sport-skel-rail', '#334155');
+      root.style.setProperty('--sport-skel-rail-opacity', '0.35');
+      root.style.setProperty('--sport-skel-text', '#64748B');
+      root.style.setProperty('--sport-skel-halo-1', 'radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 70%)');
+      root.style.setProperty('--sport-skel-halo-opacity-1', '0.08');
+      root.style.setProperty('--sport-skel-halo-2', 'radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%)');
+      root.style.setProperty('--sport-skel-halo-opacity-2', '0.04');
+      root.style.setProperty('--sport-skel-spark', '#475569');
+      root.style.setProperty('--sport-skel-spark-opacity', '0.2');
       root.classList.add('dark');
       root.classList.remove('light');
     }

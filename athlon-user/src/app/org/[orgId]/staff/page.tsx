@@ -37,6 +37,7 @@ import {
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import { AcademyStaffService, AcademyStaffResponse } from '@/lib/api/academyStaff';
 import { OrganizationService } from '@/lib/api/organization';
 import { AcademyService, AcademyCentre } from '@/lib/api/academy';
@@ -569,17 +570,12 @@ export default function StaffPage() {
 
       {/* ── FLOATING ACTION BUTTON (MATCHING CAMPUSES & COACHES) ── */}
       {canManage && (
-        <button
+        <Athlon3DFAB
           onClick={openAddStaffModal}
-          className="fixed bottom-24 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-all cursor-pointer"
-          style={{
-            backgroundColor: 'var(--athlon-primary)',
-            boxShadow: '0 8px 24px var(--athlon-primary-glow), 0 4px 10px rgba(0,0,0,0.5)',
-          }}
-          aria-label="Add Staff Member"
-        >
-          <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
-        </button>
+          label="Add Staff"
+          title="Add Staff Member"
+          ariaLabel="Add Staff Member"
+        />
       )}
 
       {/* ══════════════════════════════════════════════════════════════════

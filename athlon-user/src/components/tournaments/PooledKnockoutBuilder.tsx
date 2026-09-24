@@ -47,6 +47,59 @@ interface PoolAssignment {
   teamUuids: string[];
 }
 
+export const resolveCategoryForRegistration = (reg: Registration, t?: Tournament | null): string | null => {
+  if (reg.category && typeof reg.category === 'string' && reg.category.trim()) {
+    const c = reg.category.trim();
+    if (c.toLowerCase() !== 'open category') return c;
+  }
+  if ((reg as any).categoryName && typeof (reg as any).categoryName === 'string' && (reg as any).categoryName.trim()) {
+    const c = (reg as any).categoryName.trim();
+    if (c.toLowerCase() !== 'open category') return c;
+  }
+  if (t?.teamEventCategories) {
+    try {
+      const parsed = typeof t.teamEventCategories === 'string' ? JSON.parse(t.teamEventCategories) : t.teamEventCategories;
+      if (Array.isArray(parsed)) {
+        if (reg.categoryId != null) {
+          const catNum = Number(reg.categoryId);
+          const found = parsed.find((c: any, idx: number) => c.id === catNum || c.categoryId === catNum || (idx + 1) === catNum);
+          if (found && (found.name || found.categoryName)) {
+            const name = (found.name || found.categoryName).trim();
+            if (name.toLowerCase() !== 'open category') return name;
+          }
+        }
+        if (reg.categoryUuid) {
+          const found = parsed.find((c: any) => c.uuid === reg.categoryUuid || c.categoryUuid === reg.categoryUuid);
+          if (found && (found.name || found.categoryName)) {
+            const name = (found.name || found.categoryName).trim();
+            if (name.toLowerCase() !== 'open category') return name;
+          }
+        }
+      }
+    } catch { }
+  }
+  if (reg.categoryId != null && t?.category) {
+    const catNum = Number(reg.categoryId);
+    const catList = t.category.split(',').map((c) => c.trim()).filter(Boolean);
+    if (catNum >= 1 && catNum <= catList.length) {
+      const name = catList[catNum - 1];
+      if (name.toLowerCase() !== 'open category') return name;
+    }
+  }
+  if (reg.teamName) {
+    const match = reg.teamName.match(/\(([^)]+)\)$/);
+    if (match && match[1] && match[1].trim()) {
+      const name = match[1].trim();
+      if (name.toLowerCase() !== 'open category') return name;
+    }
+  }
+  if (t?.category && !t.category.includes(',')) {
+    const name = t.category.trim();
+    if (name.toLowerCase() !== 'open category') return name;
+  }
+  return null;
+};
+
 const extractCategories = (t?: Tournament | null, regs: Registration[] = [], passedCat?: string): string[] => {
   const set = new Set<string>();
 
@@ -61,8 +114,12 @@ const extractCategories = (t?: Tournament | null, regs: Registration[] = [], pas
       const parsed = typeof t.teamEventCategories === 'string' ? JSON.parse(t.teamEventCategories) : t.teamEventCategories;
       if (Array.isArray(parsed)) {
         parsed.forEach((c: any) => {
-          if (c && typeof c === 'object' && c.name) set.add(c.name.trim());
-          else if (typeof c === 'string' && c.trim()) set.add(c.trim());
+          if (c && typeof c === 'object' && (c.name || c.categoryName)) {
+            const name = (c.name || c.categoryName).trim();
+            if (name && name.toLowerCase() !== 'open category') set.add(name);
+          } else if (typeof c === 'string' && c.trim() && c.trim().toLowerCase() !== 'open category') {
+            set.add(c.trim());
+          }
         });
       }
     } catch { }
@@ -78,19 +135,21 @@ const extractCategories = (t?: Tournament | null, regs: Registration[] = [], pas
 
   // 4. From registrations
   regs.forEach((r) => {
-    if (r.category && r.category.trim() && r.category.toLowerCase() !== 'open category') {
-      set.add(r.category.trim());
-    }
-    if (r.teamName) {
-      const match = r.teamName.match(/\(([^)]+)\)$/);
-      if (match && match[1] && match[1].trim() && match[1].toLowerCase() !== 'open category') {
-        set.add(match[1].trim());
-      }
+    const cat = resolveCategoryForRegistration(r, t);
+    if (cat && cat.toLowerCase() !== 'open category') {
+      set.add(cat);
     }
   });
 
   const list = Array.from(set).filter(Boolean);
-  return list.length > 0 ? list : ['Category 1', 'Category 2'];
+  if (list.length === 0) {
+    return ['Pool A', 'Pool B'];
+  }
+  if (list.length === 1 && (!passedCat || passedCat === 'ALL')) {
+    // Single category tournament: provide at least 2 pools for multi-pool knockout
+    return [`${list[0]} - Pool A`, `${list[0]} - Pool B`];
+  }
+  return list;
 };
 
 const formatTeamDisplayName = (reg?: Registration | null): string => {
@@ -116,14 +175,45 @@ export function PooledKnockoutBuilder({
     [tournament, registrations, categoryName]
   );
 
+  // Helper to get all registered teams belonging to a category / pool
+  const getEligibleTeamsForPool = (poolName: string): Registration[] => {
+    const cleanPoolName = poolName.trim().toLowerCase();
+    const matching = registrations.filter((r) => {
+      const cat = resolveCategoryForRegistration(r, tournament);
+      if (cat && cat.toLowerCase() === cleanPoolName) return true;
+      if (r.category && r.category.trim().toLowerCase() === cleanPoolName) return true;
+      if (r.teamName && r.teamName.toLowerCase().includes(`(${cleanPoolName})`)) return true;
+      // Also match prefix if poolName is "CategoryName - Pool A"
+      if (cat && cleanPoolName.startsWith(cat.toLowerCase())) return true;
+      return false;
+    });
+
+    if (matching.length > 0) return matching;
+
+    // Check if distinct categories exist across registrations
+    const hasCategoryAssignments = registrations.some((r) => resolveCategoryForRegistration(r, tournament) != null);
+    if (hasCategoryAssignments) {
+      // If categories exist in the tournament but none match this poolName, do not leak other category teams!
+      return [];
+    }
+
+    // Generic fallback only if no category assignments exist at all
+    return registrations;
+  };
+
   const [pools, setPools] = useState<PoolConfig[]>(() => {
     if (categoriesList.length > 0) {
       return categoriesList.map((cat, idx) => {
-        const count = registrations.filter((r) => {
+        const eligible = registrations.filter((r) => {
+          const resolvedCat = resolveCategoryForRegistration(r, tournament);
+          if (resolvedCat && resolvedCat.toLowerCase() === cat.toLowerCase()) return true;
           if (r.category && r.category.trim().toLowerCase() === cat.toLowerCase()) return true;
           if (r.teamName && r.teamName.toLowerCase().includes(`(${cat.toLowerCase()})`)) return true;
+          if (resolvedCat && cat.toLowerCase().startsWith(resolvedCat.toLowerCase())) return true;
           return false;
-        }).length;
+        });
+
+        const count = eligible.length;
 
         return {
           id: String(idx + 1),
@@ -176,16 +266,6 @@ export function PooledKnockoutBuilder({
       return;
     }
     setPools(pools.map(p => p.id === id ? { ...p, [field]: value } : p));
-  };
-
-  // Helper to get all registered teams belonging to a category / pool
-  const getEligibleTeamsForPool = (poolName: string): Registration[] => {
-    const matching = registrations.filter((r) => {
-      if (r.category && r.category.trim().toLowerCase() === poolName.trim().toLowerCase()) return true;
-      if (r.teamName && r.teamName.toLowerCase().includes(`(${poolName.toLowerCase()})`)) return true;
-      return false;
-    });
-    return matching.length > 0 ? matching : registrations;
   };
 
   // Helper to get unassigned teams for a specific pool
@@ -261,14 +341,21 @@ export function PooledKnockoutBuilder({
 
   // Auto-draw all pools
   const autoDrawAllPools = () => {
+    const usedUuids = new Set<string>();
     setAssignments(
       pools.map((p) => {
-        const eligible = getEligibleTeamsForPool(p.name);
+        const eligible = getEligibleTeamsForPool(p.name).filter((r) => {
+          const uuid = r.registrationUuid || r.uuid;
+          return uuid ? !usedUuids.has(uuid) : false;
+        });
         const shuffled = [...eligible].sort(() => Math.random() - 0.5);
         const assignedUuids = shuffled
           .slice(0, p.capacity)
           .map((r) => r.registrationUuid || r.uuid)
           .filter(Boolean) as string[];
+
+        assignedUuids.forEach((uid) => usedUuids.add(uid));
+
         return {
           poolId: p.id,
           teamUuids: assignedUuids,
@@ -304,7 +391,7 @@ export function PooledKnockoutBuilder({
       const required = Math.min(p.capacity, eligibleCount);
       return required > 0 && assignedCount >= required;
     });
-  }, [pools, assignments, registrations]);
+  }, [pools, assignments, registrations, tournament]);
 
   const handleGenerate = async () => {
     if (!areAllPoolsReady) {

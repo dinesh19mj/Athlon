@@ -19,13 +19,15 @@ const bgImages = [
   'https://images.unsplash.com/photo-1611252758110-6c9f2868853b?q=80&w=800&auto=format&fit=crop',
 ];
 
-const quickActions = [
-  { id: '/club/members', label: 'Members', icon: Users, color: 'text-blue-400' },
-  { id: '/club/attendance', label: 'Attendance', icon: CalendarCheck, color: 'text-orange-400' },
-  { id: '/club/finances', label: 'Finances', icon: DollarSign, color: 'text-emerald-400' },
-  { id: '/club/inventory', label: 'Inventory', icon: Package, color: 'text-pink-400' },
-  { id: '/club/progress', label: 'Progress', icon: TrendingUp, color: 'text-cyan-400' },
-  { id: '/club/matches', label: 'Matches', icon: Swords, color: 'text-red-400' },
+import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+
+const quickActions: { id: string; label: string; icon3d: any }[] = [
+  { id: '/club/members', label: 'Members', icon3d: 'members' },
+  { id: '/club/attendance', label: 'Attendance', icon3d: 'attendance' },
+  { id: '/club/finances', label: 'Finances', icon3d: 'finances' },
+  { id: '/club/inventory', label: 'Inventory', icon3d: 'inventory' },
+  { id: '/club/progress', label: 'Progress', icon3d: 'performance' },
+  { id: '/club/matches', label: 'Matches', icon3d: 'matches' },
 ];
 
 export default function ClubDashboardPage() {
@@ -102,13 +104,25 @@ export default function ClubDashboardPage() {
         {/* QUICK ACTIONS GRID */}
         <div className="p-6 overflow-hidden">
           <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-4 pl-1">Club Operations</h2>
-          <section className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+          <section className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory hide-scrollbar">
             {quickActions.map((action) => (
-              <Link href={action.id} key={action.id} className="flex flex-col items-center gap-1.5 shrink-0 snap-start">
-                <div className="w-[68px] h-[68px] rounded-[16px] bg-surface border border-foreground/5 hover:border-foreground/20 flex flex-col items-center justify-center transition-colors shadow-lg cursor-pointer">
-                  <action.icon className="w-6 h-6" style={{ color: 'var(--athlon-primary)' }} strokeWidth={1.5} />
+              <Link
+                href={action.id}
+                key={action.id}
+                className="flex flex-col items-center gap-1.5 shrink-0 snap-start w-[calc((100%-36px)/4)] group"
+              >
+                <div
+                  className="w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] max-w-full rounded-[18px] flex flex-col items-center justify-center transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95 border"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <Athlon3DIcon type={action.icon3d} size={36} active={true} />
                 </div>
-                <span className="text-[10px] font-medium text-foreground/80">{action.label}</span>
+                <span
+                  className="text-[11px] font-bold text-center transition-colors group-hover:text-primary w-full truncate leading-tight"
+                  style={{ color: 'var(--athlon-text-secondary)' }}
+                >
+                  {action.label}
+                </span>
               </Link>
             ))}
           </section>

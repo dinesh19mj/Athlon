@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService, UserResponse } from '@/lib/api/user';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import {
   Search,
   Plus,
@@ -49,11 +50,18 @@ const AVAILABLE_SPORTS = [
 
 export default function MembersPage() {
   const params = useParams();
+  const router = useRouter();
   const orgIdParam = (params?.orgId as string) || '';
   const { getActiveOrganization } = useWorkspaceStore();
   const org = getActiveOrganization();
   const orgUuid = org?.id || orgIdParam;
   const { role, isAdmin, canManage } = useOrgRole(orgUuid);
+
+  useEffect(() => {
+    if (org?.type === 'COMMUNITY') {
+      router.replace(`/org/${orgUuid}/community-members`);
+    }
+  }, [org?.type, orgUuid, router]);
 
   const [members, setMembers] = useState<OrganizationMemberResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -945,22 +953,19 @@ export default function MembersPage() {
 
       {/* ── MOBILE FLOATING ACTION BUTTON (FAB) ── */}
       {canManage && (
-        <div className="fixed bottom-24 right-5 md:hidden z-40">
-          <button
-            onClick={() => {
-              if (!clubSport) {
-                alert('Please configure your club sport below before adding members.');
-                return;
-              }
-              resetModal();
-              setIsAddModalOpen(true);
-            }}
-            className="w-13 h-13 rounded-full bg-primary text-black flex items-center justify-center shadow-[0_8px_25px_rgba(255,200,0,0.4)] border border-primary/50 active:scale-90 transition-transform hover:scale-105"
-            title="Add Member"
-          >
-            <Plus className="w-6 h-6 stroke-[3]" />
-          </button>
-        </div>
+        <Athlon3DFAB
+          onClick={() => {
+            if (!clubSport) {
+              alert('Please configure your club sport below before adding members.');
+              return;
+            }
+            resetModal();
+            setIsAddModalOpen(true);
+          }}
+          label="Add Member"
+          title="Add Member"
+          ariaLabel="Add Member"
+        />
       )}
     </div>
   );

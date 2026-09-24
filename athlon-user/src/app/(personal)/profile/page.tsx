@@ -347,28 +347,28 @@ export default function ProfilePage() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-24 overflow-y-auto">
+      <div className="block md:hidden pb-20 overflow-y-auto">
         {/* Top Navbar */}
-        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-background/90 backdrop-blur-md border-b border-foreground/5">
-          <div className="flex items-center gap-3">
-            <Link href="/home" className="p-2 -ml-2 text-foreground hover:text-primary transition-colors">
-              <ArrowLeft className="w-6 h-6" />
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5">
+          <div className="flex items-center gap-2">
+            <Link href="/home" className="p-1.5 -ml-1.5 text-foreground hover:text-primary transition-colors">
+              <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-lg font-bold uppercase tracking-wider">My Profile</h1>
+            <h1 className="text-sm font-black uppercase tracking-wider">My Profile</h1>
           </div>
 
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="p-2 -mr-2 text-foreground hover:text-gray-300 transition-colors"
+              className="p-1.5 -mr-1.5 text-foreground hover:text-gray-300 transition-colors"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4" />
             </button>
 
             {isSettingsOpen && (
-              <div className="absolute right-0 top-12 w-64 bg-surface border border-foreground/10 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 top-10 w-60 bg-surface border border-foreground/10 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex flex-col">
-                  <div className="px-4 py-2 border-b border-foreground/5">
+                  <div className="px-3.5 py-2 border-b border-foreground/5">
                     <ContextSwitcher />
                   </div>
                   <button
@@ -382,40 +382,40 @@ export default function ProfilePage() {
                       setEditState(profile?.state || '');
                       setIsEditingProfile(true);
                     }}
-                    className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
                   >
-                    <Edit3 className="w-4 h-4 text-foreground/70" /> Edit Profile
+                    <Edit3 className="w-3.5 h-3.5 text-foreground/70" /> Edit Profile
                   </button>
                   <button
                     onClick={() => {
                       setIsSettingsOpen(false);
                       setIsThemeModalOpen(true);
                     }}
-                    className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
                   >
-                    <Palette className="w-4 h-4 text-primary" /> Appearance &amp; Theme
+                    <Palette className="w-3.5 h-3.5 text-primary" /> Appearance &amp; Theme
                   </button>
                   <button
                     onClick={() => setIsSettingsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
                   >
-                    <Wallet className="w-4 h-4 text-[#FF7722]" /> My Wallet
+                    <Wallet className="w-3.5 h-3.5 text-[#FF7722]" /> My Wallet
                   </button>
                   <Link
                     href="/settings"
                     onClick={() => setIsSettingsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
                   >
-                    <Settings className="w-4 h-4 text-foreground/70" /> Settings
+                    <Settings className="w-3.5 h-3.5 text-foreground/70" /> Settings
                   </Link>
                   <button
                     onClick={() => {
                       setIsSettingsOpen(false);
                       handleLogout();
                     }}
-                    className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors text-left"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors text-left"
                   >
-                    <LogOut className="w-4 h-4" /> Logout
+                    <LogOut className="w-3.5 h-3.5" /> Logout
                   </button>
                 </div>
               </div>
@@ -423,24 +423,24 @@ export default function ProfilePage() {
           </div>
         </header>
 
-        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-6 pt-6">
+        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-3.5 pt-4">
           {/* User Identity Header */}
           <section className="flex flex-col items-center relative">
             {/* Avatar with Glow */}
-            <div className="relative mb-4">
-              <div className="absolute inset-0 bg-primary rounded-full blur-xl opacity-30 animate-pulse" />
+            <div className="relative mb-2.5">
+              <div className="absolute inset-0 bg-primary rounded-full blur-lg opacity-25" />
               <div
-                className="relative w-24 h-24 rounded-full bg-primary p-[3px] cursor-pointer group"
+                className="relative w-20 h-20 rounded-full bg-primary p-[2.5px] cursor-pointer group"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <div className="w-full h-full rounded-full bg-background border-4 border-[#0A0F1A] overflow-hidden relative">
+                <div className="w-full h-full rounded-full bg-background border-2 border-[#0A0F1A] overflow-hidden relative">
                   {isUploadingPhoto && (
                     <div className="absolute inset-0 bg-black/50 z-20 flex items-center justify-center">
-                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Edit3 className="w-6 h-6 text-white" />
+                    <Edit3 className="w-5 h-5 text-white" />
                   </div>
                   {profile?.photo ? (
                     <img
@@ -455,13 +455,13 @@ export default function ProfilePage() {
                       className="w-full h-full object-cover relative z-0"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-surface text-primary font-black text-2xl">
+                    <div className="w-full h-full flex items-center justify-center bg-surface text-primary font-black text-xl">
                       {profile?.firstName ? (
                         profile.firstName.charAt(0).toUpperCase()
                       ) : userEmail ? (
                         userEmail.charAt(0).toUpperCase()
                       ) : (
-                        <UserIcon className="w-8 h-8 text-primary" />
+                        <UserIcon className="w-7 h-7 text-primary" />
                       )}
                     </div>
                   )}
@@ -478,9 +478,9 @@ export default function ProfilePage() {
 
             {!isEditingProfile ? (
               <>
-                <h2 className="text-2xl font-black text-foreground tracking-wide mt-2">
+                <h2 className="text-lg font-black text-foreground tracking-wide mt-1">
                   {loading ? (
-                    <span className="inline-block w-40 h-7 bg-white/10 rounded-lg animate-pulse" />
+                    <span className="inline-block w-32 h-5 bg-white/10 rounded-md animate-pulse" />
                   ) : profile ? (
                     `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'Athlete'
                   ) : (
@@ -489,37 +489,37 @@ export default function ProfilePage() {
                 </h2>
 
                 {profile?.phone && (
-                  <div className="flex items-center gap-1.5 text-foreground/50 mt-1">
-                    <Phone className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">{profile.phone}</span>
+                  <div className="flex items-center gap-1.5 text-foreground/50 mt-0.5">
+                    <Phone className="w-3 h-3" />
+                    <span className="text-[11px] font-medium">{profile.phone}</span>
                   </div>
                 )}
 
                 {(profile?.city || profile?.district || profile?.state) && (
-                  <div className="flex items-center gap-1.5 text-primary/90 mt-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">
+                  <div className="flex items-center gap-1.5 text-primary/90 mt-0.5">
+                    <MapPin className="w-3 h-3" />
+                    <span className="text-[11px] font-medium">
                       {[profile.city, profile.district, profile.state].filter(Boolean).join(', ')}
                     </span>
                   </div>
                 )}
               </>
             ) : (
-              <div className="w-full mt-4 flex flex-col gap-3">
+              <div className="w-full mt-3 flex flex-col gap-2.5">
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
                     placeholder="First Name"
                     value={editFirstName}
                     onChange={(e) => setEditFirstName(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-2.5 text-xs text-foreground focus:border-primary outline-none"
                   />
                   <input
                     type="text"
                     placeholder="Last Name"
                     value={editLastName}
                     onChange={(e) => setEditLastName(e.target.value)}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-2.5 text-xs text-foreground focus:border-primary outline-none"
                   />
                 </div>
                 <input
@@ -527,12 +527,12 @@ export default function ProfilePage() {
                   placeholder="Phone Number"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
-                  className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-sm text-foreground focus:border-primary outline-none"
+                  className="w-full bg-surface border border-foreground/10 rounded-lg p-2.5 text-xs text-foreground focus:border-primary outline-none"
                 />
 
                 {/* Dynamic State Selection */}
                 <div>
-                  <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">State</label>
+                  <label className="text-[9.5px] font-bold uppercase text-foreground/50 block mb-1">State</label>
                   <select
                     value={editState}
                     onChange={(e) => {
@@ -540,7 +540,7 @@ export default function ProfilePage() {
                       setEditState(chosenState);
                       setEditDistrict('');
                     }}
-                    className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-xs font-bold text-foreground focus:border-primary outline-none cursor-pointer"
+                    className="w-full bg-surface border border-foreground/10 rounded-lg p-2.5 text-xs font-bold text-foreground focus:border-primary outline-none cursor-pointer"
                   >
                     <option value="">-- Choose State --</option>
                     {statesList.map((state) => (
@@ -554,12 +554,12 @@ export default function ProfilePage() {
                 {/* Dynamic District Selection & City */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">District</label>
+                    <label className="text-[9.5px] font-bold uppercase text-foreground/50 block mb-1">District</label>
                     <select
                       value={editDistrict}
                       onChange={(e) => setEditDistrict(e.target.value)}
                       disabled={!editState}
-                      className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-xs font-bold text-foreground focus:border-primary outline-none disabled:opacity-40 cursor-pointer"
+                      className="w-full bg-surface border border-foreground/10 rounded-lg p-2.5 text-xs font-bold text-foreground focus:border-primary outline-none disabled:opacity-40 cursor-pointer"
                     >
                       <option value="">
                         {!editState ? 'Select state' : districtsList.length === 0 ? 'No districts' : '-- Select District --'}
@@ -573,27 +573,27 @@ export default function ProfilePage() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-foreground/50 block mb-1">City / Town</label>
+                    <label className="text-[9.5px] font-bold uppercase text-foreground/50 block mb-1">City / Town</label>
                     <input
                       type="text"
                       placeholder="e.g. Kozhikode"
                       value={editCity}
                       onChange={(e) => setEditCity(e.target.value)}
-                      className="w-full bg-surface border border-foreground/10 rounded-lg p-3 text-xs text-foreground focus:border-primary outline-none"
+                      className="w-full bg-surface border border-foreground/10 rounded-lg p-2.5 text-xs text-foreground focus:border-primary outline-none"
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-2">
+                <div className="flex justify-end gap-2 mt-1">
                   <button
                     onClick={() => setIsEditingProfile(false)}
-                    className="px-4 py-2 text-xs font-bold text-foreground/60 hover:text-foreground"
+                    className="px-3.5 py-1.5 text-xs font-bold text-foreground/60 hover:text-foreground"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleEditProfileSubmit}
                     disabled={isSavingProfile}
-                    className="px-5 py-2.5 text-xs font-bold bg-primary text-black rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 text-xs font-bold bg-primary text-black rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
                   >
                     {isSavingProfile && (
                       <span className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
@@ -606,61 +606,61 @@ export default function ProfilePage() {
           </section>
 
           {/* Core Stats Grid */}
-          <section className="grid grid-cols-3 gap-2 mt-2">
-            <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
-              <Activity className="w-4 h-4 text-primary mb-0.5" />
-              <span className="text-base font-black text-foreground font-mono">{sportsProfiles[0]?.totalMatches ?? 0}</span>
-              <span className="text-[8px] uppercase tracking-wider text-foreground/50 font-bold">Matches</span>
+          <section className="grid grid-cols-3 gap-2">
+            <div className="bg-surface border border-foreground/5 p-2.5 rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-sm">
+              <Activity className="w-3.5 h-3.5 text-primary mb-0.5" />
+              <span className="text-sm sm:text-base font-black text-foreground font-mono">{sportsProfiles[0]?.totalMatches ?? 0}</span>
+              <span className="text-[7.5px] uppercase tracking-wider text-foreground/50 font-extrabold">Matches</span>
             </div>
-            <div className="bg-surface border border-foreground/5 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-lg">
-              <Trophy className="w-4 h-4 text-emerald-400 mb-0.5" />
-              <span className="text-base font-black text-emerald-400 font-mono">{sportsProfiles[0]?.matchesWon ?? 0}</span>
-              <span className="text-[8px] uppercase tracking-wider text-foreground/50 font-bold">Wins</span>
+            <div className="bg-surface border border-foreground/5 p-2.5 rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-sm">
+              <Trophy className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
+              <span className="text-sm sm:text-base font-black text-emerald-400 font-mono">{sportsProfiles[0]?.matchesWon ?? 0}</span>
+              <span className="text-[7.5px] uppercase tracking-wider text-foreground/50 font-extrabold">Wins</span>
             </div>
-            <div className="bg-surface border border-primary/20 p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-[0_0_15px_rgba(0,255,102,0.05)] relative overflow-hidden">
+            <div className="bg-surface border border-primary/20 p-2.5 rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-sm relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-              <Target className="w-4 h-4 text-primary mb-0.5 relative z-10" />
-              <span className="text-base font-black text-primary relative z-10 font-mono">
+              <Target className="w-3.5 h-3.5 text-primary mb-0.5 relative z-10" />
+              <span className="text-sm sm:text-base font-black text-primary relative z-10 font-mono">
                 {sportsProfiles[0]?.winRate ? `${Math.round(sportsProfiles[0].winRate)}%` : '0%'}
               </span>
-              <span className="text-[8px] uppercase tracking-wider text-primary font-bold relative z-10">Win Rate</span>
+              <span className="text-[7.5px] uppercase tracking-wider text-primary font-extrabold relative z-10">Win Rate</span>
             </div>
           </section>
 
           {/* PERSONAL INFO */}
-          <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-4 py-3 flex items-center justify-between border-b border-foreground/5">
-              <div className="flex items-center gap-2">
-                <UserIcon className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Personal Info</span>
+          <section className="bg-surface border border-foreground/5 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-foreground/5">
+              <div className="flex items-center gap-1.5">
+                <UserIcon className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/70">Personal Info</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-foreground/30" />
+              <ChevronRight className="w-3.5 h-3.5 text-foreground/30" />
             </div>
             <div className="divide-y divide-foreground/5">
-              <div className="px-4 py-3.5 flex items-center justify-between">
+              <div className="px-3.5 py-2.5 flex items-center justify-between">
                 <span className="text-xs font-medium text-foreground/70">Email</span>
                 <span className="text-xs font-semibold text-foreground">{profile?.email || userEmail || '-'}</span>
               </div>
               {profile?.phone && (
-                <div className="px-4 py-3.5 flex items-center justify-between">
+                <div className="px-3.5 py-2.5 flex items-center justify-between">
                   <span className="text-xs font-medium text-foreground/70">Phone</span>
                   <span className="text-xs font-semibold text-foreground">{profile.phone}</span>
                 </div>
               )}
               {profile?.city && (
-                <div className="px-4 py-3.5 flex items-center justify-between">
+                <div className="px-3.5 py-2.5 flex items-center justify-between">
                   <span className="text-xs font-medium text-foreground/70">City</span>
                   <span className="text-xs font-semibold text-foreground">{profile.city}</span>
                 </div>
               )}
               {profile?.district && (
-                <div className="px-4 py-3.5 flex items-center justify-between">
+                <div className="px-3.5 py-2.5 flex items-center justify-between">
                   <span className="text-xs font-medium text-foreground/70">District</span>
                   <span className="text-xs font-semibold text-foreground">{profile.district}</span>
                 </div>
               )}
               {profile?.state && (
-                <div className="px-4 py-3.5 flex items-center justify-between">
+                <div className="px-3.5 py-2.5 flex items-center justify-between">
                   <span className="text-xs font-medium text-foreground/70">State</span>
                   <span className="text-xs font-semibold text-foreground">{profile.state}</span>
                 </div>
@@ -669,43 +669,43 @@ export default function ProfilePage() {
           </section>
 
           {/* APPEARANCE & THEMES (Color + 2D/3D Icons) */}
-          <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-foreground/5 flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Appearance &amp; Style</span>
-              <span className="text-[10px] font-bold text-primary uppercase">Customize</span>
+          <section className="bg-surface border border-foreground/5 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-3.5 py-2.5 border-b border-foreground/5 flex items-center justify-between">
+              <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/70">Appearance &amp; Style</span>
+              <span className="text-[9.5px] font-bold text-primary uppercase">Customize</span>
             </div>
             <button
               onClick={() => setIsThemeModalOpen(true)}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left"
+              className="w-full px-3.5 py-3 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Palette className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Palette className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-foreground">Theme &amp; Icon Mode</div>
-                  <div className="text-xs text-foreground/60">Change color palette and 2D / 3D icon graphics</div>
+                  <div className="text-xs font-bold text-foreground">Theme &amp; Icon Mode</div>
+                  <div className="text-[11px] text-foreground/60">Change color palette and 2D / 3D icon graphics</div>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-foreground/40" />
+              <ChevronRight className="w-3.5 h-3.5 text-foreground/40" />
             </button>
           </section>
 
           {/* REWARDS */}
-          <section className="bg-surface border border-primary/20 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-primary/10">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Rewards</span>
+          <section className="bg-surface border border-primary/20 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-3.5 py-2.5 border-b border-primary/10">
+              <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/70">Rewards</span>
             </div>
             <Link
               href="/referrals"
-              className="w-full px-4 py-4 flex items-center justify-between gap-3 hover:bg-foreground/5 transition-all text-left group"
+              className="w-full px-3.5 py-3 flex items-center justify-between gap-2.5 hover:bg-foreground/5 transition-all text-left group"
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  <Gift className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Gift className="w-4 h-4 text-primary" />
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
-                  <span className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                  <span className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
                     Referrals
                   </span>
                   <span className="text-[10px] font-medium text-foreground/60 truncate">
@@ -713,81 +713,81 @@ export default function ProfilePage() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-xs font-bold">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="bg-primary/20 text-primary border border-primary/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
                   {userCredits !== null ? `${userCredits} credits` : '0 credits'}
                 </span>
-                <ChevronRight className="w-4 h-4 text-foreground/40 group-hover:text-primary transition-colors" />
+                <ChevronRight className="w-3.5 h-3.5 text-foreground/40 group-hover:text-primary transition-colors" />
               </div>
             </Link>
           </section>
 
           {/* LEGAL */}
-          <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm mt-4">
-            <div className="px-4 py-3 border-b border-foreground/5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Legal</span>
+          <section className="bg-surface border border-foreground/5 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-3.5 py-2.5 border-b border-foreground/5">
+              <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/70">Legal</span>
             </div>
             <Link
               href="/terms"
-              className="w-full px-4 py-4 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left"
+              className="w-full px-3.5 py-3 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left"
             >
-              <span className="text-sm font-medium text-foreground">Terms &amp; Conditions</span>
-              <ChevronRight className="w-4 h-4 text-foreground/40" />
+              <span className="text-xs font-medium text-foreground">Terms &amp; Conditions</span>
+              <ChevronRight className="w-3.5 h-3.5 text-foreground/40" />
             </Link>
             <Link
               href="/privacy"
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left"
+              className="w-full px-3.5 py-3 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left"
             >
-              <span className="text-sm font-medium text-foreground">Privacy Policy</span>
-              <ChevronRight className="w-4 h-4 text-foreground/40" />
+              <span className="text-xs font-medium text-foreground">Privacy Policy</span>
+              <ChevronRight className="w-3.5 h-3.5 text-foreground/40" />
             </Link>
           </section>
 
           {/* SUPPORT & HELP */}
-          <section className="bg-surface border border-foreground/5 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-foreground/5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Support &amp; Help</span>
+          <section className="bg-surface border border-foreground/5 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-3.5 py-2.5 border-b border-foreground/5">
+              <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/70">Support &amp; Help</span>
             </div>
-            <button className="w-full px-4 py-4 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left">
-              <div className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-foreground/60" />
-                <span className="text-sm font-medium text-foreground">admin@athlon.com</span>
+            <button className="w-full px-3.5 py-3 flex items-center justify-between border-b border-foreground/5 hover:bg-foreground/5 transition-colors text-left">
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-3.5 h-3.5 text-foreground/60" />
+                <span className="text-xs font-medium text-foreground">admin@athlon.com</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-foreground/40" />
+              <ChevronRight className="w-3.5 h-3.5 text-foreground/40" />
             </button>
-            <button className="w-full px-4 py-4 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left">
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-foreground/60" />
-                <span className="text-sm font-medium text-foreground">+91 8891704026</span>
+            <button className="w-full px-3.5 py-3 flex items-center justify-between hover:bg-foreground/5 transition-colors text-left">
+              <div className="flex items-center gap-2.5">
+                <Phone className="w-3.5 h-3.5 text-foreground/60" />
+                <span className="text-xs font-medium text-foreground">+91 8891704026</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-foreground/40" />
+              <ChevronRight className="w-3.5 h-3.5 text-foreground/40" />
             </button>
           </section>
 
           {/* ACCOUNT */}
-          <section className="bg-surface border border-red-500/20 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-red-500/10">
-              <span className="text-[10px] font-black uppercase tracking-widest text-red-500/70">Account</span>
+          <section className="bg-surface border border-red-500/20 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-3.5 py-2.5 border-b border-red-500/10">
+              <span className="text-[9.5px] font-black uppercase tracking-wider text-red-500/70">Account</span>
             </div>
 
-            <div className="flex flex-col border-b border-red-500/10 px-4 py-4">
-              <button className="flex items-center gap-3 text-[#FF7722] font-bold text-sm w-full text-left hover:text-[#FF7722]/80 transition-colors">
-                <Key className="w-4 h-4" /> Reset Password
+            <div className="flex flex-col border-b border-red-500/10 px-3.5 py-3">
+              <button className="flex items-center gap-2.5 text-[#FF7722] font-bold text-xs w-full text-left hover:text-[#FF7722]/80 transition-colors">
+                <Key className="w-3.5 h-3.5" /> Reset Password
               </button>
-              <p className="text-xs text-foreground/40 mt-3 leading-relaxed">
+              <p className="text-[11px] text-foreground/40 mt-2 leading-relaxed">
                 You logged in using Google. Please continue with Google sign-in.
               </p>
             </div>
 
             <button
               onClick={() => handleLogout()}
-              className="w-full px-4 py-4 flex items-center gap-3 border-b border-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/5 transition-colors text-left"
+              className="w-full px-3.5 py-3 flex items-center gap-2.5 border-b border-red-500/10 text-red-400 font-bold text-xs hover:bg-red-500/5 transition-colors text-left"
             >
-              <LogOut className="w-4 h-4" /> Sign Out
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
             </button>
 
-            <button className="w-full px-4 py-4 flex items-center gap-3 text-red-400 font-bold text-sm hover:bg-red-500/5 transition-colors text-left">
-              <Trash className="w-4 h-4" /> Delete Account
+            <button className="w-full px-3.5 py-3 flex items-center gap-2.5 text-red-400 font-bold text-xs hover:bg-red-500/5 transition-colors text-left">
+              <Trash className="w-3.5 h-3.5" /> Delete Account
             </button>
           </section>
         </main>

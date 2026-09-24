@@ -7,6 +7,7 @@ import { ClubMatchService, ClubMatch } from '@/lib/api/clubMatch';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { UserService } from '@/lib/api/user';
 import AcademyMatchesView from '@/components/academy/AcademyMatchesView';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import {
   Search,
   Plus,
@@ -1044,19 +1045,16 @@ export default function MatchesPage() {
       )}
 
       {/* ── MOBILE FLOATING ACTION BUTTON (FAB) ── */}
-      <div className="fixed bottom-24 right-5 md:hidden z-40">
-        <button
-          onClick={() => {
-            resetModal();
-            setMatchDate(getLocalDateString());
-            setIsAddModalOpen(true);
-          }}
-          className="w-13 h-13 rounded-full bg-primary text-black flex items-center justify-center shadow-[0_8px_25px_rgba(255,200,0,0.4)] border border-primary/50 active:scale-90 transition-transform hover:scale-105"
-          title="Record Match"
-        >
-          <Plus className="w-6 h-6 stroke-[3]" />
-        </button>
-      </div>
+      <Athlon3DFAB
+        onClick={() => {
+          resetModal();
+          setMatchDate(getLocalDateString());
+          setIsAddModalOpen(true);
+        }}
+        label="Record Match"
+        title="Record Match"
+        ariaLabel="Record Match"
+      />
     </div>
   );
 }

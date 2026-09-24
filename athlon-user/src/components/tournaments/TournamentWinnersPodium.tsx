@@ -29,9 +29,24 @@ export interface PodiumData {
 
 export function computeTournamentPodium(
   matches: Match[],
-  registrations: Registration[] = []
+  registrations: Registration[] = [],
+  tournamentStatus?: string
 ): PodiumData {
+  // If tournament status is known and not completed, podium should NOT show
+  if (tournamentStatus) {
+    const s = tournamentStatus.toUpperCase();
+    if (s !== 'COMPLETED' && s !== 'FINISHED' && s !== 'CONCLUDED') {
+      return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
+    }
+  }
+
   if (!matches || matches.length === 0) {
+    return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
+  }
+
+  // 1. A tournament is only finished when EVERY scheduled match is COMPLETED
+  const hasIncompleteMatches = matches.some((m) => m.status !== 'COMPLETED');
+  if (hasIncompleteMatches) {
     return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
   }
 
@@ -52,22 +67,29 @@ export function computeTournamentPodium(
     return { name, uuid: uuid || undefined, id: id || undefined, players };
   };
 
-  // 1. Check if there are playoff / knockout matches
-  const targetMatches = matches.filter((m) => !m.poolName && m.poolId == null);
-  const knockoutMatches = targetMatches.length > 0 ? targetMatches : matches;
+  // 2. Check if tournament has pools vs playoffs
+  const hasPools = matches.some((m) => m.poolId != null || !!m.poolName);
+  const playoffMatches = matches.filter((m) => !m.poolName && m.poolId == null);
 
-  // Find root match (Championship Final)
+  // If there are multiple pools/pool matches but no championship playoff matches created/played yet,
+  // the overall tournament cannot declare an official knockout champion.
+  if (hasPools && playoffMatches.length === 0) {
+    return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
+  }
+
+  const knockoutMatches = playoffMatches.length > 0 ? playoffMatches : matches;
+
+  // 3. Find root match (Championship Final)
   const matchMap = new Map(knockoutMatches.map((m) => [m.uuid, m]));
   const rootMatches = knockoutMatches.filter((m) => !m.nextMatchUuid || !matchMap.has(m.nextMatchUuid));
 
-  if (rootMatches.length === 0) {
+  // There must be exactly ONE championship final match
+  if (rootMatches.length !== 1) {
     return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
   }
 
   const finalMatch = rootMatches[0];
-  const isFinalCompleted = finalMatch.status === 'COMPLETED';
-
-  if (!isFinalCompleted) {
+  if (finalMatch.status !== 'COMPLETED') {
     return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
   }
 
@@ -75,17 +97,36 @@ export function computeTournamentPodium(
   const winnerUuid = finalMatch.winnerRegistrationUuid;
   const winnerId = finalMatch.winnerRegistrationId;
 
+  if (!winnerUuid && winnerId == null) {
+    return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
+  }
+
   const isWinnerA =
     (winnerUuid && (winnerUuid === finalMatch.teamARegistrationUuid || (finalMatch.teamARegistrationId != null && String(winnerUuid) === String(finalMatch.teamARegistrationId)))) ||
-    (winnerId != null && winnerId === finalMatch.teamARegistrationId);
+    (winnerId != null && (winnerId === finalMatch.teamARegistrationId || (finalMatch.teamARegistrationUuid && String(winnerId) === String(finalMatch.teamARegistrationUuid))));
 
-  const champion = isWinnerA
-    ? getTeamDetails(finalMatch.teamARegistrationUuid, finalMatch.teamARegistrationId, finalMatch.teamAName)
-    : getTeamDetails(finalMatch.teamBRegistrationUuid, finalMatch.teamBRegistrationId, finalMatch.teamBName);
+  const isWinnerB =
+    (winnerUuid && (winnerUuid === finalMatch.teamBRegistrationUuid || (finalMatch.teamBRegistrationId != null && String(winnerUuid) === String(finalMatch.teamBRegistrationId)))) ||
+    (winnerId != null && (winnerId === finalMatch.teamBRegistrationId || (finalMatch.teamBRegistrationUuid && String(winnerId) === String(finalMatch.teamBRegistrationUuid))));
 
-  const runnerUp = isWinnerA
-    ? getTeamDetails(finalMatch.teamBRegistrationUuid, finalMatch.teamBRegistrationId, finalMatch.teamBName)
-    : getTeamDetails(finalMatch.teamARegistrationUuid, finalMatch.teamARegistrationId, finalMatch.teamAName);
+  let champion = null;
+  let runnerUp = null;
+
+  if (isWinnerA) {
+    champion = getTeamDetails(finalMatch.teamARegistrationUuid, finalMatch.teamARegistrationId, finalMatch.teamAName);
+    runnerUp = getTeamDetails(finalMatch.teamBRegistrationUuid, finalMatch.teamBRegistrationId, finalMatch.teamBName);
+  } else if (isWinnerB) {
+    champion = getTeamDetails(finalMatch.teamBRegistrationUuid, finalMatch.teamBRegistrationId, finalMatch.teamBName);
+    runnerUp = getTeamDetails(finalMatch.teamARegistrationUuid, finalMatch.teamARegistrationId, finalMatch.teamAName);
+  } else {
+    // Fallback if neither strictly matched uuid/id, but team names exist
+    champion = getTeamDetails(finalMatch.teamARegistrationUuid, finalMatch.teamARegistrationId, finalMatch.teamAName);
+    runnerUp = getTeamDetails(finalMatch.teamBRegistrationUuid, finalMatch.teamBRegistrationId, finalMatch.teamBName);
+  }
+
+  if (!champion || champion.name === 'TBD') {
+    return { isFinished: false, champion: null, runnerUp: null, semiFinalists: [] };
+  }
 
   // Find Semi-Final matches (feeders to finalMatch)
   const semiFinalMatches = knockoutMatches.filter((m) => m.nextMatchUuid === finalMatch.uuid);
@@ -97,14 +138,14 @@ export function computeTournamentPodium(
       const sfWinnerId = sf.winnerRegistrationId;
       const sfIsWinnerA =
         (sfWinnerUuid && (sfWinnerUuid === sf.teamARegistrationUuid || (sf.teamARegistrationId != null && String(sfWinnerUuid) === String(sf.teamARegistrationId)))) ||
-        (sfWinnerId != null && sfWinnerId === sf.teamARegistrationId);
+        (sfWinnerId != null && (sfWinnerId === sf.teamARegistrationId || (sf.teamARegistrationUuid && String(sfWinnerId) === String(sf.teamARegistrationUuid))));
 
       // Loser of semi-final is the 3rd/4th place semi-finalist
       const losingTeam = sfIsWinnerA
         ? getTeamDetails(sf.teamBRegistrationUuid, sf.teamBRegistrationId, sf.teamBName)
         : getTeamDetails(sf.teamARegistrationUuid, sf.teamARegistrationId, sf.teamAName);
 
-      if (losingTeam.name !== 'TBD') {
+      if (losingTeam.name && losingTeam.name !== 'TBD') {
         semiFinalists.push(losingTeam);
       }
     }
@@ -122,6 +163,7 @@ interface TournamentWinnersPodiumProps {
   matches: Match[];
   registrations?: Registration[];
   tournamentName?: string;
+  tournamentStatus?: string;
   className?: string;
 }
 
@@ -129,11 +171,12 @@ export const TournamentWinnersPodium: React.FC<TournamentWinnersPodiumProps> = (
   matches,
   registrations = [],
   tournamentName,
+  tournamentStatus,
   className = '',
 }) => {
   const podium = useMemo(
-    () => computeTournamentPodium(matches, registrations),
-    [matches, registrations]
+    () => computeTournamentPodium(matches, registrations, tournamentStatus),
+    [matches, registrations, tournamentStatus]
   );
 
   if (!podium.isFinished || !podium.champion) {
@@ -176,7 +219,7 @@ export const TournamentWinnersPodium: React.FC<TournamentWinnersPodiumProps> = (
               <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
                 <Crown className="w-3.5 h-3.5 fill-current" /> Official Tournament Results
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase">
                 Match Finished
               </span>
             </div>
@@ -204,11 +247,11 @@ export const TournamentWinnersPodium: React.FC<TournamentWinnersPodiumProps> = (
               borderColor: 'var(--athlon-border-strong, #2D3F63)',
             }}
           >
-            <div className="w-10 h-10 rounded-2xl bg-slate-300/15 border border-slate-300/30 text-slate-200 flex items-center justify-center font-black text-base shadow-sm">
+            <div className="w-10 h-10 rounded-2xl bg-slate-400/20 border border-slate-400/40 text-slate-800 dark:text-slate-200 flex items-center justify-center font-black text-base shadow-sm">
               🥈
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 block mb-1">
                 2nd Place • Runner-Up
               </span>
               <h4 className="text-base font-black text-foreground line-clamp-1">
@@ -221,7 +264,7 @@ export const TournamentWinnersPodium: React.FC<TournamentWinnersPodiumProps> = (
               )}
             </div>
             <div className="w-full pt-2 border-t border-border/40">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 Championship Finalist
               </span>
             </div>
@@ -284,11 +327,11 @@ export const TournamentWinnersPodium: React.FC<TournamentWinnersPodiumProps> = (
             borderColor: 'var(--athlon-border-strong, #2D3F63)',
           }}
         >
-          <div className="w-10 h-10 rounded-2xl bg-amber-700/20 border border-amber-700/40 text-amber-500 flex items-center justify-center font-black text-base shadow-sm">
+          <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-700 dark:text-amber-400 flex items-center justify-center font-black text-base shadow-sm">
             🥉
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500/80 block mb-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400 block mb-1">
               3rd Place • Semi-Finalists
             </span>
             {podium.semiFinalists.length > 0 ? (
@@ -304,7 +347,7 @@ export const TournamentWinnersPodium: React.FC<TournamentWinnersPodiumProps> = (
             )}
           </div>
           <div className="w-full pt-2 border-t border-border/40">
-            <span className="text-[10px] font-black uppercase tracking-wider text-amber-500/80">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
               Podium Finishers
             </span>
           </div>

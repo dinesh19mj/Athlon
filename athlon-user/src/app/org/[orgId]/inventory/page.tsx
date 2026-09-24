@@ -15,6 +15,7 @@ import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organ
 import { UserService } from '@/lib/api/user';
 import AcademyInventoryView from '@/components/academy/AcademyInventoryView';
 import OrganizerInventoryView from '@/components/organizer/OrganizerInventoryView';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import {
   Package,
   Plus,
@@ -763,16 +764,13 @@ function ClubInventoryView({ orgUuid, orgName, org }: { orgUuid: string; orgName
         </div>
 
         {/* Floating Quick Action Button on Mobile */}
-        {canManage && items.length > 3 && (
-          <div className="fixed bottom-20 right-4 z-40">
-            <button
-              onClick={() => openAddModal()}
-              className="px-4 py-3 rounded-full bg-primary text-black font-black text-xs tracking-wide shadow-2xl shadow-primary/40 flex items-center gap-2 active:scale-90 hover:opacity-90 transition-all border border-black/10"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Add Item</span>
-            </button>
-          </div>
+        {canManage && (
+          <Athlon3DFAB
+            onClick={() => openAddModal()}
+            label="Add Item"
+            title="Add Inventory Item"
+            ariaLabel="Add Inventory Item"
+          />
         )}
       </div>
 

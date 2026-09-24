@@ -36,6 +36,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -68,13 +69,23 @@ interface AcademyListing {
 }
 
 export default function AcademiesPage() {
+  const router = useRouter();
   const { isAuthenticated, userUuid, userEmail } = useAuthStore();
   const { personalProfile } = useWorkspaceStore();
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(isAuthenticated ? '/home' : '/');
+    }
+  };
 
   const [liveAcademies, setLiveAcademies] = useState<AcademyListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
 
   // Direct Enrollment Modal States
   const [selectedAcademyForEnroll, setSelectedAcademyForEnroll] = useState<AcademyListing | null>(null);
@@ -217,6 +228,8 @@ export default function AcademiesPage() {
     });
   }, [allAcademies, activeFilter, searchQuery]);
 
+  const isFiltered = activeFilter !== 'all' || searchQuery.trim().length > 0;
+
   // Open Direct Enroll Modal
   const handleOpenEnrollModal = async (academy: AcademyListing) => {
     setSelectedAcademyForEnroll(academy);
@@ -297,132 +310,244 @@ export default function AcademiesPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          HERO & SEARCH BAR SECTION
-         ══════════════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden border-b border-foreground/10 bg-gradient-to-b from-surface/80 via-surface/40 to-background pt-8 pb-10 px-4 sm:px-8">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* ── SLEEK MOBILE-FIRST HEADER & SEARCH HUB ── */}
+      <section className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-card/90 via-surface/60 to-background pt-3 sm:pt-6 pb-4 sm:pb-6 px-3.5 sm:px-6">
+        {/* Subtle Ambient Glow */}
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-black uppercase tracking-wider">
-                <GraduationCap className="w-4 h-4" />
-                <span>Athlon Sports Academies</span>
+        <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 relative z-10">
+          {/* Top Bar: Back Button, Title, and View Mode Switcher */}
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={handleBack}
+                title="Go Back"
+                className="w-9 h-9 rounded-xl border border-border/80 bg-surface/80 hover:bg-surface text-foreground/80 hover:text-foreground flex items-center justify-center transition-all active:scale-95 shadow-xs shrink-0 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    Athlon Academies
+                  </span>
+                  <span className="hidden xs:inline-block text-[10px] text-foreground/40 font-semibold">•</span>
+                  <span className="hidden xs:inline-block text-[10px] text-foreground/50 font-bold truncate">
+                    Training Centers
+                  </span>
+                </div>
+                <h1 className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight truncate mt-0.5">
+                  Training Academies &amp; Hubs
+                </h1>
               </div>
-              <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
-                Discover Training Academies & Coaching Centers
-              </h1>
-              <p className="text-xs sm:text-sm text-foreground/60 max-w-2xl font-medium">
-                Find certified sports academies, professional coaching batches, and training venues with certified coaches across disciplines.
-              </p>
             </div>
 
-            {/* Quick Actions / Link to Dashboard & Hub Switcher */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 p-1 rounded-full bg-surface border border-white/10 shadow-sm">
-                <Link
-                  href="/academies"
-                  className="px-3.5 py-1.5 rounded-full text-xs font-black bg-primary text-black flex items-center gap-1.5 shadow-sm"
-                >
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>Academies</span>
-                </Link>
-                <Link
-                  href="/venues"
-                  className="px-3.5 py-1.5 rounded-full text-xs font-bold text-foreground/70 hover:text-foreground flex items-center gap-1.5 hover:bg-white/5 transition-all"
-                >
-                  <Building2 className="w-3.5 h-3.5 text-primary" />
-                  <span>Courts &amp; Turfs</span>
-                </Link>
-                <Link
-                  href="/coaches"
-                  className="px-3.5 py-1.5 rounded-full text-xs font-bold text-foreground/70 hover:text-foreground flex items-center gap-1.5 hover:bg-white/5 transition-all"
-                >
-                  <span>Coaches</span>
-                </Link>
-              </div>
-
-              <Link
-                href="/home"
-                className="px-3.5 py-2 rounded-full border border-white/10 bg-surface hover:bg-white/5 text-xs font-bold text-foreground transition-all flex items-center gap-1.5 shadow-sm"
+            {/* View Mode Switcher (Grid / List) */}
+            <div className="flex items-center p-1 rounded-xl bg-surface/80 border border-border/80 shrink-0 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                title="Grid Card View"
+                className={`p-1.5 rounded-lg text-xs transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-primary text-black font-black shadow-xs scale-105'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Home</span>
-              </Link>
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('compact')}
+                title="Compact List View"
+                className={`p-1.5 rounded-lg text-xs transition-all ${
+                  viewMode === 'compact'
+                    ? 'bg-primary text-black font-black shadow-xs scale-105'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-            <div className="relative flex-grow">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
-              <input
-                type="text"
-                placeholder="Search by academy name, sport (Badminton, Cricket), or location..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-surface border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-foreground/30 font-medium transition-all shadow-inner"
-              />
-            </div>
+          {/* Quick Hub Switcher Bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-0.5">
+            <Link
+              href="/academies"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-black bg-primary text-black flex items-center gap-1.5 shadow-xs shrink-0"
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>Academies</span>
+            </Link>
+            <Link
+              href="/venues"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/70 hover:text-foreground border border-border/70 hover:bg-surface flex items-center gap-1.5 shrink-0 transition-all"
+            >
+              <Building2 className="w-3.5 h-3.5 text-primary" />
+              <span>Courts &amp; Turfs</span>
+            </Link>
+            <Link
+              href="/coaches"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/70 hover:text-foreground border border-border/70 hover:bg-surface flex items-center gap-1.5 shrink-0 transition-all"
+            >
+              <Award className="w-3.5 h-3.5 text-amber-500" />
+              <span>Coaches</span>
+            </Link>
+          </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar shrink-0">
-              {[
-                { id: 'all', label: 'All Centers' },
-                { id: 'top_rated', label: '⭐ Top Rated' },
-                { id: 'coaching', label: '🏸 Coaching' },
-                { id: 'bwf', label: '🏆 BWF Certified' },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setActiveFilter(f.id)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${activeFilter === f.id
-                      ? 'bg-primary text-black border-primary shadow-sm font-black'
-                      : 'bg-surface border-white/10 text-foreground/70 hover:bg-white/5'
-                    }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+          {/* Search Input Bar */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by academy name, sport, or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-surface/80 border border-border/80 rounded-xl pl-8.5 pr-8 py-2 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-foreground/35 font-medium transition-all shadow-inner"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground/10 text-foreground/60 flex items-center justify-center hover:bg-foreground/20 text-[10px]"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Chips Carousel (Horizontal scroll on mobile) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-0.5 pt-0.5">
+            {[
+              { id: 'all', label: 'All Centers' },
+              { id: 'top_rated', label: '⭐ Top Rated' },
+              { id: 'coaching', label: '🏸 Coaching' },
+              { id: 'bwf', label: '🏆 BWF Certified' },
+              { id: 'tennis', label: '🎾 Tennis' },
+              { id: 'cricket', label: '🏏 Cricket' },
+              { id: '24_7', label: '⏰ Open 24/7' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setActiveFilter(f.id)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 border active:scale-95 ${
+                  activeFilter === f.id
+                    ? 'bg-primary text-black border-primary shadow-xs font-black'
+                    : 'bg-surface/70 border-border/70 text-foreground/70 hover:bg-surface hover:text-foreground'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          ACADEMY DIRECTORY GRID
-         ══════════════════════════════════════════════════════════════════════ */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-primary" />
-            <h2 className="text-base sm:text-lg font-black text-foreground">
-              Available Academies & Training Batches ({filteredAcademies.length})
-            </h2>
+      {/* ── ACADEMIES DIRECTORY LIST / GRID ── */}
+      <main className="max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-6 space-y-4">
+        {/* Results Counter Bar */}
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 text-foreground/80 font-bold">
+            <Building2 className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-xs font-black text-foreground">
+              {loading ? 'Discovering academies...' : `${filteredAcademies.length} ${filteredAcademies.length === 1 ? 'Academy' : 'Academies'} Available`}
+            </span>
           </div>
+
+          {isFiltered && (
+            <button
+              onClick={() => {
+                setActiveFilter('all');
+                setSearchQuery('');
+              }}
+              className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+            >
+              <span>Reset Filters</span>
+            </button>
+          )}
         </div>
 
+        {/* Loading State */}
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs font-semibold text-foreground/50">Discovering sports academies...</p>
+          <div className="py-16 sm:py-24 flex flex-col items-center justify-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+            <p className="text-xs font-bold text-foreground/50">Discovering sports academies...</p>
+          </div>
+        ) : allAcademies.length === 0 ? (
+          /* Empty Directory State */
+          <div className="py-12 sm:py-16 text-center space-y-3 bg-surface/50 border border-border/80 rounded-3xl p-6 sm:p-8 max-w-md mx-auto shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary mx-auto">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-black text-foreground">No Academies Registered Yet</h3>
+              <p className="text-xs text-foreground/60 leading-relaxed max-w-xs mx-auto">
+                There are currently no sports academies registered in the directory. Verified training academies will appear here once onboarded.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Link
+                href={isAuthenticated ? '/home' : '/'}
+                className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider shadow-sm hover:brightness-110 inline-flex items-center gap-2 active:scale-95 transition-all"
+              >
+                <span>Back to Home</span>
+              </Link>
+            </div>
           </div>
         ) : filteredAcademies.length === 0 ? (
-          <div className="py-16 text-center space-y-3 bg-surface/50 border border-white/10 rounded-3xl p-8">
-            <GraduationCap className="w-10 h-10 text-foreground/30 mx-auto" />
-            <h3 className="text-sm font-black text-foreground">No academies matched your search</h3>
-            <p className="text-xs text-foreground/50">Try broadening your search query or removing active filters.</p>
+          /* Search / Filter Mismatch State */
+          <div className="py-12 sm:py-16 text-center space-y-3 bg-surface/50 border border-border/80 rounded-3xl p-6 sm:p-8 max-w-md mx-auto shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-foreground/5 border border-border/80 flex items-center justify-center text-foreground/40 mx-auto">
+              <Search className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-foreground">No Matching Academies</h3>
+              <p className="text-xs text-foreground/50 leading-relaxed max-w-xs mx-auto">
+                We couldn&apos;t find any academies matching your search filters. Try adjusting your search query.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setActiveFilter('all');
+                setSearchQuery('');
+              }}
+              className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider shadow-sm hover:brightness-110 active:scale-95 transition-all"
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : viewMode === 'compact' ? (
+          /* Compact List View (Mobile-First) */
+          <div className="space-y-2.5 max-w-2xl mx-auto">
+            {filteredAcademies.map((academy) => (
+              <div key={academy.id}>
+                <AcademyMarketplaceCard
+                  academy={academy}
+                  variant="compact"
+                  onEnrollClick={() => handleOpenEnrollModal(academy)}
+                />
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          /* Grid View (Mobile-Optimized Cards) */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filteredAcademies.map((academy) => (
-              <AcademyMarketplaceCard
-                key={academy.id}
-                academy={academy}
-                className="h-full hover:scale-[1.02] transition-transform duration-300"
-              />
+              <div key={academy.id} className="h-full">
+                <AcademyMarketplaceCard
+                  academy={academy}
+                  variant="card"
+                  className="h-full shadow-xs"
+                  onEnrollClick={() => handleOpenEnrollModal(academy)}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -456,7 +581,7 @@ export default function AcademiesPage() {
         <div className="relative -top-5 flex items-center justify-center">
           <Link
             href="/practice"
-            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
             style={{
               backgroundColor: 'var(--athlon-primary)',
               borderColor: 'var(--athlon-navigation)',

@@ -34,6 +34,7 @@ import {
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import { useOrgSports, getSportEmoji } from '@/lib/hooks/useOrgSports';
 import { AcademyStudentService, AcademyBatch } from '@/lib/api/academyStudent';
 import { AcademyStaffService, AcademyStaffResponse } from '@/lib/api/academyStaff';
@@ -639,17 +640,12 @@ export default function SchedulePage() {
 
       {/* ── FLOATING ACTION BUTTON (CREATE/MANAGE BATCH) ── */}
       {canManage && (
-        <Link
+        <Athlon3DFAB
           href={`/org/${orgUuid}/batches`}
-          className="fixed bottom-24 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-all cursor-pointer"
-          style={{
-            backgroundColor: 'var(--athlon-primary)',
-            boxShadow: '0 8px 24px var(--athlon-primary-glow), 0 4px 10px rgba(0,0,0,0.5)',
-          }}
-          aria-label="Create Batch"
-        >
-          <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
-        </Link>
+          label="Manage Batches"
+          title="Create & Manage Batches"
+          ariaLabel="Create & Manage Batches"
+        />
       )}
     </div>
   );

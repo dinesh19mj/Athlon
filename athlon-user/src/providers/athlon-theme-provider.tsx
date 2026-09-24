@@ -98,6 +98,20 @@ export function AthlonThemeProvider({ children }: { children: React.ReactNode })
 
 export function useAthlonTheme(): AthlonThemeContextValue {
   const ctx = useContext(AthlonThemeContext);
-  if (!ctx) throw new Error('useAthlonTheme must be used inside AthlonThemeProvider');
+  if (!ctx) {
+    const currentTheme = themeController.getCurrentTheme();
+    return {
+      theme: currentTheme,
+      themeKey: currentTheme.key,
+      mode: themeController.getMode(),
+      semantic: currentTheme.semantic,
+      setTheme: () => {},
+      setMode: () => {},
+      toggleMode: () => {},
+      availableThemes: [],
+      iconStyle: '2d',
+      setIconStyle: () => {},
+    };
+  }
   return ctx;
 }

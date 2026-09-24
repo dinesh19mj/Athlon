@@ -179,7 +179,7 @@ export default function PlayerRankingsPage() {
       <div className="block md:hidden pb-28 min-h-screen">
         {/* Compact Sticky Top Navbar */}
         <header
-          className="sticky top-0 z-40 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b transition-all"
+          className="sticky top-0 z-40 flex items-center justify-between px-4 py-2.5 backdrop-blur-xl border-b transition-all"
           style={{
             backgroundColor: 'var(--athlon-navigation)',
             borderColor: 'var(--athlon-border)',
@@ -220,7 +220,7 @@ export default function PlayerRankingsPage() {
           </div>
         </header>
 
-        <main className="w-full max-w-lg mx-auto px-3.5 flex flex-col gap-3.5 pt-3">
+        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-3 pt-3">
           {/* Live Search Bar */}
           <div className="relative w-full">
             <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3 top-1/2 -translate-y-1/2" />

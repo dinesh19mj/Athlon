@@ -521,6 +521,7 @@ export default function PersonalTournamentDetailsPage() {
               matches={matches}
               registrations={validRegistrations}
               tournamentName={tournament.name}
+              tournamentStatus={tournament.status}
             />
 
             {/* 4-BENTO METRICS GRID */}
@@ -1066,48 +1067,49 @@ export default function PersonalTournamentDetailsPage() {
 
       {/* Sticky Bottom Registration Bar */}
       <div
-        className="fixed bottom-0 inset-x-0 p-4 backdrop-blur-xl border-t z-50 shadow-2xl fixed-bottom-nav"
+        className="fixed bottom-0 inset-x-0 z-50 backdrop-blur-2xl border-t shadow-[0_-10px_35px_rgba(0,0,0,0.35)] px-4 sm:px-8 py-3.5 sm:py-4"
         style={{
           backgroundColor: 'var(--athlon-navigation)',
           borderColor: 'var(--athlon-border)',
-          transform: 'translate3d(0, 0, 0)',
-          WebkitTransform: 'translate3d(0, 0, 0)',
+          paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 16px))',
         }}
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-extrabold text-foreground/50 uppercase tracking-widest">Entry Fee</span>
-            <span className="text-lg font-black text-primary">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] sm:text-[11px] font-black text-foreground/60 uppercase tracking-widest leading-none">
+              Entry Fee
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-primary leading-tight mt-1 font-mono">
               {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
             </span>
           </div>
 
           {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
-            <button
-              disabled
-              className="px-8 py-3.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg opacity-90 cursor-not-allowed flex items-center gap-2"
+            <div
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg flex items-center gap-2 select-none"
             >
-              <Trophy className="w-4 h-4" />
-              Tournament Finished
-            </button>
+              <Trophy className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Tournament Finished</span>
+            </div>
           ) : isRegistrationClosed ? (
-            <button
-              disabled
-              className="px-8 py-3.5 bg-red-500/15 border border-red-500/30 text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg cursor-not-allowed opacity-90"
+            <div
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-red-500/15 border border-red-500/35 text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg flex items-center gap-2 select-none"
             >
-              Registration Closed
-            </button>
+              <Lock className="w-4 h-4 text-red-400 shrink-0" />
+              <span>Registration Closed</span>
+            </div>
           ) : isOrganizerManaged ? (
-            <div className="px-6 py-3.5 bg-purple-500/15 border border-purple-500/30 text-purple-400 font-bold text-xs sm:text-sm rounded-2xl flex items-center gap-2">
+            <div className="px-5 sm:px-6 py-3 sm:py-3.5 bg-purple-500/15 border border-purple-500/35 text-purple-400 font-bold text-xs sm:text-sm rounded-2xl flex items-center gap-2 select-none">
               <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
               <span>Managed by Organizer</span>
             </div>
           ) : (
             <button
               onClick={() => router.push(`/home/tournaments/${tournamentUuid}/register`)}
-              className="px-8 py-3.5 bg-primary text-primary-foreground font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-95 transition-transform"
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-primary text-primary-foreground font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
             >
-              {isTeamEvent ? 'Register Your Team' : 'Register for Tournament'}
+              <Ticket className="w-4 h-4 shrink-0" />
+              <span>{isTeamEvent ? 'Register Your Team' : 'Register for Tournament'}</span>
             </button>
           )}
         </div>

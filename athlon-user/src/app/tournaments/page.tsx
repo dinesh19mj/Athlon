@@ -763,7 +763,7 @@ export default function TournamentsPage() {
           <div className="relative -top-5 flex items-center justify-center">
             <Link
               href="/practice"
-              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
               style={{
                 backgroundColor: 'var(--athlon-primary)',
                 borderColor: 'var(--athlon-navigation)',

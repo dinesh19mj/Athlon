@@ -23,89 +23,39 @@ import {
   Users,
   Check,
   Loader2,
-  UserPlus
+  UserPlus,
+  Building2,
+  ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { OrganizationService } from '@/lib/api/organization';
 import { CoachMarketplaceCard, CoachCardData } from '@/components/marketplace/CoachMarketplaceCard';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
-const DEFAULT_COACHES: CoachCardData[] = [
-  {
-    id: 1,
-    name: 'Deepak Raj',
-    type: 'COACH',
-    sportType: 'Badminton',
-    experienceYears: 8,
-    city: 'Bangalore',
-    state: 'Karnataka',
-    address: 'Indiranagar Sports Hub, Bangalore',
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800&auto=format&fit=crop',
-    tags: ['Badminton', 'BWF Level 2', 'Singles Footwork', 'High Performance'],
-    description: 'Former state champion and certified BWF Level 2 coach specializing in junior athlete development, tactical deception, and stamina conditioning.',
-    profile: {
-      sportsOffered: 'Badminton',
-      admissionStatus: 'OPEN',
-      experienceYears: 8,
-      city: 'Bangalore',
-      state: 'Karnataka',
-      bio: 'BWF Certified High-Performance Badminton Coach',
-    },
-  },
-  {
-    id: 2,
-    name: 'Vikram Sethi',
-    type: 'COACH',
-    sportType: 'Tennis',
-    experienceYears: 12,
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    address: 'Bandra Lawn Tennis Center, Mumbai',
-    image: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=800&auto=format&fit=crop',
-    tags: ['Tennis', 'USPTA Certified', 'Serve Mechanics', 'Match Strategy'],
-    description: 'Specialist in serve mechanics, baseline agility, and junior tournament match prep with over a decade of tour coaching.',
-    profile: {
-      sportsOffered: 'Tennis',
-      admissionStatus: 'OPEN',
-      experienceYears: 12,
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      bio: 'USPTA Elite Tennis Coach & Junior Mentor',
-    },
-  },
-  {
-    id: 3,
-    name: 'Arun Nair',
-    type: 'COACH',
-    sportType: 'Cricket',
-    experienceYears: 10,
-    city: 'Chennai',
-    state: 'Tamil Nadu',
-    address: 'Marina Cricket Nets, Chennai',
-    image: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?q=80&w=800&auto=format&fit=crop',
-    tags: ['Cricket', 'BCCI Level 1', 'Fast Bowling', 'Power Hitting'],
-    description: 'BCCI Level 1 accredited coach focusing on biomechanics of bowling action, injury prevention, and tactical captaincy.',
-    profile: {
-      sportsOffered: 'Cricket',
-      admissionStatus: 'LIMITED',
-      experienceYears: 10,
-      city: 'Chennai',
-      state: 'Tamil Nadu',
-      bio: 'BCCI Level 1 Fast Bowling & Batting Specialist',
-    },
-  },
-];
+const POPULAR_CITIES = ['All Cities', 'Bangalore', 'Chennai', 'Hyderabad', 'Mumbai', 'Delhi NCR', 'Pune'];
 
 export default function CoachesPage() {
+  const router = useRouter();
   const { isAuthenticated, userUuid, userEmail } = useAuthStore();
   const { personalProfile } = useWorkspaceStore();
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(isAuthenticated ? '/home' : '/');
+    }
+  };
+
   const [activeFilter, setActiveFilter] = useState('all');
+  const [cityFilter, setCityFilter] = useState('All Cities');
   const [searchQuery, setSearchQuery] = useState('');
   const [liveCoaches, setLiveCoaches] = useState<CoachCardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
 
   // Fetch Live Coaches from Backend
   useEffect(() => {
@@ -126,29 +76,29 @@ export default function CoachesPage() {
               name: org.name,
               type: 'COACH',
               sportType: sports[0] || 'Badminton',
-              city: prof?.city || 'Bangalore',
-              state: prof?.state || 'Karnataka',
-              address: prof?.address || prof?.city || 'Coaching Hub',
+              city: prof?.city || '',
+              state: prof?.state || '',
+              address: prof?.address || prof?.city || '',
               image: prof?.banner
                 ? OrganizationService.getBannerUrl(prof.banner)
                 : prof?.logo
                   ? OrganizationService.getLogoUrl(prof.logo)
-                  : DEFAULT_COACHES[idx % DEFAULT_COACHES.length].image,
+                  : '',
               tags: sports,
-              experienceYears: prof?.experienceYears || 5,
+              experienceYears: prof?.experienceYears || 0,
               logo: org.logo || prof?.logo,
               banner: org.banner || prof?.banner,
-              description: org.description || prof?.description || prof?.bio,
+              description: org.description || prof?.description || prof?.bio || '',
               profile: prof || org,
             };
           });
           setLiveCoaches(mapped);
         } else {
-          setLiveCoaches(DEFAULT_COACHES);
+          setLiveCoaches([]);
         }
       } catch (err) {
         console.error('Failed to load coaches:', err);
-        setLiveCoaches(DEFAULT_COACHES);
+        setLiveCoaches([]);
       } finally {
         setLoading(false);
       }
@@ -175,16 +125,23 @@ export default function CoachesPage() {
   }, []);
 
   const allCoaches = useMemo(() => {
-    if (liveCoaches.length === 0) return DEFAULT_COACHES;
     return liveCoaches;
   }, [liveCoaches]);
 
   // Filtered List
   const filteredCoaches = useMemo(() => {
     return allCoaches.filter((c) => {
+      if (cityFilter !== 'All Cities') {
+        const cCity = (c.city || c.profile?.city || '').toLowerCase();
+        const target = cityFilter.toLowerCase();
+        if (!cCity.includes(target) && !target.includes(cCity)) return false;
+      }
+
       if (activeFilter === 'badminton' && !c.tags?.some((t) => t.toLowerCase().includes('badminton'))) return false;
       if (activeFilter === 'tennis' && !c.tags?.some((t) => t.toLowerCase().includes('tennis'))) return false;
       if (activeFilter === 'cricket' && !c.tags?.some((t) => t.toLowerCase().includes('cricket'))) return false;
+      if (activeFilter === 'football' && !c.tags?.some((t) => t.toLowerCase().includes('football'))) return false;
+      if (activeFilter === 'table_tennis' && !c.tags?.some((t) => t.toLowerCase().includes('table tennis') || t.toLowerCase().includes('tt'))) return false;
       if (activeFilter === 'verified' && !((c.profile?.experienceYears || 0) >= 5)) return false;
 
       if (!searchQuery.trim()) return true;
@@ -196,119 +153,263 @@ export default function CoachesPage() {
         c.tags?.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [allCoaches, activeFilter, searchQuery]);
+  }, [allCoaches, activeFilter, searchQuery, cityFilter]);
+
+  const isFiltered = activeFilter !== 'all' || searchQuery.trim().length > 0 || cityFilter !== 'All Cities';
+
+  const resetFilters = () => {
+    setActiveFilter('all');
+    setSearchQuery('');
+    setCityFilter('All Cities');
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-primary selection:text-black">
-      {/* ── HERO & SEARCH SECTION ── */}
-      <section className="relative overflow-hidden border-b border-foreground/10 bg-gradient-to-b from-surface/80 via-surface/40 to-background pt-8 pb-10 px-4 sm:px-8">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-background text-foreground pb-28 sm:pb-16 selection:bg-primary selection:text-black">
+      {/* ── SLEEK MOBILE-FIRST HEADER & SEARCH BAR ── */}
+      <section className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-card/90 via-surface/60 to-background pt-3 sm:pt-6 pb-4 sm:pb-6 px-3.5 sm:px-6">
+        {/* Subtle Ambient Glow */}
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-black uppercase tracking-wider">
-                <Award className="w-4 h-4" />
-                <span>Athlon Certified Coaches</span>
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight">
-                Discover Professional Sports Coaches & Mentors
-              </h1>
-              <p className="text-xs sm:text-sm text-foreground/60 max-w-2xl font-medium">
-                Find certified personal coaches, 1-on-1 sparring partners, and high-performance training mentors across sports disciplines.
-              </p>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="flex items-center gap-2">
-              <Link
-                href="/home"
-                className="px-4 py-2.5 rounded-xl border border-white/10 bg-surface hover:bg-white/5 text-xs font-bold text-foreground transition-all flex items-center gap-2 shadow-sm"
+        <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 relative z-10">
+          {/* Top Bar: Back Button, Title, and View Mode Switcher */}
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={handleBack}
+                title="Go Back"
+                className="w-9 h-9 rounded-xl border border-border/80 bg-surface/80 hover:bg-surface text-foreground/80 hover:text-foreground flex items-center justify-center transition-all active:scale-95 shadow-xs shrink-0 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Home</span>
-              </Link>
+              </button>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    Athlon Coaches
+                  </span>
+                  <span className="hidden xs:inline-block text-[10px] text-foreground/40 font-semibold">•</span>
+                  <span className="hidden xs:inline-block text-[10px] text-foreground/50 font-bold truncate">
+                    Verified Mentors
+                  </span>
+                </div>
+                <h1 className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight truncate mt-0.5">
+                  Sports Coaches &amp; Mentors
+                </h1>
+              </div>
+            </div>
+
+            {/* View Mode Switcher (Grid / List) */}
+            <div className="flex items-center p-1 rounded-xl bg-surface/80 border border-border/80 shrink-0 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                title="Grid Card View"
+                className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-primary text-black font-black shadow-xs scale-105'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('compact')}
+                title="Compact List View"
+                className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                  viewMode === 'compact'
+                    ? 'bg-primary text-black font-black shadow-xs scale-105'
+                    : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-            <div className="relative flex-grow">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
-              <input
-                type="text"
-                placeholder="Search by coach name, sport discipline (Badminton, Cricket), or city..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-surface border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-foreground/30 font-medium transition-all shadow-inner"
-              />
+          {/* Quick Hub Switcher Bar */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-0.5">
+            <Link
+              href="/coaches"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-black bg-primary text-black flex items-center gap-1.5 shadow-xs shrink-0"
+            >
+              <Award className="w-3.5 h-3.5 text-black" />
+              <span>Coaches</span>
+            </Link>
+            <Link
+              href="/venues"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/70 hover:text-foreground border border-border/70 hover:bg-surface flex items-center gap-1.5 shrink-0 transition-all"
+            >
+              <Building2 className="w-3.5 h-3.5 text-primary" />
+              <span>Courts &amp; Turfs</span>
+            </Link>
+            <Link
+              href="/academies"
+              className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-foreground/70 hover:text-foreground border border-border/70 hover:bg-surface flex items-center gap-1.5 shrink-0 transition-all"
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-primary" />
+              <span>Academies</span>
+            </Link>
+          </div>
+
+          {/* Search & City Input Bar */}
+          <div className="flex items-center gap-2">
+            {/* City Selector Pill */}
+            <div className="relative shrink-0">
+              <select
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                className="appearance-none pl-7 pr-6 py-2 rounded-xl text-xs font-bold border border-border/80 bg-surface/80 hover:bg-surface text-foreground shadow-inner outline-none focus:border-primary transition-all cursor-pointer"
+              >
+                {POPULAR_CITIES.map((c) => (
+                  <option key={c} value={c} className="bg-card text-foreground">
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <MapPin className="w-3.5 h-3.5 text-primary absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3 h-3 text-foreground/50 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar shrink-0">
-              {[
-                { id: 'all', label: 'All Coaches' },
-                { id: 'badminton', label: '🏸 Badminton' },
-                { id: 'tennis', label: '🎾 Tennis' },
-                { id: 'cricket', label: '🏏 Cricket' },
-                { id: 'verified', label: '🏅 Senior (5+ Yrs)' },
-              ].map((f) => (
+            {/* Search Input Bar */}
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search by coach name, sport, or city..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-surface/80 border border-border/80 rounded-xl pl-8.5 pr-8 py-2 text-xs sm:text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-foreground/35 font-medium transition-all shadow-inner"
+              />
+              {searchQuery && (
                 <button
-                  key={f.id}
-                  onClick={() => setActiveFilter(f.id)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
-                    activeFilter === f.id
-                      ? 'bg-primary text-black border-primary shadow-sm font-black'
-                      : 'bg-surface border-white/10 text-foreground/70 hover:bg-white/5'
-                  }`}
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-foreground/10 text-foreground/60 flex items-center justify-center hover:bg-foreground/20 text-[10px]"
                 >
-                  {f.label}
+                  <X className="w-2.5 h-2.5" />
                 </button>
-              ))}
+              )}
             </div>
+          </div>
+
+          {/* Filter Chips Carousel (Horizontal scroll on mobile) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-0.5 pt-0.5">
+            {[
+              { id: 'all', label: 'All Coaches' },
+              { id: 'badminton', label: '🏸 Badminton' },
+              { id: 'tennis', label: '🎾 Tennis' },
+              { id: 'cricket', label: '🏏 Cricket' },
+              { id: 'football', label: '⚽ Football' },
+              { id: 'table_tennis', label: '🏓 Table Tennis' },
+              { id: 'verified', label: '⭐ Senior (5+ Yrs)' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setActiveFilter(f.id)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer shrink-0 border active:scale-95 ${
+                  activeFilter === f.id
+                    ? 'bg-primary text-black border-primary shadow-xs font-black'
+                    : 'bg-surface/70 border-border/70 text-foreground/70 hover:bg-surface hover:text-foreground'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── COACHES DIRECTORY GRID ── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-primary" />
-            <h2 className="text-base sm:text-lg font-black text-foreground">
-              Available Sports Coaches ({filteredCoaches.length})
-            </h2>
+      {/* ── COACHES DIRECTORY LIST / GRID ── */}
+      <main className="max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-6 space-y-4">
+        {/* Results Counter Bar */}
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 text-foreground/80 font-bold">
+            <Award className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-xs font-black text-foreground">
+              {loading ? 'Searching coaches...' : `${filteredCoaches.length} ${filteredCoaches.length === 1 ? 'Coach' : 'Coaches'} Available`}
+            </span>
+            {cityFilter !== 'All Cities' && (
+              <span className="text-foreground/50 text-[11px] hidden xs:inline truncate">in {cityFilter}</span>
+            )}
           </div>
+
+          {isFiltered && (
+            <button
+              onClick={resetFilters}
+              className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Reset Filters</span>
+            </button>
+          )}
         </div>
 
+        {/* Loading State */}
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs font-semibold text-foreground/50">Finding certified coaches...</p>
+          <div className="py-16 sm:py-24 flex flex-col items-center justify-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
+              <Loader2 className="w-5 h-5 animate-spin" />
+            </div>
+            <p className="text-xs font-bold text-foreground/50">Finding certified coaches...</p>
+          </div>
+        ) : allCoaches.length === 0 ? (
+          /* Empty Directory State */
+          <div className="py-12 sm:py-16 text-center space-y-3 bg-surface/50 border border-border/80 rounded-3xl p-6 sm:p-8 max-w-md mx-auto shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary mx-auto">
+              <Award className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-black text-foreground">No Coaches Registered Yet</h3>
+              <p className="text-xs text-foreground/60 leading-relaxed max-w-xs mx-auto">
+                There are currently no sports coaches or mentors registered in the directory. Verified coaches will appear here once onboarded.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Link
+                href={isAuthenticated ? '/home' : '/'}
+                className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider shadow-sm hover:brightness-110 inline-flex items-center gap-2 active:scale-95 transition-all"
+              >
+                <span>Back to Home</span>
+              </Link>
+            </div>
           </div>
         ) : filteredCoaches.length === 0 ? (
-          <div className="py-16 text-center space-y-3 bg-surface/50 border border-white/10 rounded-3xl p-8">
-            <Award className="w-10 h-10 text-foreground/30 mx-auto" />
-            <div className="text-base font-bold text-foreground">No Coaches Found</div>
-            <p className="text-xs text-foreground/50 max-w-sm mx-auto">
-              We couldn&apos;t find any coaches matching your search filters. Try adjusting your search query.
-            </p>
+          /* Search / Filter Mismatch State */
+          <div className="py-12 sm:py-16 text-center space-y-3 bg-surface/50 border border-border/80 rounded-3xl p-6 sm:p-8 max-w-md mx-auto shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-foreground/5 border border-border/80 flex items-center justify-center text-foreground/40 mx-auto">
+              <Search className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-foreground">No Matching Coaches</h3>
+              <p className="text-xs text-foreground/50 leading-relaxed max-w-xs mx-auto">
+                We couldn&apos;t find any coaches matching your search filters. Try adjusting your search query.
+              </p>
+            </div>
             <button
-              onClick={() => {
-                setActiveFilter('all');
-                setSearchQuery('');
-              }}
-              className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-bold shadow-md cursor-pointer hover:brightness-110"
+              onClick={resetFilters}
+              className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider shadow-sm hover:brightness-110 active:scale-95 transition-all cursor-pointer"
             >
               Reset Filters
             </button>
           </div>
+        ) : viewMode === 'compact' ? (
+          /* Compact List View (Mobile-First) */
+          <div className="space-y-2.5 max-w-2xl mx-auto">
+            {filteredCoaches.map((coach) => (
+              <div key={coach.uuid || coach.id}>
+                <CoachMarketplaceCard coach={coach} variant="compact" />
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          /* Grid View (Mobile-Optimized Cards) */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filteredCoaches.map((coach) => (
               <div key={coach.uuid || coach.id} className="h-full">
-                <CoachMarketplaceCard coach={coach} className="h-full shadow-md" />
+                <CoachMarketplaceCard coach={coach} variant="card" className="h-full shadow-xs" />
               </div>
             ))}
           </div>
@@ -343,7 +444,7 @@ export default function CoachesPage() {
         <div className="relative -top-5 flex items-center justify-center">
           <Link
             href="/practice"
-            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
             style={{
               backgroundColor: 'var(--athlon-primary)',
               borderColor: 'var(--athlon-navigation)',
@@ -361,10 +462,10 @@ export default function CoachesPage() {
           </Link>
         </div>
 
-        <Link href="/academies" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
-          <Athlon3DIcon type="academies" size={32} active={false} />
-          <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
-            Academy
+        <Link href="/coaches" className="flex flex-col items-center gap-0.5 w-16 group">
+          <Athlon3DIcon type="coaches" size={32} active={true} />
+          <span className="text-[9.5px] font-bold text-primary leading-tight">
+            Coaches
           </span>
         </Link>
 

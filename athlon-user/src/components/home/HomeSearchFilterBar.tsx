@@ -111,12 +111,13 @@ export default function HomeSearchFilterBar({
               key={sport}
               onClick={() => onSelectSport(sport)}
               className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-200 border cursor-pointer active:scale-95 ${isSelected
-                  ? 'bg-primary text-black border-primary shadow-[0_2px_12px_var(--athlon-primary-glow)] font-black'
+                  ? 'border-primary shadow-[0_2px_12px_var(--athlon-primary-glow)] font-black'
                   : 'text-foreground/70 border-border hover:border-primary/40 hover:text-foreground bg-card/60 hover:bg-card'
                 }`}
               style={{
                 backgroundColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-card)',
                 borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                color: isSelected ? 'var(--athlon-primary-foreground)' : undefined,
               }}
             >
               {sport}

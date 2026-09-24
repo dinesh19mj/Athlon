@@ -131,13 +131,13 @@ export function PWAInstallPrompt() {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed bottom-5 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-[9999]"
           >
-            <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-[#0E1420]/95 backdrop-blur-xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.6)] ring-1 ring-white/10">
+            <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card/95 backdrop-blur-xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.3)] ring-1 ring-border">
               {/* Subtle top accent gradient */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 via-primary to-emerald-600" />
 
               <div className="flex items-start gap-3.5">
                 {/* Logo Icon */}
-                <div className="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-950 to-[#0A0F18] border border-emerald-500/30 flex items-center justify-center shadow-inner">
+                <div className="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-primary/15 border border-primary/30 flex items-center justify-center shadow-inner">
                   <Image
                     src="/icons/icon-192x192.png"
                     alt="Athlon App Icon"
@@ -150,14 +150,14 @@ export function PWAInstallPrompt() {
                 {/* Content */}
                 <div className="flex-1 min-w-0 pr-6">
                   <div className="flex items-center gap-1.5">
-                    <h4 className="text-sm font-semibold text-white tracking-wide">
+                    <h4 className="text-sm font-semibold text-foreground tracking-wide">
                       Install Athlon App
                     </h4>
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 border border-emerald-500/20">
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary border border-primary/20">
                       <Sparkles className="w-2.5 h-2.5" /> Fast
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-300 line-clamp-2">
+                  <p className="mt-0.5 text-xs text-foreground/70 line-clamp-2">
                     Get instant access, full-screen live scores, and offline support right from your home screen.
                   </p>
                 </div>
@@ -165,7 +165,7 @@ export function PWAInstallPrompt() {
                 {/* Close Button */}
                 <button
                   onClick={handleDismiss}
-                  className="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors"
+                  className="absolute top-3 right-3 text-foreground/40 hover:text-foreground p-1 rounded-lg hover:bg-foreground/5 transition-colors"
                   aria-label="Dismiss install banner"
                 >
                   <X className="w-4 h-4" />
@@ -173,16 +173,16 @@ export function PWAInstallPrompt() {
               </div>
 
               {/* Action Buttons */}
-              <div className="mt-3.5 flex items-center gap-2 pt-2 border-t border-white/5">
+              <div className="mt-3.5 flex items-center gap-2 pt-2 border-t border-border">
                 <button
                   onClick={handleDismiss}
-                  className="flex-1 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-center"
+                  className="flex-1 px-3 py-1.5 text-xs font-medium text-foreground/60 hover:text-foreground hover:bg-surface rounded-lg transition-colors text-center"
                 >
                   Not now
                 </button>
                 <button
                   onClick={handleInstallClick}
-                  className="flex-1 px-4 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg shadow-lg shadow-emerald-900/30 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                  className="flex-1 px-4 py-1.5 text-xs font-semibold text-black bg-primary hover:bg-primary/90 rounded-lg shadow-lg shadow-primary/25 transition-all flex items-center justify-center gap-1.5 active:scale-95"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Install App
@@ -201,17 +201,17 @@ export function PWAInstallPrompt() {
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 50, scale: 0.95 }}
-              className="relative w-full max-w-sm rounded-2xl border border-emerald-500/30 bg-[#0E1420] p-6 shadow-2xl text-white"
+              className="relative w-full max-w-sm rounded-2xl border border-primary/30 bg-card p-6 shadow-2xl text-foreground"
             >
               <button
                 onClick={() => setShowIOSGuide(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/5"
+                className="absolute top-4 right-4 text-foreground/40 hover:text-foreground p-1 rounded-lg hover:bg-surface"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-500/30 flex items-center justify-center overflow-hidden">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center overflow-hidden">
                   <Image
                     src="/icons/icon-192x192.png"
                     alt="Athlon"
@@ -221,43 +221,40 @@ export function PWAInstallPrompt() {
                   />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-white">Install Athlon on iOS</h3>
-                  <p className="text-xs text-slate-400">Add to your iPhone / iPad Home Screen</p>
+                  <h3 className="font-bold text-base text-foreground">Install Athlon on iOS</h3>
+                  <p className="text-xs text-foreground/60">Follow these 2 quick steps</p>
                 </div>
               </div>
 
-              <div className="space-y-3.5 text-xs text-slate-300">
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0 text-[11px]">
+              <div className="space-y-3 text-xs text-foreground/80">
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-surface border border-border">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                     1
                   </div>
-                  <p className="pt-0.5">
-                    Tap the <strong className="text-white inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded bg-white/10"><Share className="w-3 h-3 text-emerald-400 inline" /> Share</strong> button in Safari toolbar.
-                  </p>
+                  <div>
+                    <span className="font-bold text-foreground">Tap the Share button</span>
+                    <p className="text-foreground/60 text-[11px] mt-0.5">
+                      At the bottom bar of Safari (the square icon with an arrow pointing up).
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0 text-[11px]">
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-surface border border-border">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                     2
                   </div>
-                  <p className="pt-0.5">
-                    Scroll down and tap <strong className="text-white inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded bg-white/10"><PlusSquare className="w-3 h-3 text-emerald-400 inline" /> Add to Home Screen</strong>.
-                  </p>
-                </div>
-
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0 text-[11px]">
-                    3
+                  <div>
+                    <span className="font-bold text-foreground">Select "Add to Home Screen"</span>
+                    <p className="text-foreground/60 text-[11px] mt-0.5">
+                      Scroll down in the share sheet and tap <span className="text-primary font-bold">+ Add to Home Screen</span>.
+                    </p>
                   </div>
-                  <p className="pt-0.5">
-                    Tap <strong className="text-white">Add</strong> in the top right corner to enjoy full-screen Athlon experience!
-                  </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setShowIOSGuide(false)}
-                className="mt-5 w-full py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                className="mt-5 w-full py-2.5 text-xs font-semibold text-black bg-primary hover:bg-primary/90 rounded-xl transition-colors flex items-center justify-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4" /> Got it
               </button>

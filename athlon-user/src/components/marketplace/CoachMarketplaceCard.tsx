@@ -14,6 +14,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { OrganizationService } from '@/lib/api/organization';
+import { SportCardSkeletonBackground } from '@/components/common/SportCardSkeletonBackground';
 
 export interface CoachCardData {
   id?: string | number;
@@ -55,12 +56,14 @@ interface CoachMarketplaceCardProps {
   coach: CoachCardData;
   className?: string;
   onEnrollClick?: () => void;
+  variant?: 'card' | 'compact';
 }
 
 export const CoachMarketplaceCard: React.FC<CoachMarketplaceCardProps> = ({
   coach,
   className = '',
   onEnrollClick,
+  variant = 'card',
 }) => {
   const orgUuid = coach.uuid || coach.id || '';
   const name = coach.name || 'Coach Profile';
@@ -99,19 +102,110 @@ export const CoachMarketplaceCard: React.FC<CoachMarketplaceCardProps> = ({
   const experienceYears = coach.profile?.experienceYears || coach.experienceYears;
   const establishedYear = coach.profile?.establishedYear;
 
+  // ── COMPACT ROW VARIANT (Mobile-first list item) ──
+  if (variant === 'compact') {
+    const CompactContent = (
+      <div
+        className={`group relative rounded-2xl overflow-hidden border transition-all duration-200 hover:border-primary/40 active:scale-[0.99] select-none p-2.5 sm:p-3 flex items-center gap-3 w-full ${className}`}
+        style={{
+          backgroundColor: 'var(--athlon-card)',
+          borderColor: 'var(--athlon-border)',
+        }}
+      >
+        <SportCardSkeletonBackground sport={sportsList[0] || coach.sportType || 'BADMINTON'} showEnergyRail={false} />
+        {/* Left Thumbnail with Avatar Overlay */}
+        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 bg-surface">
+          <img src={coverUrl} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+          {logoUrl ? (
+            <div className="absolute bottom-1 left-1 w-6 h-6 rounded-lg overflow-hidden border border-white/40 shadow-sm bg-black/60">
+              <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="absolute bottom-1 left-1 w-5 h-5 rounded-lg bg-black/70 border border-primary/40 flex items-center justify-center text-primary">
+              <Award className="w-3 h-3" />
+            </div>
+          )}
+          {/* Status Dot */}
+          <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
+            admissionStatus === 'OPEN' ? 'bg-emerald-400 animate-pulse' : admissionStatus === 'LIMITED' ? 'bg-amber-400' : 'bg-rose-400'
+          }`} />
+        </div>
+
+        {/* Middle Details */}
+        <div className="min-w-0 flex-1 space-y-1 relative z-10">
+          <div className="flex items-center justify-between gap-1.5">
+            <h4 className="text-xs sm:text-sm font-black text-foreground truncate group-hover:text-primary transition-colors tracking-tight">
+              {name}
+            </h4>
+            {experienceYears ? (
+              <span className="text-[9px] font-bold text-primary px-1.5 py-0.5 rounded-md bg-primary/10 shrink-0">
+                {experienceYears}y exp
+              </span>
+            ) : null}
+          </div>
+
+          <p className="text-[10px] text-foreground/60 font-semibold flex items-center gap-1 truncate">
+            <MapPin className="w-2.5 h-2.5 text-primary shrink-0" />
+            <span className="truncate">{locationText}</span>
+          </p>
+
+          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+            {sportsList.slice(0, 3).map((s) => (
+              <span
+                key={s}
+                className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9px] font-bold tracking-tight"
+              >
+                {s}
+              </span>
+            ))}
+            {sportsList.length > 3 && (
+              <span className="text-[8.5px] font-bold text-foreground/40">
+                +{sportsList.length - 3}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right Arrow Action */}
+        <div className="w-7 h-7 rounded-xl bg-surface border border-border/80 flex items-center justify-center text-foreground/50 group-hover:text-primary group-hover:border-primary/40 transition-all shrink-0 relative z-10">
+          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+        </div>
+      </div>
+    );
+
+    if (onEnrollClick) {
+      return (
+        <div onClick={onEnrollClick} className="cursor-pointer w-full block">
+          {CompactContent}
+        </div>
+      );
+    }
+    const detailHref = orgUuid ? `/coaches/${orgUuid}` : '/coaches';
+    return (
+      <Link href={detailHref} className="block w-full cursor-pointer">
+        {CompactContent}
+      </Link>
+    );
+  }
+
+  // ── STANDARD CARD VARIANT (Optimized for sleek mobile visual) ──
   const CardContent = (
     <div
-      className={`group relative rounded-[26px] overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-1 select-none flex flex-col justify-between h-full w-full ${className}`}
+      className={`group relative rounded-2xl sm:rounded-[18px] overflow-hidden border transition-all duration-300 hover:shadow-lg hover:shadow-primary/15 hover:-translate-y-0.5 select-none flex flex-col justify-between h-full w-full ${className}`}
       style={{
         backgroundColor: 'var(--athlon-card)',
         borderColor: 'var(--athlon-border)',
       }}
     >
-      {/* Top Gradient Accent Trim */}
-      <div className="h-[3px] w-full bg-gradient-to-r from-primary via-emerald-400 to-primary/30" />
+      {/* Sport Blueprint Skeleton Background */}
+      <SportCardSkeletonBackground sport={sportsList[0] || coach.sportType || 'BADMINTON'} />
 
-      {/* ── TOP HERO COVER AREA ── */}
-      <div className="relative h-44 w-full bg-surface-hover overflow-hidden">
+      {/* Top Gradient Accent Trim */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-primary via-emerald-400 to-primary/30 relative z-10" />
+
+      {/* ── TOP HERO COVER AREA (Tightened height for mobile) ── */}
+      <div className="relative h-28 sm:h-36 w-full bg-surface-hover overflow-hidden z-10">
         {/* Cover Photo */}
         <img
           src={coverUrl}
@@ -120,30 +214,30 @@ export const CoachMarketplaceCard: React.FC<CoachMarketplaceCardProps> = ({
         />
 
         {/* Ambient Dark Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/25" />
         <div className="absolute inset-0 bg-primary/5 backdrop-blur-[0.5px]" />
 
         {/* Top Badges Floating Bar */}
-        <div className="absolute top-3 inset-x-3.5 flex items-center justify-between z-10">
-          {/* Institutional / Role Type Pill */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 text-primary border border-primary/30 backdrop-blur-md shadow-lg">
-            <Award className="w-3 h-3 text-primary" />
+        <div className="absolute top-2 inset-x-2 flex items-center justify-between z-10">
+          {/* Role Pill */}
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black uppercase tracking-wider bg-black/70 text-primary border border-primary/30 backdrop-blur-md shadow-xs">
+            <Award className="w-2.5 h-2.5 text-primary" />
             COACH
           </span>
 
           {/* Dynamic Availability Status Capsule */}
           {admissionStatus === 'OPEN' ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-lg">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               Sessions Open
             </span>
           ) : admissionStatus === 'LIMITED' ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-lg">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               Limited Slots
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide bg-rose-500/20 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-lg">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black tracking-wide bg-rose-500/20 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
               Waitlist
             </span>
@@ -151,25 +245,25 @@ export const CoachMarketplaceCard: React.FC<CoachMarketplaceCardProps> = ({
         </div>
 
         {/* Overlaid Bottom Identity Pod */}
-        <div className="absolute bottom-3 inset-x-3.5 flex items-center gap-3 z-10">
+        <div className="absolute bottom-2 inset-x-2 flex items-center gap-2 z-10">
           {/* Logo / Coach Photo Glass Box */}
           <div
-            className="w-12 h-12 rounded-2xl border-2 border-primary/50 overflow-hidden shadow-2xl flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-primary transition-all bg-black/70 backdrop-blur-md"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border border-primary/50 overflow-hidden shadow-lg flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-primary transition-all bg-black/70 backdrop-blur-md"
           >
             {logoUrl ? (
               <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <Award className="w-6 h-6 text-primary" />
+              <Award className="w-3.5 h-3.5 text-primary" />
             )}
           </div>
 
           {/* Coach Name & Location */}
           <div className="min-w-0 flex-1 drop-shadow-md">
-            <h4 className="text-base font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight">
+            <h4 className="text-xs sm:text-[13px] font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight">
               {name}
             </h4>
-            <p className="text-[11px] text-white/85 font-semibold flex items-center gap-1 mt-0.5 truncate">
-              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+            <p className="text-[9.5px] text-white/85 font-semibold flex items-center gap-0.5 mt-0.5 truncate">
+              <MapPin className="w-2.5 h-2.5 text-primary shrink-0" />
               <span className="truncate">{locationText}</span>
             </p>
           </div>
@@ -177,41 +271,41 @@ export const CoachMarketplaceCard: React.FC<CoachMarketplaceCardProps> = ({
       </div>
 
       {/* ── CARD BODY ── */}
-      <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between">
+      <div className="p-2.5 sm:p-3.5 space-y-2 flex-1 flex flex-col justify-between relative z-10">
         <div>
-          {/* Sports & Specializations Tags Bento */}
+          {/* Sports & Specializations Tags */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider">
+            <div className="flex items-center justify-between mb-1 text-[9px]">
+              <span className="font-extrabold text-foreground/60 uppercase tracking-wider">
                 Sports Trained
               </span>
               {experienceYears ? (
-                <span className="text-[10px] font-bold text-primary">
+                <span className="font-bold text-primary">
                   {experienceYears} Yrs Exp
                 </span>
               ) : establishedYear ? (
-                <span className="text-[10px] font-bold text-primary">
+                <span className="font-bold text-primary">
                   Est. {establishedYear}
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-primary">
-                  Verified Coach
+                <span className="font-bold text-primary">
+                  Verified
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
-              {sportsList.slice(0, 4).map((s) => (
+            <div className="flex flex-wrap gap-1">
+              {sportsList.slice(0, 3).map((s) => (
                 <span
                   key={s}
-                  className="px-2.5 py-1 rounded-xl bg-primary/10 text-primary border border-primary/25 text-[11px] font-bold tracking-tight shadow-sm hover:bg-primary/15 transition-colors"
+                  className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9px] sm:text-[9.5px] font-bold tracking-tight shadow-xs hover:bg-primary/15 transition-colors"
                 >
                   {s}
                 </span>
               ))}
-              {sportsList.length > 4 && (
-                <span className="px-2 py-1 rounded-xl bg-surface hover:bg-surface-hover text-text-secondary text-[11px] font-bold border border-border">
-                  +{sportsList.length - 4} more
+              {sportsList.length > 3 && (
+                <span className="px-1.5 py-0.5 rounded-md bg-surface hover:bg-surface-hover text-foreground/60 text-[9px] font-bold border border-border">
+                  +{sportsList.length - 3}
                 </span>
               )}
             </div>
@@ -220,17 +314,17 @@ export const CoachMarketplaceCard: React.FC<CoachMarketplaceCardProps> = ({
 
         {/* ── FOOTER ROW ── */}
         <div
-          className="pt-3 border-t flex items-center justify-between text-xs"
+          className="pt-2 border-t flex items-center justify-between text-xs"
           style={{ borderColor: 'var(--athlon-border)' }}
         >
-          <div className="flex items-center gap-1.5 text-text-secondary font-bold text-[11px]">
-            <Dumbbell className="w-3.5 h-3.5 text-primary shrink-0" />
+          <div className="flex items-center gap-1 text-foreground/60 font-bold text-[9.5px]">
+            <Dumbbell className="w-3 h-3 text-primary shrink-0" />
             <span>{sportsList.length} {sportsList.length === 1 ? 'Sport' : 'Sports'}</span>
           </div>
 
-          <div className="flex items-center gap-1 font-black text-xs text-primary group-hover:translate-x-0.5 transition-transform">
+          <div className="flex items-center gap-0.5 font-black text-[10px] sm:text-[11px] text-primary group-hover:translate-x-0.5 transition-transform">
             <span>Details</span>
-            <ChevronRight className="w-4 h-4 text-primary" />
+            <ChevronRight className="w-3 h-3 text-primary" />
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ import {
   FALLBACK_STATE_DISTRICTS,
 } from '@/lib/api/location';
 import { usePermissions } from '@/hooks/use-permissions';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 
 import { useOrgSports, getSportEmoji } from '@/lib/hooks/useOrgSports';
 
@@ -592,17 +593,12 @@ export default function AcademyCentresPage() {
 
       {/* ── FLOATING ACTION BUTTON ── */}
       {canManage && (
-        <button
+        <Athlon3DFAB
           onClick={openCreate}
-          className="fixed bottom-24 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-all"
-          style={{
-            backgroundColor: 'var(--athlon-primary)',
-            boxShadow: '0 8px 24px var(--athlon-primary-glow), 0 4px 10px rgba(0,0,0,0.5)',
-          }}
-          aria-label="Add Campus"
-        >
-          <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
-        </button>
+          label="Add Campus"
+          title="Add Campus"
+          ariaLabel="Add Campus"
+        />
       )}
 
       {/* ══════════════════════════════════════════════════════════════════

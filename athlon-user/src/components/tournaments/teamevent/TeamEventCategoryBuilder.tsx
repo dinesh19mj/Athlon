@@ -15,8 +15,8 @@ interface Props {
 
 export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange }) => {
     
-    const inputClass = "w-full bg-[#0D1520] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-white/25";
-    const labelClass = "block text-[10px] font-black text-white/50 uppercase tracking-widest mb-1.5";
+    const inputClass = "w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-foreground/35";
+    const labelClass = "block text-[10px] font-black text-foreground/60 uppercase tracking-widest mb-1.5";
 
     const handleAddCategory = () => {
         onChange([
@@ -47,21 +47,21 @@ export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange
             </div>
 
             {categories.length === 0 ? (
-                <div className="text-center py-6 bg-white/5 rounded-xl border border-white/10">
-                    <p className="text-white/40 text-sm">No categories added yet.</p>
+                <div className="text-center py-6 bg-surface/50 rounded-xl border border-border">
+                    <p className="text-foreground/50 text-sm">No categories added yet.</p>
                 </div>
             ) : (
                 <div className="space-y-3">
                     {categories.map((cat, index) => (
-                        <div key={cat.id} className="p-4 bg-white/5 rounded-xl border border-white/10 relative group">
+                        <div key={cat.id} className="p-4 bg-surface rounded-xl border border-border relative group shadow-sm">
                             <button
                                 type="button"
                                 onClick={() => handleRemoveCategory(cat.id)}
-                                className="absolute top-2 right-2 text-white/30 hover:text-red-500 transition-colors"
+                                className="absolute top-2 right-2 text-foreground/40 hover:text-red-500 transition-colors"
                             >
                                 <TrashIcon className="w-4 h-4" />
                             </button>
-                            <div className="text-[10px] font-bold text-white/50 uppercase mb-3">Category {index + 1}</div>
+                            <div className="text-[10px] font-bold text-foreground/50 uppercase mb-3">Category {index + 1}</div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
@@ -83,19 +83,19 @@ export const TeamEventCategoryBuilder: React.FC<Props> = ({ categories, onChange
                                                 const format = e.target.value;
                                                 const isDoubles = format.includes("Doubles");
                                                 handleUpdateCategory(cat.id, {
-                                                    matchFormat: format,
+                                                     matchFormat: format,
                                                     playersRequired: isDoubles ? 2 : 1
                                                 });
                                             }}
                                             className={`${inputClass} appearance-none pr-10`}
                                         >
-                                            <option value="Men's Singles" className="bg-[#0D1520] text-white">Men's Singles</option>
-                                            <option value="Women's Singles" className="bg-[#0D1520] text-white">Women's Singles</option>
-                                            <option value="Men's Doubles" className="bg-[#0D1520] text-white">Men's Doubles</option>
-                                            <option value="Women's Doubles" className="bg-[#0D1520] text-white">Women's Doubles</option>
-                                            <option value="Mixed Doubles" className="bg-[#0D1520] text-white">Mixed Doubles</option>
+                                            <option value="Men's Singles" className="bg-surface text-foreground">Men's Singles</option>
+                                            <option value="Women's Singles" className="bg-surface text-foreground">Women's Singles</option>
+                                            <option value="Men's Doubles" className="bg-surface text-foreground">Men's Doubles</option>
+                                            <option value="Women's Doubles" className="bg-surface text-foreground">Women's Doubles</option>
+                                            <option value="Mixed Doubles" className="bg-surface text-foreground">Mixed Doubles</option>
                                         </select>
-                                        <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <ChevronDown className="w-4 h-4 text-foreground/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                     </div>
                                 </div>
                                 <div>

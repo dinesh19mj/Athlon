@@ -21,6 +21,9 @@ public class RouteConfig {
     @Value("${service.tournament.url}")
     private String tournamentServiceUrl;
 
+    @Value("${service.payment.url}")
+    private String paymentServiceUrl;
+
     @Bean
     public RouterFunction<ServerResponse> authRoute() {
         return route("auth_service")
@@ -39,6 +42,13 @@ public class RouteConfig {
     public RouterFunction<ServerResponse> tournamentRoute() {
         return route("tournament_service")
                 .route(request -> request.path().startsWith("/api/tournament/"), http(tournamentServiceUrl))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> paymentRoute() {
+        return route("payment_service")
+                .route(request -> request.path().startsWith("/api/payments/"), http(paymentServiceUrl))
                 .build();
     }
 }

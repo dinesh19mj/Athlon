@@ -31,6 +31,7 @@ import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { SportCardSkeletonBackground } from '@/components/common/SportCardSkeletonBackground';
 
 export default function LiveScorePage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -288,48 +289,51 @@ export default function LiveScorePage() {
   return (
     <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-[#EF4444] selection:text-white">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - EXACT PRESERVED MOBILE EXPERIENCE
+          1. MOBILE VIEW ONLY (< md) - COMPACT & REFINED MOBILE EXPERIENCE
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24 overflow-y-auto">
         {/* Top Header */}
-        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-background/90 backdrop-blur-md border-b border-foreground/5">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="p-2 -ml-2 text-foreground hover:text-red-500 transition-colors">
-              <ArrowLeft className="w-6 h-6" />
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5">
+          <div className="flex items-center gap-2.5">
+            <Link href="/" className="p-1 -ml-1 text-foreground hover:text-red-500 transition-colors">
+              <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-lg font-bold uppercase tracking-wider flex items-center gap-2">
-              <Radio className="w-5 h-5 text-red-500 animate-pulse" />
+            <h1 className="text-base font-black uppercase tracking-wider flex items-center gap-2">
+              <Radio className="w-4 h-4 text-red-500 animate-pulse" />
               Match Center
             </h1>
           </div>
         </header>
 
-        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-6 pt-4">
+        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-4 pt-3">
           {/* Segmented Control: Live Now vs Finished Results */}
           <div
-            className="flex p-1.5 rounded-2xl border grid grid-cols-2 gap-1"
+            className="flex p-1 rounded-xl border grid grid-cols-2 gap-1"
             style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
           >
             <button
               onClick={() => setActiveTab('live')}
-              className={`py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${activeTab === 'live'
-                  ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+              className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'live'
+                  ? 'bg-red-500 text-white shadow-sm shadow-red-500/20'
                   : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-                }`}
+              }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${parsedLiveMatches.length > 0 ? 'bg-white animate-pulse' : 'bg-foreground/30'
-                  }`}
+                className={`w-1.5 h-1.5 rounded-full ${
+                  parsedLiveMatches.length > 0 ? 'bg-white animate-pulse' : 'bg-foreground/30'
+                }`}
               />
               <span>Live Now ({parsedLiveMatches.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('finished')}
-              className={`py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${activeTab === 'finished'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+              className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'finished'
+                  ? 'bg-primary text-black shadow-sm shadow-primary/20'
                   : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-                }`}
+              }`}
             >
               <Trophy className="w-3.5 h-3.5" />
               <span>Results ({parsedFinishedMatches.length})</span>
@@ -337,135 +341,135 @@ export default function LiveScorePage() {
           </div>
 
           {loading && (
-            <div className="py-20 text-center text-foreground/50">
-              <div className="w-8 h-8 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-xs font-bold uppercase tracking-wider">Loading match center...</p>
+            <div className="py-16 text-center text-foreground/50">
+              <div className="w-7 h-7 border-3 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto mb-2.5" />
+              <p className="text-[11px] font-bold uppercase tracking-wider">Loading match center...</p>
             </div>
           )}
 
           {/* Mobile LIVE TAB */}
           {!loading && activeTab === 'live' && (
-            <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="space-y-4 animate-in fade-in duration-300">
               {/* Live Player Auctions List */}
               {liveAuctions.map((champ) => (
                 <section
                   key={champ.championshipUuid}
-                  className="rounded-[24px] border p-5 shadow-2xl space-y-4 relative overflow-hidden bg-gradient-to-br from-red-500/10 via-transparent to-transparent"
+                  className="rounded-2xl border p-4 shadow-lg space-y-3 relative overflow-hidden bg-gradient-to-br from-red-500/10 via-transparent to-transparent"
                   style={{
                     backgroundColor: 'var(--athlon-card)',
                     borderColor: 'rgba(239, 68, 68, 0.4)',
-                    boxShadow: '0 8px 30px rgba(239, 68, 68, 0.15)',
+                    boxShadow: '0 4px 20px rgba(239, 68, 68, 0.1)',
                   }}
                 >
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-primary animate-pulse" />
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                      <span className="text-red-500 font-black text-xs uppercase tracking-wider">LIVE PLAYER AUCTION</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="text-red-500 font-black text-[11px] uppercase tracking-wider">LIVE PLAYER AUCTION</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-black uppercase">
+                    <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[9px] font-black uppercase">
                       BROADCASTING
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-base font-black text-foreground tracking-tight">{champ.name}</h3>
-                    <p className="text-xs text-foreground/60 mt-0.5">
-                      {champ.location || champ.venue || 'Badminton Championship'} • Squad Floor Draft & Live Franchise Bids
+                    <h3 className="text-sm font-black text-foreground tracking-tight">{champ.name}</h3>
+                    <p className="text-[11px] text-foreground/60 mt-0.5">
+                      {champ.location || champ.venue || 'Badminton Championship'} • Squad Floor Draft &amp; Live Franchise Bids
                     </p>
                   </div>
 
                   <Link
                     href={`/home/team-championship/${champ.championshipUuid}/auction`}
-                    className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                    className="w-full py-2.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-md shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
                   >
-                    <Gavel className="w-4 h-4" />
+                    <Gavel className="w-3.5 h-3.5" />
                     <span>ENTER LIVE AUCTION FLOOR</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </section>
               ))}
 
               {displayedLiveMatches.length === 0 && liveAuctions.length === 0 ? (
                 <div
-                  className="rounded-2xl border border-dashed p-10 text-center"
+                  className="rounded-2xl border border-dashed p-8 text-center"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Radio className="w-10 h-10 text-foreground/25 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-foreground mb-1">No Active Live Matches</p>
-                  <p className="text-xs text-foreground/50 max-w-xs mx-auto mb-5">
+                  <Radio className="w-8 h-8 text-foreground/25 mx-auto mb-2.5" />
+                  <p className="text-xs font-black text-foreground mb-1">No Active Live Matches</p>
+                  <p className="text-[11px] text-foreground/50 max-w-xs mx-auto mb-4">
                     Live scores will update here in real-time when an umpire launches a match scoreboard.
                   </p>
                   <button
                     onClick={() => setActiveTab('finished')}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-foreground text-xs font-bold rounded-xl border border-foreground/10 transition-colors"
+                    className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-foreground text-xs font-bold rounded-xl border border-foreground/10 transition-colors"
                   >
                     View Finished Matches
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3.5">
                   {displayedLiveMatches.map((match, idx) => (
                     <section
                       key={match.id || match.matchUuid || idx}
-                      className="rounded-[24px] border p-5 shadow-xl space-y-4 relative overflow-hidden"
+                      className="rounded-2xl border p-4 shadow-md space-y-3 relative overflow-hidden"
                       style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                     >
                       <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse" />
 
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                          <span className="text-red-500 font-black text-xs tracking-wider">LIVE</span>
-                          <span className="text-foreground/70 font-bold text-xs">{match.status}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                          <span className="text-red-500 font-black text-[11px] tracking-wider">LIVE</span>
+                          <span className="text-foreground/70 font-bold text-[11px]">{match.status}</span>
                         </div>
-                        <span className="text-foreground/50 text-xs font-medium">{match.court}</span>
+                        <span className="text-foreground/50 text-[11px] font-medium">{match.court}</span>
                       </div>
 
                       <div className="flex items-center justify-center">
-                        <span className="px-3 py-1 bg-background rounded-full text-[10px] font-bold text-foreground/60 uppercase tracking-widest border border-foreground/5 text-center">
+                        <span className="px-2.5 py-0.5 bg-background rounded-full text-[9px] font-bold text-foreground/60 uppercase tracking-widest border border-foreground/5 text-center">
                           {match.tournament} • {match.category}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between px-2 py-2">
+                      <div className="flex items-center justify-between px-2 py-1">
                         {/* Player 1 */}
-                        <div className="flex flex-col items-center gap-2 max-w-[110px]">
-                          <div className="w-14 h-14 rounded-full bg-gradient-to-b from-primary to-transparent p-[2px]">
+                        <div className="flex flex-col items-center gap-1.5 max-w-[100px]">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-b from-primary to-transparent p-[2px]">
                             <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden flex items-center justify-center">
-                              <span className="text-lg font-black text-primary">{match.player1.avatar}</span>
+                              <span className="text-base font-black text-primary">{match.player1.avatar}</span>
                             </div>
                           </div>
-                          <span className="font-bold text-xs tracking-wider uppercase text-center line-clamp-2 leading-tight">
+                          <span className="font-bold text-[11px] tracking-wider uppercase text-center line-clamp-2 leading-tight">
                             {match.player1.name}
                           </span>
-                          <span className="text-3xl font-black text-primary leading-none tabular-nums">
+                          <span className="text-2xl font-black text-primary leading-none tabular-nums font-mono">
                             {match.player1.currentScore}
                           </span>
                         </div>
 
                         {/* VS & Games Won */}
-                        <div className="flex flex-col items-center justify-center gap-2 shrink-0">
-                          <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-xs font-black font-mono">
+                        <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+                          <div className="px-2.5 py-0.5 bg-white/5 rounded-full border border-white/10 text-[11px] font-black font-mono">
                             {match.player1.gamesWon} - {match.player2.gamesWon}
                           </div>
-                          <span className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/40">
+                          <span className="text-[9px] font-extrabold uppercase tracking-widest text-foreground/40">
                             Games
                           </span>
                         </div>
 
                         {/* Player 2 */}
-                        <div className="flex flex-col items-center gap-2 max-w-[110px]">
-                          <div className="w-14 h-14 rounded-full bg-gradient-to-b from-white/20 to-transparent p-[2px]">
+                        <div className="flex flex-col items-center gap-1.5 max-w-[100px]">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-b from-white/20 to-transparent p-[2px]">
                             <div className="w-full h-full rounded-full bg-background border-2 border-transparent overflow-hidden flex items-center justify-center">
-                              <span className="text-lg font-black text-foreground">{match.player2.avatar}</span>
+                              <span className="text-base font-black text-foreground">{match.player2.avatar}</span>
                             </div>
                           </div>
-                          <span className="font-bold text-xs tracking-wider uppercase text-center line-clamp-2 leading-tight">
+                          <span className="font-bold text-[11px] tracking-wider uppercase text-center line-clamp-2 leading-tight">
                             {match.player2.name}
                           </span>
-                          <span className="text-3xl font-black text-foreground leading-none tabular-nums">
+                          <span className="text-2xl font-black text-foreground leading-none tabular-nums font-mono">
                             {match.player2.currentScore}
                           </span>
                         </div>
@@ -473,9 +477,9 @@ export default function LiveScorePage() {
 
                       <Link
                         href={`/live-score/${match.matchUuid}`}
-                        className="w-full py-3 bg-red-500 text-white rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 hover:scale-[1.01] active:scale-95 transition-all"
+                        className="w-full py-2.5 bg-red-500 text-white rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20 hover:scale-[1.01] active:scale-95 transition-all"
                       >
-                        WATCH LIVE STREAM & SCORING <Tv className="w-4 h-4" />
+                        WATCH LIVE STREAM &amp; SCORING <Tv className="w-3.5 h-3.5" />
                       </Link>
                     </section>
                   ))}
@@ -534,10 +538,11 @@ export default function LiveScorePage() {
                               borderColor: 'var(--athlon-border)',
                             }}
                           >
+                            <SportCardSkeletonBackground sport={match.sport || match.category || 'Badminton'} />
                             {/* Top Accent line */}
-                            <div className="h-[2px] w-full bg-primary absolute top-0 inset-x-0" />
+                            <div className="h-[2px] w-full bg-primary absolute top-0 inset-x-0 z-10" />
 
-                            <div className="space-y-2.5">
+                            <div className="space-y-2.5 relative z-10">
                               {/* Header: Category & Court */}
                               <div className="flex items-center justify-between text-[10px] gap-2 pt-0.5">
                                 <span className="px-2 py-0.5 rounded-md font-bold bg-primary/10 text-primary border border-primary/20 truncate">
@@ -1140,9 +1145,10 @@ export default function LiveScorePage() {
                             borderColor: 'var(--athlon-border)',
                           }}
                         >
-                          <div className="h-[3px] w-full bg-primary" />
+                          <SportCardSkeletonBackground sport={match.sport || match.category || 'Badminton'} />
+                          <div className="h-[3px] w-full bg-primary relative z-10" />
 
-                          <div className="p-5 space-y-4">
+                          <div className="p-5 space-y-4 relative z-10">
                             {/* Header */}
                             <div className="flex items-center justify-between">
                               <span className="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">

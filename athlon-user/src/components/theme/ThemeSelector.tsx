@@ -181,13 +181,19 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
               {/* Tab 3: Elevated Center Umpire 3D */}
               <div className="flex flex-col items-center justify-center w-full">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center border shadow-md"
+                  className="w-8 h-8 rounded-full flex items-center justify-center border-[2px] shadow-md relative overflow-hidden"
                   style={{
-                    backgroundColor: c.primary,
-                    borderColor: c.navigationBackground,
+                    background: mode === 'dark'
+                      ? `radial-gradient(circle at 35% 26%, ${c.primaryLight || c.primary} 0%, ${c.primary} 50%, ${c.primaryDark || '#000'} 100%)`
+                      : c.primary,
+                    borderColor: '#FFFFFF',
+                    boxShadow: mode === 'dark'
+                      ? `0 0 10px ${c.primaryGlow}, 0 4px 10px rgba(0,0,0,0.7), inset 0 1.5px 3px rgba(255,255,255,0.7), inset 0 -2px 4px rgba(0,0,0,0.5)`
+                      : `0 4px 12px rgba(0,0,0,0.15), inset 0 1px 2px rgba(255,255,255,0.5), inset 0 -1.5px 3px rgba(0,0,0,0.25)`,
                   }}
                 >
-                  <img src="/umpire.png" alt="Umpire" className="w-4.5 h-4.5 object-contain" />
+                  <div className="absolute inset-x-0.5 top-0 h-[45%] rounded-t-full bg-gradient-to-b from-white/50 via-white/10 to-transparent pointer-events-none" />
+                  <img src="/umpire.png" alt="Umpire" className="w-4.5 h-4.5 object-contain relative z-10" />
                 </div>
               </div>
 

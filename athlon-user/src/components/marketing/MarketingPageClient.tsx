@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   LogIn,
   ArrowRight,
@@ -31,6 +32,7 @@ import {
   GraduationCap,
   UserCheck,
   Compass,
+  Users,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
@@ -41,12 +43,15 @@ import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamC
 import { VenueMarketplaceCard } from '@/components/marketplace/VenueMarketplaceCard';
 import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
 import { CoachMarketplaceCard } from '@/components/marketplace/CoachMarketplaceCard';
+import { CommunitySessionCard } from '@/components/community/CommunitySessionCard';
+import { SportCardSkeletonBackground } from '@/components/common/SportCardSkeletonBackground';
+import { CommunityService, SessionResponse } from '@/lib/api/community';
 import { venueApi, facilityApi } from '@/lib/api/venue';
 import { OrganizationService } from '@/lib/api/organization';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
-import { getThemeVideo } from '@/config/theme';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 import HomeSearchFilterBar from '@/components/home/HomeSearchFilterBar';
+import { AuthModal } from '@/components/auth/AuthModal';
 import {
   matchSport,
   matchPlace,
@@ -58,9 +63,23 @@ import {
 } from '@/lib/utils/homeFilter';
 
 export function MarketingPageClient() {
+  const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { themeKey } = useAthlonTheme();
-  const backgroundVideo = getThemeVideo(themeKey);
+
+  // Auth Modal State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+
+  // For every non-logged-in user, auto-open the login modal when opening the application
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!useAuthStore.getState().isAuthenticated) {
+        setIsAuthModalOpen(true);
+      }
+    }, 450);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [finishedScores, setFinishedScores] = useState<LiveScore[]>([]);
@@ -69,6 +88,7 @@ export function MarketingPageClient() {
   const [publicVenues, setPublicVenues] = useState<any[]>([]);
   const [publicAcademies, setPublicAcademies] = useState<any[]>([]);
   const [publicCoaches, setPublicCoaches] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Search & Filter State
@@ -77,9 +97,11 @@ export function MarketingPageClient() {
   const [selectedPlace, setSelectedPlace] = useState('All');
 
   // Scroll Container Refs
+  const mobileSessionsRef = useRef<HTMLDivElement>(null);
   const mobileVenuesRef = useRef<HTMLDivElement>(null);
   const mobileAcademiesRef = useRef<HTMLDivElement>(null);
   const mobileCoachesRef = useRef<HTMLDivElement>(null);
+  const desktopSessionsRef = useRef<HTMLDivElement>(null);
   const desktopAuctionsRef = useRef<HTMLDivElement>(null);
   const desktopLiveScoresRef = useRef<HTMLDivElement>(null);
   const desktopVenuesRef = useRef<HTMLDivElement>(null);
@@ -304,11 +326,26 @@ export function MarketingPageClient() {
       }
     };
 
-    loadMarketplaceData();
+        loadMarketplaceData();
+
+    // 5. Fetch public community sessions
+    const loadSessions = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      CommunityService.getAllSessions()
+        .then((res: any) => {
+          const list = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+          setSessions(list);
+        })
+        .catch(() => {});
+    };
+
+    loadSessions();
+    const sessionInterval = setInterval(loadSessions, 30000);
 
     return () => {
       clearInterval(interval);
       clearInterval(champInterval);
+      clearInterval(sessionInterval);
     };
   }, []);
 
@@ -375,13 +412,20 @@ export function MarketingPageClient() {
     return publicCoaches.filter((c) => {
       const matchesSport = matchCoachSport(c, selectedSport);
       const matchesPlace = matchPlace(c, selectedPlace);
-      const specsText = Array.isArray(c.profile?.specializations) ? c.profile.specializations.join(' ') : '';
-      const sportsText = `${c.profile?.sportsOffered || ''} ${c.sportsOffered || ''} ${c.sportType || ''} ${(c.tags || []).join(' ')} ${specsText} ${c.specialization || ''}`;
-      const searchPayload = `${c.name || ''} ${sportsText} ${c.city || ''} ${c.profile?.city || ''} ${c.location || ''} ${c.address || ''} ${c.profile?.bio || ''} ${c.description || ''}`;
+      const searchPayload = `${c.name || ''} ${c.specialization || ''} ${c.city || ''} ${c.state || ''} ${c.sportsOffered || ''}`;
       const matchesQuery = matchSearchQuery(searchPayload, searchQuery);
       return matchesSport && matchesPlace && matchesQuery;
     });
   }, [publicCoaches, selectedSport, selectedPlace, searchQuery]);
+
+  const filteredSessions = useMemo(() => {
+    return sessions.filter((s) => {
+      const matchesSport = selectedSport === 'All' || !selectedSport || (s.sport || '').toLowerCase().includes(selectedSport.toLowerCase());
+      const matchesPlace = selectedPlace === 'All' || !selectedPlace || `${s.venueName || ''} ${s.city || ''} ${s.state || ''}`.toLowerCase().includes(selectedPlace.toLowerCase());
+      const matchesQuery = matchSearchQuery(`${s.title || ''} ${s.sport || ''} ${s.venueName || ''} ${s.city || ''} ${s.state || ''}`, searchQuery);
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [sessions, selectedSport, selectedPlace, searchQuery]);
 
   const filteredLiveScores = useMemo(() => {
     return liveScores.filter((s) => {
@@ -430,65 +474,385 @@ export function MarketingPageClient() {
   ];
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground font-sans selection:bg-primary selection:text-black relative">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative">
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (hidden on md and above)
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-28">
         <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-5 pt-2">
-          {/* Hero Banner Carousel */}
+          {/* ═══════════════════════════════════════════════════════════════════
+              HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive)
+             ═══════════════════════════════════════════════════════════════════ */}
           <section
-            className="relative w-full min-h-[220px] rounded-[24px] overflow-hidden border shadow-lg"
+            className="relative w-full rounded-[26px] overflow-hidden border p-5 shadow-xl transition-all"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
+              boxShadow: '0 12px 32px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.15)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)',
             }}
           >
-            {/* Right-positioned video with CSS alpha mask */}
+            {/* 1. Top Edge Neon Energy Rail */}
             <div
-              className="absolute top-[-10%] right-[-5%] w-[60%] h-[120%] pointer-events-none z-0"
+              className="absolute top-0 inset-x-0 h-[2px] opacity-75 pointer-events-none z-0"
               style={{
-                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,1) 100%)',
-                maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,1) 100%)',
+                background: 'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
               }}
-            >
-              <video
-                key={backgroundVideo}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover object-center opacity-85 dark:opacity-60"
-              >
-                <source src={backgroundVideo} type="video/mp4" />
-              </video>
-            </div>
+            />
 
-            {/* Left side content */}
-            <div className="relative z-10 p-5 sm:p-6 flex flex-col justify-center h-full w-full max-w-[75%] sm:max-w-[65%]">
-              <h1 className="text-[20px] sm:text-[23px] font-black leading-tight tracking-wide uppercase">
-                <span className="text-foreground">Compete Today</span>
-                <br />
-                <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">Champion Tomorrow</span>
-              </h1>
-              <p className="text-[11px] sm:text-xs text-foreground/75 mt-2 mb-4 leading-relaxed font-medium">
-                Football, Cricket, Badminton &amp; more!
-                <br />
-                Bookings, Tournaments &amp; Live Scores.
-              </p>
-              <div className="flex flex-wrap items-center gap-2.5">
+            {/* 2. Stadium Floodlight Spotlight Beams & Multi-Layered Neon Halos */}
+            <div
+              className="absolute -top-16 -right-16 w-60 h-60 rounded-full blur-3xl pointer-events-none opacity-50 dark:opacity-70 animate-pulse duration-1000 z-0"
+              style={{
+                background: 'radial-gradient(circle, var(--athlon-primary) 0%, rgba(52, 211, 153, 0.4) 40%, transparent 75%)',
+              }}
+            />
+            <div
+              className="absolute -bottom-16 -left-16 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-25 dark:opacity-40 z-0"
+              style={{
+                background: 'radial-gradient(circle, var(--athlon-primary-light, #54AC68) 0%, rgba(34, 197, 94, 0.2) 50%, transparent 80%)',
+              }}
+            />
+            <div
+              className="absolute top-1/3 right-1/4 w-36 h-36 rounded-full blur-2xl pointer-events-none opacity-20 dark:opacity-30 z-0"
+              style={{ backgroundColor: 'var(--athlon-primary)' }}
+            />
+
+            {/* 3. Tech Dot-Matrix Pattern with Precision Fade Mask */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.16] dark:opacity-[0.24] z-0"
+              style={{
+                backgroundImage: 'radial-gradient(circle, var(--athlon-primary) 1.2px, transparent 1.2px)',
+                backgroundSize: '16px 16px',
+                maskImage: 'radial-gradient(ellipse 85% 85% at 75% 25%, black 20%, transparent 80%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 85% 85% at 75% 25%, black 20%, transparent 80%)',
+              }}
+            />
+
+            {/* 4. Diagonal Athletic Turf / Carbon Speed Texture */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.06] z-0"
+              style={{
+                backgroundImage: 'repeating-linear-gradient(45deg, var(--athlon-primary) 0, var(--athlon-primary) 1px, transparent 0, transparent 12px)',
+              }}
+            />
+
+            {/* 5. Comprehensive Multi-Sport Arena, Stadium & Court Wireframe Skeleton */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden z-0"
+              viewBox="0 0 360 260"
+              preserveAspectRatio="xMidYMid slice"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="athlonHeroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="var(--athlon-primary)" stopOpacity="0.5" />
+                  <stop offset="60%" stopColor="var(--athlon-primary)" stopOpacity="0.15" />
+                  <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="athlonBeamGradient" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="var(--athlon-primary)" stopOpacity="0.32" />
+                  <stop offset="100%" stopColor="var(--athlon-primary)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+
+              {/* Stadium Floodlight Cones */}
+              <polygon points="340,-20 200,240 250,240 370,-20" fill="url(#athlonBeamGradient)" opacity="0.32" />
+
+              {/* ─── STADIUM ARENA BOWL ARCHITECTURAL SKELETON ─── */}
+              <g opacity="0.32" stroke="var(--athlon-primary)">
+                {/* Outer Grandstand Rim & Tiers */}
+                <ellipse cx="295" cy="55" rx="120" ry="72" fill="none" strokeWidth="1.2" strokeDasharray="3 3" />
+                <ellipse cx="295" cy="55" rx="100" ry="60" fill="none" strokeWidth="0.8" opacity="0.6" />
+                <ellipse cx="295" cy="55" rx="82" ry="48" fill="none" strokeWidth="1" />
+                <ellipse cx="295" cy="55" rx="66" ry="38" fill="none" strokeWidth="0.75" strokeDasharray="2 2" />
+
+                {/* Stadium Radial Structural Truss Ribs */}
+                <line x1="295" y1="55" x2="175" y2="55" strokeWidth="0.75" opacity="0.4" />
+                <line x1="295" y1="55" x2="200" y2="15" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="235" y2="-10" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="295" y2="-17" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="355" y2="-10" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="390" y2="15" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="415" y2="55" strokeWidth="0.75" opacity="0.4" />
+                <line x1="295" y1="55" x2="390" y2="95" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="355" y2="120" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="295" y2="127" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="235" y2="120" strokeWidth="0.75" opacity="0.5" />
+                <line x1="295" y1="55" x2="200" y2="95" strokeWidth="0.75" opacity="0.5" />
+
+                {/* Arena Floodlight Mast Skeleton Tower */}
+                <g transform="translate(332, 2)">
+                  <polygon points="0,0 8,-12 16,0" fill="none" strokeWidth="1" />
+                  <line x1="4" y1="-6" x2="12" y2="-6" strokeWidth="0.7" />
+                  <circle cx="2" cy="-12" r="1.5" fill="var(--athlon-primary)" />
+                  <circle cx="8" cy="-15" r="1.5" fill="var(--athlon-primary)" />
+                  <circle cx="14" cy="-12" r="1.5" fill="var(--athlon-primary)" />
+                </g>
+              </g>
+
+              {/* ─── ISOMETRIC COURT SKELETON (BADMINTON / TENNIS) ─── */}
+              <g transform="translate(205, 52)" opacity="0.38" stroke="var(--athlon-primary)">
+                {/* Court Outer Perimeter Wireframe */}
+                <polygon points="15,40 85,0 150,35 80,75" fill="none" strokeWidth="1.2" />
+                {/* Singles Sidelines */}
+                <line x1="22" y1="36" x2="87" y2="-1" strokeWidth="0.7" strokeDasharray="3 2" />
+                <line x1="73" y1="71" x2="138" y2="34" strokeWidth="0.7" strokeDasharray="3 2" />
+                {/* Center Division / Net Wireframe & Posts */}
+                <polygon points="50,20 115,55 115,44 50,9" fill="rgba(84, 172, 104, 0.08)" strokeWidth="1" />
+                {/* Net Mesh Crosshatches */}
+                <line x1="62" y1="17" x2="62" y2="28" strokeWidth="0.6" />
+                <line x1="74" y1="23" x2="74" y2="34" strokeWidth="0.6" />
+                <line x1="86" y1="30" x2="86" y2="41" strokeWidth="0.6" />
+                <line x1="98" y1="37" x2="98" y2="48" strokeWidth="0.6" />
+                <line x1="110" y1="44" x2="110" y2="55" strokeWidth="0.6" />
+                {/* Net Posts */}
+                <line x1="50" y1="20" x2="50" y2="6" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="115" y1="55" x2="115" y2="41" strokeWidth="1.8" strokeLinecap="round" />
+                {/* Service Lines */}
+                <line x1="32" y1="30" x2="67" y2="49" strokeWidth="0.7" />
+                <line x1="97" y1="26" x2="132" y2="45" strokeWidth="0.7" />
+                <line x1="50" y1="40" x2="115" y2="35" strokeWidth="0.7" />
+              </g>
+
+              {/* ─── FOOTBALL / TURF PITCH SKELETON ─── */}
+              <g transform="translate(18, 148)" opacity="0.22" stroke="var(--athlon-primary)">
+                {/* Touchlines & Halfway Line */}
+                <rect x="0" y="0" width="130" height="75" rx="3" fill="none" strokeWidth="1" />
+                <line x1="65" y1="0" x2="65" y2="75" strokeWidth="0.9" />
+                {/* Center Circle & Spot */}
+                <circle cx="65" cy="37.5" r="16" fill="none" strokeWidth="0.9" />
+                <circle cx="65" cy="37.5" r="2" fill="var(--athlon-primary)" />
+                {/* Left Penalty Box & Goal Area */}
+                <rect x="0" y="16" width="24" height="43" fill="none" strokeWidth="0.8" />
+                <rect x="0" y="26" width="9" height="23" fill="none" strokeWidth="0.7" />
+                <path d="M 24 30 A 10 10 0 0 1 24 45" fill="none" strokeWidth="0.75" />
+                {/* Right Penalty Box & Goal Area */}
+                <rect x="106" y="16" width="24" height="43" fill="none" strokeWidth="0.8" />
+                <rect x="121" y="26" width="9" height="23" fill="none" strokeWidth="0.7" />
+                <path d="M 106 30 A 10 10 0 0 0 106 45" fill="none" strokeWidth="0.75" />
+              </g>
+
+              {/* ─── SPORTS EQUIPMENT SKELETONS (Racket, Shuttlecock, Ball Seams) ─── */}
+              {/* 1. Badminton Racket Wireframe Skeleton (Positioned at the beginning of "COMPETE TODAY.") */}
+              <g transform="translate(36, 62) rotate(-26)" opacity="0.38" stroke="var(--athlon-primary)">
+                {/* Dual-Bevel Isometric Racket Head Rim */}
+                <ellipse cx="0" cy="0" rx="17" ry="23" fill="rgba(84, 172, 104, 0.05)" strokeWidth="1.4" />
+                <ellipse cx="0" cy="0" rx="15.5" ry="21.5" fill="none" strokeWidth="0.6" opacity="0.7" />
+                {/* High-Tension Racket Strings Matrix */}
+                <line x1="-11" y1="-14" x2="-11" y2="14" strokeWidth="0.5" />
+                <line x1="-5.5" y1="-20" x2="-5.5" y2="20" strokeWidth="0.5" />
+                <line x1="0" y1="-23" x2="0" y2="23" strokeWidth="0.6" />
+                <line x1="5.5" y1="-20" x2="5.5" y2="20" strokeWidth="0.5" />
+                <line x1="11" y1="-14" x2="11" y2="14" strokeWidth="0.5" />
+                <line x1="-14" y1="-12" x2="14" y2="-12" strokeWidth="0.5" />
+                <line x1="-16" y1="-6" x2="16" y2="-6" strokeWidth="0.5" />
+                <line x1="-17" y1="0" x2="17" y2="0" strokeWidth="0.6" />
+                <line x1="-16" y1="6" x2="16" y2="6" strokeWidth="0.5" />
+                <line x1="-14" y1="12" x2="14" y2="12" strokeWidth="0.5" />
+                {/* Built-in T-Joint & Shaft */}
+                <polygon points="-4.5,22 4.5,22 1.5,30 -1.5,30" fill="rgba(84, 172, 104, 0.2)" strokeWidth="1" />
+                <line x1="0" y1="30" x2="0" y2="60" strokeWidth="1.6" />
+                {/* Ergonomic Contour Grip Handle */}
+                <rect x="-3" y="60" width="6" height="26" rx="1.5" fill="rgba(84, 172, 104, 0.12)" strokeWidth="1.2" />
+                <line x1="-3" y1="66" x2="3" y2="67" strokeWidth="0.6" />
+                <line x1="-3" y1="72" x2="3" y2="73" strokeWidth="0.6" />
+                <line x1="-3" y1="78" x2="3" y2="79" strokeWidth="0.6" />
+                {/* Butt Cap */}
+                <rect x="-4" y="85" width="8" height="2.5" rx="0.8" fill="var(--athlon-primary)" strokeWidth="0.8" />
+              </g>
+
+              {/* 2. Premium Aerodynamic Tournament Feather Shuttlecock */}
+              <g transform="translate(170, 24) rotate(28) scale(0.7)" opacity="0.45" stroke="var(--athlon-primary)">
+                {/* Flight Wind Trails */}
+                <path d="M -16 6 Q -26 12 -34 14" fill="none" strokeWidth="0.75" strokeDasharray="3 3" opacity="0.45" />
+                <path d="M -14 0 Q -24 5 -32 6" fill="none" strokeWidth="0.65" strokeDasharray="2 3" opacity="0.35" />
+
+                {/* Translucent Feather Cone Fill */}
+                <path
+                  d="M -5 7 C -7 -2 -11 -12 -16 -23 C -8 -26 8 -26 16 -23 C 11 -12 7 -2 5 7 Z"
+                  fill="rgba(84, 172, 104, 0.08)"
+                  stroke="none"
+                />
+
+                {/* Feather Outer Flared Contours */}
+                <path d="M -5 7 C -7 -2 -11 -12 -16 -23" fill="none" strokeWidth="1.2" />
+                <path d="M 5 7 C 7 -2 11 -12 16 -23" fill="none" strokeWidth="1.2" />
+
+                {/* 16 Overlapping Feather Shafts (Rachis Spines) */}
+                <line x1="0" y1="7" x2="0" y2="-24.5" strokeWidth="0.8" />
+                <line x1="-1.8" y1="7" x2="-3.2" y2="-24.2" strokeWidth="0.65" />
+                <line x1="1.8" y1="7" x2="3.2" y2="-24.2" strokeWidth="0.65" />
+                <line x1="-3.5" y1="7" x2="-6.8" y2="-24" strokeWidth="0.65" />
+                <line x1="3.5" y1="7" x2="6.8" y2="-24" strokeWidth="0.65" />
+                <line x1="-4.6" y1="7" x2="-11" y2="-23.6" strokeWidth="0.65" />
+                <line x1="4.6" y1="7" x2="11" y2="-23.6" strokeWidth="0.65" />
+
+                {/* Scalloped Individual Feather Tips Crown */}
+                <path
+                  d="M -16 -23 C -15.5 -26.5 -12.5 -26.5 -11 -23.5 C -10 -27 -7 -27 -5.5 -24 C -4.5 -27.5 -1.5 -27.5 0 -24.5 C 1.5 -27.5 4.5 -27.5 5.5 -24 C 7 -27 10 -27 11 -23.5 C 12.5 -26.5 15.5 -26.5 16 -23"
+                  fill="none"
+                  strokeWidth="0.9"
+                  strokeLinecap="round"
+                />
+                <ellipse cx="0" cy="-23.5" rx="16" ry="3.2" fill="none" strokeWidth="0.5" strokeDasharray="3 2" opacity="0.6" />
+
+                {/* Dual Binding Thread Lines (The signature twin rings of tournament shuttles) */}
+                <ellipse cx="0" cy="-6" rx="8.5" ry="2" fill="none" strokeWidth="0.9" />
+                <ellipse cx="0" cy="-6" rx="8.5" ry="2" fill="none" strokeWidth="0.9" strokeDasharray="2 1.5" />
+                <ellipse cx="0" cy="-14.5" rx="12.2" ry="2.6" fill="none" strokeWidth="0.9" strokeDasharray="2.5 1.5" />
+
+                {/* Feather Vane Texture Shading */}
+                <line x1="-12" y1="-14" x2="-14.5" y2="-19" strokeWidth="0.5" opacity="0.7" />
+                <line x1="12" y1="-14" x2="14.5" y2="-19" strokeWidth="0.5" opacity="0.7" />
+                <line x1="-8" y1="-6" x2="-10" y2="-10" strokeWidth="0.5" opacity="0.6" />
+                <line x1="8" y1="-6" x2="10" y2="-10" strokeWidth="0.5" opacity="0.6" />
+
+                {/* Cork Base Ribbon Collar (Signature colored tape band) */}
+                <rect x="-5" y="7" width="10" height="3" rx="0.5" fill="rgba(84, 172, 104, 0.35)" strokeWidth="0.9" />
+
+                {/* Natural Rounded Cork Dome Base */}
+                <path
+                  d="M -5 10 C -5 15.5 5 15.5 5 10 Z"
+                  fill="rgba(84, 172, 104, 0.25)"
+                  strokeWidth="1.1"
+                />
+              </g>
+
+              {/* 3. Sports Ball Geodesic / Seam Skeleton (Basketball & Tennis curved arcs) */}
+              <g transform="translate(230, 185)" opacity="0.25" stroke="var(--athlon-primary)">
+                <circle cx="0" cy="0" r="16" fill="none" strokeWidth="1.2" />
+                <path d="M -16 0 A 16 16 0 0 1 16 0" fill="none" strokeWidth="0.8" />
+                <path d="M 0 -16 A 16 16 0 0 1 0 16" fill="none" strokeWidth="0.8" />
+                <path d="M -11 -11 C -4 -4, -4 4, -11 11" fill="none" strokeWidth="0.8" strokeDasharray="2 1" />
+                <path d="M 11 -11 C 4 -4, 4 4, 11 11" fill="none" strokeWidth="0.8" strokeDasharray="2 1" />
+              </g>
+
+              {/* 4. Running Track Curved Velocity Lanes */}
+              <g opacity="0.28" stroke="var(--athlon-primary)">
+                <ellipse cx="320" cy="40" rx="145" ry="110" fill="none" strokeWidth="0.8" strokeDasharray="4 4" />
+                <ellipse cx="320" cy="40" rx="180" ry="135" fill="none" strokeWidth="1" />
+                <ellipse cx="320" cy="40" rx="215" ry="160" fill="none" strokeWidth="0.8" strokeDasharray="2 2" />
+              </g>
+
+              {/* Velocity Chevrons in Top-Right */}
+              <g transform="translate(295, 14)" stroke="var(--athlon-primary)" strokeWidth="1.5" strokeLinecap="round" opacity="0.35">
+                <line x1="0" y1="0" x2="6" y2="10" />
+                <line x1="6" y1="10" x2="0" y2="20" />
+                <line x1="8" y1="0" x2="14" y2="10" />
+                <line x1="14" y1="10" x2="8" y2="20" />
+                <line x1="16" y1="0" x2="22" y2="10" />
+                <line x1="22" y1="10" x2="16" y2="20" />
+              </g>
+
+              {/* Technical Reticles & Grid Coordinates */}
+              <path d="M 335 150 L 345 150 M 340 145 L 340 155" stroke="var(--athlon-primary)" strokeWidth="1" opacity="0.3" />
+              <path d="M 28 215 L 36 215 M 32 211 L 32 219" stroke="var(--athlon-primary)" strokeWidth="0.8" opacity="0.25" />
+              <path d="M 16 12 L 22 12 M 16 12 L 16 18" stroke="var(--athlon-primary)" strokeWidth="1" opacity="0.35" />
+              <path d="M 344 248 L 338 248 M 344 248 L 344 242" stroke="var(--athlon-primary)" strokeWidth="1" opacity="0.35" />
+            </svg>
+
+            {/* 7. Tiny Pulsing Starlight / Stadium Spark Particles */}
+            <div className="absolute top-8 right-24 w-1.5 h-1.5 rounded-full bg-primary/70 blur-[0.5px] animate-ping duration-1000 pointer-events-none z-0" />
+            <div className="absolute top-28 right-8 w-1.5 h-1.5 rounded-full bg-primary/50 blur-[0.5px] pointer-events-none z-0" />
+
+            {/* 8. Top Specular Arc Light */}
+            <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.12] dark:from-white/[0.04] via-transparent to-transparent pointer-events-none z-0" />
+
+            <div className="relative z-10 space-y-4">
+              {/* 1. Live Platform Ticker Pill */}
+              <div className="flex items-center justify-between gap-2">
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full border backdrop-blur-md"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary-soft)',
+                    borderColor: 'var(--athlon-primary)',
+                  }}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span
+                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                    <span
+                      className="relative inline-flex rounded-full h-2 w-2"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                    Live Sports
+                  </span>
+                </div>
+              </div>
+
+              {/* 2. Bold Hero Typography */}
+              <div className="space-y-1">
+                <h1 className="text-[23px] font-black leading-[1.12] tracking-tight uppercase text-foreground">
+                  <span>Compete Today.</span>
+                  <br />
+                  <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">
+                    Champion Tomorrow.
+                  </span>
+                </h1>
+                <p className="text-[11.5px] text-text-secondary leading-relaxed font-medium pt-0.5">
+                  Discover tournaments, reserve courts, and track live match scoring instantly.
+                </p>
+              </div>
+
+              {/* 3. Action Buttons */}
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <Link
                   href="/tournaments"
-                  className="flex items-center justify-center gap-1.5 bg-primary text-black text-[10px] sm:text-[11px] font-black px-4 py-2.5 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_4px_16px_var(--athlon-primary-glow)]"
+                  className="flex items-center justify-center gap-1.5 text-[11px] font-black px-4 py-3 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-md tracking-wider uppercase"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary)',
+                    color: 'var(--athlon-primary-foreground)',
+                    boxShadow: '0 6px 20px var(--athlon-primary-glow)',
+                  }}
                 >
-                  BROWSE TOURNAMENTS <ArrowRight className="w-3.5 h-3.5" />
+                  <Trophy className="w-3.5 h-3.5" strokeWidth={2.5} style={{ color: 'var(--athlon-primary-foreground)' }} />
+                  <span>Tournaments</span>
                 </Link>
                 <Link
                   href="/venues"
-                  className="flex items-center justify-center gap-1.5 bg-surface border border-foreground/15 text-foreground text-[10px] sm:text-[11px] font-bold px-3.5 py-2.5 rounded-xl hover:bg-foreground/5 transition-colors shadow-sm"
+                  className="flex items-center justify-center gap-1.5 border text-[11px] font-black px-4 py-3 rounded-2xl active:scale-95 transition-all shadow-sm tracking-wider uppercase backdrop-blur-md"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                    color: 'var(--athlon-text)',
+                  }}
                 >
-                  <Building2 className="w-3.5 h-3.5 text-primary" /> BOOK VENUE
+                  <Building2 className="w-3.5 h-3.5 text-primary" strokeWidth={2.5} />
+                  <span>Book Venues</span>
                 </Link>
+              </div>
+
+              {/* 4. Live Telemetry Strip */}
+              <div
+                className="grid grid-cols-3 divide-x rounded-2xl p-2.5 mt-1 border backdrop-blur-md"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <div className="flex flex-col items-center justify-center text-center px-1" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <span className="text-xs font-black text-foreground font-mono leading-none">500+</span>
+                  <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                    Events
+                  </span>
+                </div>
+                <div className="flex flex-col items-center justify-center text-center px-1" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <span className="text-xs font-black text-primary font-mono leading-none">120+</span>
+                  <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                    Venues
+                  </span>
+                </div>
+                <div className="flex flex-col items-center justify-center text-center px-1" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none">Live</span>
+                  <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                    Scoring
+                  </span>
+                </div>
               </div>
             </div>
           </section>
@@ -510,10 +874,10 @@ export function MarketingPageClient() {
                     style={{
                       backgroundColor: 'var(--athlon-surface)',
                       borderColor: 'var(--athlon-border)',
-                      boxShadow: '0 6px 20px -2px var(--athlon-primary-soft, rgba(0,0,0,0.3)), 0 2px 6px rgba(0,0,0,0.4)',
+                      boxShadow: '0 6px 20px -2px var(--athlon-primary-soft), 0 2px 6px var(--athlon-shadow)',
                     }}
                   >
-                    <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
+                    <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-foreground/[0.04] to-transparent pointer-events-none" />
 
                     {hasLive && (
                       <span className="absolute top-1.5 right-1.5 flex h-2 w-2 z-10">
@@ -563,7 +927,11 @@ export function MarketingPageClient() {
               </p>
               <button
                 onClick={handleResetFilters}
-                className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black shadow-md hover:scale-105 transition-all"
+                className="px-4 py-2 rounded-xl text-xs font-black shadow-md hover:scale-105 transition-all"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary-foreground)',
+                }}
               >
                 Reset All Filters
               </button>
@@ -670,9 +1038,10 @@ export function MarketingPageClient() {
                           className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[340px] max-w-[380px] rounded-2xl border p-5 shadow-lg space-y-3.5 overflow-hidden relative flex flex-col justify-between"
                           style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'rgba(239, 68, 68, 0.4)' }}
                         >
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse" />
+                          <SportCardSkeletonBackground sport={cfg.sport || cfg.category || (score as any).sport || 'Badminton'} />
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse z-10" />
 
-                          <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center justify-between pt-1 relative z-10">
                             <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                               Live Game {mGi + 1}
@@ -682,14 +1051,14 @@ export function MarketingPageClient() {
                             </span>
                           </div>
 
-                          <div className="space-y-1">
+                          <div className="space-y-1 relative z-10">
                             <h3 className="text-xs font-bold text-primary uppercase tracking-wider truncate">
                               {mTourn} • {mCat}
                             </h3>
                           </div>
 
                           <div
-                            className="p-3.5 rounded-xl border space-y-2.5"
+                            className="p-3.5 rounded-xl border space-y-2.5 relative z-10"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                           >
                             <div className="flex items-center justify-between">
@@ -715,7 +1084,7 @@ export function MarketingPageClient() {
 
                           <Link
                             href={`/live-score/${score.matchUuid}`}
-                            className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                            className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all relative z-10"
                           >
                             <Tv className="w-4 h-4" />
                             <span>WATCH LIVE SCORESHEET</span>
@@ -724,6 +1093,44 @@ export function MarketingPageClient() {
                         </div>
                       );
                     })}
+                  </div>
+                </section>
+              )}
+
+              {/* ── MOBILE SECTION: WEEKLY COMMUNITY SESSIONS ── */}
+              {filteredSessions.length > 0 && (
+                <section className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                        <span>Community Sessions</span>
+                        <span className="text-[10.5px] font-mono text-primary font-extrabold bg-primary/10 px-2 py-0.2 rounded-full">
+                          ({filteredSessions.length})
+                        </span>
+                      </h2>
+                    </div>
+                    <Link href="/login?redirect=/home" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
+                      Explore<ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+
+                  <div
+                    ref={mobileSessionsRef}
+                    className="flex items-stretch gap-4 overflow-x-auto pb-3 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4"
+                  >
+                    {filteredSessions.map((session) => (
+                      <div
+                        key={session.sessionUuid}
+                        className="snap-start shrink-0 w-[calc(100vw-3.2rem)] sm:w-[320px] max-w-[360px] flex"
+                      >
+                        <CommunitySessionCard
+                          session={session}
+                          isLoggedIn={false}
+                          className="w-full h-full shadow-md"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </section>
               )}
@@ -891,10 +1298,10 @@ export function MarketingPageClient() {
                 <section className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
                       <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <span>Recent Match Results</span>
-                        <span className="text-[10.5px] font-mono text-emerald-400 font-extrabold bg-emerald-500/10 px-2 py-0.2 rounded-full">
+                        <span className="text-[10.5px] font-mono text-primary font-extrabold bg-primary/10 border border-primary/20 px-2 py-0.2 rounded-full">
                           ({filteredFinishedScores.length})
                         </span>
                       </h2>
@@ -917,6 +1324,7 @@ export function MarketingPageClient() {
                       const isWinnerB = gamesWonB > gamesWonA;
                       const sCategory = cfg.category || '';
                       const sTournament = cfg.tournamentName || 'Tournament Match';
+                      const sSport = cfg.sport || cfg.category || (score as any).sport || 'Badminton';
 
                       return (
                         <Link
@@ -925,10 +1333,11 @@ export function MarketingPageClient() {
                           className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] max-w-[360px] rounded-2xl border p-4 shadow-md space-y-3 overflow-hidden relative flex flex-col justify-between transition-all hover:border-primary/50"
                           style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                         >
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
+                          <SportCardSkeletonBackground sport={sSport} />
+                          <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary shadow-[0_0_8px_var(--athlon-primary)] z-10" />
 
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <div className="flex items-center justify-between pt-1 relative z-10">
+                            <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> COMPLETED
                             </span>
                             <span className="text-[10px] text-foreground/50 font-medium truncate max-w-[150px]">
@@ -937,7 +1346,7 @@ export function MarketingPageClient() {
                           </div>
 
                           <div
-                            className="p-3 rounded-xl border space-y-2"
+                            className="p-3 rounded-xl border space-y-2 relative z-10"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
                             <div className="flex items-center justify-between">
@@ -950,7 +1359,7 @@ export function MarketingPageClient() {
                                 </span>
                                 {isWinnerA && <Trophy className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />}
                               </div>
-                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerA ? 'text-emerald-400' : 'text-foreground/60'}`}>
+                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerA ? 'text-primary' : 'text-foreground/60'}`}>
                                 {gamesWonA}
                               </span>
                             </div>
@@ -965,13 +1374,13 @@ export function MarketingPageClient() {
                                 </span>
                                 {isWinnerB && <Trophy className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />}
                               </div>
-                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerB ? 'text-emerald-400' : 'text-foreground/60'}`}>
+                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerB ? 'text-primary' : 'text-foreground/60'}`}>
                                 {gamesWonB}
                               </span>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between pt-1 text-[11px] text-foreground/60 font-semibold">
+                          <div className="flex items-center justify-between pt-1 text-[11px] text-foreground/60 font-semibold relative z-10">
                             <span>View Full Scorecard</span>
                             <ChevronRight className="w-3.5 h-3.5 text-primary" />
                           </div>
@@ -1012,7 +1421,7 @@ export function MarketingPageClient() {
           <div className="relative -top-4 flex flex-col items-center">
             <Link
               href="/practice"
-              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+              className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
               style={{
                 backgroundColor: 'var(--athlon-primary)',
                 borderColor: 'var(--athlon-navigation)',
@@ -1036,12 +1445,28 @@ export function MarketingPageClient() {
             </span>
           </Link>
 
-          <Link href={isAuthenticated ? '/home' : '/login'} className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
-            <Athlon3DIcon type="profile" size={32} active={false} />
-            <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
-              Profile
-            </span>
-          </Link>
+          {isAuthenticated ? (
+            <Link href="/home" className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity">
+              <Athlon3DIcon type="profile" size={32} active={false} />
+              <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+                Profile
+              </span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setAuthModalMode('login');
+                setIsAuthModalOpen(true);
+              }}
+              className="flex flex-col items-center gap-0.5 w-16 group opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              <Athlon3DIcon type="profile" size={32} active={false} />
+              <span className="text-[9.5px] font-bold leading-tight" style={{ color: 'var(--athlon-text-muted)' }}>
+                Profile
+              </span>
+            </button>
+          )}
         </nav>
       </div>
 
@@ -1084,9 +1509,13 @@ export function MarketingPageClient() {
             <nav className="flex items-center gap-1 bg-surface/40 p-1.5 rounded-2xl border border-foreground/5 backdrop-blur-md">
               <Link
                 href="/"
-                className="px-4 py-2 rounded-xl text-sm font-black bg-primary text-black transition-all flex items-center gap-2 shadow-sm"
+                className="px-4 py-2 rounded-xl text-sm font-black transition-all flex items-center gap-2 shadow-sm"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary-foreground)',
+                }}
               >
-                <Home className="w-4 h-4 text-black" />
+                <Home className="w-4 h-4" style={{ color: 'var(--athlon-primary-foreground)' }} />
                 <span>Home</span>
               </Link>
 
@@ -1131,29 +1560,45 @@ export function MarketingPageClient() {
               {isAuthenticated ? (
                 <Link
                   href="/home"
-                  className="flex items-center gap-2 bg-primary text-black text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                  style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                  className="flex items-center gap-2 text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary)',
+                    color: 'var(--athlon-primary-foreground)',
+                    boxShadow: '0 4px 20px var(--athlon-primary-glow)',
+                  }}
                 >
                   <span>Go to App</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Link
-                    href="/login"
-                    className="text-sm font-bold px-4 py-2 rounded-xl text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalMode('login');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="text-sm font-bold px-4 py-2 rounded-xl text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all cursor-pointer"
                   >
                     Log In
-                  </Link>
+                  </button>
 
-                  <Link
-                    href="/login"
-                    className="flex items-center gap-1.5 bg-primary text-black text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                    style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalMode('signup');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer"
+                    style={{
+                      backgroundColor: 'var(--athlon-primary)',
+                      color: 'var(--athlon-primary-foreground)',
+                      boxShadow: '0 4px 20px var(--athlon-primary-glow)',
+                    }}
                   >
                     <span>Get Started</span>
                     <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>
@@ -1202,8 +1647,12 @@ export function MarketingPageClient() {
               <div className="flex items-center gap-4 pt-2">
                 <Link
                   href="/venues"
-                  className="flex items-center gap-2 bg-primary text-black text-sm font-black px-7 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl"
-                  style={{ boxShadow: '0 8px 30px var(--athlon-primary-glow)' }}
+                  className="flex items-center gap-2 text-sm font-black px-7 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary)',
+                    color: 'var(--athlon-primary-foreground)',
+                    boxShadow: '0 8px 30px var(--athlon-primary-glow)',
+                  }}
                 >
                   <Building2 className="w-4 h-4" />
                   <span>Book Court / Turf</span>
@@ -1484,9 +1933,10 @@ export function MarketingPageClient() {
                           className="snap-start shrink-0 w-[380px] rounded-2xl border p-5 shadow-lg space-y-4 overflow-hidden relative flex flex-col justify-between"
                           style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'rgba(239, 68, 68, 0.4)' }}
                         >
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse" />
+                          <SportCardSkeletonBackground sport={cfg.sport || cfg.category || (score as any).sport || 'Badminton'} />
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse z-10" />
 
-                          <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center justify-between pt-1 relative z-10">
                             <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                               Live Game {mGi + 1}
@@ -1496,7 +1946,7 @@ export function MarketingPageClient() {
                             </span>
                           </div>
 
-                          <div className="space-y-1">
+                          <div className="space-y-1 relative z-10">
                             <h3 className="text-base font-black text-foreground tracking-tight line-clamp-1">
                               {mTourn}
                             </h3>
@@ -1506,7 +1956,7 @@ export function MarketingPageClient() {
                           </div>
 
                           <div
-                            className="p-3.5 rounded-xl border space-y-2.5"
+                            className="p-3.5 rounded-xl border space-y-2.5 relative z-10"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                           >
                             <div className="flex items-center justify-between">
@@ -1524,14 +1974,15 @@ export function MarketingPageClient() {
                                 <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-foreground/70 shrink-0">
                                   {mTeamBName.charAt(0)}
                                 </div>
-                                <span className="text-lg font-black font-mono tabular-nums ml-2 text-foreground">{mScoreB}</span>
+                                <span className="text-xs font-black text-foreground truncate">{mTeamBName}</span>
                               </div>
+                              <span className="text-lg font-black font-mono tabular-nums ml-2 text-foreground">{mScoreB}</span>
                             </div>
                           </div>
 
                           <Link
                             href={`/live-score/${score.matchUuid}`}
-                            className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                            className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all relative z-10"
                           >
                             <Tv className="w-4 h-4" />
                             <span>WATCH LIVE SCORESHEET</span>
@@ -1540,6 +1991,75 @@ export function MarketingPageClient() {
                         </div>
                       );
                     })}
+                  </div>
+                </section>
+              )}
+
+              {/* ── DESKTOP SECTION: WEEKLY COMMUNITY SESSIONS ── */}
+              {filteredSessions.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-black text-foreground flex items-center gap-2">
+                          <span>Weekly &quot;Let&apos;s Play&quot; Community Sessions</span>
+                          <span className="text-xs font-bold text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                            ({filteredSessions.length})
+                          </span>
+                        </h2>
+                        <p className="text-xs text-foreground/50 font-medium">
+                          Casual games, open rosters, and weekly friendly matches hosted by local sports communities
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href="/login?redirect=/home"
+                        className="text-xs font-extrabold text-primary hover:underline uppercase tracking-wider flex items-center gap-1"
+                      >
+                        <span>Join Communities</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                      <div className="flex items-center gap-1.5 ml-2">
+                        <button
+                          onClick={() => scrollContainer(desktopSessionsRef, 'left')}
+                          className="w-8 h-8 rounded-full border border-border bg-card hover:bg-surface flex items-center justify-center text-foreground/70 hover:text-foreground transition-all shadow-sm active:scale-95 cursor-pointer"
+                          title="Scroll Left"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => scrollContainer(desktopSessionsRef, 'right')}
+                          className="w-8 h-8 rounded-full border border-border bg-card hover:bg-surface flex items-center justify-center text-foreground/70 hover:text-foreground transition-all shadow-sm active:scale-95 cursor-pointer"
+                          title="Scroll Right"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Horizontal Scroll Rail */}
+                  <div
+                    ref={desktopSessionsRef}
+                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar"
+                  >
+                    {filteredSessions.map((session) => (
+                      <div
+                        key={session.sessionUuid}
+                        className="snap-start shrink-0 w-[340px] lg:w-[360px] flex"
+                      >
+                        <CommunitySessionCard
+                          session={session}
+                          isLoggedIn={false}
+                          className="w-full h-full shadow-md"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </section>
               )}
@@ -1806,7 +2326,7 @@ export function MarketingPageClient() {
                 <section className="space-y-4">
                   <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                      <CheckCircle2 className="w-5 h-5 text-primary" />
                       <h2 className="text-lg font-black text-foreground">Recent Match Results</h2>
                     </div>
                     <Link
@@ -1830,6 +2350,7 @@ export function MarketingPageClient() {
                       const isWinnerB = gamesWonB > gamesWonA;
                       const sCategory = cfg.category || '';
                       const sTournament = cfg.tournamentName || 'Tournament Match';
+                      const sSport = cfg.sport || cfg.category || (score as any).sport || 'Badminton';
 
                       return (
                         <Link
@@ -1838,10 +2359,11 @@ export function MarketingPageClient() {
                           className="snap-start shrink-0 w-[380px] group rounded-2xl border p-5 shadow-md space-y-4 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 relative flex flex-col justify-between"
                           style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                         >
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
+                          <SportCardSkeletonBackground sport={sSport} />
+                          <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary shadow-[0_0_8px_var(--athlon-primary)] z-10" />
 
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                          <div className="flex items-center justify-between pt-1 relative z-10">
+                            <span className="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> COMPLETED
                             </span>
                             <span className="text-xs text-foreground/50 font-medium truncate max-w-[180px]">
@@ -1850,7 +2372,7 @@ export function MarketingPageClient() {
                           </div>
 
                           <div
-                            className="p-3.5 rounded-xl border space-y-2.5"
+                            className="p-3.5 rounded-xl border space-y-2.5 relative z-10"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
                             <div className="flex items-center justify-between">
@@ -1863,7 +2385,7 @@ export function MarketingPageClient() {
                                 </span>
                                 {isWinnerA && <Trophy className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />}
                               </div>
-                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerA ? 'text-emerald-400' : 'text-foreground/60'}`}>
+                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerA ? 'text-primary' : 'text-foreground/60'}`}>
                                 {gamesWonA}
                               </span>
                             </div>
@@ -1878,13 +2400,13 @@ export function MarketingPageClient() {
                                 </span>
                                 {isWinnerB && <Trophy className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 shrink-0" />}
                               </div>
-                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerB ? 'text-emerald-400' : 'text-foreground/60'}`}>
+                              <span className={`text-sm font-black font-mono tabular-nums ml-2 ${isWinnerB ? 'text-primary' : 'text-foreground/60'}`}>
                                 {gamesWonB}
                               </span>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between border-t pt-2 text-xs text-foreground/60" style={{ borderColor: 'var(--athlon-border)' }}>
+                          <div className="flex items-center justify-between border-t pt-2 text-xs text-foreground/60 relative z-10" style={{ borderColor: 'var(--athlon-border)' }}>
                             <span>View Full Scorecard</span>
                             <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
                           </div>
@@ -1945,6 +2467,13 @@ export function MarketingPageClient() {
         }
       `,
         }}
+      />
+
+      {/* ── High-Polish Auth Modal for Non-Logged-In Users & Quick Access ── */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        defaultMode={authModalMode}
       />
     </div>
   );

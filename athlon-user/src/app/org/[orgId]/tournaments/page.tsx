@@ -33,9 +33,13 @@ import {
   CheckCircle2,
   Sliders,
   Filter,
+  Crown,
+  Award,
+  Medal,
 } from 'lucide-react';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
+import { CommunityService, CommunityResponse } from '@/lib/api/community';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { usePermissions } from '@/hooks/use-permissions';
 
@@ -47,9 +51,26 @@ export default function TournamentsPage() {
   const currentOrg = organizations.find((o) => o.id === orgId) || getActiveOrganization();
   const isAcademy = currentOrg?.type === 'ACADEMY';
   const isClub = currentOrg?.type === 'CLUB';
-  const isInternalOrg = isAcademy || isClub;
+  const isCommunity = currentOrg?.type === 'COMMUNITY';
+  const isInternalOrg = isAcademy || isClub || isCommunity;
   const { canManageModule } = usePermissions(orgId);
   const canManage = canManageModule('tournaments');
+
+  const [communityPlan, setCommunityPlan] = useState<CommunityResponse | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  const handleUpgradeToPro = async () => {
+    try {
+      setIsUpgrading(true);
+      const res = await CommunityService.updatePlan(orgId, 'COMMUNITY_PRO');
+      const updated = (res as any)?.data || res;
+      setCommunityPlan(updated);
+    } catch (err) {
+      console.error('Failed to upgrade community plan:', err);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
 
   const championshipsTrackRef = useRef<HTMLDivElement>(null);
   const tournamentsTrackRef = useRef<HTMLDivElement>(null);
@@ -91,9 +112,10 @@ export default function TournamentsPage() {
     const fetchAll = async () => {
       try {
         setIsLoading(true);
-        const [tRes, cRes] = await Promise.allSettled([
+        const [tRes, cRes, commRes] = await Promise.allSettled([
           TournamentService.getByOrg(orgId),
           !isInternalOrg ? TeamChampionshipService.getByOrganizer(orgId) : Promise.resolve([] as any),
+          isCommunity ? CommunityService.getCommunity(orgId) : Promise.resolve(null),
         ]);
 
         if (tRes.status === 'fulfilled' && tRes.value?.data) {
@@ -105,6 +127,10 @@ export default function TournamentsPage() {
         } else {
           setChampionships([]);
         }
+        if (isCommunity && commRes.status === 'fulfilled' && commRes.value) {
+          const c = (commRes.value as any)?.data || commRes.value;
+          if (c) setCommunityPlan(c as CommunityResponse);
+        }
       } catch (error) {
         console.error('Failed to fetch events:', error);
       } finally {
@@ -112,7 +138,7 @@ export default function TournamentsPage() {
       }
     };
     fetchAll();
-  }, [orgId, isInternalOrg]);
+  }, [orgId, isInternalOrg, isCommunity]);
 
   // Compute metrics
   const totalTournaments = tournaments.length;
@@ -151,7 +177,7 @@ export default function TournamentsPage() {
 
   // Filter championships
   const filteredChampionships = useMemo(() => {
-    if (eventType === 'tournaments') return [];
+    if (isInternalOrg || eventType === 'tournaments') return [];
     return championships.filter((c) => {
       const matchesTab =
         activeTab === 'all'
@@ -168,7 +194,7 @@ export default function TournamentsPage() {
         c.location?.toLowerCase().includes(q)
       );
     });
-  }, [championships, activeTab, searchQuery, eventType]);
+  }, [championships, activeTab, searchQuery, isInternalOrg, eventType]);
 
   const getPosterUrl = (posterPath: string) => {
     if (!posterPath) return '';
@@ -205,8 +231,152 @@ export default function TournamentsPage() {
     ? filteredTournaments.length > 0
     : filteredTournaments.length > 0 || filteredChampionships.length > 0;
 
-  const orgArenaLabel = isClub ? 'Club Arena' : isAcademy ? 'Academy Arena' : 'Organizer Hub';
-  const orgTournamentsTitle = isClub ? 'Club Tournaments' : isAcademy ? 'Academy Tournaments' : 'Tournaments & Championships';
+  const orgArenaLabel = isClub ? 'Club Arena' : isAcademy ? 'Academy Arena' : isCommunity ? 'Community Arena' : 'Organizer Hub';
+  const orgTournamentsTitle = isClub ? 'Club Tournaments' : isAcademy ? 'Academy Tournaments' : isCommunity ? 'Community Tournaments' : 'Tournaments & Championships';
+
+  // ─── COMMUNITY FREE TIER LOCK SCREEN (Light & Dark Theme Adaptive) ───
+  if (isCommunity && (!communityPlan?.planType || communityPlan.planType === 'COMMUNITY_FREE')) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 text-center">
+        <div
+          className="w-full max-w-lg p-6 sm:p-8 rounded-[32px] border border-amber-500/30 shadow-2xl relative overflow-hidden text-foreground space-y-6"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'rgba(245, 158, 11, 0.35)',
+          }}
+        >
+          {/* Ambient Glow */}
+          <div className="absolute -top-24 -right-24 w-60 h-60 rounded-full bg-gradient-to-br from-amber-500/15 dark:from-amber-500/25 via-yellow-500/10 dark:via-yellow-500/15 to-transparent blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full bg-yellow-500/10 blur-3xl pointer-events-none" />
+
+          {/* Floating Glowing Badge */}
+          <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-amber-400 to-yellow-500 opacity-25 dark:opacity-35 blur-lg animate-pulse" />
+            <div className="relative w-full h-full rounded-2xl sm:rounded-3xl bg-gradient-to-b from-amber-300 via-amber-400 to-yellow-500 p-[1.5px] shadow-2xl shadow-amber-500/30">
+              <div
+                className="w-full h-full rounded-[14px] sm:rounded-[22px] flex items-center justify-center"
+                style={{ backgroundColor: 'var(--athlon-surface)' }}
+              >
+                <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-amber-500 dark:text-amber-400 filter drop-shadow-[0_4px_10px_rgba(245,158,11,0.4)]" />
+                <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-md">
+                  <Crown className="w-3.5 h-3.5 text-black fill-black" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1 relative z-10 text-center">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest shadow-sm">
+              <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+              <span>PRO WORKSPACE FEATURE</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+              Unlock Community Tournaments
+            </h1>
+            <p className="text-xs text-foreground/65 leading-relaxed max-w-sm mx-auto font-medium">
+              Knockout cups, bracket generators, round-robin pool draws &amp; court live scoring are exclusive to{' '}
+              <span className="font-bold text-amber-500 dark:text-amber-400">Community PRO</span>.
+            </p>
+          </div>
+
+          {/* 2x2 Feature Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 relative z-10 text-left">
+            <div
+              className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <Trophy className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <h4 className="text-xs font-black text-foreground">Knockout Cups</h4>
+                <p className="text-[10px] text-foreground/60 leading-tight">Single &amp; double elimination brackets.</p>
+              </div>
+            </div>
+
+            <div
+              className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400 shrink-0">
+                <Award className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <h4 className="text-xs font-black text-foreground">League Pool Draws</h4>
+                <p className="text-[10px] text-foreground/60 leading-tight">Round-robin groups &amp; auto points.</p>
+              </div>
+            </div>
+
+            <div
+              className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <h4 className="text-xs font-black text-foreground">Live Ref Desk</h4>
+                <p className="text-[10px] text-foreground/60 leading-tight">Public court scoreboard &amp; points.</p>
+              </div>
+            </div>
+
+            <div
+              className="p-3.5 rounded-2xl border transition-all flex items-start gap-3 group"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400 shrink-0">
+                <Medal className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <h4 className="text-xs font-black text-foreground">Leaderboard &amp; Badges</h4>
+                <p className="text-[10px] text-foreground/60 leading-tight">Player Elo ratings &amp; hall of fame.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-1 relative z-10">
+            <button
+              type="button"
+              disabled={isUpgrading}
+              onClick={handleUpgradeToPro}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_4px_20px_rgba(245,158,11,0.35)] dark:shadow-[0_4px_25px_rgba(245,158,11,0.45)] hover:shadow-[0_6px_30px_rgba(245,158,11,0.55)] flex items-center justify-center gap-2.5 active:scale-98 transition-all disabled:opacity-50 cursor-pointer group"
+            >
+              {isUpgrading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <span>Upgrading Workspace...</span>
+                </>
+              ) : (
+                <>
+                  <Crown className="w-4 h-4 fill-black group-hover:scale-110 transition-transform" />
+                  <span>Upgrade to PRO (Instant Unlock)</span>
+                </>
+              )}
+            </button>
+
+            <Link
+              href={`/org/${orgId}/dashboard`}
+              className="inline-block text-xs font-bold text-foreground/50 hover:text-foreground transition-colors"
+            >
+              &larr; Back to Community Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 md:pb-16 selection:bg-primary selection:text-black">

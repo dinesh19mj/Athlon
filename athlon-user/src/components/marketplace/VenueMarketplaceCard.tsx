@@ -12,9 +12,11 @@ import {
   Sparkles,
   Zap,
   CheckCircle2,
+  Building2,
 } from 'lucide-react';
 import { VenueDto } from '@/lib/api/venue';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { SportCardSkeletonBackground } from '@/components/common/SportCardSkeletonBackground';
 
 export interface VenueCardData {
   id?: string | number;
@@ -50,6 +52,7 @@ interface VenueMarketplaceCardProps {
   venue: VenueCardData | VenueDto | any;
   className?: string;
   onBookClick?: () => void;
+  variant?: 'card' | 'compact';
 }
 
 const SPORT_COVERS: Record<string, string> = {
@@ -110,6 +113,7 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
   venue,
   className = '',
   onBookClick,
+  variant = 'card',
 }) => {
   const router = useRouter();
   const [showAmenities, setShowAmenities] = useState(false);
@@ -267,17 +271,98 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
 
   const detailHref = venueUuid ? `/venues/${venueUuid}` : '/venues';
 
+  // ── COMPACT ROW VARIANT (Mobile-first list item) ──
+  if (variant === 'compact') {
+    return (
+      <Link
+        href={detailHref}
+        onClick={handleCardClick}
+        className={`group relative rounded-2xl overflow-hidden border transition-all duration-200 hover:border-primary/50 active:scale-[0.99] select-none p-2.5 sm:p-3 flex items-center gap-3 w-full bg-card border-border/80 hover:shadow-md ${className}`}
+      >
+        <SportCardSkeletonBackground sport={primarySport} showEnergyRail={false} />
+
+        {/* Left Thumbnail with Logo Overlay */}
+        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 bg-surface z-10">
+          <img
+            src={coverUrl}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+
+          {venue.logo ? (
+            <div className="absolute bottom-1 left-1 w-6 h-6 rounded-lg overflow-hidden border border-white/40 shadow-sm bg-black/60">
+              <img src={venue.logo} alt={name} className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="absolute bottom-1 left-1 w-5 h-5 rounded-lg bg-black/70 border border-primary/40 flex items-center justify-center text-primary">
+              <Building2 className="w-3 h-3" />
+            </div>
+          )}
+
+          {/* Instant slot active badge */}
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" />
+        </div>
+
+        {/* Middle Details */}
+        <div className="min-w-0 flex-1 space-y-1 relative z-10">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+              <span>{primaryEmoji}</span>
+              <span>{primarySport}</span>
+            </span>
+            <span className="text-[10px] text-foreground/50 font-bold flex items-center gap-0.5">
+              <Layers className="w-2.5 h-2.5 text-primary" />
+              {facilityCount} {facilityCount === 1 ? 'Court' : 'Courts'}
+            </span>
+          </div>
+
+          <h4 className="text-xs sm:text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">
+            {name}
+          </h4>
+
+          <p className="text-[10px] text-foreground/60 font-semibold flex items-center gap-1 truncate">
+            <MapPin className="w-3 h-3 text-primary shrink-0" />
+            <span className="truncate">{locationText}</span>
+          </p>
+
+          <div className="flex items-center gap-2 text-[9.5px] font-mono text-foreground/70">
+            <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" />
+              {timingText}
+            </span>
+          </div>
+        </div>
+
+        {/* Right Price & Action Column */}
+        <div className="shrink-0 flex flex-col items-end justify-between self-stretch py-0.5 pl-1 relative z-10">
+          <div className="text-right">
+            <span className="text-[8px] font-bold text-foreground/45 uppercase tracking-wider block">From</span>
+            <span className="text-xs sm:text-sm font-black text-emerald-400 font-mono tracking-tight">{startingPriceText}</span>
+          </div>
+
+          <div className="w-7 h-7 rounded-xl bg-primary/10 border border-primary/25 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all shadow-xs">
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={detailHref}
       onClick={handleCardClick}
-      className={`group relative rounded-[26px] overflow-hidden border border-border/80 bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 select-none flex flex-col justify-between h-full w-full ${className}`}
+      className={`group relative rounded-[18px] overflow-hidden border border-border/80 bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 select-none flex flex-col justify-between h-full w-full ${className}`}
     >
+      {/* Sport Blueprint Skeleton Background */}
+      <SportCardSkeletonBackground sport={primarySport} />
+
       {/* Top Gradient Accent Trim */}
-      <div className="h-[3px] w-full bg-gradient-to-r from-emerald-400 via-primary to-teal-400" />
+      <div className="h-[2px] w-full bg-gradient-to-r from-emerald-400 via-primary to-teal-400 relative z-10" />
 
       {/* ── TOP HERO COVER AREA ── */}
-      <div className="relative h-44 w-full bg-surface-hover overflow-hidden">
+      <div className="relative h-32 sm:h-40 w-full bg-surface-hover overflow-hidden z-10">
         {/* Cover Photo */}
         <img
           src={coverUrl}
@@ -290,38 +375,38 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
         <div className="absolute inset-0 bg-primary/5 backdrop-blur-[0.5px]" />
 
         {/* Top Badges Floating Bar */}
-        <div className="absolute top-3 inset-x-3.5 flex items-center justify-between z-10">
+        <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-10">
           {/* Structure / Sport Badge */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-black/70 text-primary border border-primary/40 backdrop-blur-md shadow-lg">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-black/70 text-primary border border-primary/40 backdrop-blur-md shadow-sm">
             <span>{primaryEmoji}</span>
             <span>{primarySport}</span>
           </span>
 
           {/* Instant Booking Badge */}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wide bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 backdrop-blur-md shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wide bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 backdrop-blur-md shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" />
             Instant Booking
           </span>
         </div>
 
         {/* Overlaid Bottom Identity Pod */}
-        <div className="absolute bottom-3 inset-x-3.5 flex items-center gap-3 z-10">
+        <div className="absolute bottom-2.5 inset-x-2.5 flex items-center gap-2.5 z-10">
           {/* Logo / Venue Icon Box */}
-          <div className="w-12 h-12 rounded-2xl border-2 border-emerald-400/50 overflow-hidden shadow-2xl flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-primary transition-all bg-black/80 backdrop-blur-md">
+          <div className="w-9 h-9 rounded-xl border border-emerald-400/50 overflow-hidden shadow-lg flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-primary transition-all bg-black/80 backdrop-blur-md">
             {venue.logo ? (
               <img src={venue.logo} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <Athlon3DIcon type="facilities" size={26} active={true} />
+              <Athlon3DIcon type="facilities" size={20} active={true} />
             )}
           </div>
 
           {/* Venue Name & Location */}
           <div className="min-w-0 flex-1 drop-shadow-md">
-            <h4 className="text-base font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight">
+            <h4 className="text-xs sm:text-[13px] font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight">
               {name}
             </h4>
-            <p className="text-[11.5px] text-white/85 font-semibold flex items-center gap-1 mt-0.5 truncate">
-              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+            <p className="text-[10px] text-white/85 font-semibold flex items-center gap-1 mt-0.5 truncate">
+              <MapPin className="w-3 h-3 text-primary shrink-0" />
               <span className="truncate">{locationText}</span>
             </p>
           </div>
@@ -329,48 +414,48 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
       </div>
 
       {/* ── CARD BODY ── */}
-      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-        <div className="space-y-3">
+      <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between relative z-10">
+        <div className="space-y-2">
           {/* Facilities & Timing Meta Row */}
-          <div className="flex items-center justify-between text-[11px] font-bold text-foreground/70 pb-2 border-b border-border/70">
-            <div className="flex items-center gap-1.5 text-foreground font-extrabold">
-              <Layers className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center justify-between text-[10px] font-bold text-foreground/70 pb-1.5 border-b border-border/70">
+            <div className="flex items-center gap-1 text-foreground font-extrabold">
+              <Layers className="w-3 h-3 text-primary" />
               <span>{facilityCount} {facilityCount === 1 ? 'Court / Turf' : 'Courts & Turfs'}</span>
             </div>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-foreground/80 font-bold">
-              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center gap-1 font-mono text-[10px] text-foreground/80 font-bold">
+              <Clock className="w-3 h-3 text-emerald-400" />
               <span>{timingText}</span>
             </div>
           </div>
 
           {/* ── OPEN SLOTS TODAY SECTION (From Mockup Reference) ── */}
-          <div className="rounded-xl bg-surface/50 border border-border/70 p-2.5 space-y-1.5 shadow-inner">
+          <div className="rounded-lg bg-surface/50 border border-border/70 p-2 space-y-1 shadow-inner">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-emerald-400">
-                <Clock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
-                <span className="text-[10.5px] font-black uppercase tracking-wider">
+              <div className="flex items-center gap-1 text-emerald-400">
+                <Clock className="w-3 h-3 shrink-0 stroke-[2.5]" />
+                <span className="text-[9.5px] font-black uppercase tracking-wider">
                   OPEN SLOTS TODAY:
                 </span>
               </div>
-              <span className="text-[10.5px] font-extrabold text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              <span className="text-[9.5px] font-extrabold text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
                 {facilityCount} {facilityCount === 1 ? 'Court' : 'Courts'}
               </span>
             </div>
 
             {/* Horizontal Scrollable Time Slot Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5 scrollbar-none no-scrollbar">
+            <div className="flex items-center gap-1 overflow-x-auto pt-0.5 pb-0.5 scrollbar-none no-scrollbar">
               {openSlots.slice(0, 8).map((slotTime: string, idx: number) => (
                 <button
                   key={`${slotTime}-${idx}`}
                   type="button"
                   onClick={(e) => handleSlotClick(e, slotTime)}
-                  className="px-2.5 py-1 rounded-full bg-background/80 hover:bg-emerald-500/25 active:bg-emerald-500/40 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 hover:border-emerald-400 text-[10.5px] font-mono font-bold tracking-tight whitespace-nowrap transition-all shadow-sm shrink-0 cursor-pointer"
+                  className="px-2 py-0.5 rounded-full bg-background/80 hover:bg-emerald-500/25 active:bg-emerald-500/40 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 hover:border-emerald-400 text-[9.5px] font-mono font-bold tracking-tight whitespace-nowrap transition-all shadow-sm shrink-0 cursor-pointer"
                 >
                   {slotTime}
                 </button>
               ))}
               {openSlots.length > 8 && (
-                <span className="px-2 py-1 rounded-full bg-surface text-[10px] font-mono font-bold text-foreground/60 shrink-0 border border-border/60">
+                <span className="px-1.5 py-0.5 rounded-full bg-surface text-[9px] font-mono font-bold text-foreground/60 shrink-0 border border-border/60">
                   +{openSlots.length - 8} more
                 </span>
               )}
@@ -386,16 +471,16 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
                 e.stopPropagation();
                 setShowAmenities((prev) => !prev);
               }}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-surface/40 hover:bg-surface/80 border border-border/60 hover:border-primary/40 text-[11px] font-bold text-foreground/75 transition-all hover:text-foreground cursor-pointer group/amenity"
+              className="w-full flex items-center justify-between px-2 py-1 rounded-lg bg-surface/40 hover:bg-surface/80 border border-border/60 hover:border-primary/40 text-[10px] font-bold text-foreground/75 transition-all hover:text-foreground cursor-pointer group/amenity"
             >
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span className="tracking-tight">Court Amenities & Features</span>
+              <div className="flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-primary" />
+                <span className="tracking-tight">Court Amenities &amp; Features</span>
               </div>
-              <div className="flex items-center gap-1 text-[10.5px] text-primary font-black">
+              <div className="flex items-center gap-0.5 text-[9.5px] text-primary font-black">
                 <span>{amenitiesList.length} Features</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 group-hover/amenity:translate-y-0.5 ${
+                  className={`w-3 h-3 transition-transform duration-200 group-hover/amenity:translate-y-0.5 ${
                     showAmenities ? 'rotate-180' : ''
                   }`}
                 />
@@ -405,7 +490,7 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
             {/* Expanded Amenities View */}
             {showAmenities && (
               <div
-                className="flex flex-wrap gap-1.5 pt-2 animate-in fade-in slide-in-from-top-1 duration-200"
+                className="flex flex-wrap gap-1 pt-1.5 animate-in fade-in slide-in-from-top-1 duration-200"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -414,7 +499,7 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
                 {amenitiesList.map((amenity) => (
                   <span
                     key={amenity}
-                    className="px-2.5 py-1 rounded-xl bg-primary/10 text-primary border border-primary/25 text-[10.5px] font-bold tracking-tight shadow-sm"
+                    className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/25 text-[9.5px] font-bold tracking-tight shadow-sm"
                   >
                     {amenity}
                   </span>
@@ -425,15 +510,15 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
         </div>
 
         {/* ── FOOTER ROW ── */}
-        <div className="pt-3 border-t border-border flex items-center justify-between text-xs">
+        <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
           <div className="flex flex-col">
-            <span className="text-[9px] font-bold text-foreground/50 uppercase tracking-wider">Slots From</span>
-            <span className="text-sm font-black text-emerald-400 font-mono tracking-tight">{startingPriceText}</span>
+            <span className="text-[8.5px] font-bold text-foreground/50 uppercase tracking-wider">Slots From</span>
+            <span className="text-xs sm:text-[13px] font-black text-emerald-400 font-mono tracking-tight">{startingPriceText}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground font-black text-xs group-hover:brightness-110 shadow-md shadow-primary/25 transition-all">
+          <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-black text-xs group-hover:brightness-110 shadow-sm shadow-primary/25 transition-all">
             <span>Book Court</span>
-            <ChevronRight className="w-3.5 h-3.5 stroke-[3] group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-3 h-3 stroke-[3] group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
       </div>

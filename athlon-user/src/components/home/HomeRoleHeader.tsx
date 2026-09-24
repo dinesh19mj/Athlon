@@ -73,6 +73,7 @@ export default function HomeRoleHeader({
     if (type === 'COACH') return 'Coach / Trainer';
     if (type === 'COURT') return 'Venue';
     if (type === 'ASSOCIATION') return 'Association';
+    if (type === 'COMMUNITY') return 'Community';
     return type;
   };
 
@@ -83,6 +84,7 @@ export default function HomeRoleHeader({
     if (type === 'ACADEMY') return 'students';
     if (type === 'ASSOCIATION') return 'rankings';
     if (type === 'COURT') return 'facilities';
+    if (type === 'COMMUNITY') return 'members';
     return 'academies';
   };
 

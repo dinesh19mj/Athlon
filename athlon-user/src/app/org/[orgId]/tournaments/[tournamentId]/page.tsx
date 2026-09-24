@@ -1092,6 +1092,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
               matches={matches}
               registrations={registrations}
               tournamentName={tournament.name}
+              tournamentStatus={tournament.status}
             />
 
             {/* 4-Bento Metric Cards - MOBILE DEDICATED STYLISH VIEW */}

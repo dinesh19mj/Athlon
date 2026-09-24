@@ -30,6 +30,11 @@ spring:
           predicates:
             - Path=/ws/**
 
+        - id: payment_route
+          uri: http://localhost:5054
+          predicates:
+            - Path=/api/payments/**
+
       httpclient:
         wiretap: true
 

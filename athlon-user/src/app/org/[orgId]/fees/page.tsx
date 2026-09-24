@@ -10,6 +10,7 @@ import {
   Receipt, Wallet, BellRing, Phone, X
 } from 'lucide-react';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import {
   CoachService,
   CoachFeePackage,
@@ -1131,23 +1132,12 @@ export default function CoachingFeesPage() {
       </div>
 
       {/* ─── 7. FLOATING ACTION BUTTON (FAB) ─── */}
-      <button
+      <Athlon3DFAB
         onClick={openCreateModal}
-        className="fixed bottom-24 right-5 sm:bottom-8 sm:right-8 z-50 w-14 h-14 rounded-full bg-primary text-black shadow-[0_10px_35px_rgba(0,0,0,0.45)] shadow-primary/60 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 group border-2 border-black/10 focus:outline-none"
+        label="Create Fee Package"
         title="Create Fee Package"
-        aria-label="Create Fee Package"
-      >
-        <Plus className="w-7 h-7 stroke-[3] transition-transform duration-300 group-hover:rotate-90" />
-        <span className="sr-only">Create Fee Package</span>
-
-        {/* Hover Tooltip on Desktop */}
-        <span className="hidden md:group-hover:inline-flex items-center gap-1.5 absolute right-16 px-3.5 py-1.5 rounded-2xl bg-card border text-foreground font-black text-xs whitespace-nowrap shadow-2xl transition-opacity pointer-events-none"
-          style={{ borderColor: 'var(--athlon-border)' }}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-primary fill-primary" />
-          <span>Create Fee Package</span>
-        </span>
-      </button>
+        ariaLabel="Create Fee Package"
+      />
     </div>
   );
 }

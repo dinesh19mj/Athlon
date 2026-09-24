@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { use, useState } from 'react';
 import { ArrowLeft, Calendar, Clock, MapPin, Search, Filter, Edit3, PlusCircle, UserPlus, X, CheckCircle2 } from 'lucide-react';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 
 const initialMockSchedule = [
   {
@@ -210,9 +211,12 @@ export default function MatchSchedulePage({ params }: { params: Promise<{ id: st
       </main>
       
       {/* Mobile FAB */}
-      <button className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-black rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(27,156,86,0.4)] hover:scale-105 active:scale-95 transition-transform z-30">
-        <PlusCircle className="w-6 h-6" />
-      </button>
+      <Athlon3DFAB
+        onClick={() => setAssignModalOpen(true)}
+        label="Assign Umpire"
+        title="Assign Umpire"
+        ariaLabel="Assign Umpire"
+      />
 
       {/* Assign Umpire Modal */}
       {assignModalOpen && (

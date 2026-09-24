@@ -28,6 +28,7 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import { usePracticeMatchStore, PracticeMatchRecord } from '@/lib/store/usePracticeMatchStore';
 
 type SportType = 'Badminton' | 'Cricket' | 'Football' | 'Volleyball';
@@ -71,50 +72,45 @@ export default function MobilePracticeHubPage() {
     id: SportType;
     label: string;
     icon: string;
-    tagline: string;
     badge: string;
-    gradient: string;
-    accentColor: string;
+    badgeStyle: string;
+    glowColor: string;
     href: string;
   }[] = [
     {
       id: 'Badminton',
       label: 'Badminton',
       icon: '🏸',
-      tagline: 'Singles & Doubles • 21 Pts',
       badge: 'Voice Umpire',
-      gradient: 'from-emerald-500/20 via-emerald-500/10 to-transparent border-emerald-500/30',
-      accentColor: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/15',
+      badgeStyle: 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
+      glowColor: 'rgba(16, 185, 129, 0.22)',
       href: '/match-setup?sport=Badminton',
     },
     {
       id: 'Cricket',
       label: 'Cricket',
       icon: '🏏',
-      tagline: 'Box & Gully • Ball-by-Ball',
       badge: 'Scorecard',
-      gradient: 'from-amber-500/20 via-amber-500/10 to-transparent border-amber-500/30',
-      accentColor: 'text-amber-600 dark:text-amber-400 bg-amber-500/15',
+      badgeStyle: 'text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/25',
+      glowColor: 'rgba(245, 158, 11, 0.22)',
       href: '/match-setup?sport=Cricket',
     },
     {
       id: 'Football',
       label: 'Football',
       icon: '⚽',
-      tagline: 'Futsal & Turf • Goals & Timer',
       badge: 'Live Timer',
-      gradient: 'from-blue-500/20 via-blue-500/10 to-transparent border-blue-500/30',
-      accentColor: 'text-blue-600 dark:text-blue-400 bg-blue-500/15',
+      badgeStyle: 'text-sky-500 dark:text-sky-400 bg-sky-500/10 border-sky-500/25',
+      glowColor: 'rgba(14, 165, 233, 0.22)',
       href: '/match-setup?sport=Football',
     },
     {
       id: 'Volleyball',
       label: 'Volleyball',
       icon: '🏐',
-      tagline: 'Best of Sets • Rally Scores',
       badge: 'Rally Points',
-      gradient: 'from-purple-500/20 via-purple-500/10 to-transparent border-purple-500/30',
-      accentColor: 'text-purple-600 dark:text-purple-400 bg-purple-500/15',
+      badgeStyle: 'text-purple-500 dark:text-purple-400 bg-purple-500/10 border-purple-500/25',
+      glowColor: 'rgba(168, 85, 247, 0.22)',
       href: '/match-setup?sport=Volleyball',
     },
   ];
@@ -276,25 +272,59 @@ export default function MobilePracticeHubPage() {
               <Link
                 key={sport.id}
                 href={sport.href}
-                className="p-3.5 rounded-2xl bg-surface border border-foreground/10 hover:border-primary/40 active:scale-95 transition-all flex flex-col justify-between gap-3 relative overflow-hidden group shadow-sm"
+                className="group relative p-3.5 rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between gap-3 active:scale-[0.97] hover:shadow-lg"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
               >
-                <div className="flex items-start justify-between">
-                  <span className="text-2xl group-hover:scale-110 transition-transform">
-                    {sport.icon}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${sport.accentColor}`}>
+                {/* Subtle Sport Ambient Corner Glow */}
+                <div
+                  className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl pointer-events-none transition-opacity duration-300 opacity-20 group-hover:opacity-40"
+                  style={{ backgroundColor: sport.glowColor }}
+                />
+
+                {/* Top Subtle Edge Highlight */}
+                <div
+                  className="absolute top-0 inset-x-0 h-[1.5px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                  style={{
+                    background: `linear-gradient(90deg, transparent, ${sport.glowColor}, transparent)`,
+                  }}
+                />
+
+                {/* Top Row: Icon Squircle & Feature Badge */}
+                <div className="flex items-center justify-between relative z-10">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl border shadow-xs group-hover:scale-105 transition-transform duration-300"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    <span>{sport.icon}</span>
+                  </div>
+
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border backdrop-blur-md ${sport.badgeStyle}`}
+                  >
                     {sport.badge}
                   </span>
                 </div>
 
-                <div>
-                  <div className="font-black text-sm text-foreground group-hover:text-primary transition-colors flex items-center justify-between">
-                    <span>{sport.label}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+                {/* Bottom Row: Sport Name & Action Arrow Button */}
+                <div className="flex items-center justify-between relative z-10 pt-0.5">
+                  <span className="font-black text-sm text-foreground group-hover:text-primary transition-colors tracking-tight">
+                    {sport.label}
+                  </span>
+
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 text-foreground/40 group-hover:text-primary-foreground group-hover:bg-primary group-hover:translate-x-0.5 group-hover:shadow-xs"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                    }}
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </div>
-                  <p className="text-[10px] text-foreground/50 line-clamp-1 mt-0.5 font-medium">
-                    {sport.tagline}
-                  </p>
                 </div>
               </Link>
             ))}
@@ -608,20 +638,12 @@ export default function MobilePracticeHubPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           6. FLOATING ACTION BUTTON (FAB) FOR MATCH SETUP (ICON ONLY: +)
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="fixed bottom-24 right-4 z-40">
-        <Link
-          href="/match-setup"
-          className="w-14 h-14 rounded-full bg-primary hover:bg-primary/95 text-black flex items-center justify-center shadow-2xl border-[2.5px] border-black/10 hover:scale-110 active:scale-95 transition-all group relative overflow-hidden"
-          style={{
-            boxShadow: '0 10px 25px -2px var(--athlon-primary-glow, rgba(16, 185, 129, 0.5)), 0 4px 12px rgba(0,0,0,0.3)',
-          }}
-          title="Setup New Match"
-        >
-          {/* Glass Specular Highlight */}
-          <div className="absolute inset-x-1 top-0 h-[40%] rounded-t-full bg-gradient-to-b from-white/35 via-white/10 to-transparent pointer-events-none" />
-          <Plus className="w-6 h-6 stroke-[3] text-black relative z-10 transition-transform group-hover:rotate-90 duration-200" />
-        </Link>
-      </div>
+      <Athlon3DFAB
+        href="/match-setup"
+        label="Setup Match"
+        title="Setup New Match"
+        ariaLabel="Setup New Match"
+      />
 
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar {

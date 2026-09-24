@@ -47,6 +47,7 @@ import {
   CreateAcademyPostPayload,
   UpdateAcademyPostPayload,
 } from '@/lib/api/academyPost';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import { ClubPostService } from '@/lib/api/clubPost';
 import { AcademyService, AcademyCentre, AcademyBatchItem } from '@/lib/api/academy';
 import { useOrgRole } from '@/hooks/use-org-role';
@@ -1112,15 +1113,12 @@ export default function AcademyPostFeedView({ orgUuid, orgName, orgType = 'ACADE
 
         {/* Floating Action Button (FAB) on Mobile */}
         {canCreate && (
-          <div className="fixed bottom-24 right-4 z-40">
-            <button
-              onClick={handleOpenCreateModal}
-              className="w-14 h-14 rounded-full bg-primary text-black flex items-center justify-center shadow-2xl shadow-primary/50 hover:scale-105 active:scale-90 transition-all border border-black/10 group"
-              title={isStudent ? 'Write an Article / Blog' : 'Create Post'}
-            >
-              <Plus className="w-7 h-7 stroke-[3] transition-transform group-hover:rotate-90 duration-200" />
-            </button>
-          </div>
+          <Athlon3DFAB
+            onClick={handleOpenCreateModal}
+            label={isStudent ? 'Write an Article' : 'Create Post'}
+            title={isStudent ? 'Write an Article / Blog' : 'Create Post'}
+            ariaLabel={isStudent ? 'Write an Article / Blog' : 'Create Post'}
+          />
         )}
       </div>
 

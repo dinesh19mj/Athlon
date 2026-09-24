@@ -31,6 +31,7 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { AcademyService, AcademyFacility, AcademyCentre } from '@/lib/api/academy';
 import { useOrgSports } from '@/lib/hooks/useOrgSports';
 import { usePermissions } from '@/hooks/use-permissions';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 
 /* ─── Sports Metadata ─── */
 const SPORT_META: Record<string, { label: string; emoji: string }> = {
@@ -848,17 +849,12 @@ export default function FacilitiesPage() {
 
       {/* ── FLOATING ACTION BUTTON (FAB) ── */}
       {canManage && (
-        <button
+        <Athlon3DFAB
           onClick={openCreateModal}
-          className="fixed bottom-24 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-all"
-          style={{
-            backgroundColor: 'var(--athlon-primary)',
-            boxShadow: '0 8px 24px var(--athlon-primary-glow), 0 4px 10px rgba(0,0,0,0.5)',
-          }}
-          aria-label="Add Court"
-        >
-          <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
-        </button>
+          label="Add Court"
+          title="Add Court"
+          ariaLabel="Add Court"
+        />
       )}
 
       {/* ══════════════════════════════════════════════════════════════════

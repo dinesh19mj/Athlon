@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Trophy, Calendar, Users, ChevronRight, PlusCircle, Settings, ArrowLeft, X, MapPin, Upload, IndianRupee } from 'lucide-react';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 
 export default function OrganizerTournamentsPage() {
   const [tournaments, setTournaments] = useState([
@@ -127,14 +128,12 @@ export default function OrganizerTournamentsPage() {
       </div>
 
       {/* Floating Action Button for Mobile */}
-      <div className="md:hidden fixed bottom-[90px] right-6 z-50">
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="w-14 h-14 bg-primary text-black rounded-full flex items-center justify-center shadow-[0_4px_20px_rgba(27,156,86,0.4)] hover:scale-105 active:scale-95 transition-transform"
-        >
-          <PlusCircle className="w-8 h-8" />
-        </button>
-      </div>
+      <Athlon3DFAB
+        onClick={() => setIsAdding(true)}
+        label="New Tournament"
+        title="Create Tournament"
+        ariaLabel="Create Tournament"
+      />
 
       {/* Add Tournament Modal Overlay */}
       {isAdding && (

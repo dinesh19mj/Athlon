@@ -301,12 +301,12 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 overflow-y-auto overscroll-y-contain bg-background md:pb-0 ${hideBottomNav ? 'pb-0' : 'pb-24'}`}>{children}</main>
+      <main className={`flex-1 overflow-y-auto overflow-x-hidden min-w-0 w-full max-w-full overscroll-y-contain overscroll-x-none bg-background md:pb-0 ${hideBottomNav ? 'pb-0' : 'pb-24'}`}>{children}</main>
 
       {/* Mobile Bottom Nav */}
       {!hideBottomNav && (
         <nav
-          className="md:hidden fixed bottom-0 inset-x-0 h-20 backdrop-blur-xl border-t z-40 px-5 flex items-center justify-between max-w-lg mx-auto fixed-bottom-nav"
+          className="md:hidden fixed bottom-0 inset-x-0 h-16 backdrop-blur-xl border-t z-40 px-4 flex items-center justify-around max-w-lg mx-auto fixed-bottom-nav"
           style={{
             backgroundColor: 'var(--athlon-navigation)',
             borderColor: 'var(--athlon-border)',
@@ -316,13 +316,13 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
         >
         <Link
           href={homeHref}
-          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-            isHomeActive ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+            isHomeActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
           }`}
         >
-          <Athlon3DIcon type="home" size={32} active={isHomeActive} />
+          <Athlon3DIcon type="home" size={26} active={isHomeActive} />
           <span
-            className={`text-[9.5px] font-bold leading-tight ${isHomeActive ? 'text-primary' : ''}`}
+            className={`text-[10px] font-bold leading-tight tracking-tight ${isHomeActive ? 'text-primary' : ''}`}
             style={{ color: isHomeActive ? undefined : 'var(--athlon-text-muted)' }}
           >
             Home
@@ -331,13 +331,13 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
 
         <Link
           href={eventsHref}
-          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-            isEventsActive ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+            isEventsActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
           }`}
         >
-          <Athlon3DIcon type="tournaments" size={32} active={isEventsActive} />
+          <Athlon3DIcon type="tournaments" size={26} active={isEventsActive} />
           <span
-            className={`text-[9.5px] font-bold leading-tight ${isEventsActive ? 'text-primary' : ''}`}
+            className={`text-[10px] font-bold leading-tight tracking-tight ${isEventsActive ? 'text-primary' : ''}`}
             style={{ color: isEventsActive ? undefined : 'var(--athlon-text-muted)' }}
           >
             Events
@@ -348,13 +348,13 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
         <div className="relative -top-5 flex items-center justify-center">
           <Link
             href="/practice"
-            className="w-[60px] h-[60px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl"
+            className="w-[56px] h-[56px] rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-[3.5px] group relative overflow-hidden shadow-2xl umpire-center-orb"
             style={{
               backgroundColor: 'var(--athlon-primary)',
               borderColor: 'var(--athlon-navigation)',
               boxShadow: hasLiveMatch
-                ? '0 10px 28px rgba(239, 68, 68, 0.7), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)'
-                : '0 10px 25px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
+                ? '0 8px 20px rgba(239, 68, 68, 0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)'
+                : '0 8px 24px -2px var(--athlon-primary-glow), 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.45), inset 0 -3px 6px rgba(0,0,0,0.3)',
             }}
           >
             {/* 3D Glass Specular Reflection Arc */}
@@ -363,27 +363,27 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
             <img
               src="/umpire.png"
               alt="Umpire"
-              className="w-8 h-8 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.45)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
+              className="w-7 h-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] relative z-10 transition-transform group-hover:scale-110 group-active:scale-95"
             />
 
             {hasLiveMatch && (
-              <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background animate-ping z-20" />
+              <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-background animate-ping z-20" />
             )}
             {hasLiveMatch && (
-              <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-background z-20" />
+              <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-background z-20" />
             )}
           </Link>
         </div>
 
         <Link
           href="/live-score"
-          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-            pathname.startsWith('/live-score') ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+            pathname.startsWith('/live-score') ? 'opacity-100' : 'opacity-70 hover:opacity-100'
           }`}
         >
-          <Athlon3DIcon type="live-score" size={32} active={pathname.startsWith('/live-score')} />
+          <Athlon3DIcon type="live-score" size={26} active={pathname.startsWith('/live-score')} />
           <span
-            className={`text-[9.5px] font-bold leading-tight ${pathname.startsWith('/live-score') ? 'text-red-400' : ''}`}
+            className={`text-[10px] font-bold leading-tight tracking-tight ${pathname.startsWith('/live-score') ? 'text-red-400 font-black' : ''}`}
             style={{ color: pathname.startsWith('/live-score') ? undefined : 'var(--athlon-text-muted)' }}
           >
             Live
@@ -392,13 +392,13 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
 
         <Link
           href={profileHref}
-          className={`flex flex-col items-center gap-0.5 w-16 group transition-opacity ${
-            isProfileActive ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+          className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
+            isProfileActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'
           }`}
         >
-          <Athlon3DIcon type="profile" size={32} active={isProfileActive} />
+          <Athlon3DIcon type="profile" size={26} active={isProfileActive} />
           <span
-            className={`text-[9.5px] font-bold leading-tight ${isProfileActive ? 'text-primary' : ''}`}
+            className={`text-[10px] font-bold leading-tight tracking-tight ${isProfileActive ? 'text-primary' : ''}`}
             style={{ color: isProfileActive ? undefined : 'var(--athlon-text-muted)' }}
           >
             Profile
