@@ -32,7 +32,7 @@ public class MarketplaceInquiryController {
 
     @PutMapping("/{id}/reply")
     public ResponseEntity<MarketplaceInquiryDto> replyToInquiry(
-            @PathVariable("id") Long id,
+            @PathVariable Long id,
             @RequestBody String reply,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {
@@ -40,17 +40,17 @@ public class MarketplaceInquiryController {
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<List<MarketplaceInquiryDto>> getInquiriesForProduct(@PathVariable("productId") Long productId) {
+    public ResponseEntity<List<MarketplaceInquiryDto>> getInquiriesForProduct(@PathVariable Long productId) {
         return ResponseEntity.ok(inquiryService.getInquiriesForProduct(productId));
     }
 
     @GetMapping("/seller/{sellerUserId}")
-    public ResponseEntity<List<MarketplaceInquiryDto>> getInquiriesForSeller(@PathVariable("sellerUserId") String sellerUserId) {
+    public ResponseEntity<List<MarketplaceInquiryDto>> getInquiriesForSeller(@PathVariable String sellerUserId) {
         return ResponseEntity.ok(inquiryService.getInquiriesForSeller(sellerUserId));
     }
 
     @GetMapping("/buyer/{buyerUserId}")
-    public ResponseEntity<List<MarketplaceInquiryDto>> getInquiriesForBuyer(@PathVariable("buyerUserId") String buyerUserId) {
+    public ResponseEntity<List<MarketplaceInquiryDto>> getInquiriesForBuyer(@PathVariable String buyerUserId) {
         return ResponseEntity.ok(inquiryService.getInquiriesForBuyer(buyerUserId));
     }
 }

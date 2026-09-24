@@ -95,49 +95,42 @@ public class MarketplaceDataSeeder implements CommandLineRunner {
     private void seedShopsAndProducts() {
         if (productRepository.count() > 0) return;
 
-        MarketplaceShop savedShop = shopRepository.findBySlug("prosmash-sports").orElse(null);
-        if (savedShop == null) {
-            try {
-                // Seed sample verified shop
-                MarketplaceShop proSmashShop = new MarketplaceShop();
-                proSmashShop.setOwnerUserId("shop_pro_smash_01");
-                proSmashShop.setShopName("ProSmash Sports Hub");
-                proSmashShop.setSlug("prosmash-sports");
-                proSmashShop.setDescription("Certified tournament racket stringing, premier badminton gear, and verified match-grade equipment.");
-                proSmashShop.setAddress("42 Stadium Road, Sports Enclave");
-                proSmashShop.setCity("Chennai");
-                proSmashShop.setState("Tamil Nadu");
-                proSmashShop.setContactPhone("+91 98765 43210");
-                proSmashShop.setContactEmail("care@prosmash.in");
-                proSmashShop.setIsVerified(true);
-                proSmashShop.setRating(BigDecimal.valueOf(4.95));
-                proSmashShop.setTotalReviews(84);
-                proSmashShop.setStatus("ACTIVE");
-                savedShop = shopRepository.save(proSmashShop);
-            } catch (Exception e) {
-                log.warn("Shop seed warning: {}", e.getMessage());
-                savedShop = shopRepository.findBySlug("prosmash-sports").orElse(null);
-            }
+        MarketplaceShop savedShop = null;
+        try {
+            // Seed sample verified shop
+            MarketplaceShop proSmashShop = new MarketplaceShop();
+            proSmashShop.setOwnerUserId("shop_pro_smash_01");
+            proSmashShop.setShopName("ProSmash Sports Hub");
+            proSmashShop.setSlug("prosmash-sports");
+            proSmashShop.setDescription("Certified tournament racket stringing, premier badminton gear, and verified match-grade equipment.");
+            proSmashShop.setAddress("42 Stadium Road, Sports Enclave");
+            proSmashShop.setCity("Chennai");
+            proSmashShop.setState("Tamil Nadu");
+            proSmashShop.setContactPhone("+91 98765 43210");
+            proSmashShop.setContactEmail("care@prosmash.in");
+            proSmashShop.setIsVerified(true);
+            proSmashShop.setRating(BigDecimal.valueOf(4.95));
+            proSmashShop.setTotalReviews(84);
+            proSmashShop.setStatus("ACTIVE");
+            savedShop = shopRepository.save(proSmashShop);
+        } catch (Exception e) {
+            log.warn("Shop seed warning: {}", e.getMessage());
         }
 
-        if (!sellerProfileRepository.findByUserId("shop_pro_smash_01").isPresent()) {
-            try {
-                // Seed Seller Profile for shop
-                MarketplaceSellerProfile shopProfile = new MarketplaceSellerProfile();
-                shopProfile.setUserId("shop_pro_smash_01");
-                shopProfile.setSellerType("VERIFIED_SHOP");
-                shopProfile.setIsSubscriptionActive(true);
-                shopProfile.setSubscriptionTier("SHOP_PRO");
-                shopProfile.setCommissionRatePercent(BigDecimal.valueOf(3.0));
-                shopProfile.setSubscriptionExpiresAt(LocalDateTime.now().plusYears(1));
-                shopProfile.setStatus("ACTIVE");
-                sellerProfileRepository.save(shopProfile);
-            } catch (Exception e) {
-                log.warn("Seller profile seed warning: {}", e.getMessage());
-            }
+        try {
+            // Seed Seller Profile for shop
+            MarketplaceSellerProfile shopProfile = new MarketplaceSellerProfile();
+            shopProfile.setUserId("shop_pro_smash_01");
+            shopProfile.setSellerType("VERIFIED_SHOP");
+            shopProfile.setIsSubscriptionActive(true);
+            shopProfile.setSubscriptionTier("SHOP_PRO");
+            shopProfile.setCommissionRatePercent(BigDecimal.valueOf(3.0));
+            shopProfile.setSubscriptionExpiresAt(LocalDateTime.now().plusYears(1));
+            shopProfile.setStatus("ACTIVE");
+            sellerProfileRepository.save(shopProfile);
+        } catch (Exception e) {
+            log.warn("Seller profile seed warning: {}", e.getMessage());
         }
-
-        Long shopId = savedShop != null ? savedShop.getId() : null;
 
         // Product 1: Yonex Astrox 88D Pro
         MarketplaceProduct p1 = new MarketplaceProduct();
@@ -159,7 +152,7 @@ public class MarketplaceDataSeeder implements CommandLineRunner {
         p1.setSellerId("shop_pro_smash_01");
         p1.setSellerName("ProSmash Sports Hub");
         p1.setSellerRole("Verified Shop");
-        p1.setShopId(shopId);
+        p1.setShopId(savedShop.getId());
         p1.setStatus("AVAILABLE");
         p1.setViewsCount(142);
         p1.setWishlistCount(19);

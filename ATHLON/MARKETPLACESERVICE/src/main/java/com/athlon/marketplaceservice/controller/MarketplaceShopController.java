@@ -19,17 +19,17 @@ public class MarketplaceShopController {
     }
 
     @GetMapping("/{slug}")
-    public ResponseEntity<MarketplaceShopDto> getShopBySlug(@PathVariable("slug") String slug) {
+    public ResponseEntity<MarketplaceShopDto> getShopBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(shopService.getShopBySlug(slug));
     }
 
     @GetMapping("/id/{id}")
-    public ResponseEntity<MarketplaceShopDto> getShopById(@PathVariable("id") Long id) {
+    public ResponseEntity<MarketplaceShopDto> getShopById(@PathVariable Long id) {
         return ResponseEntity.ok(shopService.getShopById(id));
     }
 
     @GetMapping("/owner/{ownerUserId}")
-    public ResponseEntity<List<MarketplaceShopDto>> getShopsByOwner(@PathVariable("ownerUserId") String ownerUserId) {
+    public ResponseEntity<List<MarketplaceShopDto>> getShopsByOwner(@PathVariable String ownerUserId) {
         return ResponseEntity.ok(shopService.getShopsByOwner(ownerUserId));
     }
 
@@ -45,7 +45,7 @@ public class MarketplaceShopController {
 
     @PutMapping("/{id}")
     public ResponseEntity<MarketplaceShopDto> updateShop(
-            @PathVariable("id") Long id,
+            @PathVariable Long id,
             @RequestBody MarketplaceShopDto dto,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {

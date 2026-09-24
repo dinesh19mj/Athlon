@@ -18,7 +18,7 @@ public class MarketplaceCategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<List<MarketplaceCategory>> getAllCategories(@RequestParam(name = "sport", required = false) String sport) {
+    public ResponseEntity<List<MarketplaceCategory>> getAllCategories(@RequestParam(required = false) String sport) {
         if (sport != null && !sport.equalsIgnoreCase("all") && !sport.trim().isEmpty()) {
             return ResponseEntity.ok(categoryRepository.findBySportAndActiveTrueOrderByDisplayOrderAsc(sport));
         }
@@ -26,7 +26,7 @@ public class MarketplaceCategoryController {
     }
 
     @GetMapping("/{slug}")
-    public ResponseEntity<MarketplaceCategory> getCategoryBySlug(@PathVariable("slug") String slug) {
+    public ResponseEntity<MarketplaceCategory> getCategoryBySlug(@PathVariable String slug) {
         return categoryRepository.findBySlug(slug)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

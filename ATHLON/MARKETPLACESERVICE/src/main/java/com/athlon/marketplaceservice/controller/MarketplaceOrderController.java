@@ -31,30 +31,30 @@ public class MarketplaceOrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<MarketplaceOrderDto> getOrderById(@PathVariable("id") Long id) {
+    public ResponseEntity<MarketplaceOrderDto> getOrderById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
     @GetMapping("/number/{orderNumber}")
-    public ResponseEntity<MarketplaceOrderDto> getOrderByNumber(@PathVariable("orderNumber") String orderNumber) {
+    public ResponseEntity<MarketplaceOrderDto> getOrderByNumber(@PathVariable String orderNumber) {
         return ResponseEntity.ok(orderService.getOrderByNumber(orderNumber));
     }
 
     @GetMapping("/buyer/{buyerUserId}")
-    public ResponseEntity<List<MarketplaceOrderDto>> getOrdersForBuyer(@PathVariable("buyerUserId") String buyerUserId) {
+    public ResponseEntity<List<MarketplaceOrderDto>> getOrdersForBuyer(@PathVariable String buyerUserId) {
         return ResponseEntity.ok(orderService.getOrdersForBuyer(buyerUserId));
     }
 
     @GetMapping("/seller/{sellerUserId}")
-    public ResponseEntity<List<MarketplaceOrderDto>> getOrdersForSeller(@PathVariable("sellerUserId") String sellerUserId) {
+    public ResponseEntity<List<MarketplaceOrderDto>> getOrdersForSeller(@PathVariable String sellerUserId) {
         return ResponseEntity.ok(orderService.getOrdersForSeller(sellerUserId));
     }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<MarketplaceOrderDto> updateOrderStatus(
-            @PathVariable("id") Long id,
-            @RequestParam("status") String status,
-            @RequestParam(name = "trackingNumber", required = false) String trackingNumber,
+            @PathVariable Long id,
+            @RequestParam String status,
+            @RequestParam(required = false) String trackingNumber,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id, status, trackingNumber, headerUserId));
