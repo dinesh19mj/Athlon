@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChevronLeft,
@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { MarketplaceApi, ProductCondition, ProductType } from '@/lib/api/marketplace';
 import { useAuthStore } from '@/lib/store/useAuthStore';
@@ -44,15 +45,26 @@ export default function CreateListingPage() {
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddSampleImage = () => {
-    const samples = [
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=800&auto=format&fit=crop',
-    ];
-    const nextImg = samples[images.length % samples.length];
-    setImages((prev) => [...prev, nextImg]);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingImage(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        if (images.length < 5) {
+          const url = await MarketplaceApi.uploadMedia(files[i], 'products');
+          setImages((prev) => [...prev, url]);
+        }
+      }
+    } catch {
+      alert('Could not upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleRemoveImage = (idx: number) => {
@@ -345,14 +357,33 @@ export default function CreateListingPage() {
                 </div>
               ))}
 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                multiple
+                className="hidden"
+              />
+
               {images.length < 5 && (
                 <button
                   type="button"
-                  onClick={handleAddSampleImage}
-                  className="aspect-square rounded-2xl border-2 border-dashed border-white/20 hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-foreground/60 hover:text-primary transition-all active:scale-95 bg-surface/40"
+                  disabled={uploadingImage}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square rounded-2xl border-2 border-dashed border-white/20 hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-foreground/60 hover:text-primary transition-all active:scale-95 bg-surface/40 cursor-pointer disabled:opacity-50"
                 >
-                  <Plus className="w-5 h-5" />
-                  <span className="text-[10px] font-bold">Add Photo</span>
+                  {uploadingImage ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      <span className="text-[10px] font-bold">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5" />
+                      <span className="text-[10px] font-bold">Add Photo</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
