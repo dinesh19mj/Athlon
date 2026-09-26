@@ -46,7 +46,18 @@ export default function CreateListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [eligibility, setEligibility] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    async function loadEligibility() {
+      if (userId) {
+        const el = await MarketplaceApi.getSellerEligibility(userId);
+        setEligibility(el);
+      }
+    }
+    loadEligibility();
+  }, [userId]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -120,17 +131,26 @@ export default function CreateListingPage() {
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-3 pb-16 space-y-6">
       {/* Top Header */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="p-1.5 rounded-full hover:bg-card text-foreground/70"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-xl sm:text-2xl font-black text-foreground">
-          Create Listing
-        </h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="p-1.5 rounded-full hover:bg-card text-foreground/70"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-xl sm:text-2xl font-black text-foreground">
+            Create Listing
+          </h1>
+        </div>
+
+        {eligibility && (
+          <div className="px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[11px] font-black flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{eligibility.commissionRatePercent ?? eligibility.commissionRate ?? 5.0}% Fee on Sale</span>
+          </div>
+        )}
       </div>
 
       {success ? (

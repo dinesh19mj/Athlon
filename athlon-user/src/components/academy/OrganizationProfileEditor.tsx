@@ -556,7 +556,7 @@ export function OrganizationProfileEditor({
     return (
       <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-text-muted font-medium text-xs tracking-wider uppercase">Loading Profile Configuration...</p>
+        <p className="text-foreground/50 font-medium text-xs tracking-wider uppercase">Loading Profile Configuration...</p>
       </div>
     );
   }
@@ -564,21 +564,33 @@ export function OrganizationProfileEditor({
   return (
     <div className={`space-y-6 w-full max-w-full overflow-x-hidden ${isModal ? '' : 'pb-28 sm:pb-8'}`}>
       {/* ── Banner & Identity Pod Preview ── */}
-      <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-xl w-full max-w-full">
+      <div
+        className="relative rounded-3xl overflow-hidden border shadow-xl w-full max-w-full transition-colors"
+        style={{
+          backgroundColor: 'var(--athlon-card)',
+          borderColor: 'var(--athlon-border)',
+          boxShadow:
+            '0 12px 32px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.12)), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
+        }}
+      >
         {/* Cover Photo Backdrop */}
-        <div className="relative w-full h-40 sm:h-52 bg-surface group">
+        <div
+          className="relative w-full h-40 sm:h-52 group overflow-hidden"
+          style={{ backgroundColor: 'var(--athlon-card)' }}
+        >
           <img
             src={coverUrl}
             alt="Academy Banner"
             className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-black/40" />
+          {/* Smooth adaptive gradient veil */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/40" />
 
           {/* Cover Action Button */}
           <button
             type="button"
             onClick={() => coverInputRef.current?.click()}
-            className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/70 hover:bg-black/90 text-foreground text-xs font-semibold backdrop-blur-md border border-white/15 transition-all shadow-md active:scale-95"
+            className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-white text-xs font-bold backdrop-blur-md border border-white/20 transition-all shadow-md active:scale-95"
           >
             <Camera className="w-3.5 h-3.5 text-primary" />
             <span>Change Cover</span>
@@ -592,7 +604,7 @@ export function OrganizationProfileEditor({
           />
 
           <div className="absolute top-3 left-3 flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 backdrop-blur-md">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 text-primary border border-white/20 backdrop-blur-md shadow-md">
               {type}
             </span>
           </div>
@@ -603,7 +615,15 @@ export function OrganizationProfileEditor({
           <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 -mt-10 sm:-mt-12 relative z-10 w-full">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-3 text-center sm:text-left min-w-0 max-w-full">
               <div className="relative group/avatar shrink-0">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface border-4 border-background p-0.5 overflow-hidden shadow-2xl ring-2 ring-primary/30 flex items-center justify-center">
+                <div
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-4 p-0.5 overflow-hidden shadow-2xl flex items-center justify-center transition-all"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-card)',
+                    boxShadow:
+                      '0 10px 25px -5px var(--athlon-shadow, rgba(0,0,0,0.2)), 0 0 0 2px var(--athlon-primary)',
+                  }}
+                >
                   {logoUrl ? (
                     <img src={logoUrl} alt="Logo" className="w-full h-full object-cover rounded-xl" />
                   ) : (
@@ -632,57 +652,85 @@ export function OrganizationProfileEditor({
                 <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight truncate">
                   {name || 'Organization Name'}
                 </h3>
-                <p className="text-xs text-text-secondary line-clamp-1 max-w-md">
+                <p className="text-xs text-foreground/70 dark:text-foreground/60 line-clamp-1 max-w-md font-medium mt-0.5">
                   {bio || 'Set tagline, coaching ethos, and public information.'}
                 </p>
               </div>
             </div>
 
-            {/* Save / Status Button */}
-            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowPreviewModal(true)}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface hover:bg-surface-hover text-foreground text-xs font-bold border border-border transition-all active:scale-95"
-              >
-                <Eye className="w-3.5 h-3.5 text-primary" />
-                <span>Preview</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveProfile}
-                disabled={saving}
-                className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 ${saving
-                  ? 'bg-primary text-primary-foreground opacity-70 cursor-wait'
-                  : hasUnpublishedChanges
-                    ? 'bg-primary hover:bg-primary-hover text-primary-foreground shadow-primary/25 cursor-pointer'
-                    : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 cursor-default'
-                  }`}
-              >
-                {saving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : hasUnpublishedChanges ? (
-                  <Save className="w-3.5 h-3.5" />
-                ) : (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                )}
-                <span>{saving ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Published'}</span>
-              </button>
-            </div>
+            {/* Save / Status Button (Hidden for Organizer) */}
+            {!isOrganizer && (
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowPreviewModal(true)}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-foreground text-xs font-bold border transition-all active:scale-95 shadow-xs"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <Eye className="w-3.5 h-3.5 text-primary" />
+                  <span>Preview</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl font-black text-xs transition-all shadow-md active:scale-95 ${saving
+                    ? 'opacity-70 cursor-wait'
+                    : hasUnpublishedChanges
+                      ? 'hover:brightness-110'
+                      : 'cursor-default'
+                    }`}
+                  style={{
+                    backgroundColor: hasUnpublishedChanges ? 'var(--athlon-primary)' : 'rgba(16, 185, 129, 0.12)',
+                    color: hasUnpublishedChanges ? '#000000' : 'rgb(16, 185, 129)',
+                    border: hasUnpublishedChanges
+                      ? '1px solid var(--athlon-primary)'
+                      : '1px solid rgba(16, 185, 129, 0.3)',
+                  }}
+                >
+                  {saving ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : hasUnpublishedChanges ? (
+                    <Save className="w-3.5 h-3.5" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  )}
+                  <span>{saving ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes' : 'Published'}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Completeness Bar */}
-        <div className="border-t border-border bg-surface/50 px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs w-full max-w-full">
+        <div
+          className="border-t px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs w-full max-w-full"
+          style={{
+            backgroundColor: 'var(--athlon-primary-soft)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
           <div className="flex items-center gap-2 shrink-0">
             <Flame className="w-3.5 h-3.5 text-primary shrink-0" />
             <span className="font-semibold text-foreground text-[11px]">Completeness:</span>
             <span className="text-primary font-bold text-[11px]">{profileHealth.score}%</span>
           </div>
-          <div className="w-24 sm:w-36 h-1.5 bg-surface-hover rounded-full overflow-hidden shrink-0">
+          <div
+            className="w-24 sm:w-36 h-2 rounded-full overflow-hidden shrink-0 border"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
             <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${profileHealth.score}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${profileHealth.score}%`,
+                backgroundColor: 'var(--athlon-primary)',
+              }}
             />
           </div>
         </div>
@@ -764,7 +812,7 @@ export function OrganizationProfileEditor({
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Award className="w-4 h-4 text-primary" /> {isOrganizer ? 'Organizer Identity & Profile' : isAssociation ? 'Association Identity & Profile' : isCoach ? 'Coach Identity & Profile' : 'Organization Identity & Profile'}
               </h3>
-              <p className="text-xs text-text-secondary mt-0.5">
+              <p className="text-xs text-foreground/70 mt-0.5">
                 {isOrganizer
                   ? 'Set public organizer name, tournament bio, event vision, and registration intake status.'
                   : isAssociation
@@ -777,11 +825,11 @@ export function OrganizationProfileEditor({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   {isOrganizer ? 'Organizer / Organization Name *' : isAssociation ? 'Association Name *' : isCoach ? 'Coach / Academy Name *' : 'Organization / Academy Name *'}
                 </label>
                 <div className="relative">
-                  <Building2 className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                  <Building2 className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                   <input
                     type="text"
                     value={name}
@@ -793,25 +841,25 @@ export function OrganizationProfileEditor({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   Organization Type (Restricted)
                 </label>
-                <div className="flex items-center justify-between px-3.5 py-2 bg-surface border border-border rounded-xl text-text-muted text-xs sm:text-sm cursor-not-allowed">
+                <div className="flex items-center justify-between px-3.5 py-2 bg-surface border border-border rounded-xl text-foreground/50 text-xs sm:text-sm cursor-not-allowed">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="font-bold text-foreground uppercase tracking-wide text-xs">{type}</span>
-                    <span className="text-text-muted text-xs truncate hidden sm:inline">
+                    <span className="text-foreground/50 text-xs truncate hidden sm:inline">
                       • {type === 'ACADEMY' ? 'Sports Academy' : type === 'CLUB' ? 'Sports Club' : type === 'ASSOCIATION' ? 'Sports Association' : type === 'ORGANIZER' ? 'Tournament Organizer' : type === 'COACH' ? 'Certified Coach' : 'Sports Venue'}
                     </span>
                   </div>
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-surface-hover text-text-secondary border border-border">
-                    <Lock className="w-3 h-3 text-text-muted" />
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-surface-hover text-foreground/70 border border-border">
+                    <Lock className="w-3 h-3 text-foreground/50" />
                     LOCKED
                   </span>
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   Tagline / Bio
                 </label>
                 <input
@@ -828,11 +876,11 @@ export function OrganizationProfileEditor({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   Established Year
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                  <Calendar className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                   <input
                     type="number"
                     value={establishedYear}
@@ -844,11 +892,11 @@ export function OrganizationProfileEditor({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   {isOrganizer ? 'Reg. / License ID' : 'Reg. / Affiliation ID'}
                 </label>
                 <div className="relative">
-                  <FileCheck className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                  <FileCheck className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                   <input
                     type="text"
                     value={registrationNumber}
@@ -859,47 +907,42 @@ export function OrganizationProfileEditor({
                 </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
-                  {isOrganizer ? 'Tournament Registrations Status' : 'Admissions Status'}
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {(isOrganizer
-                    ? [
-                      { value: 'OPEN', label: 'Registrations Open', desc: 'Accepting tournament entries', color: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' },
-                      { value: 'LIMITED', label: 'Limited Slots', desc: 'Few category slots left', color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
-                      { value: 'CLOSED', label: 'Registrations Closed', desc: 'Entries finalized', color: 'text-rose-500 border-rose-500/30 bg-rose-500/10' },
-                    ]
-                    : [
+              {!isOrganizer && (
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
+                    Admissions Status
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {[
                       { value: 'OPEN', label: 'Admissions Open', desc: 'Accepting enrollments', color: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' },
                       { value: 'LIMITED', label: 'Limited Slots', desc: 'Few seats remaining', color: 'text-amber-500 border-amber-500/30 bg-amber-500/10' },
                       { value: 'CLOSED', label: 'Admissions Closed', desc: 'Waitlist active', color: 'text-rose-500 border-rose-500/30 bg-rose-500/10' },
-                    ]
-                  ).map((item) => {
-                    const isSelected = admissionStatus === item.value;
-                    return (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => setAdmissionStatus(item.value)}
-                        className={`p-3 rounded-2xl border text-left transition-all ${isSelected
-                          ? `${item.color} shadow-sm ring-1 ring-primary/40`
-                          : 'bg-surface border-border text-text-secondary hover:text-foreground'
-                          }`}
-                      >
-                        <div className="text-xs font-bold flex items-center justify-between">
-                          <span>{item.label}</span>
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                        </div>
-                        <p className="text-[10px] text-text-muted mt-0.5">{item.desc}</p>
-                      </button>
-                    );
-                  })}
+                    ].map((item) => {
+                      const isSelected = admissionStatus === item.value;
+                      return (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => setAdmissionStatus(item.value)}
+                          className={`p-3 rounded-2xl border text-left transition-all ${isSelected
+                            ? `${item.color} shadow-sm ring-1 ring-primary/40`
+                            : 'bg-surface border-border text-foreground/70 hover:text-foreground'
+                            }`}
+                        >
+                          <div className="text-xs font-bold flex items-center justify-between">
+                            <span>{item.label}</span>
+                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          </div>
+                          <p className="text-[10px] text-foreground/50 mt-0.5">{item.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   {isOrganizer
                     ? 'About Tournament Organization & Event Vision'
                     : isAssociation
@@ -931,7 +974,7 @@ export function OrganizationProfileEditor({
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Award className="w-4 h-4 text-primary" /> Professional Coach Credentials & Experience
               </h3>
-              <p className="text-xs text-text-secondary mt-0.5">
+              <p className="text-xs text-foreground/70 mt-0.5">
                 Highlight your coaching tenure, official federated certifications, specialization drills, and playing career milestones.
               </p>
             </div>
@@ -939,11 +982,11 @@ export function OrganizationProfileEditor({
             <div className="space-y-5">
               {/* Years of Experience */}
               <div className="max-w-xs">
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   Coaching Experience (Years) *
                 </label>
                 <div className="relative">
-                  <Sparkles className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                  <Sparkles className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                   <input
                     type="number"
                     min={0}
@@ -958,7 +1001,7 @@ export function OrganizationProfileEditor({
 
               {/* Certifications & Licenses */}
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider">
                   Certifications & Coaching Licenses ({coachingCertifications.length})
                 </label>
 
@@ -1018,7 +1061,7 @@ export function OrganizationProfileEditor({
 
               {/* Specializations & Focus Areas */}
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider">
                   Coaching Specializations & Focus Areas ({coachingSpecializations.length})
                 </label>
 
@@ -1078,7 +1121,7 @@ export function OrganizationProfileEditor({
 
               {/* Playing Achievements */}
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   Playing Career Background & Notable Achievements
                 </label>
                 <textarea
@@ -1100,7 +1143,7 @@ export function OrganizationProfileEditor({
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" /> {isOrganizer ? 'Headquarters Location & Direct Contacts' : isAssociation ? 'Secretariat Location & Direct Contacts' : isCoach ? 'Training Base & Direct Contacts' : 'Campus Location & Direct Contacts'}
               </h3>
-              <p className="text-xs text-text-secondary mt-0.5">
+              <p className="text-xs text-foreground/70 mt-0.5">
                 {isOrganizer
                   ? 'Official headquarters address coordinates and organizer / participant communication channels.'
                   : isAssociation
@@ -1111,11 +1154,11 @@ export function OrganizationProfileEditor({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                   {isOrganizer ? 'Headquarters / Venue Address *' : isAssociation ? 'Secretariat / Office Address *' : 'Street Address / Campus Landmark *'}
                 </label>
                 <div className="relative">
-                  <MapPinned className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                  <MapPinned className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                   <input
                     type="text"
                     value={address}
@@ -1128,7 +1171,7 @@ export function OrganizationProfileEditor({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     State <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
@@ -1153,12 +1196,12 @@ export function OrganizationProfileEditor({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                    <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     District <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
@@ -1188,13 +1231,13 @@ export function OrganizationProfileEditor({
                       />
                     )}
                     {districtsList.length > 0 && (
-                      <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                      <ChevronDown className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none" />
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     City / Town *
                   </label>
                   <input
@@ -1207,7 +1250,7 @@ export function OrganizationProfileEditor({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     PIN Code
                   </label>
                   <input
@@ -1220,7 +1263,7 @@ export function OrganizationProfileEditor({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     Country
                   </label>
                   <input
@@ -1236,11 +1279,11 @@ export function OrganizationProfileEditor({
               {/* Contacts */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 border-t border-border">
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     Official Phone / WhatsApp *
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                    <Phone className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                     <input
                       type="text"
                       value={contactPhone}
@@ -1252,11 +1295,11 @@ export function OrganizationProfileEditor({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     Inquiries Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                     <input
                       type="email"
                       value={contactEmail}
@@ -1268,11 +1311,11 @@ export function OrganizationProfileEditor({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     Official Website
                   </label>
                   <div className="relative">
-                    <Globe className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                    <Globe className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                     <input
                       type="text"
                       value={website}
@@ -1284,11 +1327,11 @@ export function OrganizationProfileEditor({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                  <label className="block text-[11px] font-bold text-foreground/70 uppercase tracking-wider mb-1.5">
                     Instagram Handle
                   </label>
                   <div className="relative">
-                    <Share2 className="absolute left-3.5 top-3 w-4 h-4 text-text-muted" />
+                    <Share2 className="absolute left-3.5 top-3 w-4 h-4 text-foreground/50" />
                     <input
                       type="text"
                       value={instagram}
@@ -1317,7 +1360,7 @@ export function OrganizationProfileEditor({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-text-secondary mt-0.5">
+              <p className="text-xs text-foreground/70 mt-0.5">
                 {isClub
                   ? 'Select the primary sport discipline for your club.'
                   : 'Select all sport codes trained or hosted at your facilities.'}
@@ -1334,7 +1377,7 @@ export function OrganizationProfileEditor({
                     onClick={() => handleSportToggle(item.name)}
                     className={`flex items-center gap-2 p-3 rounded-2xl text-xs font-semibold transition-all border text-left ${isSelected
                       ? 'bg-primary/20 text-primary border-primary/50 shadow-sm'
-                      : 'bg-surface text-text-secondary border-border hover:text-foreground'
+                      : 'bg-surface text-foreground/70 border-border hover:text-foreground'
                       }`}
                   >
                     <span className="text-base">{item.icon}</span>
@@ -1371,7 +1414,7 @@ export function OrganizationProfileEditor({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold text-text-secondary hover:text-foreground hover:bg-surface border border-border transition"
+            className="px-4 py-2.5 rounded-xl text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-surface border border-border transition"
           >
             Cancel
           </button>
@@ -1380,14 +1423,16 @@ export function OrganizationProfileEditor({
         )}
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowPreviewModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-surface hover:bg-surface-hover text-foreground text-xs font-bold border border-border transition flex items-center gap-1.5 active:scale-95 shadow-sm"
-          >
-            <Eye className="w-3.5 h-3.5 text-primary" />
-            <span>Preview</span>
-          </button>
+          {!isOrganizer && (
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(true)}
+              className="px-4 py-2.5 rounded-xl bg-card hover:bg-muted/40 text-foreground text-xs font-bold border border-border transition flex items-center gap-1.5 active:scale-95 shadow-sm"
+            >
+              <Eye className="w-3.5 h-3.5 text-primary" />
+              <span>Preview</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={handleSaveProfile}
@@ -1406,7 +1451,13 @@ export function OrganizationProfileEditor({
             ) : (
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             )}
-            <span>{saving ? 'Publishing...' : hasUnpublishedChanges ? 'Publish Changes Now' : 'Published'}</span>
+            <span>
+              {saving
+                ? isOrganizer ? 'Saving...' : 'Publishing...'
+                : hasUnpublishedChanges
+                  ? isOrganizer ? 'Save Changes' : 'Publish Changes Now'
+                  : isOrganizer ? 'Saved' : 'Published'}
+            </span>
           </button>
         </div>
       </div>
@@ -1423,7 +1474,7 @@ export function OrganizationProfileEditor({
               <button
                 type="button"
                 onClick={() => setShowPreviewModal(false)}
-                className="p-1.5 rounded-xl text-text-muted hover:text-foreground hover:bg-surface-hover transition"
+                className="p-1.5 rounded-xl text-foreground/50 hover:text-foreground hover:bg-surface-hover transition"
               >
                 <X className="w-5 h-5" />
               </button>

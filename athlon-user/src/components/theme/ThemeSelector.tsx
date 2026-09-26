@@ -519,19 +519,49 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
       </div>
 
       {/* ─── 5. SUMMARY & RESET FOOTER ─── */}
-      <div className="flex items-center justify-between pt-1 text-xs px-1">
-        <div className="flex items-center gap-1.5 text-foreground/50">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.primary }} />
-          <span>Theme changes are applied in real-time across your workspace.</span>
+      <div
+        className="rounded-2xl p-3 sm:p-3.5 border backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 transition-all"
+        style={{
+          backgroundColor: c.card,
+          borderColor: c.border,
+        }}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span
+              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+              style={{ backgroundColor: c.primary }}
+            />
+            <span
+              className="relative inline-flex rounded-full h-2 w-2"
+              style={{ backgroundColor: c.primary }}
+            />
+          </span>
+          <p className="text-[11px] sm:text-xs font-medium leading-normal" style={{ color: c.textSecondary }}>
+            Theme changes are applied in <span className="font-bold" style={{ color: c.text }}>real-time</span> across your workspace.
+          </p>
         </div>
 
         {!isDefault && (
           <button
             type="button"
             onClick={handleResetDefault}
-            className="flex items-center gap-1 font-bold text-foreground/60 hover:text-primary transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-white/5"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all duration-200 active:scale-95 shrink-0 self-start sm:self-center shadow-xs cursor-pointer group"
+            style={{
+              backgroundColor: c.surface,
+              borderColor: c.border,
+              color: c.textSecondary,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = c.primary;
+              e.currentTarget.style.color = c.primary;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = c.border;
+              e.currentTarget.style.color = c.textSecondary;
+            }}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5 transition-transform duration-300 group-hover:-rotate-90" />
             <span>Reset Defaults</span>
           </button>
         )}

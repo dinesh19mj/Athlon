@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class MarketplaceSellerEligibilityService {
 
     private static final Logger log = LoggerFactory.getLogger(MarketplaceSellerEligibilityService.class);
-    private static final int REQUIRED_TOURNAMENTS = 3;
+    public static final int REQUIRED_TOURNAMENTS = 3;
 
     private final MarketplaceSellerProfileRepository profileRepository;
 
@@ -26,10 +26,7 @@ public class MarketplaceSellerEligibilityService {
     @Transactional
     public SellerEligibilityResponse checkEligibility(String userId) {
         if (userId == null || userId.trim().isEmpty()) {
-            return new SellerEligibilityResponse(
-                userId, false, "NOT_ELIGIBLE", 0, false, null,
-                BigDecimal.ZERO, "User ID is required to verify seller eligibility"
-            );
+            return SellerEligibilityResponse.notEligible("", 0, REQUIRED_TOURNAMENTS);
         }
 
         MarketplaceSellerProfile profile = profileRepository.findByUserId(userId)
@@ -39,24 +36,7 @@ public class MarketplaceSellerEligibilityService {
                     return profileRepository.save(p);
                 });
 
-        // 1. Check if user has an active shop subscription
-        boolean isShopActive = Boolean.TRUE.equals(profile.getIsSubscriptionActive()) &&
-                (profile.getSubscriptionExpiresAt() == null || profile.getSubscriptionExpiresAt().isAfter(LocalDateTime.now()));
-
-        if (isShopActive) {
-            return new SellerEligibilityResponse(
-                userId,
-                true,
-                "VERIFIED_SHOP",
-                profile.getVerifiedTournamentsCount() != null ? profile.getVerifiedTournamentsCount() : 0,
-                true,
-                profile.getSubscriptionTier(),
-                profile.getCommissionRatePercent() != null ? profile.getCommissionRatePercent() : BigDecimal.valueOf(3.0),
-                "Verified shop subscription active. Unlimited commercial marketplace selling enabled."
-            );
-        }
-
-        // 2. Check 3 distinct tournament participations
+        // Query real-time tournament count
         int tournamentsCount = 0;
         try {
             Long count = profileRepository.countVerifiedTournamentsForUser(userId);
@@ -65,42 +45,64 @@ public class MarketplaceSellerEligibilityService {
             log.warn("Could not query tournament participation directly for user {}: {}", userId, ex.getMessage());
             tournamentsCount = profile.getVerifiedTournamentsCount() != null ? profile.getVerifiedTournamentsCount() : 0;
         }
-
-        // Update profile with current count
         profile.setVerifiedTournamentsCount(tournamentsCount);
 
+        // 1. Check if user has an active subscription
+        boolean isSubscribed = profile.isSubscriptionValid();
+
+        if (isSubscribed) {
+            String tier = profile.getSubscriptionTier() != null ? profile.getSubscriptionTier().toUpperCase() : "INDIVIDUAL_PASS";
+            BigDecimal rate = profile.getCommissionRatePercent();
+            Integer maxListings = profile.getMaxActiveListings();
+
+            if (tier.startsWith("SHOP_")) {
+                if (rate == null) {
+                    rate = "SHOP_ENTERPRISE".equals(tier) ? BigDecimal.valueOf(1.5) : BigDecimal.valueOf(2.0);
+                }
+                if (maxListings == null) {
+                    maxListings = -1; // Unlimited for shops
+                }
+                profile.setSellerType("SHOP_OWNER");
+                profile.setCommissionRatePercent(rate);
+                profile.setMaxActiveListings(maxListings);
+                profileRepository.save(profile);
+
+                return SellerEligibilityResponse.shopOwner(userId, tier, tournamentsCount, rate, maxListings);
+            } else {
+                // Individual Athlete Paid Pass
+                if (rate == null) {
+                    rate = BigDecimal.valueOf(2.5);
+                }
+                if (maxListings == null) {
+                    maxListings = 25;
+                }
+                profile.setSellerType("INDIVIDUAL_SUBSCRIBED");
+                profile.setCommissionRatePercent(rate);
+                profile.setMaxActiveListings(maxListings);
+                profileRepository.save(profile);
+
+                return SellerEligibilityResponse.individualSubscribed(userId, tier, tournamentsCount, rate, maxListings);
+            }
+        }
+
+        // 2. Check 3 distinct tournament participations (Free Individual Tier)
         if (tournamentsCount >= REQUIRED_TOURNAMENTS) {
             profile.setTournamentEligibilityVerified(true);
-            profile.setCommissionRatePercent(BigDecimal.valueOf(5.0)); // 5% commission rate for verified individuals
+            profile.setSellerType("INDIVIDUAL_FREE");
+            profile.setSubscriptionTier("NONE");
+            profile.setCommissionRatePercent(BigDecimal.valueOf(5.0)); // 5% commission for tournament veterans
+            profile.setMaxActiveListings(10); // Up to 10 active items
             profileRepository.save(profile);
 
-            return new SellerEligibilityResponse(
-                userId,
-                true,
-                "TOURNAMENT_PARTICIPATION",
-                tournamentsCount,
-                false,
-                null,
-                BigDecimal.valueOf(5.0),
-                String.format("Eligible to sell! You have participated in %d verified tournaments (minimum %d required). 5%% commission applies.",
-                        tournamentsCount, REQUIRED_TOURNAMENTS)
-            );
-        } else {
-            profile.setTournamentEligibilityVerified(false);
-            profileRepository.save(profile);
-
-            int needed = REQUIRED_TOURNAMENTS - tournamentsCount;
-            return new SellerEligibilityResponse(
-                userId,
-                false,
-                "NOT_ELIGIBLE",
-                tournamentsCount,
-                false,
-                null,
-                null,
-                String.format("You have participated in %d of %d required tournaments. Participate in %d more tournament%s or upgrade to a Verified Shop to list items.",
-                        tournamentsCount, REQUIRED_TOURNAMENTS, needed, needed > 1 ? "s" : "")
-            );
+            return SellerEligibilityResponse.tournamentEligible(userId, tournamentsCount, BigDecimal.valueOf(5.0), 10);
         }
+
+        // 3. Not eligible yet
+        profile.setTournamentEligibilityVerified(false);
+        profile.setSellerType("NOT_ELIGIBLE");
+        profileRepository.save(profile);
+
+        int needed = REQUIRED_TOURNAMENTS - tournamentsCount;
+        return SellerEligibilityResponse.notEligible(userId, tournamentsCount, needed);
     }
 }

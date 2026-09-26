@@ -475,14 +475,17 @@ export function MarketingPageClient() {
   ];
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative">
+    <div className="h-[100dvh] md:min-h-screen w-full max-w-full overflow-hidden md:overflow-visible bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative select-none">
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (hidden on md and above)
-         ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-28">
-        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-4 pt-2">
-          {/* ─── Top-Level App Mode Switcher (ATHLON ↔ MARKET) ─── */}
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div className="block md:hidden h-full overflow-y-auto overscroll-none touch-pan-y max-w-full pb-28">
+        {/* ─── Top-Level App Mode Switcher (ATHLON ↔ MARKET) ─── */}
+        <div className="w-full max-w-lg mx-auto px-4 pt-0 pb-0 flex justify-center">
           <AppModeSwitcher />
+        </div>
+
+        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-4 mt-1.5">
 
           {/* ═══════════════════════════════════════════════════════════════════
               HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive)
@@ -756,9 +759,7 @@ export function MarketingPageClient() {
               <path d="M 344 248 L 338 248 M 344 248 L 344 242" stroke="var(--athlon-primary)" strokeWidth="1" opacity="0.35" />
             </svg>
 
-            {/* 7. Tiny Pulsing Starlight / Stadium Spark Particles */}
-            <div className="absolute top-8 right-24 w-1.5 h-1.5 rounded-full bg-primary/70 blur-[0.5px] animate-ping duration-1000 pointer-events-none z-0" />
-            <div className="absolute top-28 right-8 w-1.5 h-1.5 rounded-full bg-primary/50 blur-[0.5px] pointer-events-none z-0" />
+
 
             {/* 8. Top Specular Arc Light */}
             <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.12] dark:from-white/[0.04] via-transparent to-transparent pointer-events-none z-0" />

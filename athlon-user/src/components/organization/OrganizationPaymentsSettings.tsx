@@ -203,44 +203,77 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
   const isOnlineActive = config && (config.onlineOnboardingStatus === 'ACTIVE' || config.onlineOnboardingStatus === 'UNDER_REVIEW');
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-5xl pb-16 sm:pb-6">
-      {/* ── 1. Top Hero Card (Fintech Style) ── */}
-      <div className="relative overflow-hidden rounded-3xl p-4 sm:p-6 bg-gradient-to-br from-card via-card to-primary/[0.05] border border-border/80 shadow-sm">
-        {/* Ambient background glow */}
-        <div className="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-4 sm:space-y-6 max-w-5xl pb-20 sm:pb-8 animate-in fade-in duration-300">
+      {/* ── 1. Top Hero Card (Fintech Command Center) ── */}
+      <div
+        className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-6 border shadow-md transition-all"
+        style={{
+          backgroundColor: 'var(--athlon-card)',
+          borderColor: 'var(--athlon-border)',
+          boxShadow: '0 12px 32px -8px var(--athlon-shadow, rgba(0, 0, 0, 0.12)), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        {/* Subtle Ambient Glow Halos */}
+        <div
+          className="absolute -top-16 -right-16 w-56 h-56 rounded-full blur-3xl pointer-events-none opacity-20 transition-all"
+          style={{ backgroundColor: 'var(--athlon-primary)' }}
+        />
+        <div
+          className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full blur-3xl pointer-events-none opacity-10 transition-all"
+          style={{ backgroundColor: 'var(--athlon-primary)' }}
+        />
 
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-primary/15 border border-primary/30 text-primary flex items-center justify-center shrink-0 shadow-xs">
+        {/* Top Header Row */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
+          <div className="flex items-center sm:items-start gap-3 sm:gap-4">
+            <div
+              className="w-11 h-11 sm:w-13 sm:h-13 rounded-xl sm:rounded-2xl border flex items-center justify-center shrink-0 shadow-sm"
+              style={{
+                backgroundColor: 'var(--athlon-primary-soft)',
+                borderColor: 'var(--athlon-primary)',
+                color: 'var(--athlon-primary)',
+              }}
+            >
               <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[10px] font-black uppercase tracking-wider">
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border shadow-xs"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary-soft)',
+                    borderColor: 'var(--athlon-primary)',
+                    color: 'var(--athlon-primary)',
+                  }}
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   Payments &amp; Settlements
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 text-foreground/75 text-[10px] font-extrabold uppercase">
-                  {paymentMode === 'BOTH' ? 'Hybrid Mode' : paymentMode === 'OFFLINE_ONLY' ? 'Spot / UPI' : 'Online Only'}
+                <span className="px-2 py-0.5 rounded-full bg-foreground/5 border border-foreground/10 text-foreground/75 text-[9px] sm:text-[10px] font-black uppercase tracking-wide">
+                  {paymentMode === 'BOTH' ? 'Hybrid Mode' : paymentMode === 'OFFLINE_ONLY' ? 'Spot / UPI Only' : 'Online Gateway'}
                 </span>
               </div>
-              <h2 className="text-base sm:text-xl font-black text-foreground tracking-tight">
+              <h2 className="text-base sm:text-xl md:text-2xl font-black text-foreground tracking-tight">
                 Universal Payment Gateway
               </h2>
-              <p className="text-xs text-foreground/60 font-medium leading-relaxed max-w-xl">
+              <p className="text-[11px] sm:text-xs text-foreground/60 font-medium leading-relaxed max-w-xl">
                 Accept online registrations via Razorpay, collect spot cash at venue desk, or share direct UPI &amp; bank details.
               </p>
             </div>
           </div>
 
           {/* Quick Header Actions */}
-          <div className="flex items-center gap-2 pt-1 sm:pt-0 self-end sm:self-auto shrink-0">
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
             <button
               onClick={fetchConfig}
               disabled={loading}
               title="Refresh credentials from server"
-              className="p-2 sm:px-3 sm:py-2 rounded-xl border border-border/80 bg-surface/80 hover:bg-surface text-foreground/75 hover:text-foreground text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-xs"
+              className="p-2 sm:px-3 sm:py-2 rounded-xl border text-foreground/75 hover:text-foreground text-[11px] sm:text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-xs hover:bg-foreground/5"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Sync</span>
@@ -248,23 +281,30 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
             <button
               onClick={handleSaveConfig}
               disabled={saving}
-              className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-black text-[11px] sm:text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-primary/25 flex items-center gap-2 disabled:opacity-50 hover:brightness-110"
+              style={{
+                backgroundColor: 'var(--athlon-primary)',
+                color: '#000000',
+              }}
             >
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 stroke-[2.5]" />}
               <span>Save</span>
             </button>
           </div>
         </div>
 
         {/* Feature Pills Strip */}
-        <div className="relative mt-4 pt-3 border-t border-border/50 flex flex-wrap items-center gap-2 text-[11px] text-foreground/60 font-medium">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface/60 border border-border/50">
+        <div
+          className="relative z-10 mt-3 sm:mt-4 pt-3 border-t flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-semibold"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-foreground/[0.03] border border-foreground/10 text-foreground/75">
             <Zap className="w-3 h-3 text-amber-500" /> Instant Online Checkout
           </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface/60 border border-border/50">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-foreground/[0.03] border border-foreground/10 text-foreground/75">
             <Smartphone className="w-3 h-3 text-primary" /> Direct UPI &amp; QR
           </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface/60 border border-border/50">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-foreground/[0.03] border border-foreground/10 text-foreground/75">
             <Banknote className="w-3 h-3 text-emerald-500" /> 0% Platform Commission
           </span>
         </div>
@@ -272,7 +312,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
 
       {/* ── Alerts ── */}
       {errorMessage && (
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 text-red-500 text-xs font-bold animate-in fade-in duration-200">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-3 text-rose-500 text-xs font-bold animate-in fade-in duration-200">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span className="leading-snug">{errorMessage}</span>
         </div>
@@ -286,18 +326,27 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
       )}
 
       {/* ── STEP 1: Payment Acceptance Mode ── */}
-      <div className="p-4 sm:p-6 rounded-3xl bg-card border border-border/80 space-y-3.5 sm:space-y-4 shadow-sm">
+      <div
+        className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl border space-y-3.5 sm:space-y-4 shadow-sm transition-all"
+        style={{
+          backgroundColor: 'var(--athlon-card)',
+          borderColor: 'var(--athlon-border)',
+        }}
+      >
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+            <span
+              className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
+              style={{ color: 'var(--athlon-primary)' }}
+            >
               <span>01</span>
-              <span className="text-border">•</span>
+              <span className="text-foreground/30">•</span>
               <span>Core Policy</span>
             </span>
             <h3 className="text-sm sm:text-base font-black text-foreground mt-0.5">
               Payment Acceptance Mode
             </h3>
-            <p className="text-xs text-foreground/60 mt-0.5 leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-foreground/60 mt-0.5 leading-relaxed">
               Choose how players can pay when registering for your tournaments and bookings.
             </p>
           </div>
@@ -309,36 +358,55 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
           <button
             type="button"
             onClick={() => setPaymentMode('BOTH')}
-            className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between group active:scale-[0.99] ${
+            className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between group active:scale-[0.99] cursor-pointer ${
               paymentMode === 'BOTH'
-                ? 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-primary shadow-sm shadow-primary/10 ring-1 ring-primary/40'
-                : 'bg-surface/50 border-border/80 hover:border-border hover:bg-surface/80'
+                ? 'shadow-md ring-1'
+                : 'hover:border-foreground/20 hover:bg-foreground/[0.02]'
             }`}
+            style={{
+              backgroundColor: paymentMode === 'BOTH' ? 'var(--athlon-primary-soft)' : 'var(--athlon-card)',
+              borderColor: paymentMode === 'BOTH' ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+              outlineColor: 'var(--athlon-primary)',
+            }}
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                    paymentMode === 'BOTH' ? 'bg-primary text-black' : 'bg-foreground/5 text-foreground/60'
-                  }`}>
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                    style={{
+                      backgroundColor: paymentMode === 'BOTH' ? 'var(--athlon-primary)' : 'rgba(128,128,128,0.1)',
+                      color: paymentMode === 'BOTH' ? '#000000' : 'var(--athlon-text)',
+                    }}
+                  >
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
                     <span className="text-xs font-black text-foreground block">
                       Hybrid Checkout
                     </span>
-                    <span className="text-[9px] font-black uppercase tracking-wider text-primary">
+                    <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: 'var(--athlon-primary)' }}>
                       Both Online &amp; Offline
                     </span>
                   </div>
                 </div>
 
                 {paymentMode === 'BOTH' ? (
-                  <div className="w-5 h-5 rounded-full bg-primary text-black flex items-center justify-center shrink-0 shadow-xs">
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
+                    style={{ backgroundColor: 'var(--athlon-primary)', color: '#000000' }}
+                  >
                     <Check className="w-3 h-3 stroke-[3]" />
                   </div>
                 ) : (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20">
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-black uppercase border"
+                    style={{
+                      backgroundColor: 'var(--athlon-primary-soft)',
+                      borderColor: 'var(--athlon-primary)',
+                      color: 'var(--athlon-primary)',
+                    }}
+                  >
                     POPULAR
                   </span>
                 )}
@@ -349,8 +417,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
               </p>
             </div>
 
-            <div className="pt-2.5 mt-2.5 border-t border-border/40 flex items-center justify-between text-[10px] font-bold">
-              <span className="text-primary font-black">RECOMMENDED</span>
+            <div
+              className="pt-2.5 mt-2.5 border-t flex items-center justify-between text-[10px] font-bold"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <span className="font-black" style={{ color: 'var(--athlon-primary)' }}>RECOMMENDED</span>
               <span className="text-foreground/50">Max Registrations</span>
             </div>
           </button>
@@ -359,11 +430,15 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
           <button
             type="button"
             onClick={() => setPaymentMode('OFFLINE_ONLY')}
-            className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between group active:scale-[0.99] ${
+            className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between group active:scale-[0.99] cursor-pointer ${
               paymentMode === 'OFFLINE_ONLY'
-                ? 'bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-500 shadow-sm shadow-emerald-500/10 ring-1 ring-emerald-500/40'
-                : 'bg-surface/50 border-border/80 hover:border-border hover:bg-surface/80'
+                ? 'bg-emerald-500/10 border-emerald-500 shadow-md ring-1 ring-emerald-500/40'
+                : 'hover:border-foreground/20 hover:bg-foreground/[0.02]'
             }`}
+            style={{
+              backgroundColor: paymentMode === 'OFFLINE_ONLY' ? 'rgba(16, 185, 129, 0.08)' : 'var(--athlon-card)',
+              borderColor: paymentMode === 'OFFLINE_ONLY' ? '#10b981' : 'var(--athlon-border)',
+            }}
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -388,7 +463,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                     <Check className="w-3 h-3 stroke-[3]" />
                   </div>
                 ) : (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                  <span className="px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                     0% FEES
                   </span>
                 )}
@@ -399,7 +474,10 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
               </p>
             </div>
 
-            <div className="pt-2.5 mt-2.5 border-t border-border/40 flex items-center justify-between text-[10px] font-bold">
+            <div
+              className="pt-2.5 mt-2.5 border-t flex items-center justify-between text-[10px] font-bold"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
               <span className="text-emerald-500">DIRECT SETTLEMENT</span>
               <span className="text-foreground/50">Manual Verification</span>
             </div>
@@ -409,11 +487,15 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
           <button
             type="button"
             onClick={() => setPaymentMode('ONLINE_ONLY')}
-            className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between group active:scale-[0.99] ${
+            className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between group active:scale-[0.99] cursor-pointer ${
               paymentMode === 'ONLINE_ONLY'
-                ? 'bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent border-amber-500 shadow-sm shadow-amber-500/10 ring-1 ring-amber-500/40'
-                : 'bg-surface/50 border-border/80 hover:border-border hover:bg-surface/80'
+                ? 'bg-amber-500/10 border-amber-500 shadow-md ring-1 ring-amber-500/40'
+                : 'hover:border-foreground/20 hover:bg-foreground/[0.02]'
             }`}
+            style={{
+              backgroundColor: paymentMode === 'ONLINE_ONLY' ? 'rgba(245, 158, 11, 0.08)' : 'var(--athlon-card)',
+              borderColor: paymentMode === 'ONLINE_ONLY' ? '#f59e0b' : 'var(--athlon-border)',
+            }}
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -438,7 +520,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                     <Check className="w-3 h-3 stroke-[3]" />
                   </div>
                 ) : (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                  <span className="px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20">
                     AUTO
                   </span>
                 )}
@@ -449,7 +531,10 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
               </p>
             </div>
 
-            <div className="pt-2.5 mt-2.5 border-t border-border/40 flex items-center justify-between text-[10px] font-bold">
+            <div
+              className="pt-2.5 mt-2.5 border-t flex items-center justify-between text-[10px] font-bold"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
               <span className="text-amber-500">INSTANT CONFIRMATION</span>
               <span className="text-foreground/50">Auto Reconciliation</span>
             </div>
@@ -459,18 +544,27 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
 
       {/* ── STEP 2: Direct Offline & Spot Settlement Setup ── */}
       {(paymentMode === 'OFFLINE_ONLY' || paymentMode === 'BOTH') && (
-        <div className="p-4 sm:p-6 rounded-3xl bg-card border border-border/80 space-y-4 sm:space-y-5 shadow-sm">
-          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+        <div
+          className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl border space-y-4 sm:space-y-5 shadow-sm transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          <div
+            className="flex items-center justify-between border-b pb-3"
+            style={{ borderColor: 'var(--athlon-border)' }}
+          >
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
+              <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
                 <span>02</span>
-                <span className="text-border">•</span>
+                <span className="text-foreground/30">•</span>
                 <span>Direct Settlement</span>
               </span>
               <h3 className="text-sm sm:text-base font-black text-foreground mt-0.5">
                 Offline Channels &amp; Direct UPI Details
               </h3>
-              <p className="text-xs text-foreground/60 mt-0.5 leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-foreground/60 mt-0.5 leading-relaxed">
                 Configure which spot methods are accepted and your direct settlement credentials.
               </p>
             </div>
@@ -478,10 +572,18 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
             <button
               type="button"
               onClick={() => setShowPlayerPreview(!showPlayerPreview)}
-              className="px-2.5 py-1.5 rounded-xl border border-border/80 bg-surface/80 text-foreground/80 hover:text-foreground text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+              className="px-2.5 py-1.5 rounded-xl border text-foreground/80 hover:text-foreground text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 hover:bg-foreground/5"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
               title="Preview how participants see these details"
             >
-              {showPlayerPreview ? <EyeOff className="w-3.5 h-3.5 text-primary" /> : <Eye className="w-3.5 h-3.5 text-primary" />}
+              {showPlayerPreview ? (
+                <EyeOff className="w-3.5 h-3.5" style={{ color: 'var(--athlon-primary)' }} />
+              ) : (
+                <Eye className="w-3.5 h-3.5" style={{ color: 'var(--athlon-primary)' }} />
+              )}
               <span className="hidden sm:inline">{showPlayerPreview ? 'Hide Preview' : 'Player Preview'}</span>
             </button>
           </div>
@@ -496,10 +598,10 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
               <button
                 type="button"
                 onClick={() => setOfflineCashAllowed(!offlineCashAllowed)}
-                className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between active:scale-[0.98] ${
+                className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between active:scale-[0.98] cursor-pointer ${
                   offlineCashAllowed
-                    ? 'bg-emerald-500/10 border-emerald-500/50 text-foreground'
-                    : 'bg-surface/40 border-border/60 text-foreground/50 opacity-60'
+                    ? 'bg-emerald-500/10 border-emerald-500/50 text-foreground shadow-xs'
+                    : 'bg-foreground/[0.02] border-foreground/10 text-foreground/50 opacity-60 hover:opacity-100'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -510,7 +612,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   </div>
                 </div>
                 <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                  offlineCashAllowed ? 'bg-emerald-500 text-black' : 'border border-border/80'
+                  offlineCashAllowed ? 'bg-emerald-500 text-black' : 'border border-foreground/20'
                 }`}>
                   {offlineCashAllowed && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                 </div>
@@ -520,11 +622,15 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
               <button
                 type="button"
                 onClick={() => setOfflineUpiAllowed(!offlineUpiAllowed)}
-                className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between active:scale-[0.98] ${
+                className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between active:scale-[0.98] cursor-pointer ${
                   offlineUpiAllowed
-                    ? 'bg-primary/10 border-primary/50 text-foreground'
-                    : 'bg-surface/40 border-border/60 text-foreground/50 opacity-60'
+                    ? 'border-primary/50 text-foreground shadow-xs'
+                    : 'bg-foreground/[0.02] border-foreground/10 text-foreground/50 opacity-60 hover:opacity-100'
                 }`}
+                style={{
+                  backgroundColor: offlineUpiAllowed ? 'var(--athlon-primary-soft)' : undefined,
+                  borderColor: offlineUpiAllowed ? 'var(--athlon-primary)' : undefined,
+                }}
               >
                 <div className="flex items-center gap-2.5">
                   <span className="text-base">📱</span>
@@ -533,9 +639,12 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                     <span className="text-[10px] text-foreground/50 font-medium">Scan &amp; pay directly</span>
                   </div>
                 </div>
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                  offlineUpiAllowed ? 'bg-primary text-black' : 'border border-border/80'
-                }`}>
+                <div
+                  className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                    offlineUpiAllowed ? 'text-black' : 'border border-foreground/20'
+                  }`}
+                  style={{ backgroundColor: offlineUpiAllowed ? 'var(--athlon-primary)' : undefined }}
+                >
                   {offlineUpiAllowed && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                 </div>
               </button>
@@ -544,10 +653,10 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
               <button
                 type="button"
                 onClick={() => setOfflineBankTransferAllowed(!offlineBankTransferAllowed)}
-                className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between active:scale-[0.98] ${
+                className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between active:scale-[0.98] cursor-pointer ${
                   offlineBankTransferAllowed
-                    ? 'bg-amber-500/10 border-amber-500/50 text-foreground'
-                    : 'bg-surface/40 border-border/60 text-foreground/50 opacity-60'
+                    ? 'bg-amber-500/10 border-amber-500/50 text-foreground shadow-xs'
+                    : 'bg-foreground/[0.02] border-foreground/10 text-foreground/50 opacity-60 hover:opacity-100'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -558,7 +667,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   </div>
                 </div>
                 <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                  offlineBankTransferAllowed ? 'bg-amber-500 text-black' : 'border border-border/80'
+                  offlineBankTransferAllowed ? 'bg-amber-500 text-black' : 'border border-foreground/20'
                 }`}>
                   {offlineBankTransferAllowed && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                 </div>
@@ -568,14 +677,29 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
 
           {/* Live Player Preview Card (Collapsible) */}
           {showPlayerPreview && (
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-surface/90 to-surface/40 border border-primary/30 space-y-3 animate-in fade-in duration-200">
+            <div
+              className="p-3.5 sm:p-4 rounded-2xl border space-y-3 animate-in fade-in duration-200"
+              style={{
+                backgroundColor: 'var(--athlon-primary-soft)',
+                borderColor: 'var(--athlon-primary)',
+              }}
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <span
+                  className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                  style={{ color: 'var(--athlon-primary)' }}
+                >
                   <Eye className="w-3.5 h-3.5" /> Player Checkout Preview
                 </span>
-                <span className="text-[10px] font-bold text-foreground/50">Simulated View</span>
+                <span className="text-[10px] font-bold text-foreground/50">Simulated Participant View</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-card border border-border space-y-2 text-xs">
+              <div
+                className="p-3.5 rounded-xl border space-y-2 text-xs"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
                 <div className="font-bold text-foreground flex items-center justify-between">
                   <span>Pay Offline / Spot to Organizer</span>
                   <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-black">ACTIVE</span>
@@ -583,7 +707,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                 {offlineUpiId && (
                   <div className="flex items-center justify-between pt-1 text-[11px]">
                     <span className="text-foreground/60">UPI ID:</span>
-                    <span className="font-mono font-bold text-primary">{offlineUpiId}</span>
+                    <span className="font-mono font-bold" style={{ color: 'var(--athlon-primary)' }}>{offlineUpiId}</span>
                   </div>
                 )}
                 {offlineAccountNumber && (
@@ -593,7 +717,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   </div>
                 )}
                 {offlineInstructions && (
-                  <p className="text-[11px] text-foreground/75 italic bg-surface/80 p-2 rounded-lg border border-border/50">
+                  <p className="text-[11px] text-foreground/75 italic bg-foreground/5 p-2 rounded-lg border border-foreground/10">
                     &ldquo;{offlineInstructions}&rdquo;
                   </p>
                 )}
@@ -611,7 +735,8 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   <button
                     type="button"
                     onClick={() => copyToClipboard(offlineUpiId, 'upi')}
-                    className="text-[10px] text-primary flex items-center gap-1 hover:underline"
+                    className="text-[10px] flex items-center gap-1 hover:underline cursor-pointer"
+                    style={{ color: 'var(--athlon-primary)' }}
                   >
                     {copiedKey === 'upi' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                     <span>{copiedKey === 'upi' ? 'Copied' : 'Copy'}</span>
@@ -627,7 +752,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   value={offlineUpiId}
                   onChange={(e) => setOfflineUpiId(e.target.value)}
                   placeholder="e.g. sportsclub@okhdfcbank"
-                  className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-surface border border-border/80 text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30 font-mono"
+                  className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30 font-mono"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
                 />
               </div>
             </div>
@@ -647,14 +776,24 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   value={offlineUpiQrUrl}
                   onChange={(e) => setOfflineUpiQrUrl(e.target.value)}
                   placeholder="https://.../upi-qr.png"
-                  className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-surface border border-border/80 text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30"
+                  className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
                 />
               </div>
             </div>
           </div>
 
           {/* Direct Bank Account Details Card */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-surface/50 border border-border/70 space-y-3">
+          <div
+            className="p-3.5 sm:p-4 rounded-2xl border space-y-3"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
             <div className="flex items-center gap-2">
               <Landmark className="w-4 h-4 text-amber-500" />
               <span className="text-xs font-black text-foreground">
@@ -674,7 +813,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   value={offlineAccountHolder}
                   onChange={(e) => setOfflineAccountHolder(e.target.value)}
                   placeholder="e.g. Apex Sports Club"
-                  className="w-full px-3 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30"
+                  className="w-full px-3 py-2 rounded-xl border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
                 />
               </div>
 
@@ -689,7 +832,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   value={offlineAccountNumber}
                   onChange={(e) => setOfflineAccountNumber(e.target.value)}
                   placeholder="e.g. 501002348912"
-                  className="w-full px-3 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30 font-mono"
+                  className="w-full px-3 py-2 rounded-xl border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30 font-mono"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
                 />
               </div>
 
@@ -704,7 +851,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   value={offlineIfscCode}
                   onChange={(e) => setOfflineIfscCode(e.target.value.toUpperCase())}
                   placeholder="e.g. HDFC0001234"
-                  className="w-full px-3 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all uppercase placeholder:text-foreground/30 font-mono"
+                  className="w-full px-3 py-2 rounded-xl border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all uppercase placeholder:text-foreground/30 font-mono"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
                 />
               </div>
 
@@ -719,7 +870,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                   value={offlineBankName}
                   onChange={(e) => setOfflineBankName(e.target.value)}
                   placeholder="e.g. HDFC Bank, Koramangala"
-                  className="w-full px-3 py-2 rounded-xl bg-card border border-border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30"
+                  className="w-full px-3 py-2 rounded-xl border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-foreground/30"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
                 />
               </div>
             </div>
@@ -736,7 +891,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
               value={offlineInstructions}
               onChange={(e) => setOfflineInstructions(e.target.value)}
               placeholder="e.g. Please bring exact cash to reception 30m prior to match or WhatsApp payment screenshot to +91 9876543210 with your Team Name."
-              className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border/80 text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all resize-none placeholder:text-foreground/30"
+              className="w-full px-3.5 py-2 rounded-xl border text-foreground text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all resize-none placeholder:text-foreground/30"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
             />
           </div>
         </div>
@@ -744,28 +903,53 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
 
       {/* ── STEP 3: Razorpay Route Online Gateway Integration ── */}
       {(paymentMode === 'ONLINE_ONLY' || paymentMode === 'BOTH') && (
-        <div className="p-4 sm:p-6 rounded-3xl bg-card border border-border/80 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+        <div
+          className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl border space-y-4 shadow-sm transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          <div
+            className="flex items-center justify-between border-b pb-3"
+            style={{ borderColor: 'var(--athlon-border)' }}
+          >
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+              <span
+                className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
+                style={{ color: 'var(--athlon-primary)' }}
+              >
                 <span>03</span>
-                <span className="text-border">•</span>
+                <span className="text-foreground/30">•</span>
                 <span>Online Gateway</span>
               </span>
               <h3 className="text-sm sm:text-base font-black text-foreground mt-0.5">
                 Razorpay Route Integration
               </h3>
-              <p className="text-xs text-foreground/60 mt-0.5 leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-foreground/60 mt-0.5 leading-relaxed">
                 Automate instant checkout verification and direct payouts into your organization account.
               </p>
             </div>
-            <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/25 text-primary flex items-center justify-center shrink-0">
+            <div
+              className="w-9 h-9 rounded-2xl border flex items-center justify-center shrink-0 shadow-xs"
+              style={{
+                backgroundColor: 'var(--athlon-primary-soft)',
+                borderColor: 'var(--athlon-primary)',
+                color: 'var(--athlon-primary)',
+              }}
+            >
               <Zap className="w-4 h-4" />
             </div>
           </div>
 
           {!isOnlineActive ? (
-            <div className="p-5 sm:p-6 rounded-2xl bg-surface/60 border border-border/80 text-center space-y-3.5">
+            <div
+              className="p-5 sm:p-6 rounded-2xl border text-center space-y-3.5"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-500 flex items-center justify-center mx-auto shadow-xs">
                 <Lock className="w-5 h-5" />
               </div>
@@ -782,7 +966,11 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                 type="button"
                 onClick={handleEnableOnlinePayments}
                 disabled={enabling}
-                className="px-5 py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider hover:bg-primary/90 active:scale-95 transition-all shadow-md shadow-primary/20 inline-flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-primary/20 inline-flex items-center gap-2 disabled:opacity-50 hover:brightness-110 cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: '#000000',
+                }}
               >
                 {enabling ? (
                   <>
@@ -800,7 +988,13 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               {/* Linked Gateway Status */}
-              <div className="p-3.5 rounded-2xl bg-surface/60 border border-border/80 space-y-2">
+              <div
+                className="p-3.5 rounded-2xl border space-y-2"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
                 <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">
                   Account Status
                 </span>
@@ -811,14 +1005,23 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                     <span>ACTIVE</span>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-border/40 text-[11px] text-foreground/60 font-medium flex items-center justify-between">
+                <div
+                  className="pt-2 border-t text-[11px] text-foreground/60 font-medium flex items-center justify-between"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
                   <span>Merchant ID:</span>
                   <span className="font-mono text-foreground font-bold">{config?.maskedBankAccount || 'acc_connected'}</span>
                 </div>
               </div>
 
               {/* Online Acceptance Capability */}
-              <div className="p-3.5 rounded-2xl bg-surface/60 border border-border/80 space-y-2">
+              <div
+                className="p-3.5 rounded-2xl border space-y-2"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
                 <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">
                   Online Capability
                 </span>
@@ -831,7 +1034,7 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                     type="button"
                     onClick={handleTogglePayments}
                     disabled={toggling}
-                    className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center active:scale-95 ${
+                    className={`w-11 h-6 rounded-full p-0.5 transition-colors flex items-center active:scale-95 cursor-pointer ${
                       config?.paymentsEnabled ? 'bg-primary justify-end' : 'bg-surface border border-border justify-start'
                     }`}
                   >
@@ -840,7 +1043,10 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
                     </div>
                   </button>
                 </div>
-                <div className="pt-2 border-t border-border/40 text-[11px] text-emerald-500 font-bold flex items-center gap-1.5">
+                <div
+                  className="pt-2 border-t text-[11px] text-emerald-500 font-bold flex items-center gap-1.5"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
                   <ShieldCheck className="w-3.5 h-3.5" /> Direct Bank Payouts Active
                 </div>
               </div>
@@ -848,35 +1054,6 @@ export const OrganizationPaymentsSettings: React.FC<OrganizationPaymentsSettings
           )}
         </div>
       )}
-
-      {/* ── Mobile Floating Bottom Action Bar ── */}
-      <div className="fixed bottom-0 left-0 right-0 sm:hidden z-40 p-3 bg-card/95 backdrop-blur-xl border-t border-border/80 shadow-2xl flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-[11px] font-bold text-foreground">
-            {paymentMode === 'BOTH' ? 'Hybrid' : paymentMode === 'OFFLINE_ONLY' ? 'Spot / UPI' : 'Online'}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchConfig}
-            disabled={loading}
-            className="p-2 rounded-xl border border-border bg-surface text-foreground/70 active:scale-95 transition-all text-xs font-bold"
-            title="Sync"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            onClick={handleSaveConfig}
-            disabled={saving}
-            className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md shadow-primary/25 flex items-center gap-1.5 disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            <span>Save Settings</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

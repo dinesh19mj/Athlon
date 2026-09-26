@@ -19,8 +19,14 @@ export default function MarketWishlistPage() {
   useEffect(() => {
     async function loadWishlist() {
       setLoading(true);
-      const items = await MarketplaceApi.getWishlist();
-      setWishlist(items);
+      const ids = MarketplaceApi.getWishlist();
+      if (ids.length === 0) {
+        setWishlist([]);
+        setLoading(false);
+        return;
+      }
+      const items = await Promise.all(ids.map((id) => MarketplaceApi.getProductById(id)));
+      setWishlist(items.filter((p): p is MarketProduct => p !== null));
       setLoading(false);
     }
     loadWishlist();

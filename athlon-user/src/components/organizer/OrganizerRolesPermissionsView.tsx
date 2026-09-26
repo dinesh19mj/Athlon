@@ -338,43 +338,43 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
       )}
 
       {/* Main Container */}
-      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5 animate-in fade-in duration-300">
+      <div className="max-w-7xl mx-auto p-2.5 sm:p-4 md:p-6 space-y-3 sm:space-y-5 animate-in fade-in duration-300">
         {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-foreground/5">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/25 flex items-center justify-center text-xl shadow-inner shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-foreground/5">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/25 flex items-center justify-center text-base sm:text-xl shadow-inner shrink-0">
               🛡️
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg md:text-xl font-black text-foreground tracking-tight">
-                  Roles & Permissions
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="text-sm sm:text-lg md:text-xl font-black text-foreground tracking-tight leading-tight">
+                  Roles &amp; Permissions
                 </h1>
               </div>
-              <p className="text-xs font-semibold text-foreground/50 mt-0.5">
-                Appoint tournament officials by phone number & configure granular module access.
+              <p className="text-[10px] sm:text-xs font-semibold text-foreground/50 mt-0.5 line-clamp-1 sm:line-clamp-none">
+                Appoint tournament officials by phone number &amp; configure granular module access.
               </p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 self-end sm:self-center">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="p-2.5 md:px-3.5 md:py-2 rounded-xl bg-surface border border-foreground/10 text-foreground/70 active:scale-95 transition-all text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="p-1.5 sm:p-2.5 md:px-3.5 md:py-2 rounded-lg sm:rounded-xl bg-surface border border-foreground/10 text-foreground/70 active:scale-95 transition-all text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-xs"
               title="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
               <span className="hidden md:inline">Refresh</span>
             </button>
 
             {canManage && activeTab === 'OFFICIALS' && (
               <button
                 onClick={handleOpenAddModal}
-                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-black text-xs font-black flex items-center gap-1.5 shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-primary hover:bg-primary/90 text-black text-[11px] sm:text-xs font-black flex items-center gap-1.5 shadow-md shadow-primary/20 active:scale-95 transition-all"
               >
-                <UserPlus className="w-4 h-4 stroke-[3]" />
+                <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />
                 <span>Appoint Official</span>
               </button>
             )}
@@ -382,25 +382,25 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
         </div>
 
         {/* View Switcher Tabs (Officials vs Permissions Matrix) */}
-        <div className="flex items-center gap-2 p-1 bg-surface border border-foreground/10 rounded-2xl max-w-md">
+        <div className="flex items-center gap-1 sm:gap-2 p-0.5 sm:p-1 bg-surface border border-foreground/10 rounded-xl sm:rounded-2xl max-w-md">
           <button
             onClick={() => setActiveTab('OFFICIALS')}
-            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'OFFICIALS'
-              ? 'bg-foreground text-background shadow-sm'
+            className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${activeTab === 'OFFICIALS'
+              ? 'bg-foreground text-background shadow-xs'
               : 'text-foreground/60 hover:text-foreground'
               }`}
           >
-            <Users className="w-3.5 h-3.5" />
+            <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>Officials ({officials.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('PERMISSIONS')}
-            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'PERMISSIONS'
-              ? 'bg-foreground text-background shadow-sm'
+            className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-black transition-all flex items-center justify-center gap-1.5 sm:gap-2 ${activeTab === 'PERMISSIONS'
+              ? 'bg-foreground text-background shadow-xs'
               : 'text-foreground/60 hover:text-foreground'
               }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
+            <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             <span>Permissions Matrix</span>
           </button>
         </div>
@@ -621,42 +621,75 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 2: GRANULAR PERMISSIONS MATRIX                                        */}
+        {/* TAB 2: GRANULAR PERMISSIONS MATRIX (COMPACT MOBILE + FULL DESKTOP)        */}
         {/* ========================================================================= */}
         {activeTab === 'PERMISSIONS' && (
-          <div className="space-y-4">
-            {/* Top Bar for Permissions Matrix */}
-            <div className="p-4 rounded-3xl bg-surface border border-foreground/10 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
-                    <SlidersHorizontal className="w-4 h-4 text-primary" />
+          <div className="space-y-2.5 sm:space-y-4 animate-in fade-in duration-300">
+            {/* 1. Matrix Header & Controls Hub */}
+            <div
+              className="p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-3xl border shadow-md sm:shadow-lg space-y-2.5 sm:space-y-4 transition-all"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+                boxShadow:
+                  '0 12px 32px -8px var(--athlon-shadow, rgba(0, 0, 0, 0.12)), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3.5">
+                <div className="space-y-0.5 sm:space-y-1">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border shadow-xs"
+                      style={{
+                        backgroundColor: 'var(--athlon-primary-soft)',
+                        borderColor: 'var(--athlon-primary)',
+                        color: 'var(--athlon-primary)',
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      Role Governance
+                    </span>
+                    <span className="text-[10px] sm:text-xs text-foreground/40 font-mono">•</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-foreground/60">
+                      {ORGANIZER_MODULES_CONFIG.length} Modules
+                    </span>
+                  </div>
+                  <h3 className="text-sm sm:text-base md:text-lg font-black text-foreground flex items-center gap-1.5 sm:gap-2 tracking-tight">
+                    <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
                     Role-Based Access Matrix
                   </h3>
-                  <p className="text-xs font-semibold text-foreground/50 mt-0.5">
-                    Configure which modules each appointed organizer role can Manage, View, or is Restricted from.
+                  <p className="text-[10px] sm:text-xs text-foreground/60 font-medium hidden sm:block">
+                    Configure granular permissions for appointed tournament staff, directors, and referees.
                   </p>
                 </div>
 
                 {canManage && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 self-start sm:self-center shrink-0">
                     <button
                       onClick={handleResetPermissions}
                       disabled={resettingPermissions}
-                      className="px-3.5 py-2 rounded-xl bg-background border border-foreground/10 text-foreground/70 hover:text-foreground text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+                      className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all border active:scale-95 disabled:opacity-50 text-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                      style={{
+                        backgroundColor: 'var(--athlon-card)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
                     >
-                      {resettingPermissions ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Reset to Defaults'}
+                      {resettingPermissions ? <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" /> : 'Reset Defaults'}
                     </button>
                     <button
                       onClick={handleSavePermissions}
                       disabled={savingPermissions}
-                      className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black shadow-lg shadow-primary/20 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black shadow-md sm:shadow-lg shadow-primary/25 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50 hover:brightness-110"
+                      style={{
+                        backgroundColor: 'var(--athlon-primary)',
+                        color: '#000000',
+                      }}
                     >
                       {savingPermissions ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
                       ) : (
                         <>
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
                           <span>Save Matrix</span>
                         </>
                       )}
@@ -665,45 +698,140 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
                 )}
               </div>
 
-              {/* Role Selection Tabs */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar pt-2 border-t border-foreground/5">
+              {/* Role Selection Horizontal Capsule Rail */}
+              <div
+                className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 hide-scrollbar pt-2 sm:pt-3 border-t"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
                 {ORGANIZER_ROLES_CONFIG.map((r) => {
                   const isSelected = selectedMatrixRole === r.id;
+                  const roleMatrix = permissionsMatrix[r.id] || {};
+                  const mCount = Object.values(roleMatrix).filter((v) => v === 'MANAGE').length;
+
                   return (
                     <button
                       key={r.id}
                       onClick={() => setSelectedMatrixRole(r.id)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 border ${isSelected
-                        ? 'bg-foreground text-background border-foreground shadow-sm'
-                        : 'bg-background border-foreground/10 text-foreground/60 hover:text-foreground'
-                        }`}
+                      className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 sm:gap-2 border active:scale-95 shadow-xs ${
+                        isSelected
+                          ? 'shadow-sm sm:shadow-md scale-[1.02]'
+                          : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
+                      }`}
+                      style={{
+                        backgroundColor: isSelected
+                          ? 'var(--athlon-primary)'
+                          : 'var(--athlon-card)',
+                        borderColor: isSelected
+                          ? 'var(--athlon-primary)'
+                          : 'var(--athlon-border)',
+                        color: isSelected ? '#000000' : undefined,
+                      }}
                     >
-                      <span>{r.icon}</span>
-                      <span>{r.label}</span>
+                      <span className="text-xs sm:text-sm">{r.icon}</span>
+                      <span className={isSelected ? 'font-black text-black' : 'font-bold'}>
+                        {r.label}
+                      </span>
+                      <span
+                        className={`text-[9px] sm:text-[10px] px-1 py-0.2 sm:px-1.5 rounded-md font-mono ${
+                          isSelected
+                            ? 'bg-black/20 text-black font-black'
+                            : 'bg-foreground/5 text-foreground/50'
+                        }`}
+                      >
+                        {mCount}M
+                      </span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Selected Role Description Info Box */}
+            {/* 2. Selected Role Command Hero Card */}
             {(() => {
               const currentRoleObj = ORGANIZER_ROLES_CONFIG.find((r) => r.id === selectedMatrixRole);
+              const roleMatrix = permissionsMatrix[selectedMatrixRole] || {};
+              const manageCount = Object.values(roleMatrix).filter((v) => v === 'MANAGE').length;
+              const viewCount = Object.values(roleMatrix).filter((v) => v === 'VIEW').length;
+              const noneCount = Object.values(roleMatrix).filter((v) => v === 'NONE').length;
+
               return (
-                <div className="p-3.5 rounded-2xl bg-surface border border-foreground/10 flex items-start gap-2.5 text-xs">
-                  <div className="text-xl shrink-0 mt-0.5">{currentRoleObj?.icon || '🛡️'}</div>
-                  <div>
-                    <h4 className="font-extrabold text-foreground">{currentRoleObj?.label}</h4>
-                    <p className="text-foreground/60 text-[11px] font-medium mt-0.5">
-                      {currentRoleObj?.description}
-                    </p>
+                <div
+                  className="relative overflow-hidden p-3 sm:p-4 md:p-5 rounded-2xl sm:rounded-3xl border shadow-sm sm:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 transition-all"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  {/* Subtle top accent beam */}
+                  <div
+                    className="absolute top-0 inset-x-0 h-[2px] opacity-75 pointer-events-none"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
+                    }}
+                  />
+
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                    <div
+                      className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border flex items-center justify-center text-lg sm:text-2xl shrink-0 shadow-xs sm:shadow-md"
+                      style={{
+                        backgroundColor: 'var(--athlon-primary-soft)',
+                        borderColor: 'var(--athlon-primary)',
+                      }}
+                    >
+                      {currentRoleObj?.icon || '🛡️'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <h4 className="font-black text-xs sm:text-base md:text-lg text-foreground tracking-tight leading-none">
+                          {currentRoleObj?.label}
+                        </h4>
+                        <span
+                          className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider border"
+                          style={{
+                            backgroundColor: 'var(--athlon-primary-soft)',
+                            borderColor: 'var(--athlon-primary)',
+                            color: 'var(--athlon-primary)',
+                          }}
+                        >
+                          Active
+                        </span>
+                      </div>
+                      <p className="text-foreground/70 text-[10px] sm:text-xs font-medium mt-0.5 leading-snug line-clamp-1 sm:line-clamp-none max-w-2xl">
+                        {currentRoleObj?.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Summary Telemetry Badges */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start md:self-center">
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-[10px] sm:text-xs font-black shadow-xs">
+                      <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span>{manageCount} Manage</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25 text-[10px] sm:text-xs font-black shadow-xs">
+                      <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span>{viewCount} View</span>
+                    </span>
+                    {noneCount > 0 && (
+                      <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 text-[10px] sm:text-xs font-black shadow-xs">
+                        <EyeOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span>{noneCount} Locked</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               );
             })()}
 
-            {/* Module Permissions Grid */}
-            <div className="rounded-3xl bg-surface border border-foreground/10 divide-y divide-foreground/5 overflow-hidden shadow-sm">
+            {/* 3. Module Permissions Grid List */}
+            <div
+              className="rounded-2xl sm:rounded-3xl border divide-y divide-border overflow-hidden shadow-md sm:shadow-xl transition-all"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
               {ORGANIZER_MODULES_CONFIG.map((module) => {
                 const currentLevel = permissionsMatrix[selectedMatrixRole]?.[module.id] || 'VIEW';
                 const isAdminRole = selectedMatrixRole === 'ADMIN';
@@ -711,54 +839,83 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
                 return (
                   <div
                     key={module.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-foreground/[0.01] transition-colors"
+                    className="p-3 sm:p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 hover:bg-foreground/[0.02] transition-colors"
                   >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-2xl bg-background border border-foreground/10 flex items-center justify-center text-lg shrink-0 shadow-sm">
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                      <div
+                        className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center text-base sm:text-xl shrink-0 shadow-xs transition-transform group-hover:scale-105"
+                        style={{
+                          backgroundColor: 'var(--athlon-primary-soft)',
+                          borderColor: 'var(--athlon-primary)',
+                        }}
+                      >
                         {module.icon}
                       </div>
-                      <div>
-                        <h4 className="font-extrabold text-sm text-foreground">{module.label}</h4>
-                        <p className="text-xs text-foreground/40 font-medium">{module.desc}</p>
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <h4 className="font-black text-xs sm:text-sm text-foreground tracking-tight truncate">
+                            {module.label}
+                          </h4>
+                          {isAdminRole && (
+                            <span className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] sm:text-xs text-foreground/60 font-medium leading-tight line-clamp-1 sm:line-clamp-none max-w-xl">
+                          {module.desc}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Access Level Toggle Group */}
-                    <div className="flex items-center gap-1.5 self-end sm:self-center">
+                    {/* Tri-State Segmented Control Capsule */}
+                    <div
+                      className="w-full sm:w-auto grid grid-cols-3 sm:flex items-center p-0.5 sm:p-1 rounded-xl sm:rounded-2xl gap-0.5 sm:gap-1 shrink-0 self-stretch sm:self-center shadow-inner"
+                      style={{
+                        backgroundColor: 'var(--athlon-card)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
                       <button
                         type="button"
                         disabled={!canManage || isAdminRole}
                         onClick={() => handleToggleMatrixAccess(module.id, 'MANAGE')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border ${currentLevel === 'MANAGE'
-                          ? 'bg-emerald-500 text-black border-emerald-500 shadow-sm'
-                          : 'bg-background border-foreground/10 text-foreground/50 hover:text-foreground'
-                          }`}
+                        className={`py-1 sm:py-1.5 px-1 sm:px-3 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 sm:gap-1.5 active:scale-95 ${
+                          currentLevel === 'MANAGE'
+                            ? 'bg-emerald-500 text-black shadow-sm sm:shadow-md shadow-emerald-500/25 border border-emerald-400 scale-[1.02]'
+                            : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
+                        }`}
                       >
-                        MANAGE
+                        <ShieldCheck className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 shrink-0" />
+                        <span>MANAGE</span>
                       </button>
 
                       <button
                         type="button"
                         disabled={!canManage || isAdminRole}
                         onClick={() => handleToggleMatrixAccess(module.id, 'VIEW')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border ${currentLevel === 'VIEW'
-                          ? 'bg-blue-500 text-white border-blue-500 shadow-sm'
-                          : 'bg-background border-foreground/10 text-foreground/50 hover:text-foreground'
-                          }`}
+                        className={`py-1 sm:py-1.5 px-1 sm:px-3 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 sm:gap-1.5 active:scale-95 ${
+                          currentLevel === 'VIEW'
+                            ? 'bg-sky-500 text-white shadow-sm sm:shadow-md shadow-sky-500/25 border border-sky-400 scale-[1.02]'
+                            : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
+                        }`}
                       >
-                        VIEW ONLY
+                        <Eye className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 shrink-0" />
+                        <span>VIEW ONLY</span>
                       </button>
 
                       <button
                         type="button"
                         disabled={!canManage || isAdminRole}
                         onClick={() => handleToggleMatrixAccess(module.id, 'NONE')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border ${currentLevel === 'NONE'
-                          ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
-                          : 'bg-background border-foreground/10 text-foreground/50 hover:text-foreground'
-                          }`}
+                        className={`py-1 sm:py-1.5 px-1 sm:px-3 rounded-lg sm:rounded-xl text-[9px] sm:text-xs font-black transition-all flex items-center justify-center gap-1 sm:gap-1.5 active:scale-95 ${
+                          currentLevel === 'NONE'
+                            ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 scale-[1.02]'
+                            : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
+                        }`}
                       >
-                        NO ACCESS
+                        <EyeOff className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 shrink-0" />
+                        <span>NO ACCESS</span>
                       </button>
                     </div>
                   </div>

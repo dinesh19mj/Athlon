@@ -35,6 +35,11 @@ spring:
           predicates:
             - Path=/api/payments/**
 
+        - id: marketplace_route
+          uri: http://localhost:5055
+          predicates:
+            - Path=/api/marketplace/**, /api/platform/**
+
       httpclient:
         wiretap: true
 

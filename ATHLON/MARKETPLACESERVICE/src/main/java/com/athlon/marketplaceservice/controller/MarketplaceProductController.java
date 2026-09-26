@@ -24,17 +24,17 @@ public class MarketplaceProductController {
 
     @GetMapping
     public ResponseEntity<Page<MarketplaceProductDto>> searchProducts(
-            @RequestParam(required = false) String sport,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String condition,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) Boolean isVerified,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) String query,
-            @RequestParam(required = false, defaultValue = "newest") String sortBy,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(value = "sport", required = false) String sport,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "condition", required = false) String condition,
+            @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
+            @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
+            @RequestParam(value = "isVerified", required = false) Boolean isVerified,
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "sortBy", required = false, defaultValue = "newest") String sortBy,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
     ) {
         Page<MarketplaceProductDto> results = productService.searchProducts(
                 sport, category, condition, minPrice, maxPrice, isVerified, location, query, sortBy, page, size
@@ -43,7 +43,7 @@ public class MarketplaceProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<MarketplaceProductDto> getProductById(@PathVariable Long id) {
+    public ResponseEntity<MarketplaceProductDto> getProductById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
@@ -59,7 +59,7 @@ public class MarketplaceProductController {
 
     @PutMapping("/{id}")
     public ResponseEntity<MarketplaceProductDto> updateProduct(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody MarketplaceProductRequest req,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {
@@ -68,7 +68,7 @@ public class MarketplaceProductController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {
         productService.deleteProduct(id, headerUserId);
@@ -76,17 +76,17 @@ public class MarketplaceProductController {
     }
 
     @PostMapping("/{id}/wishlist")
-    public ResponseEntity<MarketplaceProductDto> toggleWishlist(@PathVariable Long id) {
+    public ResponseEntity<MarketplaceProductDto> toggleWishlist(@PathVariable("id") Long id) {
         return ResponseEntity.ok(productService.toggleWishlist(id));
     }
 
     @GetMapping("/seller/{sellerId}")
-    public ResponseEntity<List<MarketplaceProductDto>> getProductsBySeller(@PathVariable String sellerId) {
+    public ResponseEntity<List<MarketplaceProductDto>> getProductsBySeller(@PathVariable("sellerId") String sellerId) {
         return ResponseEntity.ok(productService.getProductsBySeller(sellerId));
     }
 
     @GetMapping("/shop/{shopId}")
-    public ResponseEntity<List<MarketplaceProductDto>> getProductsByShop(@PathVariable Long shopId) {
+    public ResponseEntity<List<MarketplaceProductDto>> getProductsByShop(@PathVariable("shopId") Long shopId) {
         return ResponseEntity.ok(productService.getProductsByShop(shopId));
     }
 }

@@ -630,9 +630,11 @@ body {
   will-change: transform;
 }
 
-/* Light Theme: Preserve the exact look the user loves (3.5px white collar, soft drop shadow) */
+/* Light Theme: Clean white collar with soft drop shadow */
 html.light .umpire-center-orb,
 html.light .fixed-bottom-nav a[href="/practice"],
+:root.light .umpire-center-orb,
+:root.light .fixed-bottom-nav a[href="/practice"],
 :root:not(.dark) .umpire-center-orb,
 :root:not(.dark) .fixed-bottom-nav a[href="/practice"] {
   background-color: var(--athlon-primary) !important;
@@ -643,30 +645,34 @@ html.light .fixed-bottom-nav a[href="/practice"],
               inset 0 -3px 6px rgba(0, 0, 0, 0.25) !important;
 }
 
-/* Dark Theme: Luminous 3D Spherical Orb with Crisp White Collar, Deep Sphere Gradient & Real 3D Depth */
+/* Dark Theme: Seamless 3D Spherical Orb with NO white border, deep volumetric 3D lighting & socket shadow */
 html.dark .umpire-center-orb,
-html.dark .fixed-bottom-nav a[href="/practice"] {
+html.dark .fixed-bottom-nav a[href="/practice"],
+:root.dark .umpire-center-orb,
+:root.dark .fixed-bottom-nav a[href="/practice"] {
   background: radial-gradient(
     circle at 35% 26%,
-    var(--athlon-primary-light, var(--athlon-primary)) 0%,
-    var(--athlon-primary) 50%,
-    var(--athlon-primary-dark, #062612) 100%
+    var(--athlon-primary-light, #54AC68) 0%,
+    var(--athlon-primary, #349650) 44%,
+    var(--athlon-primary-dark, #0d3a1d) 80%,
+    #021308 100%
   ) !important;
-  border-color: #FFFFFF !important;
-  box-shadow: 0 0 24px -2px var(--athlon-primary-glow),
-              0 12px 28px -4px rgba(0, 0, 0, 0.9),
-              0 0 0 1px rgba(255, 255, 255, 0.25),
-              inset 0 3px 6px rgba(255, 255, 255, 0.75),
-              inset 0 -5px 10px rgba(0, 0, 0, 0.65),
-              inset 0 0 12px rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--athlon-navigation, #081014) !important;
+  box-shadow: 0 0 28px -2px var(--athlon-primary-glow),
+              0 14px 32px -4px rgba(0, 0, 0, 0.95),
+              0 4px 12px rgba(0, 0, 0, 0.8),
+              0 0 0 1px rgba(255, 255, 255, 0.08),
+              inset 0 2.5px 5px rgba(255, 255, 255, 0.45),
+              inset 0 -6px 12px rgba(0, 0, 0, 0.88),
+              inset 0 0 14px rgba(255, 255, 255, 0.06) !important;
 }
 
 html.dark .umpire-center-orb > div:first-child,
 html.dark .fixed-bottom-nav a[href="/practice"] > div:first-child {
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.65) 0%,
-    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
     transparent 100%
   ) !important;
 }

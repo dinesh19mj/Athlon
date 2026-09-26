@@ -33,26 +33,26 @@ public class MarketplaceOfferController {
 
     @PutMapping("/{id}/respond")
     public ResponseEntity<MarketplaceOfferDto> respondToOffer(
-            @PathVariable Long id,
-            @RequestParam String status,
-            @RequestParam(required = false) BigDecimal counterAmount,
+            @PathVariable("id") Long id,
+            @RequestParam("status") String status,
+            @RequestParam(value = "counterAmount", required = false) BigDecimal counterAmount,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {
         return ResponseEntity.ok(offerService.respondToOffer(id, status, counterAmount, headerUserId));
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<List<MarketplaceOfferDto>> getOffersForProduct(@PathVariable Long productId) {
+    public ResponseEntity<List<MarketplaceOfferDto>> getOffersForProduct(@PathVariable("productId") Long productId) {
         return ResponseEntity.ok(offerService.getOffersForProduct(productId));
     }
 
     @GetMapping("/seller/{sellerUserId}")
-    public ResponseEntity<List<MarketplaceOfferDto>> getOffersForSeller(@PathVariable String sellerUserId) {
+    public ResponseEntity<List<MarketplaceOfferDto>> getOffersForSeller(@PathVariable("sellerUserId") String sellerUserId) {
         return ResponseEntity.ok(offerService.getOffersForSeller(sellerUserId));
     }
 
     @GetMapping("/buyer/{buyerUserId}")
-    public ResponseEntity<List<MarketplaceOfferDto>> getOffersForBuyer(@PathVariable String buyerUserId) {
+    public ResponseEntity<List<MarketplaceOfferDto>> getOffersForBuyer(@PathVariable("buyerUserId") String buyerUserId) {
         return ResponseEntity.ok(offerService.getOffersForBuyer(buyerUserId));
     }
 }

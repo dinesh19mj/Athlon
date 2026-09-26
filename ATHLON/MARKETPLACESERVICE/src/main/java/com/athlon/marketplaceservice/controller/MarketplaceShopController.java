@@ -18,21 +18,48 @@ public class MarketplaceShopController {
         this.shopService = shopService;
     }
 
-    @GetMapping("/{slug}")
-    public ResponseEntity<MarketplaceShopDto> getShopBySlug(@PathVariable String slug) {
-        return ResponseEntity.ok(shopService.getShopBySlug(slug));
+    /**
+     * Get all active marketplace shops (optionally filter by ownerUserId)
+     */
+    @GetMapping
+    public ResponseEntity<List<MarketplaceShopDto>> getAllShops(
+            @RequestParam(value = "ownerUserId", required = false) String ownerUserId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId
+    ) {
+        String filterUser = ownerUserId != null && !ownerUserId.isEmpty() ? ownerUserId : null;
+        if (filterUser != null) {
+            return ResponseEntity.ok(shopService.getShopsByOwner(filterUser));
+        }
+        return ResponseEntity.ok(shopService.getAllShops());
     }
 
-    @GetMapping("/id/{id}")
-    public ResponseEntity<MarketplaceShopDto> getShopById(@PathVariable Long id) {
+    /**
+     * Get shop details by numeric ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<MarketplaceShopDto> getShopById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(shopService.getShopById(id));
     }
 
+    /**
+     * Get shop details by unique storefront slug
+     */
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<MarketplaceShopDto> getShopBySlug(@PathVariable("slug") String slug) {
+        return ResponseEntity.ok(shopService.getShopBySlug(slug));
+    }
+
+    /**
+     * Get all shops owned by a specific user
+     */
     @GetMapping("/owner/{ownerUserId}")
-    public ResponseEntity<List<MarketplaceShopDto>> getShopsByOwner(@PathVariable String ownerUserId) {
+    public ResponseEntity<List<MarketplaceShopDto>> getShopsByOwner(@PathVariable("ownerUserId") String ownerUserId) {
         return ResponseEntity.ok(shopService.getShopsByOwner(ownerUserId));
     }
 
+    /**
+     * Create / Register a new Sports Shop storefront
+     */
     @PostMapping
     public ResponseEntity<MarketplaceShopDto> createShop(
             @RequestBody MarketplaceShopDto dto,
@@ -43,9 +70,23 @@ public class MarketplaceShopController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @PutMapping("/{id}")
+    /**
+     * Create / Register endpoint alias with explicit name
+     */
+    @PostMapping("/create")
+    public ResponseEntity<MarketplaceShopDto> createShopExplicit(
+            @RequestBody MarketplaceShopDto dto,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId
+    ) {
+        return createShop(dto, headerUserId);
+    }
+
+    /**
+     * Update an existing Sports Shop profile (using POST mapping)
+     */
+    @PostMapping("/update/{id}")
     public ResponseEntity<MarketplaceShopDto> updateShop(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody MarketplaceShopDto dto,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId
     ) {

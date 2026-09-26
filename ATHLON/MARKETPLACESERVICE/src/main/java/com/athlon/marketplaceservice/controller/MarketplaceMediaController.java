@@ -49,8 +49,8 @@ public class MarketplaceMediaController {
 
     @GetMapping("/{folder}/{filename}")
     public ResponseEntity<Resource> serveMedia(
-            @PathVariable String folder,
-            @PathVariable String filename
+            @PathVariable("folder") String folder,
+            @PathVariable("filename") String filename
     ) {
         try {
             File file = new File(new File(baseDir, folder), filename).getCanonicalFile();

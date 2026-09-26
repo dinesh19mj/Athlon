@@ -36,6 +36,7 @@ import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { ScoreService, LiveScore } from '@/lib/api/scores';
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
+import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
 
 export default function OrganizerDashboardPage() {
   const params = useParams();
@@ -120,8 +121,13 @@ export default function OrganizerDashboardPage() {
   return (
     <div className="min-h-full bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-primary selection:text-black">
 
+      {/* ─── 0. TOP-LEVEL APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
+      <div className="px-4 md:px-8 pt-0 pb-0 flex justify-center">
+        <AppModeSwitcher />
+      </div>
+
       {/* ROLE SWITCHER HEADER */}
-      <div className="px-4 md:px-8 pt-4 pb-2">
+      <div className="px-4 md:px-8 pt-2 pb-2">
         <HomeRoleHeader
           activeRole={orgId}
           organizations={organizations}

@@ -12,6 +12,7 @@ import {
   PlusCircle,
   Bell,
   SlidersHorizontal,
+  Zap,
 } from 'lucide-react';
 import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
 import { MarketBottomNav } from '@/components/navigation/MarketBottomNav';
@@ -31,7 +32,7 @@ export default function MarketLayout({
   }, []);
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-primary-foreground">
+    <div className="h-[100dvh] md:min-h-screen w-full max-w-full overflow-hidden md:overflow-visible bg-background text-foreground flex flex-col relative selection:bg-primary selection:text-primary-foreground select-none">
       {/* ══════════════════════════════════════════════════════════════════════
           1. DESKTOP TOP BAR (md and above)
          ══════════════════════════════════════════════════════════════════════ */}
@@ -74,6 +75,16 @@ export default function MarketLayout({
             >
               <LayoutGrid className="w-4 h-4" />
               <span>Categories</span>
+            </Link>
+
+            <Link
+              href="/market/plans"
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg transition-colors ${
+                pathname.startsWith('/market/plans') ? 'text-primary' : 'text-foreground/70 hover:text-foreground'
+              }`}
+            >
+              <Zap className="w-4 h-4 text-primary" />
+              <span>Plans &amp; Passes</span>
             </Link>
 
             <Link
@@ -128,7 +139,7 @@ export default function MarketLayout({
       {/* ══════════════════════════════════════════════════════════════════════
           2. MAIN CONTENT AREA
          ══════════════════════════════════════════════════════════════════════ */}
-      <main className="flex-1 w-full max-w-full pb-24 md:pb-12 overflow-x-hidden">
+      <main className="flex-1 w-full max-w-full h-full overflow-y-auto overscroll-none touch-pan-y pb-28 md:pb-12 hide-scrollbar">
         {children}
       </main>
 

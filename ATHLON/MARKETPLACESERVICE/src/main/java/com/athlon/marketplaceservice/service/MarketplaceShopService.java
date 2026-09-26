@@ -26,6 +26,13 @@ public class MarketplaceShopService {
     }
 
     @Transactional(readOnly = true)
+    public List<MarketplaceShopDto> getAllShops() {
+        return shopRepository.findByStatusOrderByCreatedAtDesc("ACTIVE").stream()
+                .map(MarketplaceShopDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public MarketplaceShopDto getShopBySlug(String slug) {
         return shopRepository.findBySlug(slug)
                 .map(MarketplaceShopDto::fromEntity)

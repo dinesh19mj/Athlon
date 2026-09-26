@@ -28,8 +28,8 @@ public class MarketplaceAdminController {
 
     @GetMapping("/products")
     public ResponseEntity<Page<MarketplaceProductDto>> getAllProducts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
     ) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(adminService.getAllProducts(pageRequest));
@@ -37,18 +37,18 @@ public class MarketplaceAdminController {
 
     @PutMapping("/products/{id}/moderation")
     public ResponseEntity<MarketplaceProductDto> updateProductModeration(
-            @PathVariable Long id,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Boolean isVerified,
-            @RequestParam(required = false) String verificationStatus
+            @PathVariable("id") Long id,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "isVerified", required = false) Boolean isVerified,
+            @RequestParam(value = "verificationStatus", required = false) String verificationStatus
     ) {
         return ResponseEntity.ok(adminService.updateProductModeration(id, status, isVerified, verificationStatus));
     }
 
     @PutMapping("/shops/{id}/verify")
     public ResponseEntity<MarketplaceShopDto> verifyShop(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "true") Boolean isVerified
+            @PathVariable("id") Long id,
+            @RequestParam(value = "isVerified", defaultValue = "true") Boolean isVerified
     ) {
         return ResponseEntity.ok(adminService.verifyShop(id, isVerified));
     }

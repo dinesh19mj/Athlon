@@ -89,6 +89,15 @@ public class MarketplaceProductService {
             if (!eligibility.isEligible()) {
                 throw new IllegalStateException("Seller is not eligible to list gear: " + eligibility.getMessage());
             }
+            if (eligibility.getMaxActiveListings() != null && eligibility.getMaxActiveListings() > 0) {
+                long activeCount = productRepository.countBySellerIdAndStatus(sellerId, "AVAILABLE");
+                if (activeCount >= eligibility.getMaxActiveListings()) {
+                    throw new IllegalStateException(String.format(
+                        "You have reached your active listing limit of %d items. Upgrade your plan to list more items.",
+                        eligibility.getMaxActiveListings()
+                    ));
+                }
+            }
         }
 
         MarketplaceProduct product = new MarketplaceProduct();

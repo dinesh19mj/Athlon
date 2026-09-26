@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
+import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 import { Athlon3DIcon, Athlon3DIconProps } from '@/components/common/Athlon3DIcon';
@@ -1922,8 +1923,13 @@ export default function OrganizationDashboard() {
           1. MOBILE VIEW ONLY (< md) - COMPACT & REFINED DASHBOARD
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24 overflow-y-auto">
+        {/* ─── 0. TOP-LEVEL APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
+        <div className="px-4 pt-0 pb-0 flex justify-center max-w-7xl mx-auto">
+          <AppModeSwitcher />
+        </div>
+
         {/* HERO VIDEO CARD */}
-        <div className="px-4 relative z-10 mt-3.5 mb-3.5 max-w-7xl mx-auto">
+        <div className="px-4 relative z-10 mt-1.5 mb-3.5 max-w-7xl mx-auto">
           <div
             className="relative w-full h-[175px] sm:h-[200px] rounded-[20px] overflow-hidden border shadow-md flex items-center justify-center"
             style={{
@@ -3256,6 +3262,13 @@ export default function OrganizationDashboard() {
           <div className="absolute bottom-0 left-1/4 w-[400px] h-[200px] bg-yellow-500/5 rounded-full blur-[90px] pointer-events-none" />
 
           <div className="max-w-7xl mx-auto space-y-8 relative z-10">
+            {/* Top-Level App Mode Switcher (ATHLON ↔ MARKET) */}
+            <div className="flex items-center justify-between">
+              <div className="w-80">
+                <AppModeSwitcher showNotifications={false} />
+              </div>
+            </div>
+
             {/* Header Strip */}
             <div className="flex items-center justify-between gap-6 flex-wrap">
               <div className="flex items-center gap-5">

@@ -871,8 +871,13 @@ export default function PersonalHomePage() {
           1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden h-[calc(100vh-64px)] overflow-y-auto hide-scrollbar overscroll-contain max-w-full pb-8">
+        {/* ─── 0. TOP NOTCH APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
+        <div className="px-4 pt-0 pb-0 flex justify-center">
+          <AppModeSwitcher />
+        </div>
+
         {/* HERO VIDEO CARD */}
-        <div className="px-4 relative z-10 mt-3 mb-3">
+        <div className="px-4 relative z-10 mt-1.5 mb-3">
           <div
             className="relative w-full h-[175px] sm:h-[200px] rounded-[20px] overflow-hidden border shadow-md flex items-center justify-center"
             style={{
@@ -891,11 +896,6 @@ export default function PersonalHomePage() {
               <source src={backgroundVideo} type="video/mp4" />
             </video>
           </div>
-        </div>
-
-        {/* TOP-LEVEL APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
-        <div className="px-4 mb-3">
-          <AppModeSwitcher />
         </div>
 
         {/* ROLE SWITCHER HEADER ─────────────────────── */}

@@ -27,6 +27,9 @@ import {
   Plus,
   Trash2,
   QrCode,
+  Users,
+  Minus,
+  Tag,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -349,14 +352,12 @@ export default function CreateTournamentPage() {
                   <div
                     key={opt.value}
                     onClick={() => setFormData({ ...formData, type: opt.value })}
-                    className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-all ${
-                      formData.type === opt.value ? 'border-primary bg-primary/10' : 'border-foreground/10 bg-card hover:border-foreground/20'
-                    }`}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-all ${formData.type === opt.value ? 'border-primary bg-primary/10' : 'border-foreground/10 bg-card hover:border-foreground/20'
+                      }`}
                   >
                     <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        formData.type === opt.value ? 'border-primary' : 'border-foreground/30'
-                      }`}
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.type === opt.value ? 'border-primary' : 'border-foreground/30'
+                        }`}
                     >
                       {formData.type === opt.value && <div className="w-2 h-2 rounded-full bg-primary" />}
                     </div>
@@ -413,16 +414,14 @@ export default function CreateTournamentPage() {
                 <div
                   key={opt.value}
                   onClick={() => setFormData({ ...formData, registrationMode: opt.value })}
-                  className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border-2 cursor-pointer transition-all ${
-                    formData.registrationMode === opt.value
+                  className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border-2 cursor-pointer transition-all ${formData.registrationMode === opt.value
                       ? 'border-primary bg-primary/10'
                       : 'border-foreground/10 bg-card hover:border-foreground/20'
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      formData.registrationMode === opt.value ? 'border-primary' : 'border-foreground/30'
-                    }`}
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.registrationMode === opt.value ? 'border-primary' : 'border-foreground/30'
+                      }`}
                   >
                     {formData.registrationMode === opt.value && <div className="w-2 h-2 rounded-full bg-primary" />}
                   </div>
@@ -485,11 +484,10 @@ export default function CreateTournamentPage() {
                   <button
                     type="button"
                     onClick={() => setTargetBatchUuids([])}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                      targetBatchUuids.length === 0
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${targetBatchUuids.length === 0
                         ? 'bg-primary text-primary-foreground border-primary font-black'
                         : 'border-foreground/15 bg-background text-foreground/70'
-                    }`}
+                      }`}
                   >
                     All Batches
                   </button>
@@ -506,11 +504,10 @@ export default function CreateTournamentPage() {
                             setTargetBatchUuids((prev) => [...prev, b.batchUuid]);
                           }
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                          isSel
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${isSel
                             ? 'bg-primary text-primary-foreground border-primary font-black'
                             : 'border-foreground/15 bg-background text-foreground/70'
-                        }`}
+                          }`}
                       >
                         {b.batchName}
                       </button>
@@ -536,11 +533,10 @@ export default function CreateTournamentPage() {
                             setTargetLevels((prev) => [...prev, lvl]);
                           }
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                          isSel
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${isSel
                             ? 'bg-primary text-primary-foreground border-primary font-black'
                             : 'border-foreground/15 bg-background text-foreground/70'
-                        }`}
+                          }`}
                       >
                         {lvl}
                       </button>
@@ -578,11 +574,10 @@ export default function CreateTournamentPage() {
                   onClick={() => {
                     setFormData({ ...formData, sport });
                   }}
-                  className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
-                    formData.sport.toLowerCase() === sport.toLowerCase()
+                  className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${formData.sport.toLowerCase() === sport.toLowerCase()
                       ? 'border-primary bg-primary/10 text-primary font-black'
                       : 'border-foreground/10 bg-card text-foreground/70 hover:border-foreground/25 hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   {sport}
                 </button>
@@ -603,11 +598,10 @@ export default function CreateTournamentPage() {
                   onClick={() => {
                     setFormData({ ...formData, tournamentType: type });
                   }}
-                  className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${
-                    formData.tournamentType === type
+                  className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${formData.tournamentType === type
                       ? 'border-primary bg-primary/10 text-primary font-black'
                       : 'border-foreground/10 bg-card text-foreground/70 hover:border-foreground/25 hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   {type === 'KNOCKOUT' ? 'Knockout' : 'League'}
                 </button>
@@ -806,33 +800,62 @@ export default function CreateTournamentPage() {
             )}
           </div>
 
-          {/* CATEGORY (Only for Knockout and League tournaments) */}
+          {/* CATEGORY (Only for Knockout and League tournaments) - REDESIGNED MOBILE VIEW */}
           {formData.tournamentType !== 'TEAM_EVENT' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="block text-[10px] font-black text-foreground/60 uppercase tracking-widest">
-                  Category Setup
-                </label>
-                <div className="flex items-center bg-card border border-foreground/15 rounded-xl p-0.5">
+            <div
+              className="p-3.5 sm:p-4 rounded-2xl border space-y-3 shadow-xs relative overflow-hidden transition-all"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              {/* Header & Mode Switcher */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className="w-6 h-6 rounded-lg border flex items-center justify-center text-primary shrink-0"
+                    style={{
+                      backgroundColor: 'var(--athlon-primary-soft)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    <Layers className="w-3 h-3" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-black text-foreground uppercase tracking-wider block leading-tight">
+                      Category Setup
+                    </span>
+                    <span className="text-[9px] text-foreground/50 font-semibold truncate block leading-tight">
+                      {isMultiCategory ? 'Multi-Tier draws' : 'Single open tier format'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Compact Segmented Switcher */}
+                <div
+                  className="flex items-center p-0.5 rounded-lg border shrink-0"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setIsMultiCategory(false)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      !isMultiCategory
-                        ? 'bg-primary text-black font-black shadow-sm'
-                        : 'text-foreground/60 hover:text-foreground'
-                    }`}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${!isMultiCategory
+                        ? 'bg-primary text-black font-black shadow-2xs'
+                        : 'text-foreground/50 hover:text-foreground'
+                      }`}
                   >
                     Single
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsMultiCategory(true)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      isMultiCategory
-                        ? 'bg-primary text-black font-black shadow-sm'
-                        : 'text-foreground/60 hover:text-foreground'
-                    }`}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${isMultiCategory
+                        ? 'bg-primary text-black font-black shadow-2xs'
+                        : 'text-foreground/50 hover:text-foreground'
+                      }`}
                   >
                     Multi-Category
                   </button>
@@ -840,20 +863,29 @@ export default function CreateTournamentPage() {
               </div>
 
               {!isMultiCategory ? (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-foreground/50">Category Tier</span>
+                <div
+                  className="p-3.5 rounded-xl border space-y-3"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-foreground/60 flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-primary" /> Category Tier
+                    </span>
                     <Link
                       href={`/org/${orgUuid}/categories?returnTo=create-tournament`}
-                      className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-1"
+                      className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
                     >
-                      + Add Category
+                      <Plus className="w-3 h-3" /> Add Tier
                     </Link>
                   </div>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className={`${inputClass} appearance-none`}
+                    className="w-full bg-card border rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary appearance-none cursor-pointer"
+                    style={{ borderColor: 'var(--athlon-border)' }}
                     disabled={!formData.sport}
                   >
                     <option value="">Default Open Category</option>
@@ -867,76 +899,200 @@ export default function CreateTournamentPage() {
                   </select>
                 </div>
               ) : (
-                <div className="space-y-3 p-4 rounded-2xl border border-primary/20 bg-primary/5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-black text-foreground flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5 text-primary" />
-                        Tournament Categories ({customCategories.length})
-                      </span>
-                      <p className="text-[10px] text-foreground/50 mt-0.5">
-                        Format: <span className="text-primary font-bold">{formData.matchFormat}</span> (applies to all categories)
-                      </p>
+                <div className="space-y-3.5">
+                  {/* Subheader Banner */}
+                  <div
+                    className="p-3 rounded-xl border flex items-center justify-between gap-2 shadow-xs"
+                    style={{
+                      backgroundColor: 'var(--athlon-primary-soft)',
+                      borderColor: 'var(--athlon-primary)',
+                    }}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-black text-foreground">
+                          {customCategories.length} Categories
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.2 bg-primary/20 text-primary font-black rounded-md border border-primary/30 uppercase">
+                          {formData.matchFormat || 'Format'}
+                        </span>
+                      </div>
                     </div>
+
                     <button
                       type="button"
-                      onClick={() => addCategoryItem(`Category ${String.fromCharCode(65 + customCategories.length)}`)}
-                      className="px-3 py-1.5 rounded-lg bg-primary text-black text-xs font-black uppercase flex items-center gap-1 shadow-sm hover:scale-105 active:scale-95 transition-all"
+                      onClick={() =>
+                        addCategoryItem(
+                          `Category ${String.fromCharCode(65 + customCategories.length)}`
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-lg bg-primary text-black text-[11px] font-black uppercase flex items-center gap-1 shadow-sm hover:brightness-110 active:scale-95 transition-all cursor-pointer shrink-0"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Add Category
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Category</span>
                     </button>
                   </div>
 
-                  {/* Category cards */}
-                  <div className="space-y-2.5 pt-1">
+                  {/* Category Cards List */}
+                  <div className="space-y-2.5">
                     {customCategories.map((cat, idx) => (
                       <div
                         key={cat.id}
-                        className="p-3 rounded-xl border border-foreground/15 bg-card flex items-center gap-3 shadow-sm"
+                        className="p-3.5 rounded-2xl border space-y-3 transition-all relative shadow-xs"
+                        style={{
+                          backgroundColor: 'var(--athlon-surface)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
                       >
-                        <span className="w-6 h-6 rounded-lg bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center font-mono shrink-0">
-                          #{idx + 1}
-                        </span>
+                        {/* Item Top Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-5 h-5 rounded-md border flex items-center justify-center font-mono font-black text-[10px] text-primary"
+                              style={{
+                                backgroundColor: 'var(--athlon-primary-soft)',
+                                borderColor: 'var(--athlon-primary)',
+                              }}
+                            >
+                              #{idx + 1}
+                            </span>
+                            <span className="text-xs font-bold text-foreground">
+                              {cat.name.trim() ? cat.name : `Category Tier ${idx + 1}`}
+                            </span>
+                          </div>
 
-                        <div className="flex-1 min-w-0">
-                          <label className="text-[9px] font-black uppercase text-foreground/40 block mb-0.5">
-                            Category Name
-                          </label>
-                          <input
-                            type="text"
-                            value={cat.name}
-                            onChange={(e) => updateCategoryItem(cat.id, 'name', e.target.value)}
-                            placeholder="e.g. Beginner, 70+, C Level..."
-                            className="w-full bg-transparent text-xs font-black text-foreground focus:outline-none placeholder:text-foreground/30 border-b border-foreground/10 pb-0.5"
-                          />
+                          {customCategories.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeCategoryItem(cat.id)}
+                              className="w-6 h-6 rounded-lg flex items-center justify-center text-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                              title="Remove category"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
 
-                        <div className="w-24 shrink-0">
-                          <label className="text-[9px] font-black uppercase text-foreground/40 block mb-0.5">
-                            Max Teams
-                          </label>
-                          <input
-                            type="number"
-                            min="2"
-                            value={cat.maxTeams}
-                            onChange={(e) => updateCategoryItem(cat.id, 'maxTeams', e.target.value)}
-                            placeholder="16"
-                            className="w-full bg-surface border border-foreground/10 rounded-lg px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary font-mono"
-                          />
+                        {/* Form Fields Grid */}
+                        <div className="grid grid-cols-12 gap-2.5">
+                          {/* Category Name Input */}
+                          <div className="col-span-7">
+                            <label className="text-[9px] font-black uppercase text-foreground/50 block mb-1">
+                              Category Name
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={cat.name}
+                                onChange={(e) =>
+                                  updateCategoryItem(cat.id, 'name', e.target.value)
+                                }
+                                placeholder="e.g. Beginner, Open..."
+                                className="w-full bg-card border rounded-xl px-2.5 py-1.5 text-xs font-bold text-foreground focus:outline-none focus:border-primary placeholder:text-foreground/30"
+                                style={{ borderColor: 'var(--athlon-border)' }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Max Teams Input with Stepper */}
+                          <div className="col-span-5">
+                            <label className="text-[9px] font-black uppercase text-foreground/50 block mb-1">
+                              Max Teams
+                            </label>
+                            <div
+                              className="flex items-center bg-card border rounded-xl overflow-hidden"
+                              style={{ borderColor: 'var(--athlon-border)' }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const current = Number(cat.maxTeams) || 16;
+                                  if (current > 2)
+                                    updateCategoryItem(cat.id, 'maxTeams', current - 2);
+                                }}
+                                className="w-7 h-7 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-foreground/5 active:bg-foreground/10 transition-colors cursor-pointer"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <input
+                                type="number"
+                                min="2"
+                                value={cat.maxTeams}
+                                onChange={(e) =>
+                                  updateCategoryItem(cat.id, 'maxTeams', e.target.value)
+                                }
+                                className="w-full bg-transparent text-center text-xs font-mono font-black text-foreground focus:outline-none py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const current = Number(cat.maxTeams) || 16;
+                                  updateCategoryItem(cat.id, 'maxTeams', current + 2);
+                                }}
+                                className="w-7 h-7 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-foreground/5 active:bg-foreground/10 transition-colors cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
 
-                        {customCategories.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeCategoryItem(cat.id)}
-                            className="p-1.5 text-foreground/40 hover:text-red-400 transition-colors mt-3"
-                            title="Remove category"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
+                        {/* Quick Capacity Stepper Pills */}
+                        <div className="flex items-center gap-1 pt-0.5">
+                          <span className="text-[9px] font-semibold text-foreground/40 mr-1">
+                            Draw Cap:
+                          </span>
+                          {[8, 16, 32, 64].map((size) => (
+                            <button
+                              key={size}
+                              type="button"
+                              onClick={() => updateCategoryItem(cat.id, 'maxTeams', size)}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${Number(cat.maxTeams) === size
+                                  ? 'bg-primary text-black font-black'
+                                  : 'bg-card border border-foreground/10 text-foreground/60 hover:text-foreground'
+                                }`}
+                            >
+                              {size}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Bottom Add Category Dashed Button & Capacity Summary */}
+                  <div className="space-y-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addCategoryItem(
+                          `Category ${String.fromCharCode(65 + customCategories.length)}`
+                        )
+                      }
+                      className="w-full py-2.5 rounded-xl border-2 border-dashed hover:border-primary/50 text-foreground/70 hover:text-primary font-bold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-[0.99] cursor-pointer"
+                      style={{
+                        borderColor: 'var(--athlon-border)',
+                        backgroundColor: 'var(--athlon-surface)',
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5 text-primary" />
+                      <span>Add Another Category</span>
+                    </button>
+
+                    {/* Total Draw Summary */}
+                    <div className="flex items-center justify-between px-2 pt-1 text-[10px] text-foreground/50 font-medium">
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3 text-primary" />
+                        Total Tournament Capacity:
+                      </span>
+                      <strong className="text-foreground font-mono font-bold">
+                        {customCategories.reduce(
+                          (acc, c) => acc + (Number(c.maxTeams) || 0),
+                          0
+                        )}{' '}
+                        Teams
+                      </strong>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1169,11 +1325,10 @@ export default function CreateTournamentPage() {
                         key={sport}
                         type="button"
                         onClick={() => setFormData({ ...formData, sport })}
-                        className={`py-3 px-3 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${
-                          formData.sport.toLowerCase() === sport.toLowerCase()
+                        className={`py-3 px-3 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${formData.sport.toLowerCase() === sport.toLowerCase()
                             ? 'bg-primary text-black border-primary shadow-md shadow-primary/20 scale-[1.02]'
                             : 'text-foreground/70 hover:text-foreground hover:bg-white/5'
-                        }`}
+                          }`}
                         style={{
                           backgroundColor: formData.sport.toLowerCase() === sport.toLowerCase() ? 'var(--athlon-primary)' : 'var(--athlon-surface)',
                           borderColor: formData.sport.toLowerCase() === sport.toLowerCase() ? 'transparent' : 'var(--athlon-border)',
@@ -1198,11 +1353,10 @@ export default function CreateTournamentPage() {
                           key={type}
                           type="button"
                           onClick={() => setFormData({ ...formData, tournamentType: type })}
-                          className={`py-3 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all ${
-                            formData.tournamentType === type
+                          className={`py-3 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all ${formData.tournamentType === type
                               ? 'bg-primary/15 text-primary border-primary shadow-sm'
                               : 'text-foreground/60 hover:text-foreground'
-                          }`}
+                            }`}
                           style={{
                             backgroundColor:
                               formData.tournamentType === type ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
@@ -1232,11 +1386,10 @@ export default function CreateTournamentPage() {
                             key={opt.value}
                             type="button"
                             onClick={() => setFormData({ ...formData, type: opt.value })}
-                            className={`py-3 px-2 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
-                              formData.type === opt.value
+                            className={`py-3 px-2 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${formData.type === opt.value
                                 ? 'bg-primary/15 text-primary border-primary shadow-sm'
                                 : 'text-foreground/60 hover:text-foreground'
-                            }`}
+                              }`}
                             style={{
                               backgroundColor:
                                 formData.type === opt.value ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
@@ -1286,11 +1439,10 @@ export default function CreateTournamentPage() {
                         key={opt.value}
                         type="button"
                         onClick={() => setFormData({ ...formData, registrationMode: opt.value })}
-                        className={`py-2.5 px-3 rounded-2xl border text-left transition-all ${
-                          formData.registrationMode === opt.value
+                        className={`py-2.5 px-3 rounded-2xl border text-left transition-all ${formData.registrationMode === opt.value
                             ? 'bg-primary/15 text-primary border-primary shadow-sm'
                             : 'text-foreground/60 hover:text-foreground'
-                        }`}
+                          }`}
                         style={{
                           backgroundColor:
                             formData.registrationMode === opt.value ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
@@ -1370,11 +1522,10 @@ export default function CreateTournamentPage() {
                           <button
                             type="button"
                             onClick={() => setTargetBatchUuids([])}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                              targetBatchUuids.length === 0
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${targetBatchUuids.length === 0
                                 ? 'bg-primary text-primary-foreground border-primary font-black shadow-sm'
                                 : 'text-foreground/70 hover:text-foreground'
-                            }`}
+                              }`}
                             style={{
                               backgroundColor: targetBatchUuids.length === 0 ? undefined : 'var(--athlon-surface)',
                               borderColor: targetBatchUuids.length === 0 ? undefined : 'var(--athlon-border)',
@@ -1395,11 +1546,10 @@ export default function CreateTournamentPage() {
                                     setTargetBatchUuids((prev) => [...prev, b.batchUuid]);
                                   }
                                 }}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                                  isSel
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${isSel
                                     ? 'bg-primary text-primary-foreground border-primary font-black shadow-sm'
                                     : 'text-foreground/70 hover:text-foreground'
-                                }`}
+                                  }`}
                                 style={{
                                   backgroundColor: isSel ? undefined : 'var(--athlon-surface)',
                                   borderColor: isSel ? undefined : 'var(--athlon-border)',
@@ -1430,11 +1580,10 @@ export default function CreateTournamentPage() {
                                   setTargetLevels((prev) => [...prev, lvl]);
                                 }
                               }}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                                isSel
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${isSel
                                   ? 'bg-primary text-primary-foreground border-primary font-black shadow-sm'
                                   : 'text-foreground/70 hover:text-foreground'
-                              }`}
+                                }`}
                               style={{
                                 backgroundColor: isSel ? undefined : 'var(--athlon-surface)',
                                 borderColor: isSel ? undefined : 'var(--athlon-border)',
@@ -1461,22 +1610,20 @@ export default function CreateTournamentPage() {
                       <button
                         type="button"
                         onClick={() => setIsMultiCategory(false)}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                          !isMultiCategory
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${!isMultiCategory
                             ? 'bg-primary text-black shadow-md'
                             : 'text-foreground/60 hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         Single Category
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsMultiCategory(true)}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                          isMultiCategory
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${isMultiCategory
                             ? 'bg-primary text-black shadow-md'
                             : 'text-foreground/60 hover:text-foreground'
-                        }`}
+                          }`}
                       >
                         Multi-Category (Pooled Knockout)
                       </button>

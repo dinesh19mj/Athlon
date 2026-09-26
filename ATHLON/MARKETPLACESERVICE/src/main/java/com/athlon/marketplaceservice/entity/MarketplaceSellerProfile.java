@@ -38,6 +38,9 @@ public class MarketplaceSellerProfile {
 
     private Integer totalSales = 0;
 
+    @Column(name = "max_active_listings")
+    private Integer maxActiveListings = 5;
+
     @Column(name = "status")
     private String status = "ACTIVE";
 
@@ -56,6 +59,7 @@ public class MarketplaceSellerProfile {
         if (this.tournamentEligibilityVerified == null) this.tournamentEligibilityVerified = false;
         if (this.isSubscriptionActive == null) this.isSubscriptionActive = false;
         if (this.commissionRatePercent == null) this.commissionRatePercent = BigDecimal.valueOf(5.00);
+        if (this.maxActiveListings == null) this.maxActiveListings = 5;
         if (this.rating == null) this.rating = BigDecimal.valueOf(5.00);
         if (this.totalSales == null) this.totalSales = 0;
     }
@@ -98,6 +102,14 @@ public class MarketplaceSellerProfile {
 
     public Integer getTotalSales() { return totalSales; }
     public void setTotalSales(Integer totalSales) { this.totalSales = totalSales; }
+
+    public Integer getMaxActiveListings() { return maxActiveListings; }
+    public void setMaxActiveListings(Integer maxActiveListings) { this.maxActiveListings = maxActiveListings; }
+
+    public boolean isSubscriptionValid() {
+        return Boolean.TRUE.equals(this.isSubscriptionActive) &&
+               (this.subscriptionExpiresAt == null || this.subscriptionExpiresAt.isAfter(LocalDateTime.now()));
+    }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
