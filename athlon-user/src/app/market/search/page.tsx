@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Search,
@@ -12,7 +12,7 @@ import {
 import { MarketProduct, MarketplaceApi } from '@/lib/api/marketplace';
 import { MarketProductCard } from '@/components/market/MarketProductCard';
 
-export default function MarketSearchPage() {
+function MarketSearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -187,5 +187,13 @@ export default function MarketSearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MarketSearchPage() {
+  return (
+    <Suspense fallback={<div className="w-full max-w-7xl mx-auto p-8 text-center text-xs text-foreground/50">Loading search results...</div>}>
+      <MarketSearchContent />
+    </Suspense>
   );
 }

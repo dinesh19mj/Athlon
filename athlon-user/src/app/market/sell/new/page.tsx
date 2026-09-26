@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChevronLeft,
@@ -16,7 +16,7 @@ import {
 import { MarketplaceApi, ProductCondition, ProductType } from '@/lib/api/marketplace';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 
-export default function CreateListingPage() {
+function CreateListingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sellerIdentity = searchParams.get('sellerIdentity') || 'PERSONAL';
@@ -427,5 +427,13 @@ export default function CreateListingPage() {
         </form>
       )}
     </div>
+  );
+}
+
+export default function CreateListingPage() {
+  return (
+    <Suspense fallback={<div className="w-full max-w-4xl mx-auto p-8 text-center text-xs text-foreground/50">Loading editor...</div>}>
+      <CreateListingContent />
+    </Suspense>
   );
 }

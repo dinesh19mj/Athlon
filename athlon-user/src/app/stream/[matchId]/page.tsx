@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, Suspense } from 'react';
 import { 
   Camera, 
   Mic, 
@@ -21,7 +21,7 @@ import {
 import { ScoringService } from '@/lib/api/scoring';
 import { useSearchParams } from 'next/navigation';
 
-export default function StreamStudioPage({ params }: { params: Promise<{ matchId: string }> }) {
+function StreamStudioContent({ params }: { params: Promise<{ matchId: string }> }) {
   const [matchId, setMatchId] = useState<string | null>(null);
   const [state, setState] = useState<any | null>(null);
   
@@ -665,4 +665,12 @@ function renderBroadcasterOverlay(
 function truncateText(text: string, maxLen: number): string {
   if (!text) return '';
   return text.length > maxLen ? text.slice(0, maxLen - 1) + '…' : text;
+}
+
+export default function StreamStudioPage({ params }: { params: Promise<{ matchId: string }> }) {
+  return (
+    <Suspense fallback={<div className="h-screen w-screen bg-slate-950 flex items-center justify-center text-xs text-white/50">Loading Stream Studio...</div>}>
+      <StreamStudioContent params={params} />
+    </Suspense>
+  );
 }
