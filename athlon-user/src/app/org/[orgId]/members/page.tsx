@@ -26,7 +26,11 @@ import {
   Trophy,
   Users,
   Sparkles,
-  Lock
+  Lock,
+  BadgeCheck,
+  Award,
+  ArrowRight,
+  Check,
 } from 'lucide-react';
 
 const ROLES = [
@@ -729,110 +733,159 @@ export default function MembersPage() {
         )}
       </div>
 
-      {/* ADD MEMBER MODAL (POSITIONED FROM TOP & FULLY VISIBLE) */}
+      {/* ADD MEMBER MODAL (MODERN LUXURY ATHLON MODAL) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 pt-6 sm:pt-12 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3.5 sm:p-4 bg-black/80 backdrop-blur-xl overflow-y-auto animate-in fade-in duration-200">
           <div
-            className="w-full max-w-lg rounded-[28px] border shadow-2xl flex flex-col my-auto sm:my-0 animate-in zoom-in-95 duration-200 overflow-hidden"
+            className="w-full max-w-md rounded-[32px] border shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200"
             style={{
-              backgroundColor: 'var(--athlon-surface)',
-              borderColor: 'var(--athlon-border)'
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
             }}
           >
+            {/* Ambient Energy Glow on Top Right */}
+            <div
+              className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl pointer-events-none opacity-25"
+              style={{ backgroundColor: 'var(--athlon-primary)' }}
+            />
+
             {/* Modal Header */}
-            <div className="p-5 sm:p-6 pb-3 border-b flex items-center justify-between shrink-0" style={{ borderColor: 'var(--athlon-border)' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-sm">
+            <div
+              className="p-5 sm:p-6 pb-4 border-b flex items-center justify-between shrink-0 relative z-10"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
                   <UserPlus className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">Add Club Member</h3>
-                  <p className="text-xs text-foreground/50 font-medium">Verify phone number and assign role</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary truncate">
+                      Club Roster
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight truncate">
+                    Add Club Member
+                  </h3>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => {
                   setIsAddModalOpen(false);
                   resetModal();
                 }}
-                className="w-9 h-9 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground flex items-center justify-center transition-colors shrink-0"
+                className="w-8 h-8 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer"
+                aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Scrollable Body */}
-            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-grow">
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-grow relative z-10">
               {actionError && (
-                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in duration-200">
+                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/25 text-red-400 text-xs font-bold flex items-center gap-2.5 animate-in fade-in duration-200">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{actionError}</span>
+                  <span className="leading-snug">{actionError}</span>
                 </div>
               )}
 
               {/* Phone Input Box */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-black uppercase tracking-wider text-foreground/70 flex items-center justify-between">
-                  <span>Athlete Phone Number</span>
-                  <span className="text-[10px] text-primary/80 font-bold">10-Digit Mobile</span>
-                </label>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex items-center px-3.5 py-3 rounded-2xl border bg-background text-sm font-bold text-foreground/70 select-none shadow-inner"
-                    style={{ borderColor: 'var(--athlon-border)' }}
-                  >
-                    +91
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs px-0.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-foreground/60 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-primary" />
+                    <span>Athlete Mobile Number</span>
+                  </label>
+                  <span className={`text-[10px] font-mono font-bold ${
+                    phoneInput.replace(/[^0-9]/g, '').length === 10
+                      ? 'text-primary'
+                      : 'text-foreground/40'
+                  }`}>
+                    {phoneInput.replace(/[^0-9]/g, '').length}/10 digits
+                  </span>
+                </div>
+
+                <div
+                  className="p-1.5 rounded-2xl border flex items-center gap-2 shadow-2xs transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="px-3 py-2 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-black text-foreground font-mono shrink-0 select-none flex items-center gap-1">
+                    <span>+91</span>
                   </div>
-                  <div className="relative flex-grow">
-                    <input
-                      type="tel"
-                      placeholder="Enter mobile number..."
-                      value={phoneInput}
-                      onChange={(e) => handlePhoneChange(e.target.value)}
-                      maxLength={10}
-                      autoFocus
-                      className="w-full bg-background border rounded-2xl px-4 py-3 text-sm font-mono font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-inner"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    />
-                    {verifyingPhone ? (
-                      <Loader2 className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-primary animate-spin" />
-                    ) : phoneInput.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhoneInput('');
-                          setVerifiedUser(null);
-                          setVerificationError(null);
-                        }}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/30 hover:text-foreground transition-colors p-1"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleVerifyPhone}
-                    disabled={verifyingPhone || phoneInput.replace(/[^0-9]/g, '').length < 10}
-                    className="px-4 py-3 rounded-2xl bg-surface border text-xs font-black text-foreground hover:bg-foreground/5 hover:border-primary/40 transition-all disabled:opacity-40 shrink-0 shadow-sm"
-                    style={{ borderColor: 'var(--athlon-border)' }}
-                  >
-                    Verify
-                  </button>
+
+                  <input
+                    type="tel"
+                    placeholder="Enter 10-digit mobile..."
+                    value={phoneInput}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    maxLength={10}
+                    autoFocus
+                    className="w-full bg-transparent px-2 py-2 text-sm font-mono font-black text-foreground placeholder:text-foreground/30 focus:outline-none flex-grow min-w-0"
+                  />
+
+                  {verifyingPhone ? (
+                    <div className="p-2 shrink-0">
+                      <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                    </div>
+                  ) : phoneInput.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhoneInput('');
+                        setVerifiedUser(null);
+                        setVerificationError(null);
+                      }}
+                      className="p-2 text-foreground/30 hover:text-foreground transition-colors shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ) : null}
+
+                  {!verifiedUser && (
+                    <button
+                      type="button"
+                      onClick={handleVerifyPhone}
+                      disabled={verifyingPhone || phoneInput.replace(/[^0-9]/g, '').length < 10}
+                      className="px-3.5 py-2 rounded-xl bg-primary text-black text-[11px] font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none shrink-0 shadow-xs cursor-pointer flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3 h-3 fill-black" />
+                      <span>Verify</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* SIMPLIFIED & STYLISH VERIFIED USER PREVIEW */}
+              {/* VERIFIED ATHLETE PROFILE CARD */}
               {verifiedUser && (
-                <div className="p-4 rounded-2xl border bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/30 space-y-2.5 animate-in fade-in zoom-in-95 duration-300 shadow-sm">
-                  <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-400">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Verified Account</span>
+                <div
+                  className="p-4 rounded-3xl border space-y-3 animate-in zoom-in-95 duration-200 shadow-sm relative overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-emerald-400 via-primary to-emerald-400" />
+
+                  <div className="flex items-center justify-between">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
+                      Verified Athlete
+                    </span>
+
+                    <span className="text-[10px] font-bold text-foreground/50">
+                      Athlon ID Active
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-3.5 pt-0.5">
-                    <div className="w-12 h-12 rounded-2xl bg-foreground/10 border border-foreground/10 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="flex items-center gap-3.5 pt-1">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/25 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
                       {verifiedUser.photo ? (
                         <img
                           src={UserService.getPhotoUrl(verifiedUser.photo)}
@@ -840,16 +893,18 @@ export default function MembersPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-base font-black text-primary">
+                        <span className="text-base font-black text-primary font-mono">
                           {verifiedUser.firstName?.charAt(0)?.toUpperCase() || 'A'}
                         </span>
                       )}
                     </div>
-                    <div className="min-w-0 flex-grow">
-                      <h4 className="text-base font-black text-foreground truncate">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-black text-foreground truncate">
                         {verifiedUser.firstName} {verifiedUser.lastName || ''}
                       </h4>
-                      <p className="text-xs text-foreground/50 font-medium font-mono">+91 {phoneInput}</p>
+                      <p className="text-xs text-foreground/60 font-mono font-bold mt-0.5">
+                        +91 {phoneInput}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -857,14 +912,14 @@ export default function MembersPage() {
 
               {/* USER NOT FOUND / ERROR BANNER */}
               {verificationError && (
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-1.5 animate-in zoom-in-95 duration-200">
                   <div className="flex items-start gap-2.5">
-                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-black text-amber-300 uppercase tracking-wide">
-                        No Active Account Found
+                      <h4 className="text-[11px] font-black text-amber-300 uppercase tracking-wider">
+                        No Registered Account
                       </h4>
-                      <p className="text-xs text-foreground/75 font-medium mt-1 leading-relaxed">
+                      <p className="text-xs text-foreground/75 font-medium leading-relaxed mt-0.5">
                         {verificationError}
                       </p>
                     </div>
@@ -872,35 +927,60 @@ export default function MembersPage() {
                 </div>
               )}
 
-              {/* ROLE SELECTOR CHIPS */}
+              {/* ROLE SELECTOR TILES */}
               {verifiedUser && (
-                <div className="space-y-2 animate-in fade-in duration-300">
-                  <label className="text-xs font-black uppercase tracking-wider text-foreground/70">
-                    Assign Club Role
+                <div className="space-y-2 pt-1 animate-in fade-in duration-300">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-foreground/60 px-0.5 flex items-center gap-1.5">
+                    <Shield className="w-3 h-3 text-primary" /> Assign Club Role
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {ROLES.map((r) => (
-                      <button
-                        key={r.value}
-                        type="button"
-                        onClick={() => setSelectedRole(r.value)}
-                        className={`py-2.5 px-2 rounded-xl border text-xs font-bold transition-all text-center ${selectedRole === r.value
-                            ? 'bg-primary text-black font-black border-primary shadow-md shadow-primary/20 scale-[1.02]'
-                            : 'bg-background border-foreground/10 text-foreground/60 hover:text-foreground hover:bg-foreground/5'
+                  <div className="grid grid-cols-2 gap-2">
+                    {ROLES.map((r) => {
+                      const isSelected = selectedRole === r.value;
+                      return (
+                        <button
+                          key={r.value}
+                          type="button"
+                          onClick={() => setSelectedRole(r.value)}
+                          className={`p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-between gap-2 active:scale-95 cursor-pointer shadow-2xs ${
+                            isSelected
+                              ? 'bg-primary text-black font-black border-primary shadow-sm'
+                              : 'text-foreground/70 hover:text-foreground'
                           }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
+                          style={{
+                            backgroundColor: isSelected ? undefined : 'var(--athlon-surface)',
+                            borderColor: isSelected ? undefined : 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {r.value === 'COACH' ? (
+                              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                            ) : r.value === 'ADMIN' ? (
+                              <Shield className="w-3.5 h-3.5 shrink-0" />
+                            ) : r.value === 'STUDENT' ? (
+                              <Award className="w-3.5 h-3.5 shrink-0" />
+                            ) : (
+                              <User className="w-3.5 h-3.5 shrink-0" />
+                            )}
+                            <span className="truncate">{r.label}</span>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle2 className="w-4 h-4 fill-black text-primary shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ALWAYS-VISIBLE STICKY BOTTOM ACTION FOOTER */}
+            {/* Modal Bottom Actions Footer */}
             <div
-              className="p-4 sm:p-5 border-t bg-surface/95 backdrop-blur-md flex items-center gap-3 shrink-0"
-              style={{ borderColor: 'var(--athlon-border)' }}
+              className="p-4 sm:p-5 border-t flex items-center gap-3 shrink-0 relative z-10"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
             >
               <button
                 type="button"
@@ -908,7 +988,11 @@ export default function MembersPage() {
                   setIsAddModalOpen(false);
                   resetModal();
                 }}
-                className="w-1/3 py-3 rounded-2xl bg-surface border border-foreground/10 text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors text-center"
+                className="w-1/3 py-2.5 px-3 rounded-xl border text-xs font-bold text-foreground/70 hover:text-foreground transition-all active:scale-95 text-center cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
               >
                 Cancel
               </button>
@@ -918,15 +1002,18 @@ export default function MembersPage() {
                   type="button"
                   onClick={handleAddMember}
                   disabled={isSubmitting}
-                  className="w-2/3 py-3 rounded-2xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
+                  className="w-2/3 py-2.5 px-4 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Adding...
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Adding...</span>
                     </>
                   ) : (
                     <>
-                      <Plus className="w-4 h-4" /> Add to Club
+                      <Plus className="w-4 h-4" />
+                      <span>Add to Club</span>
+                      <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                     </>
                   )}
                 </button>
@@ -935,14 +1022,18 @@ export default function MembersPage() {
                   type="button"
                   onClick={handleVerifyPhone}
                   disabled={verifyingPhone || phoneInput.replace(/[^0-9]/g, '').length < 10}
-                  className="w-2/3 py-3 rounded-2xl bg-foreground/10 border border-foreground/10 text-foreground text-xs font-black tracking-wide hover:bg-primary hover:text-black hover:border-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-2/3 py-2.5 px-4 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {verifyingPhone ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Verifying...</span>
                     </>
                   ) : (
-                    <>Verify Number</>
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 fill-black" />
+                      <span>Verify Number</span>
+                    </>
                   )}
                 </button>
               )}

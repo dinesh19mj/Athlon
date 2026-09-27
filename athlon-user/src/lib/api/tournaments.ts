@@ -147,6 +147,49 @@ export const MatchService = {
   }
 };
 
+export interface SportMetadata {
+  sportId: number;
+  sportUuid: string;
+  sportName: string;
+  sportCode: string;
+  emoji?: string;
+  isTeamSport: boolean;
+  supportsMultiCategory: boolean;
+  defaultFormat?: string;
+  defaultCategory?: string;
+  categoryPresets: string[];
+  formats: MatchFormatMetadata[];
+  displayOrder: number;
+}
+
+export interface MatchFormatMetadata {
+  formatId: number;
+  formatUuid: string;
+  sportType: string;
+  formatName: string;
+  playersPerSide: number;
+  isTeamFormat: boolean;
+  displayOrder: number;
+}
+
+export const SportMetadataService = {
+  getAllSports: () =>
+    api.get<{ data: SportMetadata[] }>('/api/tournament/sports'),
+  getSportByName: (sportName: string) =>
+    api.get<{ data: SportMetadata }>(`/api/tournament/sports/by-name/${encodeURIComponent(sportName)}`),
+  createSport: (data: Partial<SportMetadata>) =>
+    api.post<{ data: SportMetadata }>('/api/tournament/sports', data),
+};
+
+export const MatchFormatService = {
+  getMatchFormats: (sportType?: string) =>
+    api.get<{ data: MatchFormatMetadata[] }>(
+      sportType ? `/api/tournament/match-formats?sportType=${encodeURIComponent(sportType)}` : '/api/tournament/match-formats'
+    ),
+  createFormat: (data: Partial<MatchFormatMetadata>) =>
+    api.post<{ data: MatchFormatMetadata }>('/api/tournament/match-formats', data),
+};
+
 export interface CategoryCreateRequest {
   organizationId: number;
   organizationUuid: string;
@@ -306,3 +349,4 @@ export const StreamConfigService = {
     return [];
   }
 };
+

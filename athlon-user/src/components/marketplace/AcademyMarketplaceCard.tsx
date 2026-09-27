@@ -16,7 +16,6 @@ import {
   Dumbbell
 } from 'lucide-react';
 import { OrganizationService } from '@/lib/api/organization';
-import { SportCardSkeletonBackground } from '@/components/common/SportCardSkeletonBackground';
 
 export interface AcademyCardData {
   id?: string | number;
@@ -59,6 +58,22 @@ interface AcademyMarketplaceCardProps {
   onEnrollClick?: () => void;
   showEnrollModalOnCardClick?: boolean;
   variant?: 'card' | 'compact';
+}
+
+function getSportEmoji(sport: string): string {
+  const s = (sport || '').toLowerCase();
+  if (s.includes('badminton') || s.includes('shuttle')) return '🏸';
+  if (s.includes('cricket')) return '🏏';
+  if (s.includes('football') || s.includes('soccer')) return '⚽';
+  if (s.includes('tennis') || s.includes('pickle')) return '🎾';
+  if (s.includes('table tennis') || s.includes('tt') || s.includes('ping')) return '🏓';
+  if (s.includes('basket')) return '🏀';
+  if (s.includes('volley')) return '🏐';
+  if (s.includes('swim')) return '🏊';
+  if (s.includes('athletic') || s.includes('run')) return '🏃';
+  if (s.includes('martial') || s.includes('karate') || s.includes('taekwondo') || s.includes('boxing') || s.includes('judo')) return '🥋';
+  if (s.includes('chess')) return '♟️';
+  return '⚡';
 }
 
 export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
@@ -112,30 +127,41 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
   if (variant === 'compact') {
     const CompactContent = (
       <div
-        className={`group relative rounded-2xl overflow-hidden border transition-all duration-200 hover:border-primary/40 active:scale-[0.99] select-none p-2.5 sm:p-3 flex items-center gap-3 w-full ${className}`}
+        className={`group relative rounded-2xl overflow-hidden border transition-all duration-200 hover:border-primary/50 hover:shadow-md active:scale-[0.99] select-none p-3 flex items-center gap-3.5 w-full ${className}`}
         style={{
           backgroundColor: 'var(--athlon-card)',
           borderColor: 'var(--athlon-border)',
         }}
       >
-        <SportCardSkeletonBackground sport={sportsList[0] || academy.sportType || 'BADMINTON'} showEnergyRail={false} />
         {/* Left Thumbnail with Logo Overlay */}
-        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 bg-surface">
-          <img src={coverUrl} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden shrink-0 bg-neutral-900 border border-border/40 shadow-xs">
+          <img
+            src={coverUrl}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          
           {logoUrl ? (
-            <div className="absolute bottom-1 left-1 w-6 h-6 rounded-lg overflow-hidden border border-white/40 shadow-sm bg-black/60">
+            <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-lg overflow-hidden border border-white/40 shadow-sm bg-black/60">
               <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
             </div>
           ) : (
-            <div className="absolute bottom-1 left-1 w-5 h-5 rounded-lg bg-black/70 border border-primary/40 flex items-center justify-center text-primary">
+            <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-lg bg-black/70 border border-primary/40 flex items-center justify-center text-primary">
               <Building2 className="w-3 h-3" />
             </div>
           )}
+
           {/* Status Dot */}
-          <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
-            admissionStatus === 'OPEN' ? 'bg-emerald-400 animate-pulse' : admissionStatus === 'LIMITED' ? 'bg-amber-400' : 'bg-rose-400'
-          }`} />
+          <span
+            className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full ring-2 ring-black/60 ${
+              admissionStatus === 'OPEN'
+                ? 'bg-emerald-400 animate-pulse'
+                : admissionStatus === 'LIMITED'
+                ? 'bg-amber-400'
+                : 'bg-rose-400'
+            }`}
+          />
         </div>
 
         {/* Middle Details */}
@@ -145,7 +171,7 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
               {name}
             </h4>
             {courts ? (
-              <span className="text-[9px] font-bold text-primary px-1.5 py-0.5 rounded-md bg-primary/10 shrink-0">
+              <span className="text-[9px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 shrink-0">
                 {courts} {courts === 1 ? 'Court' : 'Courts'}
               </span>
             ) : establishedYear ? (
@@ -155,18 +181,19 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
             ) : null}
           </div>
 
-          <p className="text-[10px] text-foreground/60 font-semibold flex items-center gap-1 truncate">
+          <p className="text-[10.5px] text-foreground/60 font-medium flex items-center gap-1 truncate">
             <MapPin className="w-2.5 h-2.5 text-primary shrink-0" />
             <span className="truncate">{locationText}</span>
           </p>
 
-          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {sportsList.slice(0, 3).map((s) => (
               <span
                 key={s}
-                className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9px] font-bold tracking-tight"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9.5px] font-bold tracking-tight"
               >
-                {s}
+                <span>{getSportEmoji(s)}</span>
+                <span>{s}</span>
               </span>
             ))}
             {sportsList.length > 3 && (
@@ -178,8 +205,8 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
         </div>
 
         {/* Right Arrow Action */}
-        <div className="w-7 h-7 rounded-xl bg-surface border border-border/80 flex items-center justify-center text-foreground/50 group-hover:text-primary group-hover:border-primary/40 transition-all shrink-0">
-          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+        <div className="w-8 h-8 rounded-xl bg-surface border border-border/80 flex items-center justify-center text-foreground/50 group-hover:text-primary group-hover:border-primary/40 group-hover:bg-primary/5 transition-all shrink-0">
+          <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
         </div>
       </div>
     );
@@ -199,135 +226,137 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
     );
   }
 
-  // ── STANDARD CARD VARIANT (Optimized for sleek mobile visual) ──
+  // ── STANDARD CARD VARIANT (Ultra-Modern Premium Athletic Card) ──
   const CardContent = (
     <div
-      className={`group relative rounded-2xl sm:rounded-[18px] overflow-hidden border transition-all duration-300 hover:shadow-lg hover:shadow-primary/15 hover:-translate-y-0.5 select-none flex flex-col justify-between h-full w-full ${className}`}
+      className={`group relative rounded-[20px] overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1.5 select-none flex flex-col justify-between h-full w-full ${className}`}
       style={{
         backgroundColor: 'var(--athlon-card)',
         borderColor: 'var(--athlon-border)',
       }}
     >
-      {/* Sport-Specific Technical Wireframe Skeleton Background */}
-      <SportCardSkeletonBackground sport={sportsList[0] || academy.sportType || 'BADMINTON'} />
-
-      {/* ── TOP HERO COVER AREA (Tightened height for mobile) ── */}
-      <div className="relative h-28 sm:h-36 w-full bg-surface-hover overflow-hidden z-10">
-        {/* Cover Photo */}
+      {/* ── 1. CINEMATIC HERO COVER WITH DYNAMIC BADGES & BRAND IDENTITY ── */}
+      <div className="relative h-36 sm:h-40 w-full overflow-hidden shrink-0 bg-neutral-900">
+        {/* Cover Banner Image with Smooth Zoom */}
         <img
           src={coverUrl}
           alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
         />
 
-        {/* Ambient Dark Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/25" />
-        <div className="absolute inset-0 bg-primary/5 backdrop-blur-[0.5px]" />
+        {/* Ambient Gradient Scrims for Flawless Contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/25" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent opacity-80" />
 
-        {/* Top Badges Floating Bar */}
-        <div className="absolute top-2 inset-x-2 flex items-center justify-between z-10">
-          {/* Institutional Type Pill */}
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black uppercase tracking-wider bg-black/70 text-primary border border-primary/30 backdrop-blur-md shadow-xs">
+        {/* Top Control Bar: Category & Status */}
+        <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-20">
+          {/* Institutional Type Badge */}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-black/60 text-primary border border-primary/30 backdrop-blur-md shadow-sm">
             <Sparkles className="w-2.5 h-2.5 text-primary" />
             {type}
           </span>
 
-          {/* Dynamic Admissions Status Capsule */}
+          {/* Admissions Status Pill */}
           {admissionStatus === 'OPEN' ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 backdrop-blur-md shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Admissions Open
             </span>
           ) : admissionStatus === 'LIMITED' ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-400/40 backdrop-blur-md shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               Limited Slots
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] sm:text-[8.5px] font-black tracking-wide bg-rose-500/20 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black tracking-wide bg-rose-500/20 text-rose-300 border border-rose-400/40 backdrop-blur-md shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
               Waitlist
             </span>
           )}
         </div>
 
-        {/* Overlaid Bottom Identity Pod */}
-        <div className="absolute bottom-2 inset-x-2 flex items-center gap-2 z-10">
-          {/* Logo Glass Box */}
-          <div
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border border-primary/50 overflow-hidden shadow-lg flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-primary transition-all bg-black/70 backdrop-blur-md"
-          >
+        {/* Bottom Floating Brand Pod */}
+        <div className="absolute bottom-2.5 inset-x-3 flex items-center gap-3 z-20">
+          {/* Squircle Brand Logo with Soft Glow */}
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border border-white/20 p-0.5 shadow-xl flex items-center justify-center shrink-0 bg-black/80 backdrop-blur-md group-hover:border-primary group-hover:scale-105 transition-all">
             {logoUrl ? (
-              <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
+              <img src={logoUrl} alt={name} className="w-full h-full object-cover rounded-[14px]" />
             ) : (
-              <Building2 className="w-3.5 h-3.5 text-primary" />
+              <Building2 className="w-5 h-5 text-primary" />
             )}
           </div>
 
           {/* Academy Name & Location */}
-          <div className="min-w-0 flex-1 drop-shadow-md">
-            <h4 className="text-xs sm:text-[13px] font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm sm:text-base font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight drop-shadow-md">
               {name}
             </h4>
-            <p className="text-[9.5px] text-white/85 font-semibold flex items-center gap-0.5 mt-0.5 truncate">
-              <MapPin className="w-2.5 h-2.5 text-primary shrink-0" />
+            <p className="text-[11px] text-white/85 font-medium flex items-center gap-1 mt-0.5 truncate drop-shadow-sm">
+              <MapPin className="w-3 h-3 text-primary shrink-0" />
               <span className="truncate">{locationText}</span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── CARD BODY ── */}
-      <div className="p-2.5 sm:p-3.5 space-y-2 flex-1 flex flex-col justify-between relative z-10">
-        <div>
-          {/* Sports Trained Tags */}
-          <div>
-            <div className="flex items-center justify-between mb-1 text-[9px]">
-              <span className="font-extrabold text-foreground/60 uppercase tracking-wider">
-                Sports Trained
-              </span>
+      {/* ── 2. CARD CONTENT BODY (Bento Clean Section) ── */}
+      <div className="p-3.5 sm:p-4 space-y-3.5 flex-1 flex flex-col justify-between relative z-10">
+        <div className="space-y-3">
+          {/* Bento Stats / Facilities Strip */}
+          <div className="flex items-center justify-between text-[11px] pb-1">
+            <span className="font-extrabold uppercase tracking-wider text-foreground/50 flex items-center gap-1.5 text-[9.5px]">
+              <Dumbbell className="w-3.5 h-3.5 text-primary" />
+              Sports Trained
+            </span>
+
+            <div className="flex items-center gap-1.5">
               {courts ? (
-                <span className="font-bold text-primary">
+                <span className="font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px]">
                   {courts} {courts === 1 ? 'Court' : 'Courts'}
                 </span>
               ) : establishedYear ? (
-                <span className="font-bold text-primary">
+                <span className="font-bold text-foreground/60 text-[10px] px-2 py-0.5 rounded-full bg-surface border border-border">
                   Est. {establishedYear}
                 </span>
               ) : null}
             </div>
+          </div>
 
-            <div className="flex flex-wrap gap-1">
-              {sportsList.slice(0, 3).map((s) => (
-                <span
-                  key={s}
-                  className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9px] sm:text-[9.5px] font-bold tracking-tight shadow-xs hover:bg-primary/15 transition-colors"
-                >
-                  {s}
-                </span>
-              ))}
-              {sportsList.length > 3 && (
-                <span className="px-1.5 py-0.5 rounded-md bg-surface hover:bg-surface-hover text-foreground/60 text-[9px] font-bold border border-border">
-                  +{sportsList.length - 3}
-                </span>
-              )}
-            </div>
+          {/* Sports Discipline Chips with Vibrant Emojis */}
+          <div className="flex flex-wrap gap-1.5">
+            {sportsList.slice(0, 3).map((s) => (
+              <span
+                key={s}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-primary/8 hover:bg-primary/15 text-foreground dark:text-white border border-primary/20 text-[10.5px] font-bold tracking-tight shadow-xs transition-colors"
+              >
+                <span className="text-xs leading-none">{getSportEmoji(s)}</span>
+                <span>{s}</span>
+              </span>
+            ))}
+            {sportsList.length > 3 && (
+              <span className="inline-flex items-center px-2 py-1 rounded-xl bg-surface hover:bg-surface-hover text-foreground/60 text-[10px] font-bold border border-border">
+                +{sportsList.length - 3} More
+              </span>
+            )}
           </div>
         </div>
 
-        {/* ── FOOTER ROW ── */}
+        {/* ── 3. CARD FOOTER ACTION ROW ── */}
         <div
-          className="pt-2 border-t flex items-center justify-between text-xs"
+          className="pt-3 border-t flex items-center justify-between"
           style={{ borderColor: 'var(--athlon-border)' }}
         >
-          <div className="flex items-center gap-1 text-foreground/60 font-bold text-[9.5px]">
-            <Dumbbell className="w-3 h-3 text-primary shrink-0" />
-            <span>{sportsList.length} {sportsList.length === 1 ? 'Sport' : 'Sports'}</span>
+          <div className="flex items-center gap-1.5 text-foreground/70 font-bold text-[10.5px]">
+            <span className="w-2 h-2 rounded-full bg-primary/80 inline-block" />
+            <span>
+              {sportsList.length} {sportsList.length === 1 ? 'Discipline' : 'Disciplines'}
+            </span>
           </div>
 
-          <div className="flex items-center gap-0.5 font-black text-[10px] sm:text-[11px] text-primary group-hover:translate-x-0.5 transition-transform">
-            <span>Details</span>
-            <ChevronRight className="w-3 h-3 text-primary" />
+          {/* Sleek Action CTA Button */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white font-black text-[11px] transition-all duration-200 shadow-xs">
+            <span>Explore</span>
+            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
       </div>

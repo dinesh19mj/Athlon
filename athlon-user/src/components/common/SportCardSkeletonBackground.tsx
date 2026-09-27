@@ -23,30 +23,30 @@ export function SportCardSkeletonBackground({
   const isDark = mode !== 'light';
 
   // ── Mode-Aware Color Mapping ──
-  // Light theme: uses selected theme color (vibrant & clean on light card)
-  // Dark theme: uses card's slate-grey palette (avoids green glare, high contrast for card contents)
-  const strokeColor = isDark ? '#64748B' : 'var(--sport-skel-stroke, var(--athlon-primary))';
-  const fillColor = isDark ? 'rgba(255, 255, 255, 0.04)' : 'var(--sport-skel-fill, var(--athlon-primary-soft, rgba(84, 172, 104, 0.15)))';
-  const fillSolidColor = isDark ? '#475569' : 'var(--sport-skel-fill-solid, var(--athlon-primary))';
-  const textColor = isDark ? '#94A3B8' : 'var(--sport-skel-text, var(--athlon-primary))';
-  const dotColor = isDark ? '#475569' : 'var(--sport-skel-dot, var(--athlon-primary))';
-  const dotOpacity = isDark ? 0.28 : 0.14;
-  const turfColor = isDark ? '#1E293B' : 'var(--sport-skel-turf, var(--athlon-primary))';
-  const turfOpacity = isDark ? 0.08 : 0.035;
-  const railColor = isDark ? '#475569' : 'var(--sport-skel-rail, var(--athlon-primary))';
-  const railOpacity = isDark ? 0.45 : 0.75;
-  const beamColor = isDark ? '#475569' : 'var(--sport-skel-beam, var(--athlon-primary))';
-  const beamOpacity = isDark ? 0.18 : 0.25;
+  // Light theme: uses elegant, subtle architectural slate blueprint lines (clean, high legibility behind card text)
+  // Dark theme: uses card's slate-grey palette (avoids glare, high contrast for card contents)
+  const strokeColor = isDark ? '#64748B' : 'var(--sport-skel-stroke, rgba(100, 116, 139, 0.25))';
+  const fillColor = isDark ? 'rgba(255, 255, 255, 0.04)' : 'var(--sport-skel-fill, rgba(148, 163, 184, 0.06))';
+  const fillSolidColor = isDark ? '#475569' : 'var(--sport-skel-fill-solid, #94A3B8)';
+  const textColor = isDark ? '#94A3B8' : 'var(--sport-skel-text, #64748B)';
+  const dotColor = isDark ? '#475569' : 'var(--sport-skel-dot, #94A3B8)';
+  const dotOpacity = isDark ? 0.28 : 0.08;
+  const turfColor = isDark ? '#1E293B' : 'var(--sport-skel-turf, rgba(100, 116, 139, 0.06))';
+  const turfOpacity = isDark ? 0.08 : 0.04;
+  const railColor = isDark ? '#475569' : 'var(--sport-skel-rail, rgba(100, 116, 139, 0.35))';
+  const railOpacity = isDark ? 0.45 : 0.4;
+  const beamColor = isDark ? '#475569' : 'var(--sport-skel-beam, #CBD5E1)';
+  const beamOpacity = isDark ? 0.18 : 0.12;
   const haloBg1 = isDark
     ? 'radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%)'
-    : 'var(--sport-skel-halo-1, radial-gradient(circle, var(--athlon-primary) 0%, rgba(52, 211, 153, 0.3) 40%, transparent 75%))';
-  const haloOpacity1 = isDark ? 0.12 : 0.35;
+    : 'var(--sport-skel-halo-1, radial-gradient(circle, var(--athlon-primary, rgba(234, 88, 12, 0.06)) 0%, transparent 70%))';
+  const haloOpacity1 = isDark ? 0.12 : 0.15;
   const haloBg2 = isDark
     ? 'radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%)'
-    : 'var(--sport-skel-halo-2, radial-gradient(circle, var(--athlon-primary-light, #54AC68) 0%, rgba(34, 197, 94, 0.2) 50%, transparent 80%))';
-  const haloOpacity2 = isDark ? 0.06 : 0.18;
-  const sparkColor = isDark ? '#64748B' : 'var(--sport-skel-spark, var(--athlon-primary))';
-  const sparkOpacity = isDark ? 0.35 : 0.6;
+    : 'var(--sport-skel-halo-2, radial-gradient(circle, rgba(100, 116, 139, 0.04) 0%, transparent 70%))';
+  const haloOpacity2 = isDark ? 0.06 : 0.08;
+  const sparkColor = isDark ? '#64748B' : 'var(--sport-skel-spark, #94A3B8)';
+  const sparkOpacity = isDark ? 0.35 : 0.25;
 
   const normalized = (sport || '').toUpperCase();
   const isCricket = normalized.includes('CRICKET');
@@ -297,60 +297,122 @@ export function SportCardSkeletonBackground({
         {/* ─── CASE C: FOOTBALL / SOCCER SKELETON ─── */}
         {isFootball && (
           <g>
-            {/* 1. Full Isometric 3D Football Pitch */}
-            <g transform="translate(25, 95)" opacity="0.35" stroke={strokeColor}>
-              {/* Pitch outer perimeter */}
-              <polygon points="0,48 85,6 170,48 85,90" fill="none" strokeWidth="1.2" />
-              {/* Halfway line */}
-              <line x1="42.5" y1="27" x2="127.5" y2="69" strokeWidth="1" />
-              {/* Center circle and spot */}
-              <ellipse cx="85" cy="48" rx="22" ry="11" fill="none" strokeWidth="0.9" />
-              <circle cx="85" cy="48" r="1.5" fill={fillSolidColor} stroke="none" />
-              {/* Left Penalty Box & Goal Area */}
-              <polygon points="14,41 42,27 54,33 26,47" fill="none" strokeWidth="0.8" />
-              <polygon points="6,45 20,38 26,41 12,48" fill="none" strokeWidth="0.65" />
-              {/* Right Penalty Box & Goal Area */}
-              <polygon points="144,61 116,47 128,53 156,67" fill="none" strokeWidth="0.8" />
-              <polygon points="152,65 138,58 144,61 158,68" fill="none" strokeWidth="0.65" />
-              {/* Technical pitch dimension marker */}
-              <text x="75" y="104" fill={textColor} fontSize="6" fontFamily="monospace" opacity="0.6">
-                105M × 68M
+            {/* 1. Football Pitch Mower Stripes (Lush Alternating Turf Grass Bands) */}
+            <g opacity="0.12" fill={turfColor}>
+              <rect x="0" y="0" width="45" height="220" />
+              <rect x="90" y="0" width="45" height="220" />
+              <rect x="180" y="0" width="45" height="220" />
+              <rect x="270" y="0" width="45" height="220" />
+            </g>
+
+            {/* 2. Full Football Pitch Tactical Layout & Lines */}
+            <g opacity="0.4" stroke={strokeColor}>
+              {/* Outer Touchline & Goal-Line Perimeter */}
+              <rect x="15" y="12" width="330" height="196" rx="4" fill="none" strokeWidth="1.2" />
+
+              {/* Halfway Line */}
+              <line x1="180" y1="12" x2="180" y2="208" strokeWidth="1.2" />
+
+              {/* Center Circle & Spot */}
+              <circle cx="180" cy="110" r="38" fill="none" strokeWidth="1.1" />
+              <circle cx="180" cy="110" r="2.2" fill={fillSolidColor} stroke="none" />
+
+              {/* Left Penalty Box (18-Yard Box) & Goal Area (6-Yard Box) */}
+              <rect x="15" y="55" width="54" height="110" fill="none" strokeWidth="1" />
+              <rect x="15" y="80" width="22" height="60" fill="none" strokeWidth="0.8" />
+              <circle cx="52" cy="110" r="1.8" fill={fillSolidColor} stroke="none" />
+              {/* Left Penalty Arc (D-Box) */}
+              <path d="M 69 94 A 38 38 0 0 1 69 126" fill="none" strokeWidth="0.9" strokeDasharray="3 2" />
+
+              {/* Right Penalty Box (18-Yard Box) & Goal Area (6-Yard Box) */}
+              <rect x="291" y="55" width="54" height="110" fill="none" strokeWidth="1" />
+              <rect x="323" y="80" width="22" height="60" fill="none" strokeWidth="0.8" />
+              <circle cx="308" cy="110" r="1.8" fill={fillSolidColor} stroke="none" />
+              {/* Right Penalty Arc (D-Box) */}
+              <path d="M 291 94 A 38 38 0 0 0 291 126" fill="none" strokeWidth="0.9" strokeDasharray="3 2" />
+
+              {/* 4 Corner Kick Quarter-Circle Arcs */}
+              <path d="M 15 24 A 12 12 0 0 0 27 12" fill="none" strokeWidth="0.9" />
+              <path d="M 15 196 A 12 12 0 0 1 27 208" fill="none" strokeWidth="0.9" />
+              <path d="M 345 24 A 12 12 0 0 1 333 12" fill="none" strokeWidth="0.9" />
+              <path d="M 345 196 A 12 12 0 0 0 333 208" fill="none" strokeWidth="0.9" />
+
+              {/* Technical Pitch Specs Annotation */}
+              <text x="180" y="202" fill={textColor} fontSize="6" fontFamily="monospace" textAnchor="middle" opacity="0.65">
+                FIFA STANDARD PITCH: 105M × 68M
               </text>
             </g>
 
-            {/* 2. 3D Goalpost with Hexagonal Net Mesh Wireframe */}
-            <g transform="translate(245, 34)" opacity="0.38" stroke={strokeColor}>
-              {/* Front goalpost frame */}
-              <rect x="0" y="0" width="46" height="28" fill="none" strokeWidth="1.4" />
-              {/* Depth support stanchions and rear ground bar */}
-              <line x1="0" y1="0" x2="-14" y2="10" strokeWidth="1" />
-              <line x1="46" y1="0" x2="32" y2="10" strokeWidth="1" />
-              <line x1="0" y1="28" x2="-14" y2="34" strokeWidth="1" />
-              <line x1="46" y1="28" x2="32" y2="34" strokeWidth="1" />
-              <line x1="-14" y1="10" x2="32" y2="10" strokeWidth="0.9" />
-              <line x1="-14" y1="34" x2="32" y2="34" strokeWidth="0.9" />
-              {/* Hexagonal / Diamond net netting lines */}
-              <line x1="-14" y1="18" x2="32" y2="18" strokeWidth="0.5" strokeDasharray="3 2" />
-              <line x1="-14" y1="26" x2="32" y2="26" strokeWidth="0.5" strokeDasharray="3 2" />
-              <line x1="-5" y1="10" x2="-5" y2="34" strokeWidth="0.5" strokeDasharray="3 2" />
-              <line x1="8" y1="10" x2="8" y2="34" strokeWidth="0.5" strokeDasharray="3 2" />
-              <line x1="20" y1="10" x2="20" y2="34" strokeWidth="0.5" strokeDasharray="3 2" />
+            {/* 3. Hero 32-Panel Geometric Football (Upper-Right Accent) */}
+            <g transform="translate(295, 48)" opacity="0.55" stroke={strokeColor}>
+              {/* Outer Ball Sphere */}
+              <circle cx="0" cy="0" r="24" fill={fillColor} strokeWidth="1.6" />
+
+              {/* Central Regular Pentagon (Solid Dark Patch) */}
+              <polygon
+                points="0,-7 6.6,-2.2 4.1,5.6 -4.1,5.6 -6.6,-2.2"
+                fill={fillSolidColor}
+                strokeWidth="1.1"
+              />
+
+              {/* 5 Hexagonal Seam Radiating Lines */}
+              <line x1="0" y1="-7" x2="0" y2="-15" strokeWidth="1.1" />
+              <line x1="6.6" y1="-2.2" x2="14.2" y2="-4.8" strokeWidth="1.1" />
+              <line x1="4.1" y1="5.6" x2="8.8" y2="13.8" strokeWidth="1.1" />
+              <line x1="-4.1" y1="5.6" x2="-8.8" y2="13.8" strokeWidth="1.1" />
+              <line x1="-6.6" y1="-2.2" x2="-14.2" y2="-4.8" strokeWidth="1.1" />
+
+              {/* Surrounding Outer Pentagons (Curved to spherical edge) */}
+              {/* Top Pentagon */}
+              <polygon points="0,-15 7.2,-17.5 4.5,-23.5 -4.5,-23.5 -7.2,-17.5" fill={fillSolidColor} strokeWidth="0.9" />
+              <line x1="7.2" y1="-17.5" x2="14.2" y2="-4.8" strokeWidth="1" />
+              <line x1="-7.2" y1="-17.5" x2="-14.2" y2="-4.8" strokeWidth="1" />
+
+              {/* Top-Right Pentagon */}
+              <polygon points="14.2,-4.8 19.5,-1.5 23.5,-7 19.5,-12.5 13,-11" fill={fillSolidColor} strokeWidth="0.8" />
+              <line x1="19.5" y1="-1.5" x2="18" y2="8" strokeWidth="1" />
+
+              {/* Bottom-Right Pentagon */}
+              <polygon points="8.8,13.8 15.5,13.5 18,18.5 12,22 6.5,19" fill={fillSolidColor} strokeWidth="0.8" />
+              <line x1="18" y1="8" x2="15.5" y2="13.5" strokeWidth="1" />
+              <line x1="8.8" y1="13.8" x2="-8.8" y2="13.8" strokeWidth="1" />
+
+              {/* Bottom-Left Pentagon */}
+              <polygon points="-8.8,13.8 -15.5,13.5 -18,18.5 -12,22 -6.5,19" fill={fillSolidColor} strokeWidth="0.8" />
+              <line x1="-18" y1="8" x2="-15.5" y2="13.5" strokeWidth="1" />
+
+              {/* Top-Left Pentagon */}
+              <polygon points="-14.2,-4.8 -19.5,-1.5 -23.5,-7 -19.5,-12.5 -13,-11" fill={fillSolidColor} strokeWidth="0.8" />
+              <line x1="-19.5" y1="-1.5" x2="-18" y2="8" strokeWidth="1" />
+
+              {/* Football Velocity Arc / Motion Tail */}
+              <path d="M -26 -12 Q -42 -18 -58 -14" fill="none" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+              <path d="M -24 -2 Q -40 -4 -52 4" fill="none" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.5" />
             </g>
 
-            {/* 3. Classic 32-Panel Truncated Icosahedron Football */}
-            <g transform="translate(185, 28)" opacity="0.42" stroke={strokeColor}>
-              <circle cx="0" cy="0" r="15" fill="none" strokeWidth="1.2" />
-              {/* Central regular pentagon */}
-              <polygon points="0,-4 4,-1 2,4 -2,4 -4,-1" fill={fillColor} strokeWidth="0.9" />
-              {/* Surrounding hexagon radiating seam lines */}
-              <line x1="0" y1="-4" x2="0" y2="-15" strokeWidth="0.8" />
-              <line x1="4" y1="-1" x2="14" y2="-4" strokeWidth="0.8" />
-              <line x1="2" y1="4" x2="9" y2="12" strokeWidth="0.8" />
-              <line x1="-2" y1="4" x2="-9" y2="12" strokeWidth="0.8" />
-              <line x1="-4" y1="-1" x2="-14" y2="-4" strokeWidth="0.8" />
-              {/* Outer adjacent pentagon hints */}
-              <path d="M 0 -15 L 7 -13 L 14 -4" fill="none" strokeWidth="0.7" strokeDasharray="2 1" />
-              <path d="M -14 -4 L -7 -13 L 0 -15" fill="none" strokeWidth="0.7" strokeDasharray="2 1" />
+            {/* 4. 3D Football Goalpost & Net Wireframe (Top-Center / Left) */}
+            <g transform="translate(188, 22)" opacity="0.38" stroke={strokeColor}>
+              {/* Goal Crossbar & Uprights */}
+              <rect x="0" y="0" width="48" height="26" fill="none" strokeWidth="1.5" rx="1" />
+              {/* 3D Depth Extrusions */}
+              <line x1="0" y1="0" x2="-12" y2="8" strokeWidth="1.1" />
+              <line x1="48" y1="0" x2="36" y2="8" strokeWidth="1.1" />
+              <line x1="0" y1="26" x2="-12" y2="30" strokeWidth="1.1" />
+              <line x1="48" y1="26" x2="36" y2="30" strokeWidth="1.1" />
+              <line x1="-12" y1="8" x2="36" y2="8" strokeWidth="1" />
+              <line x1="-12" y1="30" x2="36" y2="30" strokeWidth="1" />
+              {/* Goal Netting Diamond Lattice */}
+              <line x1="-12" y1="15" x2="36" y2="15" strokeWidth="0.5" strokeDasharray="2 2" />
+              <line x1="-12" y1="22" x2="36" y2="22" strokeWidth="0.5" strokeDasharray="2 2" />
+              <line x1="0" y1="8" x2="0" y2="30" strokeWidth="0.5" strokeDasharray="2 2" />
+              <line x1="12" y1="8" x2="12" y2="30" strokeWidth="0.5" strokeDasharray="2 2" />
+              <line x1="24" y1="8" x2="24" y2="30" strokeWidth="0.5" strokeDasharray="2 2" />
+            </g>
+
+            {/* 5. Corner Flag & Mast */}
+            <g transform="translate(24, 20)" opacity="0.45" stroke={strokeColor}>
+              <line x1="0" y1="0" x2="0" y2="24" strokeWidth="1.4" strokeLinecap="round" />
+              <polygon points="0,0 12,5 0,10" fill={fillSolidColor} strokeWidth="0.8" />
             </g>
           </g>
         )}

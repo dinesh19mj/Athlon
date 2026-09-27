@@ -985,132 +985,285 @@ export default function CommunityMembersPage() {
         </div>
       )}
 
-      {/* ── INVITE & ADD MEMBER MODAL ── */}
+      {/* ── INVITE & ADD MEMBER MODAL (MODERN LUXURY ATHLON MODAL) ── */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-200">
           <div
-            className="w-full max-w-md rounded-[32px] border p-6 space-y-4 shadow-2xl animate-in zoom-in-95"
+            className="w-full max-w-md rounded-[32px] border shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
             }}
           >
-            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+            {/* Ambient Energy Glow */}
+            <div
+              className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl pointer-events-none opacity-25"
+              style={{ backgroundColor: 'var(--athlon-primary)' }}
+            />
+
+            {/* Modal Header */}
+            <div
+              className="p-5 sm:p-6 pb-4 border-b flex items-center justify-between shrink-0 relative z-10"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
                   <UserPlus className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-foreground">Add Community Player</h3>
-                  <p className="text-[11px] text-foreground/50 font-semibold">Invite athletes to your weekly sports circle</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary truncate">
+                      Community Roster
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight truncate">
+                    Add Community Player
+                  </h3>
                 </div>
               </div>
+
               <button
+                type="button"
                 onClick={() => {
                   setShowInviteModal(false);
                   setFoundUser(null);
                   setPhoneInput('');
+                  setSearchError(null);
                 }}
-                className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-surface"
-                style={{ borderColor: 'var(--athlon-border)' }}
+                className="w-8 h-8 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer"
+                aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Quick Share Link Banner */}
-            <div
-              className="p-4 rounded-2xl border space-y-2.5"
-              style={{
-                backgroundColor: 'var(--athlon-surface)',
-                borderColor: 'var(--athlon-border)',
-              }}
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-foreground flex items-center gap-1.5">
-                  <Share2 className="w-3.5 h-3.5 text-primary" />
-                  <span>Share 1-Tap Invite Link</span>
-                </span>
-                <button
-                  onClick={handleCopyInviteLink}
-                  className="text-primary font-black hover:underline flex items-center gap-1 cursor-pointer text-xs"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>Copy</span>
-                </button>
-              </div>
-              <p className="text-[11px] text-foreground/55 leading-relaxed">
-                Send this link to your WhatsApp or Telegram sports groups. Players can tap once to request joining your community.
-              </p>
-            </div>
-
-            {/* Athlete Phone Lookup Form */}
-            <form onSubmit={handleLookupUser} className="space-y-3 pt-1">
-              <label className="text-xs font-bold text-foreground/80 block">
-                Lookup Registered Athlete by Phone
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Phone className="w-4 h-4 text-foreground/45 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="tel"
-                    placeholder="Enter 10-digit mobile number"
-                    value={phoneInput}
-                    onChange={(e) => setPhoneInput(e.target.value)}
-                    className="w-full pl-10 pr-3 py-3 rounded-2xl border text-xs font-semibold outline-none focus:border-primary"
-                    style={{
-                      backgroundColor: 'var(--athlon-surface)',
-                      borderColor: 'var(--athlon-border)',
-                    }}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={searchingUser || !phoneInput.trim()}
-                  className="px-4 py-3 rounded-2xl bg-primary text-black font-black text-xs hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-md"
-                >
-                  {searchingUser ? 'Searching...' : 'Lookup'}
-                </button>
-              </div>
-            </form>
-
-            {searchError && (
-              <div className="p-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-rose-400 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{searchError}</span>
-              </div>
-            )}
-
-            {/* Found Athlete Card */}
-            {foundUser && (
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-grow relative z-10">
+              {/* Quick Share Link Banner */}
               <div
-                className="p-4 rounded-2xl border space-y-3 animate-in fade-in"
+                className="p-4 rounded-2xl border space-y-2.5"
                 style={{
                   backgroundColor: 'var(--athlon-surface)',
                   borderColor: 'var(--athlon-border)',
                 }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-black text-base shadow-sm">
-                    {foundUser.firstName ? foundUser.firstName.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <div>
-                    <h4 className="font-black text-sm text-foreground">
-                      {[foundUser.firstName, foundUser.lastName].filter(Boolean).join(' ') || 'Athlete'}
-                    </h4>
-                    <p className="text-xs text-foreground/50">{foundUser.phone || foundUser.email}</p>
-                  </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-extrabold text-foreground flex items-center gap-1.5">
+                    <Share2 className="w-3.5 h-3.5 text-primary" />
+                    <span>Instant 1-Tap Invite Link</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyInviteLink}
+                    className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 font-black flex items-center gap-1.5 cursor-pointer text-[11px] transition-all active:scale-95"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Link</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-foreground/60 leading-relaxed font-medium">
+                  Share this invite link with your WhatsApp or Telegram group so players can join instantly.
+                </p>
+              </div>
+
+              {/* Athlete Phone Lookup Input */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs px-0.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-foreground/60 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-primary" />
+                    <span>Lookup Registered Athlete</span>
+                  </label>
+                  <span className={`text-[10px] font-mono font-bold ${
+                    phoneInput.replace(/[^0-9]/g, '').length === 10
+                      ? 'text-primary'
+                      : 'text-foreground/40'
+                  }`}>
+                    {phoneInput.replace(/[^0-9]/g, '').length}/10 digits
+                  </span>
                 </div>
 
+                <div
+                  className="p-1.5 rounded-2xl border flex items-center gap-2 shadow-2xs transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="px-3 py-2 rounded-xl bg-foreground/5 border border-foreground/10 text-xs font-black text-foreground font-mono shrink-0 select-none flex items-center gap-1">
+                    <span>+91</span>
+                  </div>
+
+                  <input
+                    type="tel"
+                    placeholder="Enter 10-digit mobile..."
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    maxLength={10}
+                    className="w-full bg-transparent px-2 py-2 text-sm font-mono font-black text-foreground placeholder:text-foreground/30 focus:outline-none flex-grow min-w-0"
+                  />
+
+                  {searchingUser ? (
+                    <div className="p-2 shrink-0">
+                      <RefreshCw className="w-4 h-4 text-primary animate-spin" />
+                    </div>
+                  ) : phoneInput.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhoneInput('');
+                        setFoundUser(null);
+                        setSearchError(null);
+                      }}
+                      className="p-2 text-foreground/30 hover:text-foreground transition-colors shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ) : null}
+
+                  {!foundUser && (
+                    <button
+                      type="button"
+                      onClick={handleLookupUser}
+                      disabled={searchingUser || phoneInput.replace(/[^0-9]/g, '').length < 10}
+                      className="px-3.5 py-2 rounded-xl bg-primary text-black text-[11px] font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none shrink-0 shadow-xs cursor-pointer flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3 h-3 fill-black" />
+                      <span>Lookup</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {searchError && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-1.5 animate-in zoom-in-95 duration-200">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-[11px] font-black text-amber-300 uppercase tracking-wider">
+                        Athlete Not Found
+                      </h4>
+                      <p className="text-xs text-foreground/75 font-medium leading-relaxed mt-0.5">
+                        {searchError}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Found Athlete Card */}
+              {foundUser && (
+                <div
+                  className="p-4 rounded-3xl border space-y-3 animate-in zoom-in-95 duration-200 shadow-sm relative overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-emerald-400 via-primary to-emerald-400" />
+
+                  <div className="flex items-center justify-between">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      Verified Athlete
+                    </span>
+                    <span className="text-[10px] font-bold text-foreground/50">
+                      Ready to Add
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3.5 pt-1">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/25 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                      {foundUser.photo ? (
+                        <img
+                          src={UserService.getPhotoUrl(foundUser.photo)}
+                          alt={foundUser.firstName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-base font-black text-primary font-mono">
+                          {foundUser.firstName ? foundUser.firstName.charAt(0).toUpperCase() : 'A'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-black text-foreground truncate">
+                        {[foundUser.firstName, foundUser.lastName].filter(Boolean).join(' ') || 'Athlete'}
+                      </h4>
+                      <p className="text-xs text-foreground/60 font-mono font-bold mt-0.5">
+                        +91 {foundUser.phone || phoneInput}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Bottom Actions Footer */}
+            <div
+              className="p-4 sm:p-5 border-t flex items-center gap-3 shrink-0 relative z-10"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setFoundUser(null);
+                  setPhoneInput('');
+                  setSearchError(null);
+                }}
+                className="w-1/3 py-2.5 px-3 rounded-xl border text-xs font-bold text-foreground/70 hover:text-foreground transition-all active:scale-95 text-center cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                Cancel
+              </button>
+
+              {foundUser ? (
                 <button
+                  type="button"
                   onClick={handleAddFoundUser}
                   disabled={isAddingMember}
-                  className="w-full py-3 rounded-2xl bg-primary text-black font-black text-xs hover:bg-primary/90 active:scale-95 transition-all shadow-lg shadow-primary/20 cursor-pointer"
+                  className="w-2/3 py-2.5 px-4 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
                 >
-                  {isAddingMember ? 'Adding to Circle...' : 'Add to Circle'}
+                  {isAddingMember ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Adding to Circle...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      <span>Add to Circle</span>
+                    </>
+                  )}
                 </button>
-              </div>
-            )}
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLookupUser}
+                  disabled={searchingUser || phoneInput.replace(/[^0-9]/g, '').length < 10}
+                  className="w-2/3 py-2.5 px-4 rounded-xl bg-primary text-black text-xs font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {searchingUser ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Searching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 fill-black" />
+                      <span>Lookup Athlete</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

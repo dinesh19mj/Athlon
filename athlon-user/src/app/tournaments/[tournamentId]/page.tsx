@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -35,6 +35,12 @@ import {
   Copy,
   X,
   Lock,
+  ChevronRight,
+  ArrowRight,
+  Navigation,
+  Award,
+  Zap,
+  CheckCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -142,7 +148,7 @@ export default function PublicTournamentDetailsPage() {
           .then((mRes) => {
             if (mRes) setMatches(mRes);
           })
-          .catch(() => {});
+          .catch(() => { });
       }, 5000);
       return () => clearInterval(interval);
     }
@@ -158,7 +164,7 @@ export default function PublicTournamentDetailsPage() {
           .then((sRes) => {
             if (sRes) setStandings(sRes.data || sRes || []);
           })
-          .catch(() => {});
+          .catch(() => { });
       }, 5000);
       return () => clearInterval(interval);
     }
@@ -233,7 +239,44 @@ export default function PublicTournamentDetailsPage() {
   const startInfo = parseDateTime(tournament.startDate);
   const endInfo = parseDateTime(tournament.endDate);
 
-  const isTeamEvent = tournament.tournamentType === 'TEAM_EVENT' || tournament.tournamentType === 'TEAM_LEAGUE';
+  const sportStr = (tournament.sport || '').toLowerCase();
+  const formatStr = (tournament.matchFormat || '').toLowerCase();
+  const typeStr = (tournament.tournamentType || '').toLowerCase();
+
+  const isTeamSport =
+    typeStr === 'team_event' ||
+    typeStr === 'team_league' ||
+    [
+      'cricket',
+      'football',
+      'soccer',
+      'basketball',
+      'volleyball',
+      'baseball',
+      'rugby',
+      'hockey',
+      'kabaddi',
+      'kho kho',
+    ].includes(sportStr) ||
+    formatStr.includes('team') ||
+    formatStr.includes('side') ||
+    formatStr.includes('overs') ||
+    formatStr.includes('t20') ||
+    formatStr.includes('t10') ||
+    formatStr.includes('box cricket') ||
+    formatStr.includes('vs') ||
+    formatStr.includes('futsal') ||
+    formatStr.includes('relay') ||
+    formatStr.includes('3x3') ||
+    formatStr.includes('5v5') ||
+    formatStr.includes('7v7') ||
+    formatStr.includes('11v11') ||
+    formatStr.includes('8v8') ||
+    formatStr.includes('6v6') ||
+    formatStr.includes('4v4');
+
+  const isTeamEvent = isTeamSport;
+
   const isLeague =
     tournament.tournamentType === 'LEAGUE' ||
     tournament.tournamentType === 'TEAM_EVENT' ||
@@ -250,11 +293,12 @@ export default function PublicTournamentDetailsPage() {
     (r) => r.status?.toUpperCase() !== 'REJECTED'
   );
 
-  const totalPlayersCount = tournament.playersCount || 0;
+  const totalPlayersCount = Number(tournament.playersCount) || 0;
+  const hasCapacityLimit = totalPlayersCount > 0;
   const categoryLimit =
     categoriesList.length > 0 && totalPlayersCount > 0
       ? Math.ceil(totalPlayersCount / categoriesList.length)
-      : totalPlayersCount || 16;
+      : totalPlayersCount || 0;
 
   const getCategoryRegisteredCount = (cat: string) => {
     return validRegistrations.filter((reg) => {
@@ -307,6 +351,19 @@ export default function PublicTournamentDetailsPage() {
     ? `${baseUrl}/api/tournament/tournaments/getFile?filePath=${encodeURIComponent(qrCodePath)}`
     : '';
 
+  const handleBackNavigation = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      const ref = document.referrer;
+      if (ref && ref.includes('/register')) {
+        router.push('/tournaments');
+        return;
+      }
+      router.back();
+    } else {
+      router.push('/tournaments');
+    }
+  };
+
   const registerHref = isAuthenticated
     ? `/home/tournaments/${tournamentUuid}/register`
     : `/login?redirect=/tournaments/${tournamentUuid}`;
@@ -314,84 +371,129 @@ export default function PublicTournamentDetailsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
-          1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
+          1. MOBILE VIEW ONLY (< md) - REDESIGNED LUXURY TOURNAMENT DETAILS
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-32">
-        {/* Top Sticky Header */}
+      <div className="block md:hidden pb-32 animate-in fade-in duration-300">
+        {/* Sleek Floating Glass Header */}
         <header
-          className="sticky top-0 z-50 flex items-center justify-between px-4 py-3.5 backdrop-blur-xl border-b"
+          className="sticky top-0 z-50 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b shadow-xs transition-all"
           style={{
-            backgroundColor: 'var(--athlon-navigation)',
+            backgroundColor: 'var(--athlon-navigation, rgba(10, 15, 29, 0.85))',
             borderColor: 'var(--athlon-border)',
           }}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 min-w-0">
             <button
-              onClick={() => router.back()}
-              className="p-2 -ml-1 text-foreground/80 hover:text-foreground rounded-full hover:bg-white/5 transition-colors"
+              onClick={handleBackNavigation}
+              className="p-1.5 -ml-1 text-foreground/80 hover:text-foreground rounded-xl hover:bg-foreground/5 active:scale-95 transition-all cursor-pointer"
+              aria-label="Back"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <span className="text-sm font-bold uppercase tracking-wider text-foreground">Tournament Details</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse" />
+              <span className="text-xs font-black uppercase tracking-wider text-foreground truncate max-w-[200px]">
+                {tournament.name}
+              </span>
+            </div>
           </div>
 
           <button
             onClick={handleShare}
-            className="p-2 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/5 transition-colors text-xs font-semibold flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl border text-foreground/80 hover:text-foreground active:scale-95 transition-all text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-xs"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border)',
+            }}
           >
-            <Share2 className="w-4 h-4" />
-            <span>{copied ? 'Copied!' : 'Share'}</span>
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-500">Copied</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5 text-primary" />
+                <span>Share</span>
+              </>
+            )}
           </button>
         </header>
 
-        <main className="w-full max-w-4xl mx-auto px-4 flex flex-col gap-6 pt-4">
-          {/* HERO SECTION */}
+        <main className="w-full max-w-4xl mx-auto px-3.5 flex flex-col gap-4 pt-3">
+          {/* ── 1. LUXURY HERO POSTER & TOURNAMENT IDENTITY CARD ────────────── */}
           <div
-            className="rounded-[24px] overflow-hidden border relative shadow-2xl"
+            className="rounded-[28px] overflow-hidden border relative shadow-xl transition-all"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
             }}
           >
+            {/* Ambient Energy Glow Accent */}
+            <div
+              className="absolute -top-16 -right-16 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-25"
+              style={{ backgroundColor: 'var(--athlon-primary)' }}
+            />
+
+            {/* Poster Media Box */}
             {posterUrl ? (
               <div
                 onClick={() => setPreviewImage({ src: posterUrl, title: `${tournament.name} Poster` })}
-                className="w-full h-56 sm:h-72 relative bg-black/40 border-b border-white/10 cursor-pointer group overflow-hidden"
+                className="w-full h-56 sm:h-64 relative bg-black/50 cursor-pointer group overflow-hidden select-none"
               >
                 <img
                   src={posterUrl}
                   alt={`${tournament.name} Poster`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = 'none';
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1D] via-transparent to-black/20 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+
+                {/* Floating Status Pill (Top Left) */}
+                <div className="absolute top-3 left-3 z-10">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-md backdrop-blur-md flex items-center gap-1.5 ${statusBadge.color}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                    {statusBadge.label}
+                  </span>
+                </div>
+
+                {/* Floating Enlarge Pill (Top Right) */}
                 <div
-                  className="absolute top-3.5 right-3.5 z-20 px-3 py-1.5 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 border border-white/20 shadow-xl group-hover:bg-primary group-hover:text-primary-foreground transition-all pointer-events-none"
-                  style={{ backgroundColor: 'rgba(10, 15, 29, 0.85)' }}
+                  className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full text-white text-[10px] font-bold flex items-center gap-1.5 border border-white/20 shadow-lg backdrop-blur-md pointer-events-none"
+                  style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)' }}
                 >
-                  <Maximize2 className="w-3.5 h-3.5 text-white" />
-                  <span className="text-white">Click to Enlarge</span>
+                  <Maximize2 className="w-3 h-3 text-primary" />
                 </div>
               </div>
             ) : (
-              <div className="w-full h-32 relative bg-gradient-to-br from-primary/20 via-surface to-background border-b border-white/10 flex items-center justify-center">
-                <Trophy className="w-14 h-14 text-primary/30" />
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[90px] rounded-full pointer-events-none" />
+              <div className="w-full h-28 relative bg-gradient-to-br from-primary/15 via-surface to-background border-b flex items-center justify-between px-6 overflow-hidden" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="space-y-1 z-10">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${statusBadge.color}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    {statusBadge.label}
+                  </span>
+                  <p className="text-xs text-foreground/50 font-semibold">Official Athlon Sports Tournament</p>
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-lg shadow-primary/10 z-10">
+                  <Trophy className="w-7 h-7" />
+                </div>
+                <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
               </div>
             )}
 
-            <div className="p-5 sm:p-7 relative z-10 space-y-4">
-              {/* Badges Row */}
-              <div className="flex items-center flex-wrap gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-primary/15 border border-primary/30 text-primary text-xs font-black uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
+            {/* Tournament Details Header Body */}
+            <div className="p-4 sm:p-5 relative z-10 space-y-3.5">
+              {/* Primary Structured Sport & Format Badges */}
+              <div className="flex items-center flex-wrap gap-1.5">
+                <span className="px-2.5 py-0.5 rounded-lg bg-primary text-black text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                  <Sparkles className="w-3 h-3 fill-black" />
                   {tournament.sport || 'Sports'}
                 </span>
 
                 <span
-                  className="px-2.5 py-1 rounded-lg border text-foreground text-xs font-bold uppercase tracking-wider"
+                  className="px-2.5 py-0.5 rounded-lg border text-foreground text-[10px] font-bold uppercase tracking-wider"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
                   {isTeamEvent ? 'Team League' : isLeague ? 'League' : 'Knockout'}
@@ -399,32 +501,16 @@ export default function PublicTournamentDetailsPage() {
 
                 {tournament.matchFormat && (
                   <span
-                    className="px-2.5 py-1 rounded-lg border text-foreground text-xs font-bold uppercase tracking-wider"
+                    className="px-2.5 py-0.5 rounded-lg border text-primary text-[10px] font-black uppercase tracking-wider"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
                     {tournament.matchFormat}
                   </span>
                 )}
 
-                {/* Category Badges */}
-                {categoriesList.map((cat, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2.5 py-1 rounded-lg border text-primary text-xs font-black uppercase tracking-wider flex items-center gap-1"
-                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                  >
-                    <Tag className="w-3 h-3 text-primary" />
-                    {cat}
-                  </span>
-                ))}
-
-                <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-black uppercase tracking-wider ${statusBadge.color}`}>
-                  {statusBadge.label}
-                </span>
-
                 {tournament.visibility && (
                   <span
-                    className="px-2 py-1 rounded-lg border text-text-muted text-[10px] font-bold uppercase tracking-wider"
+                    className="px-2 py-0.5 rounded-lg border text-foreground/50 text-[9px] font-bold uppercase tracking-wider"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
                     {tournament.visibility}
@@ -432,103 +518,255 @@ export default function PublicTournamentDetailsPage() {
                 )}
               </div>
 
-              {/* Title */}
-              <h1 className="text-2xl sm:text-3xl font-black leading-tight text-foreground tracking-tight">
+              {/* Tournament Title */}
+              <h1 className="text-xl sm:text-2xl font-black leading-tight text-foreground tracking-tight">
                 {tournament.name}
               </h1>
 
-              {/* Location & Date Line */}
-              <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-foreground/80 pt-1">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Calendar className="w-4 h-4 text-primary shrink-0" />
-                  <span>
-                    {startInfo.dateStr}
-                    {startInfo.dateStr !== endInfo.dateStr && ` — ${endInfo.dateStr}`}
-                  </span>
+              {/* Date & Location Visual Card */}
+              <div
+                className="p-3 rounded-2xl border space-y-2"
+                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+              >
+                <div className="flex items-center gap-2.5 text-xs text-foreground font-semibold">
+                  <div className="w-7 h-7 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-foreground font-bold block">
+                      {startInfo.dateStr}
+                      {startInfo.dateStr !== endInfo.dateStr && ` — ${endInfo.dateStr}`}
+                    </span>
+                    {startInfo.timeStr && (
+                      <span className="text-[10px] text-foreground/50 font-mono">
+                        Kickoff at {startInfo.timeStr}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {tournament.location && (
-                  <div className="flex items-center gap-1.5 font-medium">
-                    <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span className="truncate">{tournament.location}</span>
+                  <div className="pt-2 border-t flex items-center justify-between gap-2 text-xs" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                        <MapPin className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="font-semibold text-foreground/80 truncate">
+                        {tournament.location}
+                      </span>
+                    </div>
+
+                    {tournament.mapLink && (
+                      <a
+                        href={tournament.mapLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider flex items-center gap-1 hover:underline shrink-0"
+                      >
+                        <Navigation className="w-2.5 h-2.5" />
+                        <span>Maps</span>
+                      </a>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Prominent Hero Register CTA */}
-              {!isRegistrationClosed && tournament.status !== 'COMPLETED' && tournament.status !== 'FINISHED' && (
-                <div className="pt-2">
-                  <button
-                    onClick={() => router.push(registerHref)}
-                    className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Ticket className="w-4 h-4" />
-                    <span>{isAuthenticated ? (isTeamEvent ? 'Register Your Team' : 'Register for Tournament') : 'Login to Register'}</span>
-                  </button>
+              {/* Tournament Categories Carousel */}
+              {categoriesList.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
+                    <span>Draw Categories ({categoriesList.length})</span>
+                    <span>Tap to view limits</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
+                    {categoriesList.map((cat, idx) => {
+                      const count = getCategoryRegisteredCount(cat);
+                      const isFull = totalPlayersCount > 0 && count >= categoryLimit;
+                      return (
+                        <div
+                          key={idx}
+                          className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-2xs transition-all ${isFull
+                            ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                            : 'border-primary/20 text-foreground'
+                            }`}
+                          style={{
+                            backgroundColor: isFull ? undefined : 'var(--athlon-surface)',
+                            borderColor: isFull ? undefined : 'var(--athlon-border)',
+                          }}
+                        >
+                          {isFull ? (
+                            <Lock className="w-3 h-3 text-red-400 shrink-0" />
+                          ) : (
+                            <Tag className="w-3 h-3 text-primary shrink-0" />
+                          )}
+                          <span className="font-black text-[11px]">{cat}</span>
+                          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md ${isFull ? 'bg-red-500/20 text-red-300' : 'bg-foreground/5 text-foreground/70'}`}>
+                            {count}{totalPlayersCount > 0 ? `/${categoryLimit}` : ''}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Registration Slot Capacity Meter */}
+              {totalPlayersCount > 0 && (
+                <div
+                  className="p-3 rounded-2xl border space-y-1.5"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-foreground flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-primary" /> Bracket Draw Capacity
+                    </span>
+                    <span className="font-black font-mono text-primary text-xs">
+                      {validRegistrations.length} / {totalPlayersCount} Slots Filled
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-foreground/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400 transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, Math.round((validRegistrations.length / totalPlayersCount) * 100))}%`,
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* ── INTERACTIVE TAB NAVIGATION ──────────────────────────────── */}
+          {/* ── 2. COMPACT 4-BENTO METRICS STRIP ────────────────────────────── */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Entry Fee Card */}
+            <div
+              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div>
+                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
+                  Entry Fee
+                </span>
+                <span className="text-base font-black text-primary font-mono block">
+                  {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <IndianRupee className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Tournament Format Card */}
+            <div
+              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div>
+                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
+                  Format
+                </span>
+                <span className="text-xs font-black text-foreground truncate block max-w-[100px]">
+                  {isTeamEvent ? 'Team League' : tournament.tournamentType || 'Knockout'}
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                <ActivityIcon className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Registrations Total Card */}
+            <div
+              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div>
+                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
+                  Total Entries
+                </span>
+                <span className="text-xs font-black text-foreground font-mono block">
+                  {validRegistrations.length} {tournament.playersCount ? `/ ${tournament.playersCount}` : 'Teams'}
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Sport Category Card */}
+            <div
+              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div>
+                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
+                  Sport
+                </span>
+                <span className="text-xs font-black text-foreground truncate block max-w-[100px]">
+                  {tournament.sport || 'Badminton'}
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <Trophy className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* ── 3. INTERACTIVE SEGMENTED TABS NAVIGATION ─────────────────────── */}
           <div
-            className="flex items-center p-1 rounded-2xl border gap-1 overflow-x-auto"
+            className="flex items-center p-1 rounded-2xl border gap-1 shadow-xs"
             style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
           >
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex-1 min-w-[90px] py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'overview'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+              className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'overview'
+                ? 'bg-primary text-black font-black shadow-xs'
+                : 'text-foreground/60 hover:text-foreground'
+                }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Overview</span>
+              <span>Info</span>
             </button>
 
             <button
               onClick={() => setActiveTab('brackets')}
-              className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'brackets'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+              className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'brackets'
+                ? 'bg-primary text-black font-black shadow-xs'
+                : 'text-foreground/60 hover:text-foreground'
+                }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Bracket & Fixture</span>
+              <span>Bracket</span>
             </button>
 
             {isLeague && (
               <button
                 onClick={() => setActiveTab('standings')}
-                className={`flex-1 min-w-[100px] py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                  activeTab === 'standings'
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                    : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-                }`}
+                className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'standings'
+                  ? 'bg-primary text-black font-black shadow-xs'
+                  : 'text-foreground/60 hover:text-foreground'
+                  }`}
               >
                 <Table className="w-3.5 h-3.5" />
-                <span>Standings</span>
+                <span>Points</span>
               </button>
             )}
 
             <button
               onClick={() => setActiveTab('matches')}
-              className={`flex-1 min-w-[90px] py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'matches'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+              className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'matches'
+                ? 'bg-primary text-black font-black shadow-xs'
+                : 'text-foreground/60 hover:text-foreground'
+                }`}
             >
               <Play className="w-3.5 h-3.5" />
               <span>Matches ({matches.length})</span>
             </button>
           </div>
 
-          {/* ── OVERVIEW TAB ────────────────────────────────────────────── */}
+          {/* ── 4. OVERVIEW TAB CONTENT ─────────────────────────────────────── */}
           {activeTab === 'overview' && (
-            <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="space-y-4 animate-in fade-in duration-300">
               {/* Winners Podium when tournament is completed */}
               <TournamentWinnersPodium
                 matches={matches}
@@ -537,167 +775,54 @@ export default function PublicTournamentDetailsPage() {
                 tournamentStatus={tournament.status}
               />
 
-              {/* 4-BENTO METRICS GRID */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div
-                  className="rounded-2xl p-4 border flex flex-col justify-between gap-1 shadow-md"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-foreground/50 uppercase tracking-widest">Entry Fee</span>
-                    <IndianRupee className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="text-lg font-black text-primary">
-                    {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl p-4 border flex flex-col justify-between gap-1 shadow-md"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-foreground/50 uppercase tracking-widest">Format</span>
-                    <ActivityIcon className="w-4 h-4 text-blue-400" />
-                  </div>
-                  <div className="text-sm font-black text-foreground truncate">
-                    {isTeamEvent ? 'Team League' : tournament.tournamentType || 'Knockout'}
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl p-4 border flex flex-col justify-between gap-1 shadow-md"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-foreground/50 uppercase tracking-widest">Registrations</span>
-                    <Users className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div className="text-sm font-black text-foreground">
-                    {validRegistrations.length} {tournament.playersCount ? `/ ${tournament.playersCount}` : 'Entries'}
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl p-4 border flex flex-col justify-between gap-1 shadow-md"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-foreground/50 uppercase tracking-widest">Sport</span>
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div className="text-sm font-black text-foreground truncate">
-                    {tournament.sport || 'Badminton'}
-                  </div>
-                </div>
-              </div>
-
-              {/* CATEGORIES & MATCH FORMAT */}
-              {(categoriesList.length > 0 || tournament.matchFormat) && (
-                <div
-                  className="rounded-2xl p-5 border shadow-md space-y-3"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-primary" />
-                    Tournament Categories &amp; Match Format
-                  </h2>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    {categoriesList.length > 0 && (
-                      <div
-                        className="p-3.5 rounded-xl border flex flex-col gap-2"
-                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-                      >
-                        <span className="text-[10px] font-extrabold text-foreground/45 uppercase tracking-wider">
-                          Categories ({categoriesList.length})
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {categoriesList.map((cat, idx) => {
-                            const count = getCategoryRegisteredCount(cat);
-                            const isFull = totalPlayersCount > 0 && count >= categoryLimit;
-                            return (
-                              <span
-                                key={idx}
-                                className={`px-3 py-1.5 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
-                                  isFull
-                                    ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                                    : 'bg-primary/10 border-primary/20 text-primary'
-                                }`}
-                              >
-                                {isFull ? (
-                                  <Lock className="w-3 h-3 text-red-400 shrink-0" />
-                                ) : (
-                                  <Tag className="w-3 h-3 text-primary shrink-0" />
-                                )}
-                                <span>{cat}</span>
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isFull ? 'bg-red-500/20 text-red-300' : 'bg-primary/15 text-primary'}`}>
-                                  {count}{totalPlayersCount > 0 ? `/${categoryLimit}` : ' Teams'}{isFull ? ' • Full' : ''}
-                                </span>
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {tournament.matchFormat && (
-                      <div
-                        className="p-3.5 rounded-xl border flex flex-col gap-1 justify-center"
-                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-                      >
-                        <span className="text-[10px] font-extrabold text-foreground/45 uppercase tracking-wider">
-                          Match Format
-                        </span>
-                        <span className="text-sm font-black text-foreground">{tournament.matchFormat}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* SCHEDULE DETAILS */}
+              {/* SCHEDULE & TIMINGS CARD */}
               <div
-                className="rounded-2xl p-5 border shadow-md space-y-3"
+                className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
                 style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               >
-                <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest flex items-center gap-2">
+                <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
                   <Clock className="w-4 h-4 text-primary" />
-                  Schedule & Timings
+                  Tournament Schedule & Timings
                 </h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-2 gap-2.5 pt-0.5">
                   <div
-                    className="p-3.5 rounded-xl border flex flex-col gap-1"
-                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    className="p-3 rounded-xl border flex flex-col gap-0.5"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <span className="text-[10px] font-extrabold text-foreground/45 uppercase tracking-wider">Tournament Starts</span>
-                    <span className="text-sm font-bold text-foreground">{startInfo.dateStr}</span>
-                    {startInfo.timeStr && <span className="text-xs text-primary font-mono font-bold">{startInfo.timeStr}</span>}
+                    <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider">
+                      Kickoff Starts
+                    </span>
+                    <span className="text-xs font-bold text-foreground">{startInfo.dateStr}</span>
+                    {startInfo.timeStr && (
+                      <span className="text-[10px] text-primary font-mono font-bold">{startInfo.timeStr}</span>
+                    )}
                   </div>
 
                   <div
-                    className="p-3.5 rounded-xl border flex flex-col gap-1"
-                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    className="p-3 rounded-xl border flex flex-col gap-0.5"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <span className="text-[10px] font-extrabold text-foreground/45 uppercase tracking-wider">Tournament Ends</span>
-                    <span className="text-sm font-bold text-foreground">{endInfo.dateStr}</span>
-                    {endInfo.timeStr && <span className="text-xs text-foreground/60 font-mono font-bold">{endInfo.timeStr}</span>}
+                    <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider">
+                      Tournament Ends
+                    </span>
+                    <span className="text-xs font-bold text-foreground">{endInfo.dateStr}</span>
+                    {endInfo.timeStr && (
+                      <span className="text-[10px] text-foreground/60 font-mono font-bold">{endInfo.timeStr}</span>
+                    )}
                   </div>
                 </div>
 
                 {tournament.registrationClosingDate && (
-                  <div
-                    className="p-3.5 rounded-xl border flex items-center justify-between gap-3 bg-amber-500/5 border-amber-500/20 text-amber-400"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Clock className="w-4 h-4 shrink-0" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-400/70">Registration Deadline</span>
-                        <span className="text-xs font-bold text-foreground">
-                          {parseDateTime(tournament.registrationClosingDate).dateStr}
-                        </span>
-                      </div>
+                  <div className="p-3 rounded-xl border flex items-center gap-2.5 bg-amber-500/5 border-amber-500/25 text-amber-500">
+                    <Clock className="w-4 h-4 shrink-0" />
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-amber-500/70 block">
+                        Registration Deadline
+                      </span>
+                      <span className="text-xs font-bold text-foreground">
+                        {parseDateTime(tournament.registrationClosingDate).dateStr}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -706,166 +831,191 @@ export default function PublicTournamentDetailsPage() {
               {/* TEAM EVENT CATEGORIES (if Team Event) */}
               {isTeamEvent && tournament.teamEventCategories && (
                 <div
-                  className="rounded-2xl p-5 border shadow-md space-y-3"
+                  className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest flex items-center gap-2">
+                  <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
                     <Layers className="w-4 h-4 text-primary" />
-                    Team Event Categories &amp; Lineup Format
+                    Team Lineup &amp; Pool Categories
                   </h2>
                   {(() => {
                     try {
-                      const parsed = typeof tournament.teamEventCategories === 'string'
-                        ? JSON.parse(tournament.teamEventCategories)
-                        : tournament.teamEventCategories;
+                      const parsed =
+                        typeof tournament.teamEventCategories === 'string'
+                          ? JSON.parse(tournament.teamEventCategories)
+                          : tournament.teamEventCategories;
                       if (Array.isArray(parsed) && parsed.length > 0) {
                         return (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                             {parsed.map((cat: any, idx: number) => (
                               <div
                                 key={cat.id || idx}
-                                className="p-3 rounded-xl border flex items-center justify-between gap-2"
-                                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                                className="p-2.5 rounded-xl border flex items-center justify-between gap-2"
+                                style={{
+                                  backgroundColor: 'var(--athlon-surface)',
+                                  borderColor: 'var(--athlon-border)',
+                                }}
                               >
                                 <div>
-                                  <span className="text-xs font-black text-foreground block">{cat.name || `Category ${idx + 1}`}</span>
-                                  <span className="text-[10px] text-primary font-bold uppercase">{cat.matchFormat}</span>
+                                  <span className="text-xs font-black text-foreground block">
+                                    {cat.name || `Category ${idx + 1}`}
+                                  </span>
+                                  <span className="text-[10px] text-primary font-bold uppercase">
+                                    {cat.matchFormat}
+                                  </span>
                                 </div>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 border border-white/10 text-foreground/60">
-                                  {cat.playersRequired} Player{cat.playersRequired !== 1 ? 's' : ''}
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-foreground/5 border border-foreground/10 text-foreground/70 font-mono">
+                                  {cat.playersRequired} Players
                                 </span>
                               </div>
                             ))}
                           </div>
                         );
                       }
-                    } catch {}
+                    } catch { }
                     return null;
                   })()}
                 </div>
               )}
 
-              {/* DESCRIPTION */}
+              {/* UPI PAYMENT & QR CODE CARD */}
+              {(tournament.gpayNumber ||
+                qrCodeUrl ||
+                (tournament.registrationFees !== undefined && tournament.registrationFees > 0)) && (
+                  <div
+                    className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
+                    style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  >
+                    <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                          <IndianRupee className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <h2 className="text-xs font-black text-foreground uppercase tracking-wider">
+                            Payment Gateway &amp; UPI
+                          </h2>
+                          <p className="text-[10px] text-foreground/50 font-medium">Direct UPI settlement to organizer</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-black text-emerald-500 font-mono">
+                        {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE ENTRY'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {/* GPay Number Box with 1-tap Copy */}
+                      {tournament.gpayNumber && (
+                        <div
+                          className="p-3 rounded-xl border flex items-center justify-between gap-2.5"
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[11px] font-mono shrink-0">
+                              UPI
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[9px] font-black text-foreground/40 uppercase tracking-wider block">
+                                GPay / UPI Number
+                              </span>
+                              <span className="text-xs font-black text-foreground font-mono truncate block">
+                                {tournament.gpayNumber}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleCopyGPay}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-black text-[11px] font-black uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 shrink-0 shadow-xs cursor-pointer"
+                          >
+                            {copiedGPay ? <Check className="w-3 h-3 text-black" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedGPay ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* QR Code Preview Box */}
+                      {qrCodeUrl && (
+                        <div
+                          onClick={() =>
+                            setPreviewImage({
+                              src: qrCodeUrl,
+                              title: `UPI QR Scanner - ${tournament.name}`,
+                            })
+                          }
+                          className="p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer group hover:border-primary/40 transition-all"
+                          style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white p-1 border border-foreground/10 shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                              <img src={qrCodeUrl} alt="UPI QR Code" className="w-full h-full object-contain" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-black text-foreground flex items-center gap-1">
+                                <QrCode className="w-3 h-3 text-primary" />
+                                Official UPI Scanner QR
+                              </span>
+                              <span className="text-[10px] text-foreground/50 block">Tap to enlarge and scan to pay</span>
+                            </div>
+                          </div>
+                          <span className="p-1.5 rounded-lg bg-foreground/5 text-foreground/50 group-hover:text-primary transition-colors">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              {/* ABOUT / TOURNAMENT DESCRIPTION */}
               {tournament.description && (
                 <div
-                  className="rounded-2xl p-5 border shadow-md space-y-3"
+                  className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-2.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest flex items-center gap-2">
+                  <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" />
-                    About Tournament
+                    Tournament Rules &amp; Details
                   </h2>
-                  <p className="text-sm text-foreground/75 leading-relaxed whitespace-pre-line">
+                  <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed whitespace-pre-line font-medium">
                     {tournament.description}
                   </p>
                 </div>
               )}
 
-              {/* PAYMENT & UPI DETAILS CARD */}
-              {(tournament.gpayNumber || qrCodeUrl || (tournament.registrationFees !== undefined && tournament.registrationFees > 0)) && (
-                <div
-                  className="rounded-2xl p-5 border shadow-md space-y-4"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
-                        <IndianRupee className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h2 className="text-xs font-black text-foreground uppercase tracking-wider">Payment &amp; Registration Fee</h2>
-                        <p className="text-[10px] text-foreground/50">Transfer entry fee via UPI / GPay to confirm spot</p>
-                      </div>
-                    </div>
-                    <span className="text-base font-black text-emerald-400 font-mono">
-                      {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE ENTRY'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* GPay Number Box */}
-                    {tournament.gpayNumber && (
-                      <div
-                        className="p-3.5 rounded-xl border flex items-center justify-between gap-3"
-                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-xs shrink-0 font-mono">
-                            UPI
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-[10px] font-extrabold text-foreground/45 uppercase tracking-wider block">GPay / UPI Number</span>
-                            <span className="text-sm font-black text-foreground font-mono truncate block">{tournament.gpayNumber}</span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleCopyGPay}
-                          className="px-3 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-bold transition-all flex items-center gap-1 shrink-0"
-                          title="Copy GPay number"
-                        >
-                          {copiedGPay ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedGPay ? 'Copied' : 'Copy'}</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* QR Code Box */}
-                    {qrCodeUrl && (
-                      <div
-                        onClick={() => setPreviewImage({ src: qrCodeUrl, title: `UPI QR Scanner - ${tournament.name}` })}
-                        className="p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer group hover:border-primary/40 transition-all"
-                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-white p-1 border border-foreground/10 shrink-0 shadow-sm relative group-hover:scale-105 transition-transform">
-                            <img src={qrCodeUrl} alt="UPI QR Code" className="w-full h-full object-contain" />
-                          </div>
-                          <div>
-                            <span className="text-xs font-black text-foreground flex items-center gap-1">
-                              <QrCode className="w-3.5 h-3.5 text-primary" />
-                              UPI Scanner QR
-                            </span>
-                            <span className="text-[10px] text-foreground/50 block mt-0.5">Click / Tap to enlarge &amp; scan</span>
-                          </div>
-                        </div>
-                        <span className="p-2 rounded-lg bg-white/5 group-hover:bg-primary/15 group-hover:text-primary transition-colors text-foreground/40">
-                          <Maximize2 className="w-4 h-4" />
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* VENUE & CONTACT */}
+              {/* VENUE & ORGANIZER CONTACT */}
               <div
-                className="rounded-2xl p-5 border shadow-md space-y-3"
+                className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
                 style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               >
-                <h2 className="text-xs font-black text-foreground/50 uppercase tracking-widest flex items-center gap-2">
+                <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-primary" />
-                  Venue & Contact
+                  Venue Location &amp; Contact
                 </h2>
 
                 {tournament.location && (
                   <div
-                    className="p-3.5 rounded-xl border flex items-start gap-3"
-                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    className="p-3 rounded-xl border flex items-start gap-2.5"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <MapPin className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <div className="flex flex-col flex-1">
-                      <span className="text-[10px] font-extrabold text-foreground/45 uppercase tracking-wider">Venue Location</span>
-                      <span className="text-xs sm:text-sm font-bold text-foreground mt-0.5">{tournament.location}</span>
+                    <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider">
+                        Venue Address
+                      </span>
+                      <span className="text-xs font-bold text-foreground mt-0.5">
+                        {tournament.location}
+                      </span>
                       {tournament.mapLink && (
                         <a
                           href={tournament.mapLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline mt-2"
+                          className="inline-flex items-center gap-1 text-[11px] font-black text-primary hover:underline mt-1.5"
                         >
-                          <span>Open in Google Maps</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <Navigation className="w-3 h-3" />
+                          <span>Get Directions in Google Maps</span>
                         </a>
                       )}
                     </div>
@@ -874,22 +1024,26 @@ export default function PublicTournamentDetailsPage() {
 
                 {tournament.contactPhone && (
                   <div
-                    className="p-3.5 rounded-xl border flex items-center justify-between gap-3"
-                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                    className="p-3 rounded-xl border flex items-center justify-between gap-2.5"
+                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
                         <Phone className="w-4 h-4" />
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-extrabold text-foreground/45 uppercase tracking-wider">Organizer Contact</span>
-                        <span className="text-xs sm:text-sm font-bold text-foreground font-mono">{tournament.contactPhone}</span>
+                      <div>
+                        <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider block">
+                          Organizer Desk
+                        </span>
+                        <span className="text-xs font-bold text-foreground font-mono">
+                          {tournament.contactPhone}
+                        </span>
                       </div>
                     </div>
 
                     <a
                       href={`tel:${tournament.contactPhone}`}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/30 transition-colors"
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-black text-xs font-black uppercase tracking-wider active:scale-95 transition-all shadow-xs"
                     >
                       Call
                     </a>
@@ -899,20 +1053,22 @@ export default function PublicTournamentDetailsPage() {
             </div>
           )}
 
-          {/* ── BRACKETS & FIXTURE TAB ──────────────────────────────────── */}
+          {/* ── 5. BRACKETS & FIXTURE TAB ────────────────────────────────────── */}
           {activeTab === 'brackets' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between px-1">
                 <div>
-                  <h3 className="text-xl font-black text-foreground">Bracket & Tournament Fixture</h3>
-                  <p className="text-xs text-foreground/50 font-medium">
-                    Official tournament elimination tree and bracket pathways.
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                    Bracket &amp; Fixtures Tree
+                  </h3>
+                  <p className="text-[11px] text-foreground/50 font-medium">
+                    Official tournament elimination pathway
                   </p>
                 </div>
               </div>
 
               {matches.length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <BracketViewer
                     matches={matches}
                     registrations={validRegistrations}
@@ -922,64 +1078,66 @@ export default function PublicTournamentDetailsPage() {
                 </div>
               ) : (
                 <div
-                  className="py-20 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
+                  className="py-16 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Layers className="w-12 h-12 text-foreground/30 mb-3" />
-                  <h4 className="text-base font-bold text-foreground mb-1">No Brackets Generated Yet</h4>
-                  <p className="text-xs text-foreground/50 max-w-sm">
-                    Tournament bracket and fixtures will appear here once the organizer publishes the draw.
+                  <Layers className="w-10 h-10 text-foreground/30 mb-2" />
+                  <h4 className="text-xs font-bold text-foreground mb-0.5">No Brackets Generated Yet</h4>
+                  <p className="text-[11px] text-foreground/50 max-w-xs">
+                    Tournament brackets and fixtures will appear here once published by the organizer.
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* ── STANDINGS & POINTS TABLE TAB ────────────────────────────── */}
+          {/* ── 6. STANDINGS & POINTS TABLE TAB ──────────────────────────────── */}
           {activeTab === 'standings' && isLeague && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-4 animate-in fade-in duration-300">
               {standings.length > 0 ? (
                 <StandingsTable standings={standings} />
               ) : (
                 <div
-                  className="py-20 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
+                  className="py-16 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Trophy className="w-12 h-12 text-foreground/30 mb-3" />
-                  <h4 className="text-base font-bold text-foreground mb-1">No Standings Yet</h4>
-                  <p className="text-xs text-foreground/50 max-w-sm">
-                    Pool points and qualification standings will be updated in real-time as matches are played.
+                  <Trophy className="w-10 h-10 text-foreground/30 mb-2" />
+                  <h4 className="text-xs font-bold text-foreground mb-0.5">No Standings Yet</h4>
+                  <p className="text-[11px] text-foreground/50 max-w-xs">
+                    Pool points and standings will update in real-time as matches conclude.
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* ── MATCHES TAB ─────────────────────────────────────────────── */}
+          {/* ── 7. MATCHES TAB ───────────────────────────────────────────────── */}
           {activeTab === 'matches' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between">
+            <div className="space-y-3 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between px-1">
                 <div>
-                  <h3 className="text-xl font-black text-foreground">Match Schedule & Results</h3>
-                  <p className="text-xs text-foreground/50 font-medium">
-                    Live scores, court assignments, and set points.
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                    Match Schedule &amp; Results
+                  </h3>
+                  <p className="text-[11px] text-foreground/50 font-medium">
+                    Live court scoring, points, and assignments
                   </p>
                 </div>
               </div>
 
               {matches.filter((m) => m.teamARegistrationUuid != null || m.teamBRegistrationUuid != null).length === 0 ? (
                 <div
-                  className="py-20 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
+                  className="py-16 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Play className="w-12 h-12 text-foreground/30 mb-3" />
-                  <h4 className="text-base font-bold text-foreground mb-1">No Matches Scheduled Yet</h4>
-                  <p className="text-xs text-foreground/50 max-w-sm">
-                    Match schedule and live set scoring will appear here once fixtures are drawn.
+                  <Play className="w-10 h-10 text-foreground/30 mb-2" />
+                  <h4 className="text-xs font-bold text-foreground mb-0.5">No Matches Scheduled Yet</h4>
+                  <p className="text-[11px] text-foreground/50 max-w-xs">
+                    Match schedules will appear here once fixtures are drawn.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-2.5">
                   {matches
                     .filter((m) => m.teamARegistrationUuid != null || m.teamBRegistrationUuid != null)
                     .map((match, idx) => {
@@ -998,33 +1156,32 @@ export default function PublicTournamentDetailsPage() {
                       return (
                         <div
                           key={match.uuid || idx}
-                          className="rounded-2xl border p-5 flex flex-col justify-between shadow-md relative overflow-hidden transition-all hover:border-primary/50"
+                          className="rounded-2xl border p-3.5 flex flex-col justify-between shadow-xs relative overflow-hidden transition-all"
                           style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                         >
-                          {/* Top Accent */}
+                          {/* Top Accent Strip */}
                           <div
-                            className={`absolute top-0 left-0 right-0 h-1 ${
-                              isLive ? 'bg-red-500 animate-pulse' : isCompleted ? 'bg-emerald-500' : 'bg-primary'
-                            }`}
+                            className={`absolute top-0 inset-x-0 h-0.5 ${isLive ? 'bg-red-500 animate-pulse' : isCompleted ? 'bg-emerald-500' : 'bg-primary'
+                              }`}
                           />
 
-                          <div>
+                          <div className="space-y-2">
                             {/* Round and Status */}
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-foreground/60 border border-white/10">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-foreground/5 text-foreground/60">
                                 {match.roundName || `Round ${match.roundNumber || 1}`}
                               </span>
 
                               {isLive ? (
-                                <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> LIVE
+                                <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 border border-red-500/25 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> LIVE
                                 </span>
                               ) : isCompleted ? (
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider">
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/25 text-[9px] font-black uppercase tracking-wider">
                                   Completed
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-white/5 text-foreground/50 text-[10px] font-bold uppercase tracking-wider">
+                                <span className="px-2 py-0.5 rounded-full bg-foreground/5 text-foreground/50 text-[9px] font-bold uppercase tracking-wider">
                                   Scheduled
                                 </span>
                               )}
@@ -1032,23 +1189,23 @@ export default function PublicTournamentDetailsPage() {
 
                             {/* Teams & Scores */}
                             <div
-                              className="p-3 rounded-xl border space-y-2 mb-3"
-                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                              className="p-2.5 rounded-xl border space-y-1.5"
+                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                             >
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs sm:text-sm text-foreground truncate max-w-[180px]">
+                                <span className="font-bold text-xs text-foreground truncate max-w-[180px]">
                                   {teamAName}
                                 </span>
-                                <span className="text-sm font-black font-mono text-primary">
+                                <span className="text-xs font-black font-mono text-primary">
                                   {match.setScores ? match.setScores.split(',')[0] || '0' : '0'}
                                 </span>
                               </div>
 
-                              <div className="flex items-center justify-between border-t pt-2" style={{ borderColor: 'var(--athlon-border-subtle)' }}>
-                                <span className="font-bold text-xs sm:text-sm text-foreground truncate max-w-[180px]">
+                              <div className="flex items-center justify-between border-t pt-1.5" style={{ borderColor: 'var(--athlon-border)' }}>
+                                <span className="font-bold text-xs text-foreground truncate max-w-[180px]">
                                   {teamBName}
                                 </span>
-                                <span className="text-sm font-black font-mono text-primary">
+                                <span className="text-xs font-black font-mono text-primary">
                                   {match.setScores ? match.setScores.split(',')[1] || '0' : '0'}
                                 </span>
                               </div>
@@ -1056,12 +1213,12 @@ export default function PublicTournamentDetailsPage() {
                           </div>
 
                           {/* Match Footer */}
-                          <div className="flex items-center justify-between text-[11px] text-foreground/50 pt-2 border-t" style={{ borderColor: 'var(--athlon-border-subtle)' }}>
+                          <div className="flex items-center justify-between text-[10px] text-foreground/50 pt-2 border-t mt-2" style={{ borderColor: 'var(--athlon-border)' }}>
                             <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                              <Clock className="w-3 h-3 text-primary" />
                               {match.scheduledTime
                                 ? new Date(match.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                : 'TBD'}
+                                : 'Time TBA'}
                             </span>
 
                             {match.courtName && (
@@ -1079,46 +1236,52 @@ export default function PublicTournamentDetailsPage() {
           )}
         </main>
 
-        {/* Sticky Bottom Registration Bar */}
+        {/* ── 8. LUXURY FLOATING STICKY REGISTRATION DOCK ───────────────────── */}
         <div
-          className="fixed bottom-0 inset-x-0 z-50 backdrop-blur-2xl border-t shadow-[0_-10px_35px_rgba(0,0,0,0.35)] px-4 sm:px-8 py-3.5 sm:py-4"
+          className="fixed bottom-0 inset-x-0 z-50 backdrop-blur-2xl border-t shadow-[0_-8px_30px_rgba(0,0,0,0.3)] px-4 py-3"
           style={{
-            backgroundColor: 'var(--athlon-navigation)',
+            backgroundColor: 'var(--athlon-navigation, rgba(10, 15, 29, 0.9))',
             borderColor: 'var(--athlon-border)',
-            paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 16px))',
+            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 12px))',
           }}
         >
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
             <div className="flex flex-col min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-black text-foreground/60 uppercase tracking-widest leading-none">
+              <span className="text-[9px] font-black text-foreground/50 uppercase tracking-widest leading-none">
                 Entry Fee
               </span>
-              <span className="text-xl sm:text-2xl font-black text-primary leading-tight mt-1 font-mono">
-                {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
-              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="text-lg sm:text-xl font-black text-primary font-mono leading-none">
+                  {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
+                </span>
+                <span className="text-[10px] text-foreground/40 font-semibold">/ team</span>
+              </div>
             </div>
 
             {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
-              <div
-                className="px-6 sm:px-8 py-3 sm:py-3.5 bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg flex items-center gap-2 select-none"
-              >
-                <Trophy className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="px-5 py-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 font-black text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
+                <Trophy className="w-4 h-4 text-emerald-500 shrink-0" />
                 <span>Tournament Finished</span>
               </div>
             ) : isRegistrationClosed ? (
-              <div
-                className="px-6 sm:px-8 py-3 sm:py-3.5 bg-red-500/15 border border-red-500/35 text-red-400 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-lg flex items-center gap-2 select-none"
-              >
+              <div className="px-5 py-2.5 bg-red-500/15 border border-red-500/30 text-red-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
                 <Lock className="w-4 h-4 text-red-400 shrink-0" />
                 <span>Registration Closed</span>
               </div>
             ) : (
               <button
                 onClick={() => router.push(registerHref)}
-                className="px-6 sm:px-8 py-3 sm:py-3.5 bg-primary text-primary-foreground font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Ticket className="w-4 h-4 shrink-0" />
-                <span>{isAuthenticated ? (isTeamEvent ? 'Register Your Team' : 'Register for Tournament') : 'Login to Register'}</span>
+                <Ticket className="w-3.5 h-3.5 fill-black shrink-0" />
+                <span>
+                  {isAuthenticated
+                    ? isTeamEvent
+                      ? 'Register Team'
+                      : 'Register Now'
+                    : 'Login to Register'}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
             )}
           </div>
@@ -1349,11 +1512,10 @@ export default function PublicTournamentDetailsPage() {
           >
             <button
               onClick={() => setActiveTab('overview')}
-              className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
-                activeTab === 'overview'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+              className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'overview'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
+                }`}
             >
               <FileText className="w-4 h-4" />
               <span>Overview</span>
@@ -1361,11 +1523,10 @@ export default function PublicTournamentDetailsPage() {
 
             <button
               onClick={() => setActiveTab('brackets')}
-              className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
-                activeTab === 'brackets'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+              className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'brackets'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
+                }`}
             >
               <Layers className="w-4 h-4" />
               <span>Bracket & Fixture</span>
@@ -1374,11 +1535,10 @@ export default function PublicTournamentDetailsPage() {
             {isLeague && (
               <button
                 onClick={() => setActiveTab('standings')}
-                className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
-                  activeTab === 'standings'
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                    : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-                }`}
+                className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'standings'
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
+                  }`}
               >
                 <Table className="w-4 h-4" />
                 <span>Standings</span>
@@ -1387,11 +1547,10 @@ export default function PublicTournamentDetailsPage() {
 
             <button
               onClick={() => setActiveTab('matches')}
-              className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
-                activeTab === 'matches'
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+              className={`py-3 px-6 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'matches'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
+                }`}
             >
               <Play className="w-4 h-4" />
               <span>Matches ({matches.length})</span>
@@ -1512,7 +1671,7 @@ export default function PublicTournamentDetailsPage() {
                               </div>
                             );
                           }
-                        } catch {}
+                        } catch { }
                         return null;
                       })()}
                     </div>
@@ -1607,9 +1766,8 @@ export default function PublicTournamentDetailsPage() {
                               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                             >
                               <div
-                                className={`absolute top-0 left-0 right-0 h-1 ${
-                                  isLive ? 'bg-red-500 animate-pulse' : isCompleted ? 'bg-emerald-500' : 'bg-primary'
-                                }`}
+                                className={`absolute top-0 left-0 right-0 h-1 ${isLive ? 'bg-red-500 animate-pulse' : isCompleted ? 'bg-emerald-500' : 'bg-primary'
+                                  }`}
                               />
 
                               <div>

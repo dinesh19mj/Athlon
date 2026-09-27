@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-import { TournamentService, CategoryService } from '@/lib/api/tournaments';
+import { TournamentService, CategoryService, SportMetadataService, SportMetadata } from '@/lib/api/tournaments';
 import { TeamEventCategoryConfig } from '@/components/tournaments/teamevent/TeamEventCategoryBuilder';
 import { OrganizationService } from '@/lib/api/organization';
 import { AcademyService, AcademyCentre } from '@/lib/api/academy';
@@ -42,11 +42,379 @@ import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgSports } from '@/lib/hooks/useOrgSports';
 
-export interface TournamentCategoryItem {
+interface TournamentCategoryItem {
   id: string;
   name: string;
   maxTeams?: number | string;
 }
+
+interface SportConfig {
+  name: string;
+  matchFormats: string[];
+  categoryPresets: string[];
+  defaultMatchFormat: string;
+  defaultCategoryPreset: string;
+  supportsMultiCategory: boolean;
+  defaultCustomCategories?: TournamentCategoryItem[];
+}
+
+const SPORT_CONFIG_TABLE: Record<string, SportConfig> = {
+  Badminton: {
+    name: 'Badminton',
+    matchFormats: [
+      "Men's Singles",
+      "Women's Singles",
+      "Men's Doubles",
+      "Women's Doubles",
+      "Mixed Doubles",
+    ],
+    categoryPresets: [
+      "Open Category",
+      "Beginner",
+      "Intermediate",
+      "Advanced",
+      "C Level",
+      "35+ Veterans",
+      "45+ Veterans",
+      "Under-13",
+      "Under-15",
+      "Under-17",
+      "Under-19",
+    ],
+    defaultMatchFormat: "Men's Singles",
+    defaultCategoryPreset: "Open Category",
+    supportsMultiCategory: true,
+    defaultCustomCategories: [
+      { id: '1', name: 'Beginner', maxTeams: 16 },
+      { id: '2', name: 'C Level', maxTeams: 16 },
+    ],
+  },
+  Cricket: {
+    name: 'Cricket',
+    matchFormats: [
+      "T20 (20 Overs)",
+      "T10 (10 Overs)",
+      "Box Cricket (6-8 Overs)",
+      "11-a-side Full Match",
+      "8-a-side Tournament",
+      "6-a-side Gully / Turf",
+      "100 Balls Tournament",
+      "Leather Ball Open",
+      "Tape Ball Open",
+    ],
+    categoryPresets: [
+      "Open Championship",
+      "Under-19",
+      "Under-16",
+      "Under-14",
+      "Corporate Cup",
+      "Veterans (35+)",
+      "Division A",
+      "Division B",
+      "Box Cricket League",
+    ],
+    defaultMatchFormat: "T20 (20 Overs)",
+    defaultCategoryPreset: "Open Championship",
+    supportsMultiCategory: false,
+  },
+  Football: {
+    name: 'Football',
+    matchFormats: [
+      "7 vs 7 (Turf / Field)",
+      "5 vs 5 (Futsal / Turf)",
+      "11 vs 11 (Full Pitch)",
+      "6 vs 6",
+      "8 vs 8",
+      "Penalty Shootout Cup",
+    ],
+    categoryPresets: [
+      "Open Men's",
+      "Open Women's",
+      "Under-19",
+      "Under-17",
+      "Under-15",
+      "Corporate Cup",
+      "Veterans (35+)",
+    ],
+    defaultMatchFormat: "7 vs 7 (Turf / Field)",
+    defaultCategoryPreset: "Open Men's",
+    supportsMultiCategory: false,
+  },
+  Soccer: {
+    name: 'Soccer',
+    matchFormats: [
+      "7 vs 7 (Turf / Field)",
+      "5 vs 5 (Futsal / Turf)",
+      "11 vs 11 (Full Pitch)",
+      "6 vs 6",
+      "8 vs 8",
+      "Penalty Shootout Cup",
+    ],
+    categoryPresets: [
+      "Open Men's",
+      "Open Women's",
+      "Under-19",
+      "Under-17",
+      "Under-15",
+      "Corporate Cup",
+      "Veterans (35+)",
+    ],
+    defaultMatchFormat: "7 vs 7 (Turf / Field)",
+    defaultCategoryPreset: "Open Men's",
+    supportsMultiCategory: false,
+  },
+  Tennis: {
+    name: 'Tennis',
+    matchFormats: [
+      "Men's Singles",
+      "Women's Singles",
+      "Men's Doubles",
+      "Women's Doubles",
+      "Mixed Doubles",
+    ],
+    categoryPresets: [
+      "Open Championship",
+      "Beginner / Level 1",
+      "Intermediate / Level 2",
+      "Advanced / Open",
+      "Under-18",
+      "Under-14",
+      "35+ Masters",
+      "45+ Masters",
+    ],
+    defaultMatchFormat: "Men's Singles",
+    defaultCategoryPreset: "Open Championship",
+    supportsMultiCategory: false,
+  },
+  "Table Tennis": {
+    name: 'Table Tennis',
+    matchFormats: [
+      "Men's Singles",
+      "Women's Singles",
+      "Men's Doubles",
+      "Women's Doubles",
+      "Mixed Doubles",
+      "Team Event (Singles + Doubles)",
+    ],
+    categoryPresets: [
+      "Open Championship",
+      "Beginner",
+      "Intermediate",
+      "Advanced",
+      "Under-19",
+      "Under-15",
+      "Veterans (40+)",
+    ],
+    defaultMatchFormat: "Men's Singles",
+    defaultCategoryPreset: "Open Championship",
+    supportsMultiCategory: false,
+  },
+  Pickleball: {
+    name: 'Pickleball',
+    matchFormats: [
+      "Open Doubles (Any Gender)",
+      "Men's Doubles",
+      "Women's Doubles",
+      "Mixed Doubles",
+      "Men's Singles",
+      "Women's Singles",
+    ],
+    categoryPresets: [
+      "Open (Skill 3.5+)",
+      "Intermediate (Skill 2.5-3.5)",
+      "Beginner (Skill < 2.5)",
+      "35+ Masters",
+      "50+ Masters",
+    ],
+    defaultMatchFormat: "Open Doubles (Any Gender)",
+    defaultCategoryPreset: "Open (Skill 3.5+)",
+    supportsMultiCategory: false,
+  },
+  Basketball: {
+    name: 'Basketball',
+    matchFormats: [
+      "5 vs 5 (Full Court)",
+      "3x3 (Half Court)",
+      "Open Team Tournament",
+    ],
+    categoryPresets: [
+      "Open Men's",
+      "Open Women's",
+      "Under-19",
+      "Under-17",
+      "Corporate League",
+    ],
+    defaultMatchFormat: "5 vs 5 (Full Court)",
+    defaultCategoryPreset: "Open Men's",
+    supportsMultiCategory: false,
+  },
+  Volleyball: {
+    name: 'Volleyball',
+    matchFormats: [
+      "6-a-side Standard (Indoor)",
+      "2-a-side Beach Volleyball",
+      "4-a-side Volleyball",
+      "Open Team Tournament",
+    ],
+    categoryPresets: [
+      "Open Men's",
+      "Open Women's",
+      "Under-19",
+      "Corporate Cup",
+    ],
+    defaultMatchFormat: "6-a-side Standard (Indoor)",
+    defaultCategoryPreset: "Open Men's",
+    supportsMultiCategory: false,
+  },
+  Squash: {
+    name: 'Squash',
+    matchFormats: [
+      "Men's Singles",
+      "Women's Singles",
+      "Mixed Singles / Open",
+      "Doubles",
+    ],
+    categoryPresets: [
+      "Open Championship",
+      "Intermediate / B Level",
+      "Beginner / C Level",
+      "Veterans (35+)",
+    ],
+    defaultMatchFormat: "Men's Singles",
+    defaultCategoryPreset: "Open Championship",
+    supportsMultiCategory: false,
+  },
+  Chess: {
+    name: 'Chess',
+    matchFormats: [
+      "Rapid (15m + 10s)",
+      "Blitz (3m + 2s)",
+      "Classical (90m + 30s)",
+      "Bullet (1m + 0s)",
+      "Swiss League Tournament",
+    ],
+    categoryPresets: [
+      "Open Championship",
+      "Under-16",
+      "Under-12",
+      "Under-9",
+      "Unrated / Beginner",
+      "FIDE Rated Open",
+    ],
+    defaultMatchFormat: "Rapid (15m + 10s)",
+    defaultCategoryPreset: "Open Championship",
+    supportsMultiCategory: false,
+  },
+  Athletics: {
+    name: 'Athletics',
+    matchFormats: [
+      "5K Run",
+      "10K Run",
+      "Half Marathon (21K)",
+      "Full Marathon (42K)",
+      "100m Sprint",
+      "200m Sprint",
+      "400m Sprint",
+      "4x100m Relay",
+    ],
+    categoryPresets: [
+      "Open Men (18-35)",
+      "Open Women (18-35)",
+      "Masters (35-50)",
+      "Veterans (50+)",
+      "Junior (Under-18)",
+    ],
+    defaultMatchFormat: "5K Run",
+    defaultCategoryPreset: "Open Men (18-35)",
+    supportsMultiCategory: false,
+  },
+  Running: {
+    name: 'Running',
+    matchFormats: [
+      "5K Run",
+      "10K Run",
+      "Half Marathon (21K)",
+      "Full Marathon (42K)",
+      "100m Sprint",
+      "200m Sprint",
+    ],
+    categoryPresets: [
+      "Open Men (18-35)",
+      "Open Women (18-35)",
+      "Masters (35-50)",
+      "Veterans (50+)",
+      "Junior (Under-18)",
+    ],
+    defaultMatchFormat: "5K Run",
+    defaultCategoryPreset: "Open Men (18-35)",
+    supportsMultiCategory: false,
+  },
+  Swimming: {
+    name: 'Swimming',
+    matchFormats: [
+      "50m Freestyle",
+      "100m Freestyle",
+      "50m Breaststroke",
+      "50m Backstroke",
+      "50m Butterfly",
+      "200m Individual Medley",
+    ],
+    categoryPresets: [
+      "Open Men",
+      "Open Women",
+      "Under-16",
+      "Under-14",
+      "Under-12",
+    ],
+    defaultMatchFormat: "50m Freestyle",
+    defaultCategoryPreset: "Open Men",
+    supportsMultiCategory: false,
+  },
+};
+
+const getSportConfig = (sportName: string): SportConfig => {
+  const normalizedKey = Object.keys(SPORT_CONFIG_TABLE).find(
+    (k) => k.toLowerCase() === (sportName || '').trim().toLowerCase()
+  );
+  if (normalizedKey) {
+    return SPORT_CONFIG_TABLE[normalizedKey];
+  }
+  return {
+    name: sportName || 'Sport',
+    matchFormats: ['Standard Match', 'Singles', 'Doubles', 'Team Event', 'Open Format'],
+    categoryPresets: ['Open Championship', 'Division A', 'Division B', 'Junior', 'Senior'],
+    defaultMatchFormat: 'Standard Match',
+    defaultCategoryPreset: 'Open Championship',
+    supportsMultiCategory: false,
+  };
+};
+
+const getFormatsForSport = (sportName: string): string[] => {
+  return getSportConfig(sportName).matchFormats;
+};
+
+const getCategoryPresetsForSport = (sportName: string): string[] => {
+  return getSportConfig(sportName).categoryPresets;
+};
+
+const isSportMultiCategoryAllowed = (sportName: string): boolean => {
+  return getSportConfig(sportName).supportsMultiCategory;
+};
+
+const getDefaultCustomCatsForSport = (sportName: string): TournamentCategoryItem[] => {
+  const config = getSportConfig(sportName);
+  if (config.defaultCustomCategories && config.defaultCustomCategories.length > 0) {
+    return config.defaultCustomCategories.map((c, idx) => ({
+      id: `${Date.now()}_${idx}`,
+      name: c.name,
+      maxTeams: c.maxTeams,
+    }));
+  }
+  return [
+    { id: `${Date.now()}_1`, name: 'Open Category', maxTeams: 16 },
+    { id: `${Date.now()}_2`, name: 'Division B', maxTeams: 16 },
+  ];
+};
 
 export default function CreateTournamentPage() {
   const router = useRouter();
@@ -142,6 +510,77 @@ export default function CreateTournamentPage() {
     { id: '1', name: 'Beginner', maxTeams: 16 },
     { id: '2', name: 'C Level', maxTeams: 16 },
   ]);
+
+  const [dynamicSportsMap, setDynamicSportsMap] = useState<Record<string, SportConfig>>({});
+
+  useEffect(() => {
+    const fetchDynamicMetadata = async () => {
+      try {
+        const res: any = await SportMetadataService.getAllSports();
+        const sportsData: any[] = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+        if (Array.isArray(sportsData) && sportsData.length > 0) {
+          const map: Record<string, SportConfig> = {};
+          sportsData.forEach((s: any) => {
+            const formatNames: string[] = Array.isArray(s.formats)
+              ? s.formats.map((f: any) => f.formatName)
+              : [];
+            map[s.sportName] = {
+              name: s.sportName,
+              matchFormats:
+                formatNames.length > 0
+                  ? formatNames
+                  : (SPORT_CONFIG_TABLE[s.sportName]?.matchFormats || ['Standard Match']),
+              categoryPresets:
+                Array.isArray(s.categoryPresets) && s.categoryPresets.length > 0
+                  ? s.categoryPresets
+                  : (SPORT_CONFIG_TABLE[s.sportName]?.categoryPresets || ['Open Category']),
+              defaultMatchFormat: s.defaultFormat || (formatNames[0] || 'Standard Match'),
+              defaultCategoryPreset: s.defaultCategory || 'Open Category',
+              supportsMultiCategory: !!s.supportsMultiCategory,
+              defaultCustomCategories: SPORT_CONFIG_TABLE[s.sportName]?.defaultCustomCategories,
+            };
+          });
+          setDynamicSportsMap(map);
+        }
+      } catch (err) {
+        console.warn('Using local fallback for sport metadata', err);
+      }
+    };
+    fetchDynamicMetadata();
+  }, []);
+
+  const resolveSportConfig = (sportName: string): SportConfig => {
+    const normalizedKey = Object.keys(dynamicSportsMap).find(
+      (k) => k.toLowerCase() === (sportName || '').trim().toLowerCase()
+    );
+    if (normalizedKey && dynamicSportsMap[normalizedKey]) {
+      return dynamicSportsMap[normalizedKey];
+    }
+    return getSportConfig(sportName);
+  };
+
+  const handleSportChange = (sport: string) => {
+    const config = resolveSportConfig(sport);
+    const isBadminton = sport.toLowerCase() === 'badminton';
+    const newFormat = isBadminton ? "Men's Singles" : config.defaultMatchFormat;
+
+    setFormData((prev) => ({
+      ...prev,
+      sport,
+      matchFormat: newFormat,
+      category: '',
+    }));
+
+    if (!config.supportsMultiCategory) {
+      setIsMultiCategory(false);
+    }
+
+    setCustomCategories(getDefaultCustomCatsForSport(sport));
+  };
 
   const addCategoryItem = (name = '', maxTeams: number | string = 16) => {
     setCustomCategories((prev) => [
@@ -259,9 +698,12 @@ export default function CreateTournamentPage() {
 
       form.append('tournamentType', formData.tournamentType);
       form.append('sport', formData.sport);
+      const multiCategoryActive =
+        isSportMultiCategoryAllowed(formData.sport) && isMultiCategory && customCategories.length > 0;
+
       if (formData.tournamentType === 'TEAM_EVENT') {
         form.append('teamEventCategories', JSON.stringify(formData.teamEventCategories));
-      } else if (isMultiCategory && customCategories.length > 0) {
+      } else if (multiCategoryActive) {
         const categoryNames = customCategories.map((c) => c.name.trim()).filter(Boolean).join(', ');
         form.append('category', categoryNames || 'Open');
         form.append('matchFormat', formData.matchFormat);
@@ -571,9 +1013,7 @@ export default function CreateTournamentPage() {
                 <button
                   key={sport}
                   type="button"
-                  onClick={() => {
-                    setFormData({ ...formData, sport });
-                  }}
+                  onClick={() => handleSportChange(sport)}
                   className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all ${formData.sport.toLowerCase() === sport.toLowerCase()
                       ? 'border-primary bg-primary/10 text-primary font-black'
                       : 'border-foreground/10 bg-card text-foreground/70 hover:border-foreground/25 hover:text-foreground'
@@ -617,16 +1057,13 @@ export default function CreateTournamentPage() {
             <select
               value={formData.matchFormat}
               onChange={(e) => setFormData({ ...formData, matchFormat: e.target.value })}
-              className={`${inputClass} appearance-none`}
+              className={`${inputClass} appearance-none cursor-pointer`}
             >
-              <option value="" disabled>
-                Select format...
-              </option>
-              <option value="Men's Singles">Men's Singles</option>
-              <option value="Women's Singles">Women's Singles</option>
-              <option value="Men's Doubles">Men's Doubles</option>
-              <option value="Women's Doubles">Women's Doubles</option>
-              <option value="Mixed Doubles">Mixed Doubles</option>
+              {getFormatsForSport(formData.sport).map((fmt) => (
+                <option key={fmt} value={fmt}>
+                  {fmt}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -826,43 +1263,55 @@ export default function CreateTournamentPage() {
                       Category Setup
                     </span>
                     <span className="text-[9px] text-foreground/50 font-semibold truncate block leading-tight">
-                      {isMultiCategory ? 'Multi-Tier draws' : 'Single open tier format'}
+                      {isSportMultiCategoryAllowed(formData.sport) && isMultiCategory
+                        ? 'Multi-Tier draws'
+                        : 'Single category format'}
                     </span>
                   </div>
                 </div>
 
-                {/* Compact Segmented Switcher */}
-                <div
-                  className="flex items-center p-0.5 rounded-lg border shrink-0"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    borderColor: 'var(--athlon-border)',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setIsMultiCategory(false)}
-                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${!isMultiCategory
-                        ? 'bg-primary text-black font-black shadow-2xs'
-                        : 'text-foreground/50 hover:text-foreground'
-                      }`}
+                {/* Compact Segmented Switcher for Badminton or Single Mode Indicator */}
+                {isSportMultiCategoryAllowed(formData.sport) ? (
+                  <div
+                    className="flex items-center p-0.5 rounded-lg border shrink-0"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
                   >
-                    Single
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsMultiCategory(true)}
-                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${isMultiCategory
-                        ? 'bg-primary text-black font-black shadow-2xs'
-                        : 'text-foreground/50 hover:text-foreground'
+                    <button
+                      type="button"
+                      onClick={() => setIsMultiCategory(false)}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                        !isMultiCategory
+                          ? 'bg-primary text-black font-black shadow-2xs'
+                          : 'text-foreground/50 hover:text-foreground'
                       }`}
+                    >
+                      Single
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsMultiCategory(true)}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                        isMultiCategory
+                          ? 'bg-primary text-black font-black shadow-2xs'
+                          : 'text-foreground/50 hover:text-foreground'
+                      }`}
+                    >
+                      Multi-Category
+                    </button>
+                  </div>
+                ) : (
+                  <span
+                    className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20"
                   >
-                    Multi-Category
-                  </button>
-                </div>
+                    Single Category
+                  </span>
+                )}
               </div>
 
-              {!isMultiCategory ? (
+              {(!isSportMultiCategoryAllowed(formData.sport) || !isMultiCategory) ? (
                 <div
                   className="p-3.5 rounded-xl border space-y-3"
                   style={{
@@ -889,11 +1338,20 @@ export default function CreateTournamentPage() {
                     disabled={!formData.sport}
                   >
                     <option value="">Default Open Category</option>
+                    {/* Organization Saved Categories */}
                     {orgCategories
-                      .filter((c) => c.sportType === formData.sport)
+                      .filter((c) => (c.sportType || '').toLowerCase() === (formData.sport || '').toLowerCase())
                       .map((c) => (
                         <option key={c.categoryUuid} value={c.categoryName}>
                           {c.categoryName}
+                        </option>
+                      ))}
+                    {/* Built-in Sport Category Presets */}
+                    {getCategoryPresetsForSport(formData.sport)
+                      .filter((preset) => !orgCategories.some((c) => (c.categoryName || '').toLowerCase() === preset.toLowerCase()))
+                      .map((preset) => (
+                        <option key={preset} value={preset}>
+                          {preset}
                         </option>
                       ))}
                   </select>
@@ -1324,7 +1782,7 @@ export default function CreateTournamentPage() {
                       <button
                         key={sport}
                         type="button"
-                        onClick={() => setFormData({ ...formData, sport })}
+                        onClick={() => handleSportChange(sport)}
                         className={`py-3 px-3 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all flex flex-col items-center gap-1.5 ${formData.sport.toLowerCase() === sport.toLowerCase()
                             ? 'bg-primary text-black border-primary shadow-md shadow-primary/20 scale-[1.02]'
                             : 'text-foreground/70 hover:text-foreground hover:bg-white/5'
@@ -1603,34 +2061,49 @@ export default function CreateTournamentPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className={desktopLabelClass}>Tournament Category Architecture</span>
-                      <p className="text-xs text-foreground/50">Choose between a single open bracket or multiple tiered categories (e.g. Beginner, 70+, C Level)</p>
+                      <p className="text-xs text-foreground/50">
+                        {isSportMultiCategoryAllowed(formData.sport)
+                          ? 'Choose between a single open bracket or multiple tiered categories (e.g. Beginner, 70+, C Level)'
+                          : 'Single category tournament bracket for selected sport'}
+                      </p>
                     </div>
 
-                    <div className="flex items-center p-1 rounded-2xl border" style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}>
-                      <button
-                        type="button"
-                        onClick={() => setIsMultiCategory(false)}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${!isMultiCategory
-                            ? 'bg-primary text-black shadow-md'
-                            : 'text-foreground/60 hover:text-foreground'
-                          }`}
+                    {isSportMultiCategoryAllowed(formData.sport) ? (
+                      <div
+                        className="flex items-center p-1 rounded-2xl border"
+                        style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                       >
-                        Single Category
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsMultiCategory(true)}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${isMultiCategory
-                            ? 'bg-primary text-black shadow-md'
-                            : 'text-foreground/60 hover:text-foreground'
+                        <button
+                          type="button"
+                          onClick={() => setIsMultiCategory(false)}
+                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                            !isMultiCategory
+                              ? 'bg-primary text-black shadow-md'
+                              : 'text-foreground/60 hover:text-foreground'
                           }`}
-                      >
-                        Multi-Category (Pooled Knockout)
-                      </button>
-                    </div>
+                        >
+                          Single Category
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsMultiCategory(true)}
+                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                            isMultiCategory
+                              ? 'bg-primary text-black shadow-md'
+                              : 'text-foreground/60 hover:text-foreground'
+                          }`}
+                        >
+                          Multi-Category (Pooled Knockout)
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                        Single Category Mode
+                      </span>
+                    )}
                   </div>
 
-                  {!isMultiCategory ? (
+                  {(!isSportMultiCategoryAllowed(formData.sport) || !isMultiCategory) ? (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className={desktopLabelClass}>
@@ -1642,11 +2115,11 @@ export default function CreateTournamentPage() {
                           className={`${desktopInputClass} appearance-none cursor-pointer`}
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         >
-                          <option value="Men's Singles">Men's Singles</option>
-                          <option value="Women's Singles">Women's Singles</option>
-                          <option value="Men's Doubles">Men's Doubles</option>
-                          <option value="Women's Doubles">Women's Doubles</option>
-                          <option value="Mixed Doubles">Mixed Doubles</option>
+                          {getFormatsForSport(formData.sport).map((fmt) => (
+                            <option key={fmt} value={fmt}>
+                              {fmt}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -1669,11 +2142,20 @@ export default function CreateTournamentPage() {
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         >
                           <option value="">Default Open Category</option>
+                          {/* Organization Saved Categories */}
                           {orgCategories
-                            .filter((c) => c.sportType === formData.sport)
+                            .filter((c) => (c.sportType || '').toLowerCase() === (formData.sport || '').toLowerCase())
                             .map((c) => (
                               <option key={c.categoryUuid} value={c.categoryName}>
                                 {c.categoryName}
+                              </option>
+                            ))}
+                          {/* Built-in Sport Category Presets */}
+                          {getCategoryPresetsForSport(formData.sport)
+                            .filter((preset) => !orgCategories.some((c) => (c.categoryName || '').toLowerCase() === preset.toLowerCase()))
+                            .map((preset) => (
+                              <option key={preset} value={preset}>
+                                {preset}
                               </option>
                             ))}
                         </select>

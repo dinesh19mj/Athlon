@@ -40,6 +40,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore';
 import { OrganizationService } from '@/lib/api/organization';
 import { ThemeModal } from '@/components/theme';
 import { POPULAR_SPORTS } from '@/components/academy/OrganizationProfileEditor';
+import { SportMetadataService } from '@/lib/api/tournaments';
 
 export default function OrganizationProfilePage() {
   const params = useParams();
@@ -52,6 +53,31 @@ export default function OrganizationProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
+  const [dynamicSports, setDynamicSports] = useState<{ name: string; icon: string }[]>(POPULAR_SPORTS);
+
+  useEffect(() => {
+    async function fetchSports() {
+      try {
+        const res: any = await SportMetadataService.getAllSports();
+        const sportsData: any[] = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+        if (Array.isArray(sportsData) && sportsData.length > 0) {
+          setDynamicSports(
+            sportsData.map((s: any) => ({
+              name: s.sportName,
+              icon: s.emoji || '🏅',
+            }))
+          );
+        }
+      } catch {
+        // use fallback
+      }
+    }
+    fetchSports();
+  }, []);
 
   // Dropdown menu & Modals
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -459,7 +485,8 @@ export default function OrganizationProfilePage() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {sportsOffered.map((sport) => {
-                  const matched = POPULAR_SPORTS.find((p) => p.name.toLowerCase() === sport.toLowerCase());
+                  const matched = dynamicSports.find((p) => p.name.toLowerCase() === sport.toLowerCase()) ||
+                    POPULAR_SPORTS.find((p) => p.name.toLowerCase() === sport.toLowerCase());
                   const icon = matched ? matched.icon : '🏅';
                   return (
                     <div

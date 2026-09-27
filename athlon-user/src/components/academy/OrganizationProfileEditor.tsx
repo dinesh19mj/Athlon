@@ -37,6 +37,7 @@ import {
   FALLBACK_INDIAN_STATES,
   FALLBACK_STATE_DISTRICTS,
 } from '@/lib/api/location';
+import { SportMetadataService } from '@/lib/api/tournaments';
 
 export const POPULAR_SPORTS = [
   { name: 'Badminton', icon: '🏸' },
@@ -127,6 +128,8 @@ export function OrganizationProfileEditor({
   // Sports
   const [selectedSports, setSelectedSports] = useState<string[]>(['Badminton']);
   const [customSportInput, setCustomSportInput] = useState('');
+  const [dynamicSports, setDynamicSports] = useState<{ name: string; icon: string }[]>(POPULAR_SPORTS);
+  const [loadingSports, setLoadingSports] = useState<boolean>(false);
 
   // Media files & raw backend identifiers
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -139,6 +142,33 @@ export function OrganizationProfileEditor({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch dynamic sports from master table
+  useEffect(() => {
+    async function fetchSports() {
+      try {
+        setLoadingSports(true);
+        const res: any = await SportMetadataService.getAllSports();
+        const sportsData: any[] = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+        if (Array.isArray(sportsData) && sportsData.length > 0) {
+          const mapped = sportsData.map((s: any) => ({
+            name: s.sportName,
+            icon: s.emoji || '🏅',
+          }));
+          setDynamicSports(mapped);
+        }
+      } catch (err) {
+        console.warn('Using fallback sports list for settings editor:', err);
+      } finally {
+        setLoadingSports(false);
+      }
+    }
+    fetchSports();
+  }, []);
 
   // Fetch states on mount
   useEffect(() => {
@@ -341,6 +371,16 @@ export function OrganizationProfileEditor({
     });
     return { score, checks };
   }, [name, logoUrl, coverUrl, city, address, contactPhone, selectedSports]);
+
+  const displayedSports = useMemo(() => {
+    const list = [...dynamicSports];
+    selectedSports.forEach((sportName) => {
+      if (!list.some((item) => item.name.toLowerCase() === sportName.toLowerCase())) {
+        list.push({ name: sportName, icon: '🏅' });
+      }
+    });
+    return list;
+  }, [dynamicSports, selectedSports]);
 
   const handleSportToggle = (sport: string) => {
     if (isSingleSport) {
@@ -1368,7 +1408,7 @@ export function OrganizationProfileEditor({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-              {POPULAR_SPORTS.map((item) => {
+              {displayedSports.map((item) => {
                 const isSelected = selectedSports.includes(item.name);
                 return (
                   <button

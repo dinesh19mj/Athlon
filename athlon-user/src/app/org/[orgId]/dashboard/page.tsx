@@ -1536,16 +1536,6 @@ export default function OrganizationDashboard() {
         bg: 'bg-orange-500/10',
       });
       actions.push({
-        id: `/org/${org.id}/posts`,
-        label: 'Feed & Gallery',
-        shortLabel: 'Feed',
-        icon3d: 'posts',
-        description: 'Club blogs, highlights & photos',
-        icon: Newspaper,
-        color: 'text-pink-400',
-        bg: 'bg-pink-500/10',
-      });
-      actions.push({
         id: `/org/${org.id}/analytics`,
         label: 'Analytics',
         shortLabel: 'Analytics',

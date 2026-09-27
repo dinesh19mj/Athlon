@@ -185,7 +185,6 @@ export default function OrganizationLayout({ children }: { children: React.React
         { name: 'Matches', href: `/org/${orgId}/matches`, icon: Activity },
         { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays },
         { name: 'Leaderboard', href: `/org/${orgId}/leaderboard`, icon: Medal },
-        { name: 'Feed & Gallery', href: `/org/${orgId}/posts`, icon: Newspaper },
         { name: 'Inventory', href: `/org/${orgId}/inventory`, icon: Grid },
         { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
         { name: 'Analytics', href: `/org/${orgId}/analytics`, icon: TrendingUp },
@@ -317,6 +316,37 @@ export default function OrganizationLayout({ children }: { children: React.React
           title: 'Settings & Profile',
           items: [
             { name: 'Academy Profile', href: `/org/${orgId}/profile`, icon: Building2, badge: null, isLive: false },
+            { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
+          ],
+        },
+      ];
+    }
+
+    if (activeOrg.type === 'CLUB') {
+      return [
+        {
+          title: 'Club Operations',
+          items: [
+            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy, badge: null, isLive: false },
+            { name: 'Members', href: `/org/${orgId}/members`, icon: Users, badge: null, isLive: false },
+            { name: 'Matches & Games', href: `/org/${orgId}/matches`, icon: Activity, badge: null, isLive: false },
+            { name: 'Attendance', href: `/org/${orgId}/attendance`, icon: CalendarDays, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Standings & Finance',
+          items: [
+            { name: 'Leaderboard', href: `/org/${orgId}/leaderboard`, icon: Medal, badge: null, isLive: false },
+            { name: 'Inventory & Equipment', href: `/org/${orgId}/inventory`, icon: Grid, badge: null, isLive: false },
+            { name: 'Finances & Kitty', href: `/org/${orgId}/finances`, icon: CreditCard, badge: null, isLive: false },
+            { name: 'Club Analytics', href: `/org/${orgId}/analytics`, icon: TrendingUp, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Settings & Profile',
+          items: [
+            { name: 'Club Profile', href: `/org/${orgId}/profile`, icon: Building2, badge: null, isLive: false },
             { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
           ],
         },
