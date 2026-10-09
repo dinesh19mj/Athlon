@@ -153,8 +153,10 @@ export function AuthCard({
       const responseData = response.data as any;
       const userIdStr = responseData.userId?.toString() || payload.userId;
       const userUuidStr = responseData.userUuid;
+      const roleStr = responseData.role || payload.role;
+      const platformRoles = responseData.platformRoles || (roleStr ? [roleStr] : []);
 
-      await login(identifier.trim(), token, userIdStr, userUuidStr);
+      await login(identifier.trim(), token, userIdStr, userUuidStr, roleStr, platformRoles);
 
       if (userUuidStr) {
         try {

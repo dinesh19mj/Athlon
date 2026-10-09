@@ -22,6 +22,10 @@ public class JwtTokenProvider {
         return jwtUtil.generateAccessToken(email, userId, userUuid);
     }
 
+    public String generateToken(String email, Long userId, UUID userUuid, String role) {
+        return jwtUtil.generateAccessToken(email, userId, userUuid, role);
+    }
+
     public boolean validateToken(String token) {
         return jwtUtil.validateToken(token);
     }

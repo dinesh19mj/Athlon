@@ -20,4 +20,17 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
     List<Organization> findByUserUuid(UUID userUuid);
 
     List<Organization> findByUserId(Long userId);
+
+    long countByIsActive(Integer isActive);
+
+    long countByType(String type);
+
+    org.springframework.data.domain.Page<Organization> findAll(org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT o FROM Organization o WHERE LOWER(o.name) LIKE LOWER(CONCAT('%', :query, '%'))")
+    org.springframework.data.domain.Page<Organization> searchByName(@org.springframework.data.repository.query.Param("query") String query, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<Organization> findByType(String type, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<Organization> findByIsActive(Integer isActive, org.springframework.data.domain.Pageable pageable);
 }

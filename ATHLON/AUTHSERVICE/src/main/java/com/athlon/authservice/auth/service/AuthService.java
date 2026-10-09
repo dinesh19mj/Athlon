@@ -185,11 +185,23 @@ public class AuthService {
 		User user = userRepository.findByUserUuid(creds.getUserUuid())
 				.orElseThrow(() -> new AuthenticationException("User not found"));
 
-		String jwt = jwtService.generateAccessToken(creds.getEmail(), user.getUserId(), creds.getUserUuid());
+		java.util.List<String> activeRoles = userRepository.findActiveRoleNamesByUserId(user.getUserId());
+		String primaryRole = "USER";
+		if (activeRoles != null && !activeRoles.isEmpty()) {
+			if (activeRoles.contains("PLATFORM_SUPER_ADMIN")) {
+				primaryRole = "PLATFORM_SUPER_ADMIN";
+			} else if (activeRoles.contains("PLATFORM_ADMIN")) {
+				primaryRole = "PLATFORM_ADMIN";
+			} else {
+				primaryRole = activeRoles.get(0);
+			}
+		}
+
+		String jwt = jwtService.generateAccessToken(creds.getEmail(), user.getUserId(), creds.getUserUuid(), primaryRole);
 		String refreshToken = refreshTokenService.createRefreshToken(creds.getCredentialId(), creds.getCredentialUuid())
 				.getToken();
 
-		return new LoginResponse(jwt, refreshToken, user.getUserId(), user.getUserUuid());
+		return new LoginResponse(jwt, refreshToken, user.getUserId(), user.getUserUuid(), primaryRole, activeRoles);
 	}
 
 	@Transactional
@@ -207,7 +219,19 @@ public class AuthService {
 		User user = userRepository.findByUserUuid(credentials.getUserUuid())
 				.orElseThrow(() -> new AuthenticationException("User not found"));
 
-		String token = jwtService.generateAccessToken(credentials.getEmail(), user.getUserId(), credentials.getUserUuid());
+		java.util.List<String> activeRoles = userRepository.findActiveRoleNamesByUserId(user.getUserId());
+		String primaryRole = "USER";
+		if (activeRoles != null && !activeRoles.isEmpty()) {
+			if (activeRoles.contains("PLATFORM_SUPER_ADMIN")) {
+				primaryRole = "PLATFORM_SUPER_ADMIN";
+			} else if (activeRoles.contains("PLATFORM_ADMIN")) {
+				primaryRole = "PLATFORM_ADMIN";
+			} else {
+				primaryRole = activeRoles.get(0);
+			}
+		}
+
+		String token = jwtService.generateAccessToken(credentials.getEmail(), user.getUserId(), credentials.getUserUuid(), primaryRole);
 		return new RefreshTokenResponse(token, refreshToken.getToken());
 	}
 

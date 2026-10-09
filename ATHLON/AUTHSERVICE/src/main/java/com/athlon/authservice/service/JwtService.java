@@ -20,4 +20,8 @@ public class JwtService {
     public String generateAccessToken(String email, Long userId, UUID userUuid) {
         return tokenProvider.generateToken(email, userId, userUuid);
     }
+
+    public String generateAccessToken(String email, Long userId, UUID userUuid, String role) {
+        return tokenProvider.generateToken(email, userId, userUuid, role);
+    }
 }

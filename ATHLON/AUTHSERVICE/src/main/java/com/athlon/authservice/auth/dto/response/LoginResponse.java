@@ -8,6 +8,8 @@ public class LoginResponse {
     private String refreshToken;
     private Long userId;
     private UUID userUuid;
+    private String role;
+    private java.util.List<String> platformRoles;
 
     public LoginResponse() {
     }
@@ -20,6 +22,22 @@ public class LoginResponse {
         this.refreshToken = refreshToken;
         this.userId = userId;
         this.userUuid = userUuid;
+        this.role = "USER";
+        this.platformRoles = java.util.Collections.emptyList();
+    }
+
+    public LoginResponse(String accessToken,
+                         String refreshToken,
+                         Long userId,
+                         UUID userUuid,
+                         String role,
+                         java.util.List<String> platformRoles) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+        this.userId = userId;
+        this.userUuid = userUuid;
+        this.role = role != null ? role : "USER";
+        this.platformRoles = platformRoles != null ? platformRoles : java.util.Collections.emptyList();
     }
 
     public String getAccessToken() {
@@ -52,5 +70,21 @@ public class LoginResponse {
 
     public void setUserUuid(UUID userUuid) {
         this.userUuid = userUuid;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public java.util.List<String> getPlatformRoles() {
+        return platformRoles;
+    }
+
+    public void setPlatformRoles(java.util.List<String> platformRoles) {
+        this.platformRoles = platformRoles;
     }
 }

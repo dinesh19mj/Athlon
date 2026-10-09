@@ -20,6 +20,11 @@ spring:
           predicates:
             - Path=/api/identity/**
 
+        - id: admin_route
+          uri: http://127.0.0.1:5052
+          predicates:
+            - Path=/api/admin/**
+
         - id: tournament_route
           uri: http://127.0.0.1:5053
           predicates:

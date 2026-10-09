@@ -37,9 +37,251 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
   const isDefault = themeKey === 'algae' && mode === 'dark' && iconStyle === '2d';
 
   return (
-    <div className={`space-y-5 select-none ${className}`}>
+    <div className={`space-y-4 sm:space-y-5 select-none ${className}`}>
 
-      {/* ─── 1. LIVE STUDIO SIMULATOR (Real-Time Interactive Preview Stage) ─── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          MOBILE VIEW ONLY (< md) - REDESIGNED SINGLE-PAGE COMPACT LAYOUT
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="block md:hidden space-y-2.5">
+        {/* 1. Header: Live Active Pill & Reset */}
+        <div
+          className="rounded-2xl p-2.5 border flex items-center justify-between gap-2 shadow-xs"
+          style={{
+            backgroundColor: c.surface,
+            borderColor: c.border,
+          }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border shadow-xs"
+              style={{
+                backgroundColor: c.card,
+                borderColor: c.border,
+              }}
+            >
+              <Athlon3DIcon type="tournaments" size={18} forceStyle={iconStyle} active={true} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: c.primary }} />
+                <span className="text-xs font-black truncate" style={{ color: c.text }}>
+                  {currentTheme.name}
+                </span>
+              </div>
+              <span className="text-[9.5px] font-medium block truncate" style={{ color: c.textMuted }}>
+                {mode === 'dark' ? 'Deep Dark' : 'Daylight Light'} · {iconStyle.toUpperCase()}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {!isDefault && (
+              <button
+                type="button"
+                onClick={handleResetDefault}
+                className="px-2 py-1 rounded-lg border text-[9.5px] font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                style={{
+                  backgroundColor: c.card,
+                  borderColor: c.border,
+                  color: c.textSecondary,
+                }}
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
+            <div
+              className="px-2 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider shadow-xs"
+              style={{
+                backgroundColor: c.primary,
+                color: c.primaryForeground,
+              }}
+            >
+              Active
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Dual Segmented Controls: Mode & Icon Style (Side-by-Side in 1 Row) */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Theme Mode (Dark vs Light) */}
+          <div
+            className="p-1 rounded-xl border flex items-center gap-1 shadow-xs"
+            style={{ backgroundColor: c.surface, borderColor: c.border }}
+          >
+            <button
+              type="button"
+              onClick={() => setMode('dark')}
+              className={`flex-1 py-1.5 px-1.5 rounded-lg flex items-center justify-center gap-1 text-xs font-black transition-all cursor-pointer ${
+                mode === 'dark' ? 'shadow-xs' : 'opacity-60 hover:opacity-100'
+              }`}
+              style={{
+                backgroundColor: mode === 'dark' ? c.card : 'transparent',
+                color: mode === 'dark' ? c.primary : c.textSecondary,
+                border: mode === 'dark' ? `1px solid ${c.border}` : '1px solid transparent',
+              }}
+            >
+              <Moon className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-[10.5px]">Dark</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMode('light')}
+              className={`flex-1 py-1.5 px-1.5 rounded-lg flex items-center justify-center gap-1 text-xs font-black transition-all cursor-pointer ${
+                mode === 'light' ? 'shadow-xs' : 'opacity-60 hover:opacity-100'
+              }`}
+              style={{
+                backgroundColor: mode === 'light' ? c.card : 'transparent',
+                color: mode === 'light' ? (currentTheme.key === 'algae' ? '#059669' : c.primary) : c.textSecondary,
+                border: mode === 'light' ? `1px solid ${c.border}` : '1px solid transparent',
+              }}
+            >
+              <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="text-[10.5px]">Light</span>
+            </button>
+          </div>
+
+          {/* Icon Graphics (2D vs 3D) */}
+          <div
+            className="p-1 rounded-xl border flex items-center gap-1 shadow-xs"
+            style={{ backgroundColor: c.surface, borderColor: c.border }}
+          >
+            <button
+              type="button"
+              onClick={() => setIconStyle('2d')}
+              className={`flex-1 py-1.5 px-1.5 rounded-lg flex items-center justify-center gap-1 text-xs font-black transition-all cursor-pointer ${
+                iconStyle === '2d' ? 'shadow-xs' : 'opacity-60 hover:opacity-100'
+              }`}
+              style={{
+                backgroundColor: iconStyle === '2d' ? c.card : 'transparent',
+                color: iconStyle === '2d' ? c.primary : c.textSecondary,
+                border: iconStyle === '2d' ? `1px solid ${c.border}` : '1px solid transparent',
+              }}
+            >
+              <span className="text-[10.5px]">2D Flat</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIconStyle('3d')}
+              className={`flex-1 py-1.5 px-1.5 rounded-lg flex items-center justify-center gap-1 text-xs font-black transition-all cursor-pointer ${
+                iconStyle === '3d' ? 'shadow-xs' : 'opacity-60 hover:opacity-100'
+              }`}
+              style={{
+                backgroundColor: iconStyle === '3d' ? c.card : 'transparent',
+                color: iconStyle === '3d' ? c.primary : c.textSecondary,
+                border: iconStyle === '3d' ? `1px solid ${c.border}` : '1px solid transparent',
+              }}
+            >
+              <Sparkles className="w-3 h-3 shrink-0" />
+              <span className="text-[10.5px]">3D Pro</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3. Color Accent Swatches (4 columns x 2 rows, compact ~140px) */}
+        <div
+          className="rounded-2xl p-2.5 border shadow-xs"
+          style={{ backgroundColor: c.surface, borderColor: c.border }}
+        >
+          <div className="flex items-center justify-between mb-2 px-0.5">
+            <div className="flex items-center gap-1.5">
+              <Palette className="w-3.5 h-3.5" style={{ color: c.primary }} />
+              <span className="text-[10.5px] font-black uppercase tracking-wider" style={{ color: c.text }}>
+                Color Palette
+              </span>
+            </div>
+            <span className="text-[9.5px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-white/5" style={{ color: c.primary }}>
+              {currentTheme.name}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1.5">
+            {availableThemes.map((t: AthlonTheme) => {
+              const isSelected = t.key === themeKey;
+              const tc = t.colors;
+
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTheme(t.key)}
+                  className={`p-1.5 rounded-xl border text-center transition-all duration-150 relative overflow-hidden active:scale-95 cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                    isSelected ? 'shadow-sm ring-1' : 'hover:opacity-90'
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? tc.surface : c.card,
+                    borderColor: isSelected ? tc.primary : c.border,
+                    boxShadow: isSelected ? `0 2px 8px -1px ${tc.glow}` : 'none',
+                  }}
+                >
+                  {/* Swatch Orb */}
+                  <div
+                    className="w-5 h-5 rounded-full shadow-xs flex items-center justify-center transition-transform"
+                    style={{
+                      backgroundColor: tc.primary,
+                      boxShadow: `0 0 8px ${tc.primaryGlow}`,
+                    }}
+                  >
+                    {isSelected ? (
+                      <Check className="w-3 h-3" strokeWidth={3.5} style={{ color: tc.primaryForeground }} />
+                    ) : (
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/40 blur-[0.5px]" />
+                    )}
+                  </div>
+
+                  {/* Theme Short Name */}
+                  <span
+                    className="text-[9.5px] font-black truncate max-w-full leading-tight"
+                    style={{ color: isSelected ? tc.primary : c.text }}
+                  >
+                    {t.name.replace('Athlon ', '')}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. Mini Live Preview Strip (Compact & stylish single strip) */}
+        <div
+          className="rounded-xl px-3 py-2 border flex items-center justify-between gap-2 shadow-2xs"
+          style={{
+            backgroundColor: c.card,
+            borderColor: c.border,
+          }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Athlon3DIcon type="home" size={15} active={true} forceStyle={iconStyle} />
+              <Athlon3DIcon type="tournaments" size={15} active={false} forceStyle={iconStyle} />
+              <Athlon3DIcon type="profile" size={15} active={false} forceStyle={iconStyle} />
+            </div>
+            <span className="text-[9.5px] font-semibold truncate" style={{ color: c.textMuted }}>
+              Instant live preview
+            </span>
+          </div>
+
+          <div
+            className="px-2 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider shrink-0 flex items-center gap-1"
+            style={{
+              backgroundColor: `${c.primary}20`,
+              color: c.primary,
+              border: `1px solid ${c.primary}35`,
+            }}
+          >
+            <span>Live Sync</span>
+            <Check className="w-2.5 h-2.5" strokeWidth={3} />
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          DESKTOP VIEW (>= md) - UNTOUCHED ORIGINAL LAYOUT
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="hidden md:block space-y-5">
+        {/* ─── 1. LIVE STUDIO SIMULATOR (Real-Time Interactive Preview Stage) ─── */}
       <div
         className="rounded-[24px] p-4 sm:p-5 border relative overflow-hidden backdrop-blur-xl shadow-2xl transition-all duration-300"
         style={{
@@ -567,6 +809,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
         )}
       </div>
 
+      </div> {/* end hidden md:block */}
     </div>
   );
 }

@@ -61,12 +61,34 @@ public class SportCreateRequest {
         this.isTeamSport = isTeamSport;
     }
 
+    @com.fasterxml.jackson.annotation.JsonSetter("isTeamSport")
+    public void setIsTeamSportFlexible(Object value) {
+        if (value instanceof Boolean) {
+            this.isTeamSport = ((Boolean) value) ? 1 : 0;
+        } else if (value instanceof Number) {
+            this.isTeamSport = ((Number) value).intValue();
+        } else if (value != null) {
+            this.isTeamSport = "true".equalsIgnoreCase(value.toString()) || "1".equals(value.toString()) ? 1 : 0;
+        }
+    }
+
     public Integer getSupportsMultiCategory() {
         return supportsMultiCategory;
     }
 
     public void setSupportsMultiCategory(Integer supportsMultiCategory) {
         this.supportsMultiCategory = supportsMultiCategory;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonSetter("supportsMultiCategory")
+    public void setSupportsMultiCategoryFlexible(Object value) {
+        if (value instanceof Boolean) {
+            this.supportsMultiCategory = ((Boolean) value) ? 1 : 0;
+        } else if (value instanceof Number) {
+            this.supportsMultiCategory = ((Number) value).intValue();
+        } else if (value != null) {
+            this.supportsMultiCategory = "true".equalsIgnoreCase(value.toString()) || "1".equals(value.toString()) ? 1 : 0;
+        }
     }
 
     public String getDefaultFormat() {
@@ -91,6 +113,31 @@ public class SportCreateRequest {
 
     public void setCategoryPresets(String categoryPresets) {
         this.categoryPresets = categoryPresets;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonSetter("categoryPresets")
+    public void setCategoryPresetsFlexible(Object value) {
+        if (value == null) {
+            this.categoryPresets = null;
+        } else if (value instanceof java.util.List) {
+            this.categoryPresets = ((java.util.List<?>) value).stream()
+                    .map(Object::toString)
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(java.util.stream.Collectors.joining(", "));
+        } else {
+            this.categoryPresets = value.toString();
+        }
+    }
+
+    private java.util.List<String> formats;
+
+    public java.util.List<String> getFormats() {
+        return formats;
+    }
+
+    public void setFormats(java.util.List<String> formats) {
+        this.formats = formats;
     }
 
     public Integer getDisplayOrder() {

@@ -42,6 +42,13 @@ public class RouteConfig {
     }
 
     @Bean
+    public RouterFunction<ServerResponse> adminRoute() {
+        return route("admin_service")
+                .route(request -> request.path().startsWith("/api/admin/"), http(identityServiceUrl))
+                .build();
+    }
+
+    @Bean
     public RouterFunction<ServerResponse> tournamentRoute() {
         return route("tournament_service")
                 .route(request -> request.path().startsWith("/api/tournament/"), http(tournamentServiceUrl))

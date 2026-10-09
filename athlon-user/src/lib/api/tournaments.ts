@@ -164,6 +164,9 @@ export interface SportMetadata {
   categoryPresets: string[];
   formats: MatchFormatMetadata[];
   displayOrder: number;
+  isActive?: boolean;
+  active?: boolean;
+  teamSport?: boolean;
 }
 
 export interface MatchFormatMetadata {
@@ -176,13 +179,27 @@ export interface MatchFormatMetadata {
   displayOrder: number;
 }
 
+export type SportCreateUpdateRequest = Omit<Partial<SportMetadata>, 'formats' | 'isTeamSport' | 'supportsMultiCategory'> & {
+  formats?: string[] | MatchFormatMetadata[];
+  isTeamSport?: boolean | number;
+  supportsMultiCategory?: boolean | number;
+};
+
 export const SportMetadataService = {
   getAllSports: () =>
-    api.get<{ data: SportMetadata[] }>('/api/tournament/sports'),
+    api.get<{ data: SportMetadata[] }>('/api/tournament/sports/getAllActiveSports'),
+  getAllSportsAdmin: () =>
+    api.get<{ data: SportMetadata[] }>('/api/tournament/sports/getAllSports'),
   getSportByName: (sportName: string) =>
-    api.get<{ data: SportMetadata }>(`/api/tournament/sports/by-name/${encodeURIComponent(sportName)}`),
-  createSport: (data: Partial<SportMetadata>) =>
-    api.post<{ data: SportMetadata }>('/api/tournament/sports', data),
+    api.get<{ data: SportMetadata }>(`/api/tournament/sports/getSportByName/${encodeURIComponent(sportName)}`),
+  getSportByUuid: (sportUuid: string) =>
+    api.get<{ data: SportMetadata }>(`/api/tournament/sports/getSportByUuid/${sportUuid}`),
+  createSport: (data: SportCreateUpdateRequest & { sportName: string }) =>
+    api.post<{ data: SportMetadata }>('/api/tournament/sports/createSport', data),
+  updateSport: (sportUuid: string, data: SportCreateUpdateRequest) =>
+    api.post<{ data: SportMetadata }>(`/api/tournament/sports/updateSport/${sportUuid}`, data),
+  toggleSportStatus: (sportUuid: string) =>
+    api.post<{ data: SportMetadata }>(`/api/tournament/sports/toggleSportStatus/${sportUuid}`, {}),
 };
 
 export const MatchFormatService = {

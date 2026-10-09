@@ -807,7 +807,12 @@ export const MarketplaceApi = {
   // ─── Module Enablement & App Mode Config ───
   getModuleConfig: async (): Promise<AppModuleConfig> => {
     try {
-      const res = await fetchClient<any>('/api/marketplace/config/modules');
+      let res;
+      try {
+        res = await fetchClient<any>('/api/marketplace/config/modules/getModuleConfig');
+      } catch {
+        res = await fetchClient<any>('/api/marketplace/config/modules');
+      }
       const data = res?.data || res;
       if (data && typeof data.athlonActive === 'boolean') {
         return {
@@ -819,7 +824,9 @@ export const MarketplaceApi = {
           description: data.description,
         };
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to fetch module config:', e);
+    }
     return {
       athlonActive: true,
       marketActive: true,
@@ -831,10 +838,18 @@ export const MarketplaceApi = {
 
   updateModuleConfig: async (config: Partial<AppModuleConfig>): Promise<AppModuleConfig> => {
     try {
-      const res = await fetchClient<any>('/api/marketplace/config/modules', {
-        method: 'PUT',
-        body: JSON.stringify(config),
-      });
+      let res;
+      try {
+        res = await fetchClient<any>('/api/marketplace/config/modules/updateModuleConfig', {
+          method: 'POST',
+          body: JSON.stringify(config),
+        });
+      } catch {
+        res = await fetchClient<any>('/api/marketplace/config/modules', {
+          method: 'POST',
+          body: JSON.stringify(config),
+        });
+      }
       const data = res?.data || res;
       return {
         athlonActive: data.athlonActive ?? true,
@@ -850,6 +865,77 @@ export const MarketplaceApi = {
         marketActive: config.marketActive ?? true,
         defaultMode: config.defaultMode || 'ATHLON',
         showModeSwitcher: (config.athlonActive ?? true) && (config.marketActive ?? true),
+        activeModes: ['ATHLON', 'MARKET'],
+      };
+    }
+  },
+
+  toggleModuleStatus: async (module: 'ATHLON' | 'MARKET'): Promise<AppModuleConfig> => {
+    try {
+      const res = await fetchClient<any>(`/api/marketplace/config/modules/toggleModuleStatus/${module}`, {
+        method: 'POST',
+      });
+      const data = res?.data || res;
+      return {
+        athlonActive: data.athlonActive ?? true,
+        marketActive: data.marketActive ?? true,
+        defaultMode: data.defaultMode || 'ATHLON',
+        showModeSwitcher: (data.athlonActive ?? true) && (data.marketActive ?? true),
+        activeModes: data.activeModes || [],
+        description: data.description,
+      };
+    } catch {
+      // Return fresh local toggle if server error
+      const current = await MarketplaceApi.getModuleConfig();
+      const updated = {
+        ...current,
+        athlonActive: module === 'ATHLON' ? !current.athlonActive : current.athlonActive,
+        marketActive: module === 'MARKET' ? !current.marketActive : current.marketActive,
+      };
+      return updated;
+    }
+  },
+
+  setDefaultAppMode: async (mode: 'ATHLON' | 'MARKET'): Promise<AppModuleConfig> => {
+    try {
+      const res = await fetchClient<any>(`/api/marketplace/config/modules/setDefaultMode/${mode}`, {
+        method: 'POST',
+      });
+      const data = res?.data || res;
+      return {
+        athlonActive: data.athlonActive ?? true,
+        marketActive: data.marketActive ?? true,
+        defaultMode: data.defaultMode || mode,
+        showModeSwitcher: (data.athlonActive ?? true) && (data.marketActive ?? true),
+        activeModes: data.activeModes || [],
+        description: data.description,
+      };
+    } catch {
+      const current = await MarketplaceApi.getModuleConfig();
+      return { ...current, defaultMode: mode };
+    }
+  },
+
+  resetModuleConfig: async (): Promise<AppModuleConfig> => {
+    try {
+      const res = await fetchClient<any>('/api/marketplace/config/modules/resetDefaultConfig', {
+        method: 'POST',
+      });
+      const data = res?.data || res;
+      return {
+        athlonActive: data.athlonActive ?? true,
+        marketActive: data.marketActive ?? true,
+        defaultMode: data.defaultMode || 'ATHLON',
+        showModeSwitcher: true,
+        activeModes: ['ATHLON', 'MARKET'],
+        description: data.description,
+      };
+    } catch {
+      return {
+        athlonActive: true,
+        marketActive: true,
+        defaultMode: 'ATHLON',
+        showModeSwitcher: true,
         activeModes: ['ATHLON', 'MARKET'],
       };
     }

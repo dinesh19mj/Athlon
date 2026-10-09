@@ -27,11 +27,14 @@ import {
   Tag,
   TicketCheck,
   MapPin,
+  History,
+  Dumbbell,
 } from 'lucide-react';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 
 export type Athlon3DIconType =
   | 'home'
+  | 'sports'
   | 'tournaments'
   | 'academies'
   | 'bookings'
@@ -59,7 +62,9 @@ export type Athlon3DIconType =
   | 'setup'
   | 'batches'
   | 'posts'
-  | 'gallery';
+  | 'gallery'
+  | 'audit-logs'
+  | 'audit';
 
 export interface Athlon3DIconProps {
   type: Athlon3DIconType;
@@ -77,6 +82,8 @@ function render2DIcon(type: Athlon3DIconType, active: boolean, size: number) {
   switch (type) {
     case 'home':
       return <Home style={style} strokeWidth={strokeWidth} />;
+    case 'sports':
+      return <Dumbbell style={style} strokeWidth={strokeWidth} />;
     case 'tournaments':
       return <Trophy style={style} strokeWidth={strokeWidth} />;
     case 'academies':
@@ -115,6 +122,9 @@ function render2DIcon(type: Athlon3DIconType, active: boolean, size: number) {
     case 'performance':
     case 'reports':
       return <BarChart3 style={style} strokeWidth={strokeWidth} />;
+    case 'audit-logs':
+    case 'audit':
+      return <History style={style} strokeWidth={strokeWidth} />;
     case 'pricing':
       return <Tag style={style} strokeWidth={strokeWidth} />;
     case 'blocks':
@@ -1172,6 +1182,45 @@ export function Athlon3DIcon({ type, className = '', size = 38, active = true, f
             {/* Ascending Neon Trend Arrow */}
             <path d="M8 32L19 22L27 26L39 10" stroke="#FDE047" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" filter="drop-shadow(0 2px 5px rgba(253,224,71,0.6))" />
             <polygon points="41,9 35,9 40,14" fill="#FDE047" />
+          </svg>
+        </div>
+      );
+
+    case 'audit-logs':
+    case 'audit':
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_rgba(59,130,246,0.45)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible transition-transform duration-300 group-hover:scale-110">
+            <defs>
+              <linearGradient id="auditPaperGrad" x1="12" y1="10" x2="34" y2="38" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="60%" stopColor="var(--athlon-surface-hover, #334155)" />
+                <stop offset="100%" stopColor="var(--athlon-card, #1E293B)" />
+              </linearGradient>
+              <linearGradient id="clockDialGrad" x1="22" y1="20" x2="42" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="45%" stopColor="#38BDF8" />
+                <stop offset="100%" stopColor="#0369A1" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="24" cy="43" rx="15" ry="2.5" fill="rgba(0,0,0,0.5)" />
+            {/* 3D Audit Ledger Sheet */}
+            <rect x="10" y="8" width="22" height="32" rx="3.5" fill="url(#auditPaperGrad)" stroke="var(--athlon-border)" strokeWidth="0.9" />
+            <rect x="14" y="14" width="14" height="2" rx="1" fill="#3B82F6" />
+            <rect x="14" y="19" width="11" height="1.8" rx="0.9" fill="rgba(255,255,255,0.45)" />
+            <rect x="14" y="24" width="8" height="1.8" rx="0.9" fill="rgba(255,255,255,0.3)" />
+            <rect x="14" y="29" width="10" height="1.8" rx="0.9" fill="rgba(255,255,255,0.2)" />
+            {/* Circular History / Clock Badge overlapping */}
+            <circle cx="32" cy="30" r="9" fill="url(#clockDialGrad)" stroke="#FFFFFF" strokeWidth="1.2" filter="drop-shadow(0 3px 8px rgba(3,105,161,0.6))" />
+            {/* Counter-Clockwise Arrow / History Path */}
+            <path d="M32 24A6 6 0 1 0 37 31" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" />
+            <polygon points="34,22 38,24 35,27" fill="#FFFFFF" />
+            <path d="M32 27V30L34 32" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       );

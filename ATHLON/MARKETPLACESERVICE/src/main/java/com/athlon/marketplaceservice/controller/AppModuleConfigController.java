@@ -6,6 +6,9 @@ import com.athlon.marketplaceservice.repository.AppModuleConfigRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.List;
+
 @RestController
 @RequestMapping({"/api/marketplace/config/modules", "/api/platform/modules"})
 public class AppModuleConfigController {
@@ -18,13 +21,8 @@ public class AppModuleConfigController {
         this.configRepository = configRepository;
     }
 
-    /**
-     * Fetch active application module configuration.
-     * If not present, auto-seeds default configuration (both ATHLON and MARKET active).
-     */
-    @GetMapping
-    public ResponseEntity<AppModuleConfigDto> getModuleConfig() {
-        AppModuleConfig config = configRepository.findByConfigKey(DEFAULT_CONFIG_KEY)
+    private AppModuleConfig getOrCreateDefaultConfig() {
+        return configRepository.findByConfigKey(DEFAULT_CONFIG_KEY)
                 .orElseGet(() -> {
                     AppModuleConfig initial = new AppModuleConfig(
                             DEFAULT_CONFIG_KEY,
@@ -35,32 +33,60 @@ public class AppModuleConfigController {
                     initial.setDescription("Global application modules (Athlon & Market)");
                     return configRepository.save(initial);
                 });
+    }
 
-        AppModuleConfigDto dto = new AppModuleConfigDto(
-                config.getAthlonActive(),
-                config.getMarketActive(),
-                config.getDefaultMode(),
-                config.getDescription()
+    private AppModuleConfigDto toDto(AppModuleConfig entity) {
+        return new AppModuleConfigDto(
+                Boolean.TRUE.equals(entity.getAthlonActive()),
+                Boolean.TRUE.equals(entity.getMarketActive()),
+                entity.getDefaultMode(),
+                entity.getDescription()
         );
-
-        return ResponseEntity.ok(dto);
     }
 
     /**
-     * Update active application module configuration.
+     * Fetch active application module configuration.
      */
-    @PutMapping
-    public ResponseEntity<AppModuleConfigDto> updateModuleConfig(@RequestBody AppModuleConfigDto request) {
-        AppModuleConfig config = configRepository.findByConfigKey(DEFAULT_CONFIG_KEY)
-                .orElseGet(() -> new AppModuleConfig(DEFAULT_CONFIG_KEY, true, true, "ATHLON"));
+    @GetMapping({"", "/getModuleConfig"})
+    public ResponseEntity<AppModuleConfigDto> getModuleConfig() {
+        AppModuleConfig config = getOrCreateDefaultConfig();
+        return ResponseEntity.ok(toDto(config));
+    }
 
-        if (request.isAthlonActive() || request.isMarketActive()) {
-            config.setAthlonActive(request.isAthlonActive());
-            config.setMarketActive(request.isMarketActive());
+    /**
+     * Fetch all application module configurations in array/list format.
+     */
+    @GetMapping("/getAllModuleConfigs")
+    public ResponseEntity<List<AppModuleConfigDto>> getAllModuleConfigs() {
+        AppModuleConfig config = getOrCreateDefaultConfig();
+        return ResponseEntity.ok(Collections.singletonList(toDto(config)));
+    }
+
+    /**
+     * Update active application module configuration dynamically.
+     */
+    @PostMapping({"", "/updateModuleConfig"})
+    public ResponseEntity<AppModuleConfigDto> updateModuleConfig(@RequestBody AppModuleConfigDto request) {
+        AppModuleConfig config = getOrCreateDefaultConfig();
+
+        boolean newAthlon = request.isAthlonActive();
+        boolean newMarket = request.isMarketActive();
+
+        // Safety rule: at least one module must remain active
+        if (!newAthlon && !newMarket) {
+            newAthlon = true;
         }
 
+        config.setAthlonActive(newAthlon);
+        config.setMarketActive(newMarket);
+
         if (request.getDefaultMode() != null && !request.getDefaultMode().trim().isEmpty()) {
-            config.setDefaultMode(request.getDefaultMode().trim().toUpperCase());
+            String mode = request.getDefaultMode().trim().toUpperCase();
+            if ("MARKET".equals(mode) && newMarket) {
+                config.setDefaultMode("MARKET");
+            } else {
+                config.setDefaultMode("ATHLON");
+            }
         }
 
         if (request.getDescription() != null) {
@@ -68,14 +94,67 @@ public class AppModuleConfigController {
         }
 
         AppModuleConfig saved = configRepository.save(config);
+        return ResponseEntity.ok(toDto(saved));
+    }
 
-        AppModuleConfigDto responseDto = new AppModuleConfigDto(
-                saved.getAthlonActive(),
-                saved.getMarketActive(),
-                saved.getDefaultMode(),
-                saved.getDescription()
-        );
+    /**
+     * Dynamically toggle specific module status (ATHLON or MARKET).
+     */
+    @PostMapping("/toggleModuleStatus/{module}")
+    public ResponseEntity<AppModuleConfigDto> toggleModuleStatus(@PathVariable("module") String module) {
+        AppModuleConfig config = getOrCreateDefaultConfig();
+        String target = module != null ? module.trim().toUpperCase() : "";
 
-        return ResponseEntity.ok(responseDto);
+        if ("ATHLON".equals(target)) {
+            boolean current = Boolean.TRUE.equals(config.getAthlonActive());
+            if (!current || Boolean.TRUE.equals(config.getMarketActive())) {
+                config.setAthlonActive(!current);
+            }
+        } else if ("MARKET".equals(target)) {
+            boolean current = Boolean.TRUE.equals(config.getMarketActive());
+            if (!current || Boolean.TRUE.equals(config.getAthlonActive())) {
+                config.setMarketActive(!current);
+            }
+        }
+
+        // Adjust defaultMode if inactive
+        if (Boolean.FALSE.equals(config.getAthlonActive()) && "ATHLON".equalsIgnoreCase(config.getDefaultMode())) {
+            config.setDefaultMode("MARKET");
+        } else if (Boolean.FALSE.equals(config.getMarketActive()) && "MARKET".equalsIgnoreCase(config.getDefaultMode())) {
+            config.setDefaultMode("ATHLON");
+        }
+
+        AppModuleConfig saved = configRepository.save(config);
+        return ResponseEntity.ok(toDto(saved));
+    }
+
+    /**
+     * Dynamically set default landing mode (ATHLON or MARKET).
+     */
+    @PostMapping("/setDefaultMode/{mode}")
+    public ResponseEntity<AppModuleConfigDto> setDefaultMode(@PathVariable("mode") String mode) {
+        AppModuleConfig config = getOrCreateDefaultConfig();
+        String target = mode != null ? mode.trim().toUpperCase() : "ATHLON";
+        if ("MARKET".equals(target)) {
+            config.setDefaultMode("MARKET");
+        } else {
+            config.setDefaultMode("ATHLON");
+        }
+        AppModuleConfig saved = configRepository.save(config);
+        return ResponseEntity.ok(toDto(saved));
+    }
+
+    /**
+     * Reset module configuration to factory defaults.
+     */
+    @PostMapping("/resetDefaultConfig")
+    public ResponseEntity<AppModuleConfigDto> resetDefaultConfig() {
+        AppModuleConfig config = getOrCreateDefaultConfig();
+        config.setAthlonActive(true);
+        config.setMarketActive(true);
+        config.setDefaultMode("ATHLON");
+        config.setDescription("Global application modules (Athlon & Market)");
+        AppModuleConfig saved = configRepository.save(config);
+        return ResponseEntity.ok(toDto(saved));
     }
 }

@@ -22,6 +22,7 @@ public class SportResponse {
     private List<String> categoryPresets = new ArrayList<>();
     private List<TournamentMatchFormatResponse> formats = new ArrayList<>();
     private Integer displayOrder;
+    private boolean isActive = true;
 
     public SportResponse() {
     }
@@ -39,6 +40,7 @@ public class SportResponse {
         res.setDefaultFormat(entity.getDefaultFormat());
         res.setDefaultCategory(entity.getDefaultCategory());
         res.setDisplayOrder(entity.getDisplayOrder());
+        res.setActive(entity.getIsActive() != null && entity.getIsActive() == 1);
 
         if (entity.getCategoryPresets() != null && !entity.getCategoryPresets().isBlank()) {
             res.setCategoryPresets(Arrays.stream(entity.getCategoryPresets().split(","))
@@ -90,10 +92,12 @@ public class SportResponse {
         this.emoji = emoji;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isTeamSport")
     public boolean isTeamSport() {
         return isTeamSport;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isTeamSport")
     public void setTeamSport(boolean isTeamSport) {
         this.isTeamSport = isTeamSport;
     }
@@ -144,5 +148,15 @@ public class SportResponse {
 
     public void setDisplayOrder(Integer displayOrder) {
         this.displayOrder = displayOrder;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
+    public boolean isActive() {
+        return isActive;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
+    public void setActive(boolean active) {
+        isActive = active;
     }
 }

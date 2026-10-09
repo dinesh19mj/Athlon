@@ -47,7 +47,7 @@ import { RewardsService } from '@/lib/api/rewards';
 import { MatchService, Match } from '@/lib/api/matches';
 
 export default function ProfilePage() {
-  const { userId: playerId, userUuid, token, logout, userEmail } = useAuthStore();
+  const { userId: playerId, userUuid, token, logout, userEmail, isSuperAdmin, role } = useAuthStore();
   const {
     activeWorkspaceId,
     organizations: storeOrgs,
@@ -63,6 +63,15 @@ export default function ProfilePage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  const { theme, mode } = useAthlonTheme();
+
+  const isUserSuperAdmin = Boolean(
+    role === 'PLATFORM_SUPER_ADMIN' ||
+    (typeof isSuperAdmin === 'function' && isSuperAdmin()) ||
+    userEmail?.toLowerCase() === 'athlon1@athlon.com' ||
+    userEmail?.toLowerCase() === 'dinesh19sep@gmail.com'
+  );
 
   const sportsTrackRef = useRef<HTMLDivElement>(null);
   const orgsTrackRef = useRef<HTMLDivElement>(null);
@@ -368,9 +377,6 @@ export default function ProfilePage() {
             {isSettingsOpen && (
               <div className="absolute right-0 top-10 w-60 bg-surface border border-foreground/10 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex flex-col">
-                  <div className="px-3.5 py-2 border-b border-foreground/5">
-                    <ContextSwitcher />
-                  </div>
                   <button
                     onClick={() => {
                       setIsSettingsOpen(false);
@@ -394,12 +400,6 @@ export default function ProfilePage() {
                     className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
                   >
                     <Palette className="w-3.5 h-3.5 text-primary" /> Appearance &amp; Theme
-                  </button>
-                  <button
-                    onClick={() => setIsSettingsOpen(false)}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-foreground/5 transition-colors text-left border-b border-foreground/5"
-                  >
-                    <Wallet className="w-3.5 h-3.5 text-[#FF7722]" /> My Wallet
                   </button>
                   <Link
                     href="/settings"
@@ -447,12 +447,18 @@ export default function ProfilePage() {
                       src={UserService.getPhotoUrl(profile.photo)}
                       alt="User Avatar"
                       className="w-full h-full object-cover relative z-0"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
                     />
-                  ) : personalProfile?.avatar ? (
+                  ) : personalProfile?.avatar && !personalProfile.avatar.includes('umpire.png') ? (
                     <img
                       src={personalProfile.avatar}
                       alt="User Avatar"
                       className="w-full h-full object-cover relative z-0"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-surface text-primary font-black text-xl">
@@ -626,6 +632,130 @@ export default function ProfilePage() {
               <span className="text-[7.5px] uppercase tracking-wider text-primary font-extrabold relative z-10">Win Rate</span>
             </div>
           </section>
+
+          {/* ══════════════════════════════════════════════════════════════════════
+              SUPER ADMIN CONSOLE - ADAPTIVE LIGHT/DARK & THEME PALETTE CARD
+             ══════════════════════════════════════════════════════════════════════ */}
+          {isUserSuperAdmin && (
+            <Link
+              href="/admin"
+              className="relative w-full rounded-2xl p-4 overflow-hidden border bg-surface shadow-sm group active:scale-[0.98] hover:border-primary/40 transition-all duration-300 block"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Glowing Shield Icon Container */}
+                  <div
+                    className="relative w-12 h-12 rounded-2xl p-[1.5px] shadow-lg shrink-0 transition-transform duration-300 group-hover:scale-105"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, var(--athlon-primary), color-mix(in srgb, var(--athlon-primary) 35%, var(--athlon-card)))',
+                      boxShadow: '0 4px 14px 0 color-mix(in srgb, var(--athlon-primary) 30%, transparent)',
+                    }}
+                  >
+                    <div
+                      className="w-full h-full rounded-[14px] flex items-center justify-center transition-colors"
+                      style={{
+                        backgroundColor: mode === 'light' ? 'var(--athlon-card)' : 'color-mix(in srgb, var(--athlon-card) 85%, black)',
+                      }}
+                    >
+                      <ShieldCheck
+                        className="w-6 h-6 transition-colors"
+                        style={{
+                          color: 'var(--athlon-primary)',
+                          filter: 'drop-shadow(0 0 6px color-mix(in srgb, var(--athlon-primary) 50%, transparent))',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border transition-colors"
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 14%, transparent)',
+                          color: 'var(--athlon-primary)',
+                          borderColor: 'color-mix(in srgb, var(--athlon-primary) 30%, transparent)',
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full animate-pulse"
+                          style={{ backgroundColor: 'var(--athlon-primary)' }}
+                        />
+                        Platform
+                      </span>
+
+                    </div>
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-foreground group-hover:opacity-90 transition-opacity">
+                      Super Admin
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Stylish Launch Button Pill */}
+                <div
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl border font-black text-[10px] uppercase tracking-wider transition-all shrink-0 shadow-sm group-hover:scale-105"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 14%, transparent)',
+                    color: 'var(--athlon-primary)',
+                    borderColor: 'color-mix(in srgb, var(--athlon-primary) 32%, transparent)',
+                  }}
+                >
+                  <span>Enter</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </div>
+
+              {/* Subtitle & Quick Capability Strip */}
+              <div
+                className="relative z-10 mt-3 pt-2.5 border-t flex items-center justify-between gap-2 flex-wrap text-[10px]"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--athlon-primary) 15%, var(--athlon-border))',
+                }}
+              >
+                <span className="text-foreground/60 font-medium truncate">
+                  Manage users, packages, requests &amp; audit trails
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[8.5px] font-bold border transition-colors"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 8%, var(--athlon-surface))',
+                      borderColor: 'color-mix(in srgb, var(--athlon-primary) 20%, var(--athlon-border))',
+                      color: 'var(--athlon-primary)',
+                    }}
+                  >
+                    Users
+                  </span>
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[8.5px] font-bold border transition-colors"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 8%, var(--athlon-surface))',
+                      borderColor: 'color-mix(in srgb, var(--athlon-primary) 20%, var(--athlon-border))',
+                      color: 'var(--athlon-primary)',
+                    }}
+                  >
+                    Packages
+                  </span>
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[8.5px] font-bold border transition-colors"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 8%, var(--athlon-surface))',
+                      borderColor: 'color-mix(in srgb, var(--athlon-primary) 20%, var(--athlon-border))',
+                      color: 'var(--athlon-primary)',
+                    }}
+                  >
+                    Approvals
+                  </span>
+                </div>
+              </div>
+            </Link>
+          )}
 
           {/* PERSONAL INFO */}
           <section className="bg-surface border border-foreground/5 rounded-xl overflow-hidden shadow-sm">
@@ -885,6 +1015,16 @@ export default function ProfilePage() {
 
             {/* Quick Actions */}
             <div className="flex items-center gap-3">
+              {isUserSuperAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary text-black text-xs font-black uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all"
+                >
+                  <ShieldCheck className="w-4 h-4 text-black" />
+                  <span>Admin Console</span>
+                </Link>
+              )}
+
               <button
                 onClick={() => {
                   setEditFirstName(profile?.firstName || '');
@@ -924,6 +1064,123 @@ export default function ProfilePage() {
 
         {/* Desktop Main Tracks (Horizontal Scrolling) */}
         <main className="max-w-7xl mx-auto px-8 py-10 space-y-12">
+          {/* Desktop Super Admin Console Banner */}
+          {isUserSuperAdmin && (
+            <Link
+              href="/admin"
+              className="relative w-full rounded-3xl p-6 overflow-hidden border bg-surface shadow-sm group active:scale-[0.99] hover:border-primary/40 transition-all duration-300 block"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+
+              <div className="relative z-10 flex items-center justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  {/* Glowing Shield Icon */}
+                  <div
+                    className="relative w-14 h-14 rounded-2xl p-[1.5px] shadow-xl shrink-0 group-hover:scale-105 transition-all"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, var(--athlon-primary), color-mix(in srgb, var(--athlon-primary) 35%, var(--athlon-card)))',
+                      boxShadow: '0 6px 18px 0 color-mix(in srgb, var(--athlon-primary) 35%, transparent)',
+                    }}
+                  >
+                    <div
+                      className="w-full h-full rounded-[14px] flex items-center justify-center transition-colors"
+                      style={{
+                        backgroundColor: mode === 'light' ? 'var(--athlon-card)' : 'color-mix(in srgb, var(--athlon-card) 85%, black)',
+                      }}
+                    >
+                      <ShieldCheck
+                        className="w-7 h-7"
+                        style={{
+                          color: 'var(--athlon-primary)',
+                          filter: 'drop-shadow(0 0 8px color-mix(in srgb, var(--athlon-primary) 55%, transparent))',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-colors"
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 14%, transparent)',
+                          color: 'var(--athlon-primary)',
+                          borderColor: 'color-mix(in srgb, var(--athlon-primary) 30%, transparent)',
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full animate-pulse"
+                          style={{ backgroundColor: 'var(--athlon-primary)' }}
+                        />
+                        Platform Authorization
+                      </span>
+                      <span className="text-[10px] font-bold text-foreground/50 tracking-wider uppercase">
+                        Super Admin Privileges
+                      </span>
+                    </div>
+                    <h2 className="text-lg font-black uppercase tracking-wider text-foreground group-hover:opacity-90 transition-opacity">
+                      Super Admin Console
+                    </h2>
+                    <p className="text-xs text-foreground/60 mt-0.5">
+                      Centralized platform governance: user management, subscription approval queue, pricing tiers &amp; platform audit trail
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0">
+                  <div className="hidden lg:flex items-center gap-1.5 text-xs">
+                    <span
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 8%, var(--athlon-surface))',
+                        borderColor: 'color-mix(in srgb, var(--athlon-primary) 20%, var(--athlon-border))',
+                        color: 'var(--athlon-primary)',
+                      }}
+                    >
+                      Users &amp; Orgs
+                    </span>
+                    <span
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 8%, var(--athlon-surface))',
+                        borderColor: 'color-mix(in srgb, var(--athlon-primary) 20%, var(--athlon-border))',
+                        color: 'var(--athlon-primary)',
+                      }}
+                    >
+                      Plan Tiers
+                    </span>
+                    <span
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 8%, var(--athlon-surface))',
+                        borderColor: 'color-mix(in srgb, var(--athlon-primary) 20%, var(--athlon-border))',
+                        color: 'var(--athlon-primary)',
+                      }}
+                    >
+                      Audit Trail
+                    </span>
+                  </div>
+
+                  <div
+                    className="flex items-center gap-2 px-5 py-3 rounded-2xl border font-black text-xs uppercase tracking-wider transition-all shadow-lg group-hover:scale-105"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--athlon-primary) 14%, transparent)',
+                      color: 'var(--athlon-primary)',
+                      borderColor: 'color-mix(in srgb, var(--athlon-primary) 35%, transparent)',
+                    }}
+                  >
+                    <span>Launch Console</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+
           {/* 1. Sports Disciplines Track (Horizontal Scroll) */}
           <section className="space-y-4">
             <div className="flex items-center justify-between">
@@ -985,9 +1242,8 @@ export default function ProfilePage() {
                       onClick={() => setSelectedSportId(sport.uuid)}
                     >
                       <div
-                        className={`p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl transition-all ${
-                          isSelected ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/40'
-                        }`}
+                        className={`p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl transition-all ${isSelected ? 'border-primary ring-2 ring-primary/20' : 'hover:border-primary/40'
+                          }`}
                         style={{
                           backgroundColor: 'var(--athlon-card)',
                           borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
@@ -1106,7 +1362,7 @@ export default function ProfilePage() {
                   );
                   const opponentName = m.teamBName || m.teamAName || 'TBD Opponent';
                   const matchStatusText = isCompleted ? (isWin ? 'WIN' : 'LOSS') : (m.status || 'SCHEDULED');
-                  const scoreDisplay = m.setScores 
+                  const scoreDisplay = m.setScores
                     ? (typeof m.setScores === 'string' ? m.setScores : Array.isArray(m.setScores) ? m.setScores.join(', ') : JSON.stringify(m.setScores))
                     : (m.status || 'Upcoming');
 
@@ -1120,19 +1376,17 @@ export default function ProfilePage() {
                         }}
                       >
                         <div
-                          className={`h-1 w-full absolute top-0 left-0 right-0 ${
-                            isCompleted ? (isWin ? 'bg-emerald-500' : 'bg-red-500') : 'bg-primary'
-                          }`}
+                          className={`h-1 w-full absolute top-0 left-0 right-0 ${isCompleted ? (isWin ? 'bg-emerald-500' : 'bg-red-500') : 'bg-primary'
+                            }`}
                         />
 
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                isCompleted
-                                  ? (isWin ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : 'bg-red-500/15 text-red-400 border-red-500/25')
-                                  : 'bg-primary/15 text-primary border-primary/25'
-                              }`}
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${isCompleted
+                                ? (isWin ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : 'bg-red-500/15 text-red-400 border-red-500/25')
+                                : 'bg-primary/15 text-primary border-primary/25'
+                                }`}
                             >
                               {matchStatusText}
                             </span>

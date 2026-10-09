@@ -1,15 +1,29 @@
 package com.athlon.marketplaceservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AppModuleConfigDto {
 
+    @JsonProperty("athlonActive")
     private boolean athlonActive;
+
+    @JsonProperty("marketActive")
     private boolean marketActive;
+
+    @JsonProperty("defaultMode")
     private String defaultMode;
+
+    @JsonProperty("showModeSwitcher")
     private boolean showModeSwitcher;
+
+    @JsonProperty("activeModes")
     private List<String> activeModes = new ArrayList<>();
+
+    @JsonProperty("description")
     private String description;
 
     public AppModuleConfigDto() {}

@@ -23,4 +23,6 @@ public interface OrganizationSubscriptionRepository extends JpaRepository<Organi
     List<OrganizationSubscription> findByPackageId(Long packageId);
 
     Optional<OrganizationSubscription> findByOrganizationIdAndPackageId(Long organizationId, Long packageId);
+
+    long countByStatus(String status);
 }
