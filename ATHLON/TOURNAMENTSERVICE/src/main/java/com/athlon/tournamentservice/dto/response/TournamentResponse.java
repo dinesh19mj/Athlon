@@ -26,9 +26,13 @@ public class TournamentResponse {
     private String matchFormat;
     private String visibility;
     private String category;
+    private Integer teamCount;
     private Integer playersCount;
 
     private String location;
+    private String state;
+    private String district;
+    private String city;
     private String mapLink;
     private String contactPhone;
     private String gpayNumber;
@@ -70,9 +74,13 @@ public class TournamentResponse {
         response.setMatchFormat(tournament.getMatchFormat());
         response.setVisibility(tournament.getVisibility());
         response.setCategory(tournament.getCategory());
-        response.setPlayersCount(tournament.getPlayersCount());
+        response.setTeamCount(tournament.getTeamCount());
+        response.setPlayersCount(tournament.getTeamCount());
 
         response.setLocation(tournament.getLocation());
+        response.setState(tournament.getState());
+        response.setDistrict(tournament.getDistrict());
+        response.setCity(tournament.getCity());
         response.setMapLink(tournament.getMapLink());
         response.setContactPhone(tournament.getContactPhone());
         response.setGpayNumber(tournament.getGpayNumber());
@@ -215,12 +223,23 @@ public class TournamentResponse {
         this.category = category;
     }
 
+    public Integer getTeamCount() {
+        return teamCount != null ? teamCount : playersCount;
+    }
+
+    public void setTeamCount(Integer teamCount) {
+        this.teamCount = teamCount;
+    }
+
     public Integer getPlayersCount() {
-        return playersCount;
+        return teamCount != null ? teamCount : playersCount;
     }
 
     public void setPlayersCount(Integer playersCount) {
         this.playersCount = playersCount;
+        if (this.teamCount == null) {
+            this.teamCount = playersCount;
+        }
     }
 
     public String getLocation() {
@@ -229,6 +248,30 @@ public class TournamentResponse {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 
     public String getMapLink() {

@@ -178,13 +178,7 @@ export default function PlayerRankingsPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-28 min-h-screen">
         {/* Compact Sticky Top Navbar */}
-        <header
-          className="sticky top-0 z-40 flex items-center justify-between px-4 py-2.5 backdrop-blur-xl border-b transition-all"
-          style={{
-            backgroundColor: 'var(--athlon-navigation)',
-            borderColor: 'var(--athlon-border)',
-          }}
-        >
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
           <div className="flex items-center gap-2.5 min-w-0">
             <Link
               href="/home"

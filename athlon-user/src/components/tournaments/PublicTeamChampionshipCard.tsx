@@ -60,6 +60,30 @@ export function PublicTeamChampionshipCard({
     }
   };
 
+  const formatLocation = () => {
+    const parts: string[] = [];
+    const champAny = championship as any;
+    const loc = championship.location || championship.venue;
+    if (loc && loc.trim()) {
+      parts.push(loc.trim());
+    }
+    const city = champAny?.city?.trim();
+    const district = champAny?.district?.trim();
+    const state = champAny?.state?.trim();
+
+    if (city && !parts.some((p) => p.toLowerCase().includes(city.toLowerCase()))) {
+      parts.push(city);
+    }
+    if (district && district.toLowerCase() !== city?.toLowerCase() && !parts.some((p) => p.toLowerCase().includes(district.toLowerCase()))) {
+      parts.push(district);
+    }
+    if (state && !parts.some((p) => p.toLowerCase().includes(state.toLowerCase()))) {
+      parts.push(state);
+    }
+
+    return parts.length > 0 ? parts.join(', ') : 'Venue TBA';
+  };
+
   const closingDate = formatClosingDate();
 
   const getStageBadge = () => {
@@ -148,9 +172,9 @@ export function PublicTeamChampionshipCard({
                 >
                   {championship.name}
                 </h3>
-                <div className="flex items-center gap-1 text-[9.5px] font-semibold text-foreground/50 truncate">
+                <div className="flex items-center gap-1 text-[9.5px] font-semibold text-foreground/50 truncate" title={formatLocation()}>
                   <MapPin className="w-3 h-3 text-primary shrink-0" />
-                  <span className="truncate">{championship.location || championship.venue || 'Venue TBA'}</span>
+                  <span className="truncate">{formatLocation()}</span>
                 </div>
               </div>
             </Link>

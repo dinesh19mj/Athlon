@@ -82,6 +82,9 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
   onEnrollClick,
   variant = 'card',
 }) => {
+  const [logoError, setLogoError] = React.useState(false);
+  const [coverError, setCoverError] = React.useState(false);
+
   const orgUuid = academy.uuid || academy.id || '';
   const name = academy.name || 'Academy Title';
   const type = academy.type || 'ACADEMY';
@@ -96,11 +99,12 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
 
   // Extract cover
   const coverRaw = academy.profile?.banner || academy.banner || academy.image;
-  const coverUrl = coverRaw
-    ? (coverRaw.startsWith('http') || coverRaw.startsWith('data:') || coverRaw.startsWith('blob:')
+  const defaultBanner = 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80';
+  const coverUrl = coverError || !coverRaw
+    ? defaultBanner
+    : (coverRaw.startsWith('http') || coverRaw.startsWith('data:') || coverRaw.startsWith('blob:')
       ? coverRaw
-      : OrganizationService.getBannerUrl(coverRaw))
-    : 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80';
+      : OrganizationService.getBannerUrl(coverRaw));
 
   // Extract location
   const city = academy.profile?.city || academy.city;
@@ -142,13 +146,18 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           
-          {logoUrl ? (
+          {logoUrl && !logoError ? (
             <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-lg overflow-hidden border border-white/40 shadow-sm bg-black/60">
-              <img src={logoUrl} alt={name} className="w-full h-full object-cover" />
+              <img
+                src={logoUrl}
+                alt=""
+                onError={() => setLogoError(true)}
+                className="w-full h-full object-cover"
+              />
             </div>
           ) : (
-            <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-lg bg-black/70 border border-primary/40 flex items-center justify-center text-primary">
-              <Building2 className="w-3 h-3" />
+            <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-lg bg-black/70 border border-primary/40 flex items-center justify-center text-primary font-bold text-[10px]">
+              {name.charAt(0).toUpperCase() || <Building2 className="w-3 h-3" />}
             </div>
           )}
 
@@ -229,19 +238,20 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
   // ── STANDARD CARD VARIANT (Ultra-Modern Premium Athletic Card) ──
   const CardContent = (
     <div
-      className={`group relative rounded-[20px] overflow-hidden border transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1.5 select-none flex flex-col justify-between h-full w-full ${className}`}
+      className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 select-none flex flex-col justify-between h-full w-full ${className}`}
       style={{
         backgroundColor: 'var(--athlon-card)',
         borderColor: 'var(--athlon-border)',
       }}
     >
       {/* ── 1. CINEMATIC HERO COVER WITH DYNAMIC BADGES & BRAND IDENTITY ── */}
-      <div className="relative h-36 sm:h-40 w-full overflow-hidden shrink-0 bg-neutral-900">
+      <div className="relative h-28 sm:h-34 w-full overflow-hidden shrink-0 bg-neutral-900">
         {/* Cover Banner Image with Smooth Zoom */}
         <img
           src={coverUrl}
-          alt={name}
-          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+          alt=""
+          onError={() => setCoverError(true)}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Ambient Gradient Scrims for Flawless Contrast */}
@@ -249,26 +259,26 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent opacity-80" />
 
         {/* Top Control Bar: Category & Status */}
-        <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-20">
+        <div className="absolute top-2 inset-x-2 flex items-center justify-between z-20">
           {/* Institutional Type Badge */}
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-black/60 text-primary border border-primary/30 backdrop-blur-md shadow-sm">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-black/60 text-primary border border-primary/30 backdrop-blur-md shadow-xs">
             <Sparkles className="w-2.5 h-2.5 text-primary" />
             {type}
           </span>
 
           {/* Admissions Status Pill */}
           {admissionStatus === 'OPEN' ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 backdrop-blur-md shadow-sm">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 backdrop-blur-md shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Admissions Open
             </span>
           ) : admissionStatus === 'LIMITED' ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-400/40 backdrop-blur-md shadow-sm">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wide bg-amber-500/20 text-amber-300 border border-amber-400/40 backdrop-blur-md shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               Limited Slots
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black tracking-wide bg-rose-500/20 text-rose-300 border border-rose-400/40 backdrop-blur-md shadow-sm">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black tracking-wide bg-rose-500/20 text-rose-300 border border-rose-400/40 backdrop-blur-md shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
               Waitlist
             </span>
@@ -276,87 +286,90 @@ export const AcademyMarketplaceCard: React.FC<AcademyMarketplaceCardProps> = ({
         </div>
 
         {/* Bottom Floating Brand Pod */}
-        <div className="absolute bottom-2.5 inset-x-3 flex items-center gap-3 z-20">
-          {/* Squircle Brand Logo with Soft Glow */}
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border border-white/20 p-0.5 shadow-xl flex items-center justify-center shrink-0 bg-black/80 backdrop-blur-md group-hover:border-primary group-hover:scale-105 transition-all">
-            {logoUrl ? (
-              <img src={logoUrl} alt={name} className="w-full h-full object-cover rounded-[14px]" />
+        <div className="absolute bottom-2 inset-x-2.5 flex items-center gap-2.5 z-20">
+          {/* Squircle Brand Logo */}
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-white/20 p-0.5 shadow-md flex items-center justify-center shrink-0 bg-black/80 backdrop-blur-md group-hover:border-primary transition-all overflow-hidden">
+            {logoUrl && !logoError ? (
+              <img
+                src={logoUrl}
+                alt=""
+                onError={() => setLogoError(true)}
+                className="w-full h-full object-cover rounded-[9px]"
+              />
             ) : (
-              <Building2 className="w-5 h-5 text-primary" />
+              <span className="text-xs font-black text-primary">
+                {name.charAt(0).toUpperCase()}
+              </span>
             )}
           </div>
 
           {/* Academy Name & Location */}
           <div className="min-w-0 flex-1">
-            <h4 className="text-sm sm:text-base font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight drop-shadow-md">
+            <h4 className="text-xs sm:text-sm font-black text-white leading-tight truncate group-hover:text-primary transition-colors tracking-tight drop-shadow-md">
               {name}
             </h4>
-            <p className="text-[11px] text-white/85 font-medium flex items-center gap-1 mt-0.5 truncate drop-shadow-sm">
-              <MapPin className="w-3 h-3 text-primary shrink-0" />
+            <p className="text-[10px] text-white/85 font-medium flex items-center gap-1 mt-0.5 truncate drop-shadow-sm">
+              <MapPin className="w-2.5 h-2.5 text-primary shrink-0" />
               <span className="truncate">{locationText}</span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── 2. CARD CONTENT BODY (Bento Clean Section) ── */}
-      <div className="p-3.5 sm:p-4 space-y-3.5 flex-1 flex flex-col justify-between relative z-10">
-        <div className="space-y-3">
-          {/* Bento Stats / Facilities Strip */}
-          <div className="flex items-center justify-between text-[11px] pb-1">
-            <span className="font-extrabold uppercase tracking-wider text-foreground/50 flex items-center gap-1.5 text-[9.5px]">
-              <Dumbbell className="w-3.5 h-3.5 text-primary" />
-              Sports Trained
-            </span>
+      {/* ── 2. CARD CONTENT BODY (Compact Modern Section) ── */}
+      <div className="p-2.5 sm:p-3 space-y-2 flex-1 flex flex-col justify-between relative z-10">
+        <div className="space-y-1.5">
+          {/* Facilities & Sports Row */}
+          <div className="flex items-center justify-between gap-1">
+            {/* Sports Discipline Chips */}
+            <div className="flex flex-wrap items-center gap-1 min-w-0">
+              {sportsList.slice(0, 2).map((s) => (
+                <span
+                  key={s}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-foreground dark:text-white border border-primary/20 text-[9.5px] font-bold tracking-tight"
+                >
+                  <span className="text-[10px] leading-none">{getSportEmoji(s)}</span>
+                  <span className="truncate max-w-[80px]">{s}</span>
+                </span>
+              ))}
+              {sportsList.length > 2 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-surface text-foreground/60 text-[9px] font-bold border border-border">
+                  +{sportsList.length - 2}
+                </span>
+              )}
+            </div>
 
-            <div className="flex items-center gap-1.5">
+            {/* Est / Courts Stat */}
+            <div className="shrink-0">
               {courts ? (
-                <span className="font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px]">
+                <span className="font-bold text-primary px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-[9px]">
                   {courts} {courts === 1 ? 'Court' : 'Courts'}
                 </span>
               ) : establishedYear ? (
-                <span className="font-bold text-foreground/60 text-[10px] px-2 py-0.5 rounded-full bg-surface border border-border">
+                <span className="font-medium text-foreground/50 text-[9.5px]">
                   Est. {establishedYear}
                 </span>
               ) : null}
             </div>
           </div>
-
-          {/* Sports Discipline Chips with Vibrant Emojis */}
-          <div className="flex flex-wrap gap-1.5">
-            {sportsList.slice(0, 3).map((s) => (
-              <span
-                key={s}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-primary/8 hover:bg-primary/15 text-foreground dark:text-white border border-primary/20 text-[10.5px] font-bold tracking-tight shadow-xs transition-colors"
-              >
-                <span className="text-xs leading-none">{getSportEmoji(s)}</span>
-                <span>{s}</span>
-              </span>
-            ))}
-            {sportsList.length > 3 && (
-              <span className="inline-flex items-center px-2 py-1 rounded-xl bg-surface hover:bg-surface-hover text-foreground/60 text-[10px] font-bold border border-border">
-                +{sportsList.length - 3} More
-              </span>
-            )}
-          </div>
         </div>
 
         {/* ── 3. CARD FOOTER ACTION ROW ── */}
         <div
-          className="pt-3 border-t flex items-center justify-between"
+          className="pt-2 border-t flex items-center justify-between gap-2"
           style={{ borderColor: 'var(--athlon-border)' }}
         >
-          <div className="flex items-center gap-1.5 text-foreground/70 font-bold text-[10.5px]">
-            <span className="w-2 h-2 rounded-full bg-primary/80 inline-block" />
+          <div className="flex items-center gap-1 text-foreground/60 font-semibold text-[10px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
             <span>
-              {sportsList.length} {sportsList.length === 1 ? 'Discipline' : 'Disciplines'}
+              {sportsList.length} {sportsList.length === 1 ? 'Sport' : 'Sports'}
             </span>
           </div>
 
           {/* Sleek Action CTA Button */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white font-black text-[11px] transition-all duration-200 shadow-xs">
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-black font-extrabold text-[10.5px] transition-all duration-200 shadow-xs">
             <span>Explore</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
       </div>

@@ -27,10 +27,10 @@ public class TournamentCategory {
     @Column(name = "categoryuuid", updatable = false, nullable = false, unique = true)
     private UUID categoryUuid;
 
-    @Column(name = "organizationid", nullable = false)
+    @Column(name = "organizationid", nullable = true)
     private Long organizationId;
 
-    @Column(name = "organizationuuid", nullable = false)
+    @Column(name = "organizationuuid", nullable = true)
     private UUID organizationUuid;
 
     @Column(name = "sporttype", nullable = false)

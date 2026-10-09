@@ -16,7 +16,7 @@ export const fetchClient = async <T>(
   options: RequestInit = {}
 ): Promise<T> => {
   const isBrowser = typeof window !== 'undefined';
-  const baseUrl = isBrowser ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050');
+  const baseUrl = isBrowser ? '' : (process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050');
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
 
   // Extract identity and auth token from Zustand store

@@ -294,12 +294,12 @@ export default function PersonalTournamentDetailsPage() {
     (r) => r.status?.toUpperCase() !== 'REJECTED'
   );
 
-  const totalPlayersCount = Number(tournament.playersCount) || 0;
-  const hasCapacityLimit = totalPlayersCount > 0;
+  const totalTeamCount = Number(tournament.teamCount ?? tournament.playersCount) || 0;
+  const hasCapacityLimit = totalTeamCount > 0;
   const categoryLimit =
-    categoriesList.length > 0 && totalPlayersCount > 0
-      ? Math.ceil(totalPlayersCount / categoriesList.length)
-      : totalPlayersCount || 0;
+    categoriesList.length > 0 && totalTeamCount > 0
+      ? Math.ceil(totalTeamCount / categoriesList.length)
+      : totalTeamCount || 0;
 
   const getCategoryRegisteredCount = (cat: string) => {
     return validRegistrations.filter((reg) => {
@@ -367,6 +367,10 @@ export default function PersonalTournamentDetailsPage() {
 
   const registerHref = `/home/tournaments/${tournamentUuid}/register`;
 
+  const fullLocationStr = [tournament.location, tournament.city, tournament.district, tournament.state]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
@@ -374,13 +378,7 @@ export default function PersonalTournamentDetailsPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-32 animate-in fade-in duration-300">
         {/* Sleek Floating Glass Header */}
-        <header
-          className="sticky top-0 z-50 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b shadow-xs transition-all"
-          style={{
-            backgroundColor: 'var(--athlon-navigation, rgba(10, 15, 29, 0.85))',
-            borderColor: 'var(--athlon-border)',
-          }}
-        >
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
           <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={handleBackNavigation}
@@ -422,7 +420,7 @@ export default function PersonalTournamentDetailsPage() {
         <main className="w-full max-w-4xl mx-auto px-3.5 flex flex-col gap-4 pt-3">
           {/* ── 1. LUXURY HERO POSTER & TOURNAMENT IDENTITY CARD ────────────── */}
           <div
-            className="rounded-[28px] overflow-hidden border relative shadow-xl transition-all"
+            className="rounded-2xl overflow-hidden border relative shadow-md transition-all"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
@@ -430,7 +428,7 @@ export default function PersonalTournamentDetailsPage() {
           >
             {/* Ambient Energy Glow Accent */}
             <div
-              className="absolute -top-16 -right-16 w-52 h-52 rounded-full blur-3xl pointer-events-none opacity-25"
+              className="absolute -top-16 -right-16 w-44 h-44 rounded-full blur-3xl pointer-events-none opacity-20"
               style={{ backgroundColor: 'var(--athlon-primary)' }}
             />
 
@@ -438,7 +436,7 @@ export default function PersonalTournamentDetailsPage() {
             {posterUrl ? (
               <div
                 onClick={() => setPreviewImage({ src: posterUrl, title: `${tournament.name} Poster` })}
-                className="w-full h-56 sm:h-64 relative bg-black/50 cursor-pointer group overflow-hidden select-none"
+                className="w-full h-36 sm:h-44 relative bg-black/50 cursor-pointer group overflow-hidden select-none"
               >
                 <img
                   src={posterUrl}
@@ -451,8 +449,8 @@ export default function PersonalTournamentDetailsPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
 
                 {/* Floating Status Pill (Top Left) */}
-                <div className="absolute top-3 left-3 z-10">
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-md backdrop-blur-md flex items-center gap-1.5 ${statusBadge.color}`}>
+                <div className="absolute top-2.5 left-2.5 z-10">
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border shadow-md backdrop-blur-md flex items-center gap-1 ${statusBadge.color}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                     {statusBadge.label}
                   </span>
@@ -460,39 +458,39 @@ export default function PersonalTournamentDetailsPage() {
 
                 {/* Floating Enlarge Pill (Top Right) */}
                 <div
-                  className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full text-white text-[10px] font-bold flex items-center gap-1.5 border border-white/20 shadow-lg backdrop-blur-md pointer-events-none"
+                  className="absolute top-2.5 right-2.5 z-10 px-2 py-0.5 rounded-full text-white text-[9px] font-bold flex items-center gap-1 border border-white/20 shadow-lg backdrop-blur-md pointer-events-none"
                   style={{ backgroundColor: 'rgba(15, 23, 42, 0.75)' }}
                 >
-                  <Maximize2 className="w-3 h-3 text-primary" />
+                  <Maximize2 className="w-2.5 h-2.5 text-primary" />
                 </div>
               </div>
             ) : (
-              <div className="w-full h-28 relative bg-gradient-to-br from-primary/15 via-surface to-background border-b flex items-center justify-between px-6 overflow-hidden" style={{ borderColor: 'var(--athlon-border)' }}>
-                <div className="space-y-1 z-10">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${statusBadge.color}`}>
+              <div className="w-full h-24 relative bg-gradient-to-br from-primary/15 via-surface to-background border-b flex items-center justify-between px-4 overflow-hidden" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="space-y-0.5 z-10">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${statusBadge.color}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-current" />
                     {statusBadge.label}
                   </span>
-                  <p className="text-xs text-foreground/50 font-semibold">Official Athlon Sports Tournament</p>
+                  <p className="text-[11px] text-foreground/50 font-semibold">Official Athlon Tournament</p>
                 </div>
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-lg shadow-primary/10 z-10">
-                  <Trophy className="w-7 h-7" />
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm z-10">
+                  <Trophy className="w-5 h-5" />
                 </div>
-                <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
+                <div className="absolute top-0 right-0 w-36 h-36 bg-primary/10 blur-2xl rounded-full pointer-events-none" />
               </div>
             )}
 
             {/* Tournament Details Header Body */}
-            <div className="p-4 sm:p-5 relative z-10 space-y-3.5">
+            <div className="p-3 sm:p-4 relative z-10 space-y-2.5">
               {/* Primary Structured Sport & Format Badges */}
-              <div className="flex items-center flex-wrap gap-1.5">
-                <span className="px-2.5 py-0.5 rounded-lg bg-primary text-black text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                  <Sparkles className="w-3 h-3 fill-black" />
+              <div className="flex items-center flex-wrap gap-1">
+                <span className="px-2 py-0.5 rounded-md bg-primary text-black text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                  <Sparkles className="w-2.5 h-2.5 fill-black" />
                   {tournament.sport || 'Sports'}
                 </span>
 
                 <span
-                  className="px-2.5 py-0.5 rounded-lg border text-foreground text-[10px] font-bold uppercase tracking-wider"
+                  className="px-2 py-0.5 rounded-md border text-foreground text-[9.5px] font-bold uppercase tracking-wider"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
                   {isTeamEvent ? 'Team League' : isLeague ? 'League' : 'Knockout'}
@@ -500,7 +498,7 @@ export default function PersonalTournamentDetailsPage() {
 
                 {tournament.matchFormat && (
                   <span
-                    className="px-2.5 py-0.5 rounded-lg border text-primary text-[10px] font-black uppercase tracking-wider"
+                    className="px-2 py-0.5 rounded-md border text-primary text-[9.5px] font-black uppercase tracking-wider"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
                     {tournament.matchFormat}
@@ -509,7 +507,7 @@ export default function PersonalTournamentDetailsPage() {
 
                 {tournament.visibility && (
                   <span
-                    className="px-2 py-0.5 rounded-lg border text-foreground/50 text-[9px] font-bold uppercase tracking-wider"
+                    className="px-1.5 py-0.5 rounded-md border text-foreground/50 text-[8.5px] font-bold uppercase tracking-wider"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
                     {tournament.visibility}
@@ -518,40 +516,40 @@ export default function PersonalTournamentDetailsPage() {
               </div>
 
               {/* Tournament Title */}
-              <h1 className="text-xl sm:text-2xl font-black leading-tight text-foreground tracking-tight">
+              <h1 className="text-sm sm:text-base font-extrabold leading-tight text-foreground tracking-tight">
                 {tournament.name}
               </h1>
 
               {/* Date & Location Visual Card */}
               <div
-                className="p-3 rounded-2xl border space-y-2"
+                className="p-2.5 rounded-xl border space-y-1.5 text-xs"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
-                <div className="flex items-center gap-2.5 text-xs text-foreground font-semibold">
-                  <div className="w-7 h-7 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                    <Calendar className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 text-foreground font-semibold">
+                  <div className="w-5.5 h-5.5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <Calendar className="w-3 h-3" />
                   </div>
-                  <div>
-                    <span className="text-foreground font-bold block">
+                  <div className="min-w-0">
+                    <span className="text-[11px] text-foreground font-bold block truncate">
                       {startInfo.dateStr}
                       {startInfo.dateStr !== endInfo.dateStr && ` — ${endInfo.dateStr}`}
                     </span>
                     {startInfo.timeStr && (
-                      <span className="text-[10px] text-foreground/50 font-mono">
+                      <span className="text-[9.5px] text-foreground/50 font-mono">
                         Kickoff at {startInfo.timeStr}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {tournament.location && (
-                  <div className="pt-2 border-t flex items-center justify-between gap-2 text-xs" style={{ borderColor: 'var(--athlon-border)' }}>
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
-                        <MapPin className="w-3.5 h-3.5" />
+                {(tournament.location || tournament.city || tournament.district || tournament.state) && (
+                  <div className="pt-1.5 border-t flex items-center justify-between gap-2 text-xs" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-5.5 h-5.5 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                        <MapPin className="w-3 h-3" />
                       </div>
-                      <span className="font-semibold text-foreground/80 truncate">
-                        {tournament.location}
+                      <span className="text-[10.5px] font-semibold text-foreground/80 truncate">
+                        {fullLocationStr || tournament.location || 'Location TBA'}
                       </span>
                     </div>
 
@@ -560,7 +558,7 @@ export default function PersonalTournamentDetailsPage() {
                         href={tournament.mapLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider flex items-center gap-1 hover:underline shrink-0"
+                        className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5 hover:underline shrink-0"
                       >
                         <Navigation className="w-2.5 h-2.5" />
                         <span>Maps</span>
@@ -572,19 +570,19 @@ export default function PersonalTournamentDetailsPage() {
 
               {/* Tournament Categories Carousel */}
               {categoriesList.length > 0 && (
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
-                    <span>Draw Categories ({categoriesList.length})</span>
-                    <span>Tap to view limits</span>
+                <div className="space-y-1 pt-0.5">
+                  <div className="flex items-center justify-between text-[9px] font-bold text-foreground/50 uppercase tracking-wider">
+                    <span>Categories ({categoriesList.length})</span>
+                    <span>View limits</span>
                   </div>
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
                     {categoriesList.map((cat, idx) => {
                       const count = getCategoryRegisteredCount(cat);
-                      const isFull = totalPlayersCount > 0 && count >= categoryLimit;
+                      const isFull = totalTeamCount > 0 && count >= categoryLimit;
                       return (
                         <div
                           key={idx}
-                          className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-2xs transition-all ${isFull
+                          className={`px-2 py-1 rounded-lg border text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-2xs transition-all ${isFull
                             ? 'bg-red-500/10 border-red-500/30 text-red-400'
                             : 'border-primary/20 text-foreground'
                             }`}
@@ -594,13 +592,13 @@ export default function PersonalTournamentDetailsPage() {
                           }}
                         >
                           {isFull ? (
-                            <Lock className="w-3 h-3 text-red-400 shrink-0" />
+                            <Lock className="w-2.5 h-2.5 text-red-400 shrink-0" />
                           ) : (
-                            <Tag className="w-3 h-3 text-primary shrink-0" />
+                            <Tag className="w-2.5 h-2.5 text-primary shrink-0" />
                           )}
-                          <span className="font-black text-[11px]">{cat}</span>
-                          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md ${isFull ? 'bg-red-500/20 text-red-300' : 'bg-foreground/5 text-foreground/70'}`}>
-                            {count}{totalPlayersCount > 0 ? `/${categoryLimit}` : ''}
+                          <span className="font-bold text-[10px]">{cat}</span>
+                          <span className={`text-[8px] font-mono font-bold px-1 py-0.2 rounded-md ${isFull ? 'bg-red-500/20 text-red-300' : 'bg-foreground/5 text-foreground/70'}`}>
+                            {count}{totalTeamCount > 0 ? `/${categoryLimit}` : ''}
                           </span>
                         </div>
                       );
@@ -610,24 +608,24 @@ export default function PersonalTournamentDetailsPage() {
               )}
 
               {/* Registration Slot Capacity Meter */}
-              {totalPlayersCount > 0 && (
+              {totalTeamCount > 0 && (
                 <div
-                  className="p-3 rounded-2xl border space-y-1.5"
+                  className="p-2.5 rounded-xl border space-y-1"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center justify-between text-[10px]">
                     <span className="font-bold text-foreground flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-primary" /> Bracket Draw Capacity
+                      <Users className="w-3 h-3 text-primary" /> Draw Capacity
                     </span>
-                    <span className="font-black font-mono text-primary text-xs">
-                      {validRegistrations.length} / {totalPlayersCount} Slots Filled
+                    <span className="font-black font-mono text-primary text-[10.5px]">
+                      {validRegistrations.length} / {totalTeamCount} Filled
                     </span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-foreground/10 overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-foreground/10 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400 transition-all duration-500"
                       style={{
-                        width: `${Math.min(100, Math.round((validRegistrations.length / totalPlayersCount) * 100))}%`,
+                        width: `${Math.min(100, Math.round((validRegistrations.length / totalTeamCount) * 100))}%`,
                       }}
                     />
                   </div>
@@ -637,135 +635,135 @@ export default function PersonalTournamentDetailsPage() {
           </div>
 
           {/* ── 2. COMPACT 4-BENTO METRICS STRIP ────────────────────────────── */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2">
             {/* Entry Fee Card */}
             <div
-              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              className="p-2.5 rounded-xl border flex items-center justify-between shadow-2xs"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
             >
               <div>
-                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
+                <span className="text-[8.5px] font-black text-foreground/50 uppercase tracking-wider block">
                   Entry Fee
                 </span>
-                <span className="text-base font-black text-primary font-mono block">
+                <span className="text-sm font-black text-primary font-mono block">
                   {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
                 </span>
               </div>
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                <IndianRupee className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <IndianRupee className="w-3.5 h-3.5" />
               </div>
             </div>
 
             {/* Tournament Format Card */}
             <div
-              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              className="p-2.5 rounded-xl border flex items-center justify-between shadow-2xs"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
             >
               <div>
-                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
+                <span className="text-[8.5px] font-black text-foreground/50 uppercase tracking-wider block">
                   Format
                 </span>
-                <span className="text-xs font-black text-foreground truncate block max-w-[100px]">
+                <span className="text-[11px] font-black text-foreground truncate block max-w-[90px]">
                   {isTeamEvent ? 'Team League' : tournament.tournamentType || 'Knockout'}
                 </span>
               </div>
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
-                <ActivityIcon className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                <ActivityIcon className="w-3.5 h-3.5" />
               </div>
             </div>
 
             {/* Registrations Total Card */}
             <div
-              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              className="p-2.5 rounded-xl border flex items-center justify-between shadow-2xs"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
             >
               <div>
-                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
-                  Total Entries
+                <span className="text-[8.5px] font-black text-foreground/50 uppercase tracking-wider block">
+                  Entries
                 </span>
-                <span className="text-xs font-black text-foreground font-mono block">
-                  {validRegistrations.length} {tournament.playersCount ? `/ ${tournament.playersCount}` : 'Teams'}
+                <span className="text-[11px] font-black text-foreground font-mono block">
+                  {validRegistrations.length} {tournament.teamCount ?? tournament.playersCount ? `/ ${tournament.teamCount ?? tournament.playersCount}` : 'Teams'}
                 </span>
               </div>
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
-                <Users className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
+                <Users className="w-3.5 h-3.5" />
               </div>
             </div>
 
             {/* Sport Category Card */}
             <div
-              className="p-3 rounded-2xl border flex items-center justify-between shadow-xs"
+              className="p-2.5 rounded-xl border flex items-center justify-between shadow-2xs"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
             >
               <div>
-                <span className="text-[9px] font-black text-foreground/50 uppercase tracking-wider block">
+                <span className="text-[8.5px] font-black text-foreground/50 uppercase tracking-wider block">
                   Sport
                 </span>
-                <span className="text-xs font-black text-foreground truncate block max-w-[100px]">
+                <span className="text-[11px] font-black text-foreground truncate block max-w-[90px]">
                   {tournament.sport || 'Badminton'}
                 </span>
               </div>
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-                <Trophy className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <Trophy className="w-3.5 h-3.5" />
               </div>
             </div>
           </div>
 
           {/* ── 3. INTERACTIVE SEGMENTED TABS NAVIGATION ─────────────────────── */}
           <div
-            className="flex items-center p-1 rounded-2xl border gap-1 shadow-xs"
+            className="flex items-center p-1 rounded-xl border gap-1 shadow-2xs"
             style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
           >
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'overview'
+              className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'overview'
                 ? 'bg-primary text-black font-black shadow-xs'
                 : 'text-foreground/60 hover:text-foreground'
                 }`}
             >
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="w-3 h-3" />
               <span>Info</span>
             </button>
 
             <button
               onClick={() => setActiveTab('brackets')}
-              className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'brackets'
+              className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'brackets'
                 ? 'bg-primary text-black font-black shadow-xs'
                 : 'text-foreground/60 hover:text-foreground'
                 }`}
             >
-              <Layers className="w-3.5 h-3.5" />
+              <Layers className="w-3 h-3" />
               <span>Bracket</span>
             </button>
 
             {isLeague && (
               <button
                 onClick={() => setActiveTab('standings')}
-                className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'standings'
+                className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'standings'
                   ? 'bg-primary text-black font-black shadow-xs'
                   : 'text-foreground/60 hover:text-foreground'
                   }`}
               >
-                <Table className="w-3.5 h-3.5" />
+                <Table className="w-3 h-3" />
                 <span>Points</span>
               </button>
             )}
 
             <button
               onClick={() => setActiveTab('matches')}
-              className={`flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'matches'
+              className={`flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer ${activeTab === 'matches'
                 ? 'bg-primary text-black font-black shadow-xs'
                 : 'text-foreground/60 hover:text-foreground'
                 }`}
             >
-              <Play className="w-3.5 h-3.5" />
+              <Play className="w-3 h-3" />
               <span>Matches ({matches.length})</span>
             </button>
           </div>
 
           {/* ── 4. OVERVIEW TAB CONTENT ─────────────────────────────────────── */}
           {activeTab === 'overview' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-3 animate-in fade-in duration-300">
               {/* Winners Podium when tournament is completed */}
               <TournamentWinnersPodium
                 matches={matches}
@@ -776,50 +774,50 @@ export default function PersonalTournamentDetailsPage() {
 
               {/* SCHEDULE & TIMINGS CARD */}
               <div
-                className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
+                className="rounded-xl p-3.5 border shadow-2xs space-y-2.5"
                 style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               >
-                <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  Tournament Schedule & Timings
+                <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  Schedule &amp; Timings
                 </h2>
 
-                <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
                   <div
-                    className="p-3 rounded-xl border flex flex-col gap-0.5"
+                    className="p-2.5 rounded-lg border flex flex-col gap-0.5"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider">
-                      Kickoff Starts
+                    <span className="text-[8.5px] font-black text-foreground/45 uppercase tracking-wider">
+                      Kickoff
                     </span>
-                    <span className="text-xs font-bold text-foreground">{startInfo.dateStr}</span>
+                    <span className="text-[11px] font-bold text-foreground">{startInfo.dateStr}</span>
                     {startInfo.timeStr && (
-                      <span className="text-[10px] text-primary font-mono font-bold">{startInfo.timeStr}</span>
+                      <span className="text-[9.5px] text-primary font-mono font-bold">{startInfo.timeStr}</span>
                     )}
                   </div>
 
                   <div
-                    className="p-3 rounded-xl border flex flex-col gap-0.5"
+                    className="p-2.5 rounded-lg border flex flex-col gap-0.5"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider">
-                      Tournament Ends
+                    <span className="text-[8.5px] font-black text-foreground/45 uppercase tracking-wider">
+                      Ends
                     </span>
-                    <span className="text-xs font-bold text-foreground">{endInfo.dateStr}</span>
+                    <span className="text-[11px] font-bold text-foreground">{endInfo.dateStr}</span>
                     {endInfo.timeStr && (
-                      <span className="text-[10px] text-foreground/60 font-mono font-bold">{endInfo.timeStr}</span>
+                      <span className="text-[9.5px] text-foreground/60 font-mono font-bold">{endInfo.timeStr}</span>
                     )}
                   </div>
                 </div>
 
                 {tournament.registrationClosingDate && (
-                  <div className="p-3 rounded-xl border flex items-center gap-2.5 bg-amber-500/5 border-amber-500/25 text-amber-500">
-                    <Clock className="w-4 h-4 shrink-0" />
+                  <div className="p-2.5 rounded-lg border flex items-center gap-2 bg-amber-500/5 border-amber-500/25 text-amber-500">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
                     <div>
-                      <span className="text-[9px] font-black uppercase tracking-wider text-amber-500/70 block">
+                      <span className="text-[8.5px] font-black uppercase tracking-wider text-amber-500/70 block">
                         Registration Deadline
                       </span>
-                      <span className="text-xs font-bold text-foreground">
+                      <span className="text-[11px] font-bold text-foreground">
                         {parseDateTime(tournament.registrationClosingDate).dateStr}
                       </span>
                     </div>
@@ -830,12 +828,12 @@ export default function PersonalTournamentDetailsPage() {
               {/* TEAM EVENT CATEGORIES (if Team Event) */}
               {isTeamEvent && tournament.teamEventCategories && (
                 <div
-                  className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
+                  className="rounded-xl p-3.5 border shadow-2xs space-y-2.5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
-                    Team Lineup &amp; Pool Categories
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-primary" />
+                    Team Lineups
                   </h2>
                   {(() => {
                     try {
@@ -845,25 +843,25 @@ export default function PersonalTournamentDetailsPage() {
                           : tournament.teamEventCategories;
                       if (Array.isArray(parsed) && parsed.length > 0) {
                         return (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                          <div className="grid grid-cols-1 gap-1.5 pt-0.5">
                             {parsed.map((cat: any, idx: number) => (
                               <div
                                 key={cat.id || idx}
-                                className="p-2.5 rounded-xl border flex items-center justify-between gap-2"
+                                className="p-2 rounded-lg border flex items-center justify-between gap-2"
                                 style={{
                                   backgroundColor: 'var(--athlon-surface)',
                                   borderColor: 'var(--athlon-border)',
                                 }}
                               >
                                 <div>
-                                  <span className="text-xs font-black text-foreground block">
+                                  <span className="text-[11px] font-black text-foreground block">
                                     {cat.name || `Category ${idx + 1}`}
                                   </span>
-                                  <span className="text-[10px] text-primary font-bold uppercase">
+                                  <span className="text-[9.5px] text-primary font-bold uppercase">
                                     {cat.matchFormat}
                                   </span>
                                 </div>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-foreground/5 border border-foreground/10 text-foreground/70 font-mono">
+                                <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-foreground/5 border border-foreground/10 text-foreground/70 font-mono">
                                   {cat.playersRequired} Players
                                 </span>
                               </div>
@@ -882,42 +880,42 @@ export default function PersonalTournamentDetailsPage() {
                 qrCodeUrl ||
                 (tournament.registrationFees !== undefined && tournament.registrationFees > 0)) && (
                   <div
-                    className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
+                    className="rounded-xl p-3.5 border shadow-2xs space-y-2.5"
                     style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--athlon-border)' }}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
-                          <IndianRupee className="w-3.5 h-3.5" />
+                    <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                          <IndianRupee className="w-3 h-3" />
                         </div>
                         <div>
-                          <h2 className="text-xs font-black text-foreground uppercase tracking-wider">
-                            Payment Gateway &amp; UPI
+                          <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                            Payment &amp; UPI
                           </h2>
-                          <p className="text-[10px] text-foreground/50 font-medium">Direct UPI settlement to organizer</p>
+                          <p className="text-[9px] text-foreground/50 font-medium">Direct UPI settlement to organizer</p>
                         </div>
                       </div>
-                      <span className="text-sm font-black text-emerald-500 font-mono">
+                      <span className="text-xs font-black text-emerald-500 font-mono">
                         {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE ENTRY'}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-2.5">
+                    <div className="grid grid-cols-1 gap-2">
                       {/* GPay Number Box with 1-tap Copy */}
                       {tournament.gpayNumber && (
                         <div
-                          className="p-3 rounded-xl border flex items-center justify-between gap-2.5"
+                          className="p-2.5 rounded-lg border flex items-center justify-between gap-2"
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[11px] font-mono shrink-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-[10px] font-mono shrink-0">
                               UPI
                             </div>
                             <div className="min-w-0">
-                              <span className="text-[9px] font-black text-foreground/40 uppercase tracking-wider block">
+                              <span className="text-[8.5px] font-black text-foreground/40 uppercase tracking-wider block">
                                 GPay / UPI Number
                               </span>
-                              <span className="text-xs font-black text-foreground font-mono truncate block">
+                              <span className="text-[11px] font-black text-foreground font-mono truncate block">
                                 {tournament.gpayNumber}
                               </span>
                             </div>
@@ -926,7 +924,7 @@ export default function PersonalTournamentDetailsPage() {
                           <button
                             type="button"
                             onClick={handleCopyGPay}
-                            className="px-3 py-1.5 rounded-lg bg-primary text-black text-[11px] font-black uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 shrink-0 shadow-xs cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-primary text-black text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
                           >
                             {copiedGPay ? <Check className="w-3 h-3 text-black" /> : <Copy className="w-3 h-3" />}
                             <span>{copiedGPay ? 'Copied' : 'Copy'}</span>
@@ -943,23 +941,23 @@ export default function PersonalTournamentDetailsPage() {
                               title: `UPI QR Scanner - ${tournament.name}`,
                             })
                           }
-                          className="p-3 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer group hover:border-primary/40 transition-all"
+                          className="p-2.5 rounded-lg border flex items-center justify-between gap-2 cursor-pointer group hover:border-primary/40 transition-all"
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         >
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white p-1 border border-foreground/10 shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg overflow-hidden bg-white p-0.5 border border-foreground/10 shrink-0 shadow-2xs">
                               <img src={qrCodeUrl} alt="UPI QR Code" className="w-full h-full object-contain" />
                             </div>
                             <div>
-                              <span className="text-xs font-black text-foreground flex items-center gap-1">
+                              <span className="text-[11px] font-black text-foreground flex items-center gap-1">
                                 <QrCode className="w-3 h-3 text-primary" />
-                                Official UPI Scanner QR
+                                Official UPI QR
                               </span>
-                              <span className="text-[10px] text-foreground/50 block">Tap to enlarge and scan to pay</span>
+                              <span className="text-[9px] text-foreground/50 block">Tap to enlarge and scan</span>
                             </div>
                           </div>
-                          <span className="p-1.5 rounded-lg bg-foreground/5 text-foreground/50 group-hover:text-primary transition-colors">
-                            <Maximize2 className="w-3.5 h-3.5" />
+                          <span className="p-1 rounded-md bg-foreground/5 text-foreground/50 group-hover:text-primary transition-colors">
+                            <Maximize2 className="w-3 h-3" />
                           </span>
                         </div>
                       )}
@@ -970,14 +968,14 @@ export default function PersonalTournamentDetailsPage() {
               {/* ABOUT / TOURNAMENT DESCRIPTION */}
               {tournament.description && (
                 <div
-                  className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-2.5"
+                  className="rounded-xl p-3.5 border shadow-2xs space-y-2"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary" />
-                    Tournament Rules &amp; Details
+                  <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-primary" />
+                    Rules &amp; Details
                   </h2>
-                  <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed whitespace-pre-line font-medium">
+                  <p className="text-[11.5px] text-foreground/80 leading-relaxed whitespace-pre-line font-medium">
                     {tournament.description}
                   </p>
                 </div>
@@ -985,36 +983,59 @@ export default function PersonalTournamentDetailsPage() {
 
               {/* VENUE & ORGANIZER CONTACT */}
               <div
-                className="rounded-2xl p-4 sm:p-5 border shadow-xs space-y-3"
+                className="rounded-xl p-3.5 border shadow-2xs space-y-2.5"
                 style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               >
-                <h2 className="text-xs font-black text-foreground uppercase tracking-wider flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  Venue Location &amp; Contact
+                <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  Venue &amp; Contact
                 </h2>
 
-                {tournament.location && (
+                {(tournament.location || tournament.city || tournament.district || tournament.state) && (
                   <div
-                    className="p-3 rounded-xl border flex items-start gap-2.5"
+                    className="p-2.5 rounded-lg border flex items-start gap-2"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                     <div className="flex flex-col flex-1 min-w-0">
-                      <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider">
+                      <span className="text-[8.5px] font-black text-foreground/45 uppercase tracking-wider">
                         Venue Address
                       </span>
-                      <span className="text-xs font-bold text-foreground mt-0.5">
-                        {tournament.location}
-                      </span>
+                      {tournament.location && (
+                        <span className="text-[11px] font-bold text-foreground mt-0.5">
+                          {tournament.location}
+                        </span>
+                      )}
+
+                      {(tournament.city || tournament.district || tournament.state) && (
+                        <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                          {tournament.city && (
+                            <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-primary/10 text-primary border border-primary/20">
+                              City: {tournament.city}
+                            </span>
+                          )}
+                          {tournament.district && (
+                            <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-foreground/5 text-foreground/75 border border-foreground/10">
+                              District: {tournament.district}
+                            </span>
+                          )}
+                          {tournament.state && (
+                            <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              State: {tournament.state}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {tournament.mapLink && (
                         <a
                           href={tournament.mapLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-black text-primary hover:underline mt-1.5"
+                          className="inline-flex items-center gap-1 text-[10px] font-black text-primary hover:underline mt-1.5"
                         >
-                          <Navigation className="w-3 h-3" />
-                          <span>Get Directions in Google Maps</span>
+                          <Navigation className="w-2.5 h-2.5" />
+                          <span>Get Directions in Maps</span>
                         </a>
                       )}
                     </div>
@@ -1023,18 +1044,18 @@ export default function PersonalTournamentDetailsPage() {
 
                 {tournament.contactPhone && (
                   <div
-                    className="p-3 rounded-xl border flex items-center justify-between gap-2.5"
+                    className="p-2.5 rounded-lg border flex items-center justify-between gap-2"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
-                        <Phone className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+                        <Phone className="w-3.5 h-3.5" />
                       </div>
                       <div>
-                        <span className="text-[9px] font-black text-foreground/45 uppercase tracking-wider block">
+                        <span className="text-[8.5px] font-black text-foreground/45 uppercase tracking-wider block">
                           Organizer Desk
                         </span>
-                        <span className="text-xs font-bold text-foreground font-mono">
+                        <span className="text-[11px] font-bold text-foreground font-mono">
                           {tournament.contactPhone}
                         </span>
                       </div>
@@ -1042,7 +1063,7 @@ export default function PersonalTournamentDetailsPage() {
 
                     <a
                       href={`tel:${tournament.contactPhone}`}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-black text-xs font-black uppercase tracking-wider active:scale-95 transition-all shadow-xs"
+                      className="px-3 py-1 rounded-lg bg-emerald-500 text-black text-[11px] font-black uppercase tracking-wider active:scale-95 transition-all shadow-2xs"
                     >
                       Call
                     </a>
@@ -1054,20 +1075,20 @@ export default function PersonalTournamentDetailsPage() {
 
           {/* ── 5. BRACKETS & FIXTURE TAB ────────────────────────────────────── */}
           {activeTab === 'brackets' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-3 animate-in fade-in duration-300">
               <div className="flex items-center justify-between px-1">
                 <div>
-                  <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
-                    Bracket &amp; Fixtures Tree
+                  <h3 className="text-xs font-black text-foreground uppercase tracking-wider">
+                    Bracket &amp; Fixtures
                   </h3>
-                  <p className="text-[11px] text-foreground/50 font-medium">
-                    Official tournament elimination pathway
+                  <p className="text-[10px] text-foreground/50 font-medium">
+                    Tournament elimination pathway
                   </p>
                 </div>
               </div>
 
               {matches.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <BracketViewer
                     matches={matches}
                     registrations={validRegistrations}
@@ -1077,13 +1098,13 @@ export default function PersonalTournamentDetailsPage() {
                 </div>
               ) : (
                 <div
-                  className="py-16 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
+                  className="py-12 text-center rounded-xl border border-dashed flex flex-col items-center justify-center p-5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Layers className="w-10 h-10 text-foreground/30 mb-2" />
-                  <h4 className="text-xs font-bold text-foreground mb-0.5">No Brackets Generated Yet</h4>
-                  <p className="text-[11px] text-foreground/50 max-w-xs">
-                    Tournament brackets and fixtures will appear here once published by the organizer.
+                  <Layers className="w-8 h-8 text-foreground/30 mb-1.5" />
+                  <h4 className="text-[11px] font-bold text-foreground mb-0.5">No Brackets Generated Yet</h4>
+                  <p className="text-[10px] text-foreground/50 max-w-xs">
+                    Brackets and fixtures will appear once published by organizer.
                   </p>
                 </div>
               )}
@@ -1092,18 +1113,18 @@ export default function PersonalTournamentDetailsPage() {
 
           {/* ── 6. STANDINGS & POINTS TABLE TAB ──────────────────────────────── */}
           {activeTab === 'standings' && isLeague && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-3 animate-in fade-in duration-300">
               {standings.length > 0 ? (
                 <StandingsTable standings={standings} />
               ) : (
                 <div
-                  className="py-16 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
+                  className="py-12 text-center rounded-xl border border-dashed flex flex-col items-center justify-center p-5"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Trophy className="w-10 h-10 text-foreground/30 mb-2" />
-                  <h4 className="text-xs font-bold text-foreground mb-0.5">No Standings Yet</h4>
-                  <p className="text-[11px] text-foreground/50 max-w-xs">
-                    Pool points and standings will update in real-time as matches conclude.
+                  <Trophy className="w-8 h-8 text-foreground/30 mb-1.5" />
+                  <h4 className="text-[11px] font-bold text-foreground mb-0.5">No Standings Yet</h4>
+                  <p className="text-[10px] text-foreground/50 max-w-xs">
+                    Pool points and standings will update as matches conclude.
                   </p>
                 </div>
               )}
@@ -1112,14 +1133,14 @@ export default function PersonalTournamentDetailsPage() {
 
           {/* ── 7. MATCHES TAB ───────────────────────────────────────────────── */}
           {activeTab === 'matches' && (
-            <div className="space-y-3 animate-in fade-in duration-300">
+            <div className="space-y-2.5 animate-in fade-in duration-300">
               <div className="flex items-center justify-between px-1">
                 <div>
-                  <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
-                    Match Schedule &amp; Results
+                  <h3 className="text-xs font-black text-foreground uppercase tracking-wider">
+                    Matches &amp; Schedule
                   </h3>
-                  <p className="text-[11px] text-foreground/50 font-medium">
-                    Live court scoring, points, and assignments
+                  <p className="text-[10px] text-foreground/50 font-medium">
+                    Live court scoring and match results
                   </p>
                 </div>
               </div>
@@ -1237,45 +1258,44 @@ export default function PersonalTournamentDetailsPage() {
 
         {/* ── 8. LUXURY FLOATING STICKY REGISTRATION DOCK ───────────────────── */}
         <div
-          className="fixed bottom-0 inset-x-0 z-50 backdrop-blur-2xl border-t shadow-[0_-8px_30px_rgba(0,0,0,0.3)] px-4 py-3"
+          className="fixed bottom-14 md:bottom-0 inset-x-0 z-40 backdrop-blur-2xl border-t shadow-[0_-8px_30px_rgba(0,0,0,0.3)] px-3.5 py-2.5"
           style={{
             backgroundColor: 'var(--athlon-navigation, rgba(10, 15, 29, 0.9))',
             borderColor: 'var(--athlon-border)',
-            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 12px))',
           }}
         >
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
             <div className="flex flex-col min-w-0">
-              <span className="text-[9px] font-black text-foreground/50 uppercase tracking-widest leading-none">
+              <span className="text-[8.5px] font-black text-foreground/50 uppercase tracking-widest leading-none">
                 Entry Fee
               </span>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg sm:text-xl font-black text-primary font-mono leading-none">
+                <span className="text-base font-black text-primary font-mono leading-none">
                   {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
                 </span>
-                <span className="text-[10px] text-foreground/40 font-semibold">/ team</span>
+                <span className="text-[9.5px] text-foreground/40 font-semibold">/ team</span>
               </div>
             </div>
 
             {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
-              <div className="px-5 py-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 font-black text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
-                <Trophy className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Tournament Finished</span>
+              <div className="px-4 py-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
+                <Trophy className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Finished</span>
               </div>
             ) : isRegistrationClosed ? (
-              <div className="px-5 py-2.5 bg-red-500/15 border border-red-500/30 text-red-400 font-black text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
-                <Lock className="w-4 h-4 text-red-400 shrink-0" />
-                <span>Registration Closed</span>
+              <div className="px-4 py-2 bg-red-500/15 border border-red-500/30 text-red-400 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
+                <Lock className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                <span>Closed</span>
               </div>
             ) : isOrganizerManaged ? (
-              <div className="px-4 py-2.5 bg-purple-500/15 border border-purple-500/30 text-purple-400 font-bold text-xs rounded-xl flex items-center gap-1.5 select-none">
-                <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
-                <span>Managed by Organizer</span>
+              <div className="px-3.5 py-2 bg-purple-500/15 border border-purple-500/30 text-purple-400 font-bold text-[11px] rounded-xl flex items-center gap-1.5 select-none">
+                <ShieldCheck className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span>Organizer Managed</span>
               </div>
             ) : (
               <button
                 onClick={() => router.push(registerHref)}
-                className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 bg-primary text-black font-black text-[11px] uppercase tracking-wider rounded-xl shadow-md shadow-primary/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Ticket className="w-3.5 h-3.5 fill-black shrink-0" />
                 <span>{isTeamEvent ? 'Register Team' : 'Register Now'}</span>
@@ -1343,10 +1363,10 @@ export default function PersonalTournamentDetailsPage() {
                     </span>
                   </div>
 
-                  {tournament.location && (
+                  {(tournament.location || tournament.city || tournament.district || tournament.state) && (
                     <div className="flex items-center gap-2 font-medium">
                       <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>{tournament.location}</span>
+                      <span>{fullLocationStr || tournament.location}</span>
                     </div>
                   )}
                 </div>
@@ -1602,10 +1622,29 @@ export default function PersonalTournamentDetailsPage() {
                     <h3 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-primary" /> Venue &amp; Organizer
                     </h3>
-                    {tournament.location && (
+                    {(tournament.location || tournament.city || tournament.district || tournament.state) && (
                       <div className="p-4 rounded-xl border space-y-2" style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}>
                         <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50 block">Location</span>
-                        <span className="text-sm font-bold text-foreground block">{tournament.location}</span>
+                        {tournament.location && <span className="text-sm font-bold text-foreground block">{tournament.location}</span>}
+                        {(tournament.city || tournament.district || tournament.state) && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            {tournament.city && (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                                City: {tournament.city}
+                              </span>
+                            )}
+                            {tournament.district && (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-foreground/5 text-foreground/75 border border-foreground/10">
+                                District: {tournament.district}
+                              </span>
+                            )}
+                            {tournament.state && (
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                State: {tournament.state}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {tournament.mapLink && (
                           <a
                             href={tournament.mapLink}

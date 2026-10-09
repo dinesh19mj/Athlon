@@ -6,8 +6,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.athlon.tournamentservice.tournament.entity.Sport;
+import com.athlon.tournamentservice.tournament.entity.TournamentCategory;
 import com.athlon.tournamentservice.tournament.entity.TournamentMatchFormat;
 import com.athlon.tournamentservice.tournament.repository.SportRepository;
+import com.athlon.tournamentservice.tournament.repository.TournamentCategoryRepository;
 import com.athlon.tournamentservice.tournament.repository.TournamentMatchFormatRepository;
 
 @Component
@@ -17,17 +19,21 @@ public class TournamentMetadataDataInitializer implements CommandLineRunner {
 
     private final SportRepository sportRepository;
     private final TournamentMatchFormatRepository formatRepository;
+    private final TournamentCategoryRepository categoryRepository;
 
     public TournamentMetadataDataInitializer(SportRepository sportRepository,
-                                             TournamentMatchFormatRepository formatRepository) {
+                                             TournamentMatchFormatRepository formatRepository,
+                                             TournamentCategoryRepository categoryRepository) {
         this.sportRepository = sportRepository;
         this.formatRepository = formatRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
     public void run(String... args) {
         try {
             seedSportsAndFormats();
+            seedCommonCategories();
         } catch (Exception e) {
             log.warn("Tournament metadata seeding notice: {}", e.getMessage());
         }
@@ -148,6 +154,93 @@ public class TournamentMetadataDataInitializer implements CommandLineRunner {
                 TournamentMatchFormat format = new TournamentMatchFormat(sportName, fName, pSide, tFormat, i + 1);
                 formatRepository.save(format);
             }
+        }
+    }
+
+    private void seedCommonCategories() {
+        // Universal / Standard Categories
+        String[] universalCategories = {
+                "Open Championship", "Open Category", "Men's Open", "Women's Open",
+                "Beginner", "Intermediate", "Advanced",
+                "Under-11", "Under-13", "Under-15", "Under-17", "Under-19",
+                "35+ Veterans", "45+ Masters", "50+ Veterans",
+                "Corporate Cup", "Division A", "Division B"
+        };
+        for (String catName : universalCategories) {
+            initCommonCategory("ALL", catName);
+        }
+
+        // Sport Specific Common Categories
+        initCommonCategory("Badminton", "Men's Singles");
+        initCommonCategory("Badminton", "Women's Singles");
+        initCommonCategory("Badminton", "Men's Doubles");
+        initCommonCategory("Badminton", "Women's Doubles");
+        initCommonCategory("Badminton", "Mixed Doubles");
+        initCommonCategory("Badminton", "C Level");
+        initCommonCategory("Badminton", "Beginner");
+        initCommonCategory("Badminton", "Intermediate");
+        initCommonCategory("Badminton", "Advanced");
+        initCommonCategory("Badminton", "35+ Veterans");
+        initCommonCategory("Badminton", "45+ Veterans");
+
+        initCommonCategory("Cricket", "Box Cricket League");
+        initCommonCategory("Cricket", "Tape Ball Open");
+        initCommonCategory("Cricket", "Leather Ball Open");
+        initCommonCategory("Cricket", "Corporate Cup");
+        initCommonCategory("Cricket", "Under-19");
+        initCommonCategory("Cricket", "Under-16");
+        initCommonCategory("Cricket", "Under-14");
+
+        initCommonCategory("Football", "Open Men's");
+        initCommonCategory("Football", "Open Women's");
+        initCommonCategory("Football", "5 vs 5 Futsal");
+        initCommonCategory("Football", "7 vs 7 Turf");
+        initCommonCategory("Football", "Under-19");
+        initCommonCategory("Football", "Under-17");
+        initCommonCategory("Football", "Under-15");
+
+        initCommonCategory("Tennis", "Men's Singles");
+        initCommonCategory("Tennis", "Women's Singles");
+        initCommonCategory("Tennis", "Men's Doubles");
+        initCommonCategory("Tennis", "Mixed Doubles");
+        initCommonCategory("Tennis", "Beginner / Level 1");
+        initCommonCategory("Tennis", "Intermediate / Level 2");
+        initCommonCategory("Tennis", "Advanced / Open");
+
+        initCommonCategory("Table Tennis", "Men's Singles");
+        initCommonCategory("Table Tennis", "Women's Singles");
+        initCommonCategory("Table Tennis", "Men's Doubles");
+        initCommonCategory("Table Tennis", "Mixed Doubles");
+        initCommonCategory("Table Tennis", "Team Event");
+
+        initCommonCategory("Pickleball", "Open Doubles (Any Gender)");
+        initCommonCategory("Pickleball", "Men's Doubles");
+        initCommonCategory("Pickleball", "Women's Doubles");
+        initCommonCategory("Pickleball", "Mixed Doubles");
+        initCommonCategory("Pickleball", "Open (Skill 3.5+)");
+        initCommonCategory("Pickleball", "Intermediate (Skill 2.5-3.5)");
+        initCommonCategory("Pickleball", "Beginner (Skill < 2.5)");
+
+        initCommonCategory("Chess", "Rapid (15m + 10s)");
+        initCommonCategory("Chess", "Blitz (3m + 2s)");
+        initCommonCategory("Chess", "Classical (90m + 30s)");
+        initCommonCategory("Chess", "Under-9");
+        initCommonCategory("Chess", "Under-12");
+        initCommonCategory("Chess", "Under-16");
+        initCommonCategory("Chess", "FIDE Rated Open");
+        initCommonCategory("Chess", "Unrated / Beginner");
+    }
+
+    private void initCommonCategory(String sportType, String categoryName) {
+        if (!categoryRepository.existsByCategoryNameIgnoreCaseAndSportTypeIgnoreCase(categoryName, sportType)) {
+            TournamentCategory category = new TournamentCategory(
+                    0L,
+                    java.util.UUID.fromString("00000000-0000-0000-0000-000000000000"),
+                    sportType,
+                    categoryName,
+                    0L
+            );
+            categoryRepository.save(category);
         }
     }
 }

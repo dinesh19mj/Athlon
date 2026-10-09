@@ -18,8 +18,12 @@ export interface Tournament {
   visibility?: string;
   category?: string;
   matchFormat?: string;
+  teamCount?: number;
   playersCount?: number;
   location?: string;
+  state?: string;
+  district?: string;
+  city?: string;
   mapLink: string;
   contactPhone: string;
   gpayNumber?: string;
@@ -203,6 +207,12 @@ export const CategoryService = {
     api.post<{ data: any }>('/api/tournament/categories/createCategory', data),
   getByOrg: (orgId: number) =>
     api.get<{ data: any[] }>(`/api/tournament/categories/organization/${orgId}`),
+  getByOrgUuid: (orgUuid: string) =>
+    api.get<{ data: any[] }>(`/api/tournament/categories/org/${orgUuid}`),
+  getCommonCategories: (sport?: string) =>
+    api.get<{ data: any[] }>(`/api/tournament/categories/common${sport ? `?sport=${encodeURIComponent(sport)}` : ''}`),
+  getAllCategories: () =>
+    api.get<{ data: any[] }>('/api/tournament/categories'),
 };
 
 export interface RegistrationPlayer {
@@ -229,6 +239,7 @@ export interface Registration {
   categoryId: number;
   categoryUuid?: string;
   primaryContactId?: number;
+  primaryContactUuid?: string;
   teamName: string;
   place?: string;
   category?: string;

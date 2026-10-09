@@ -273,7 +273,7 @@ export default function AcademyAdmissionsPage() {
 
       {/* ── STREAMLINED MOBILE & DESKTOP APP BAR ── */}
       <div
-        className="sticky top-0 z-30 px-3.5 sm:px-4 py-2.5 sm:py-3 border-b backdrop-blur-xl"
+        className="sticky top-0 z-30 px-3.5 sm:px-4 py-2.5 sm:py-3 border-b backdrop-blur-xl safe-header"
         style={{ backgroundColor: 'var(--athlon-sidebar)', borderColor: 'var(--athlon-border)' }}
       >
         <div className="flex items-center justify-between gap-2 mb-2.5">

@@ -299,7 +299,7 @@ function SettingsContent() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto overflow-x-hidden p-3.5 sm:p-6 md:p-8 pb-32 sm:pb-16 space-y-4 sm:space-y-6 animate-in fade-in duration-300 text-foreground font-sans">
+    <div className="w-full max-w-7xl mx-auto overflow-x-hidden p-3.5 sm:p-6 md:p-8 pb-32 sm:pb-16 safe-area-top space-y-4 sm:space-y-6 animate-in fade-in duration-300 text-foreground font-sans">
       {/* ── 1. LUXURY REDESIGNED WORKSPACE SETTINGS HERO COMMAND CARD ── */}
       <div
         className="relative overflow-hidden rounded-[26px] sm:rounded-[30px] p-5 sm:p-7 md:p-8 border shadow-xl transition-all select-none"
@@ -980,8 +980,19 @@ function SettingsContent() {
                     ) : (
                       /* Dynamic Luxury SaaS Current License Hero Card */
                       (() => {
-                        const activePkg = subscription?.subscriptionPackage || availablePackages.find(p => p.workspaceType === org.type || p.name?.toUpperCase().includes(org.type?.toUpperCase())) || null;
-                        const planName = activePkg?.name || `${org.type} Pro`;
+                        const orgTypeStr = String(org?.type || 'ORGANIZER').toUpperCase();
+                        const activePkg =
+                          subscription?.subscriptionPackage ||
+                          (Array.isArray(availablePackages)
+                            ? availablePackages.find(
+                                (p) =>
+                                  p &&
+                                  ((p.workspaceType && String(p.workspaceType).toUpperCase() === orgTypeStr) ||
+                                    (p.name && p.name.toUpperCase().includes(orgTypeStr)))
+                              )
+                            : null) ||
+                          null;
+                        const planName = activePkg?.name || `${org.type || 'Workspace'} Pro`;
                         const planPrice = activePkg?.price !== undefined ? `₹${Number(activePkg.price).toLocaleString('en-IN')}` : '₹2,999';
                         const planPeriod = activePkg?.durationMonths ? (activePkg.durationMonths === 1 ? '/ month' : `/${activePkg.durationMonths} mo`) : activePkg?.period ? `/${activePkg.period}` : '/ month';
                         const planStatus = subscription?.status || ((org as any).isActive ? 'ACTIVE' : 'INACTIVE');
@@ -1085,7 +1096,7 @@ function SettingsContent() {
                                     handleDownloadReceipt({
                                       invoiceNumber:
                                         subscription?.paymentReference ||
-                                        `ATH-INV-${(org.id || orgId).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase()}`,
+                                        `ATH-INV-${String(org?.id || orgId || 'ATHLON').replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase()}`,
                                       date: subscription?.startDate
                                         ? new Date(subscription.startDate).toLocaleDateString('en-US', {
                                             month: 'short',

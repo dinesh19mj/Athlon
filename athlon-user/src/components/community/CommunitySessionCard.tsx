@@ -115,7 +115,7 @@ export function CommunitySessionCard({
 
   return (
     <div
-      className={`rounded-[28px] border shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden p-4 sm:p-5 relative group hover:-translate-y-1 ${className}`}
+      className={`rounded-2xl border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden p-3.5 sm:p-4.5 relative group hover:-translate-y-0.5 hover:border-primary/40 ${className}`}
       style={{
         backgroundColor: 'var(--athlon-card)',
         borderColor: 'var(--athlon-border)',
@@ -124,207 +124,192 @@ export function CommunitySessionCard({
       {/* Sport-Specific Technical Wireframe Skeleton Background */}
       <SportCardSkeletonBackground sport={session.sport} />
 
-      <div className="space-y-3.5 relative z-10">
+      <div className="space-y-2.5 relative z-10">
         {/* Top Badges Row */}
-        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
             {/* Sport Badge */}
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase flex items-center gap-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase flex items-center gap-1 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
               <span>{getSportEmoji(session.sport)}</span>
-              <span>{session.sport || 'BADMINTON'}</span>
+              <span className="truncate max-w-[90px] sm:max-w-none">{session.sport || 'BADMINTON'}</span>
             </span>
 
             {/* Gender / Eligibility Badge */}
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase flex items-center gap-1 bg-purple-500/15 text-purple-400 border border-purple-500/25">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase flex items-center gap-0.5 bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25">
               <span>
                 {session.genderCategory === 'MALE'
-                  ? '🚹 MALE ONLY'
+                  ? '🚹 Men'
                   : session.genderCategory === 'FEMALE'
-                  ? '🚺 FEMALE ONLY'
-                  : '👥 MIXED / BOTH'}
+                  ? '🚺 Women'
+                  : '👥 Mixed'}
               </span>
             </span>
 
             {/* Skill Level Badge */}
             {session.skillLevel && session.skillLevel !== 'ALL' && (
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                {session.skillLevel === 'BEGINNER' && '🟢 BEGINNER'}
-                {session.skillLevel === 'INTERMEDIATE' && '🟡 INTERMEDIATE'}
-                {session.skillLevel === 'ADVANCED' && '🔴 ADVANCED'}
-                {session.skillLevel === 'PRO' && '🏆 PRO'}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                {session.skillLevel === 'BEGINNER' && '🟢 Beg'}
+                {session.skillLevel === 'INTERMEDIATE' && '🟡 Inter'}
+                {session.skillLevel === 'ADVANCED' && '🔴 Adv'}
+                {session.skillLevel === 'PRO' && '🏆 Pro'}
               </span>
             )}
           </div>
 
           {/* Pricing Badge */}
-          <div className="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black text-[11px] flex items-center gap-1 shadow-sm">
+          <div className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-black text-[11px] flex items-center gap-1 shadow-xs shrink-0">
             <span>🪙</span>
-            <span>{cost > 0 ? `₹${cost} / player` : 'Free'}</span>
+            <span>{cost > 0 ? `₹${cost}` : 'Free'}</span>
           </div>
         </div>
 
-        {/* Title */}
+        {/* Title & Host */}
         <div>
-          <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight leading-snug">
+          <h3 className="text-sm sm:text-base font-black text-foreground tracking-tight leading-snug line-clamp-1">
             {session.title || 'Friendly Game Session'}
           </h3>
           {communityName && (
-            <p className="text-[10px] text-foreground/50 font-semibold mt-0.5 flex items-center gap-1">
-              <span>Hosted by</span>
-              <span className="text-primary font-bold">{communityName}</span>
+            <p className="text-[10px] text-foreground/50 font-semibold mt-0.5 flex items-center gap-1 truncate">
+              <span>by</span>
+              <span className="text-primary font-bold truncate">{communityName}</span>
             </p>
           )}
         </div>
 
-        {/* Detail Box */}
+        {/* Sleek Match Details Card */}
         <div
-          className="p-3.5 rounded-2xl border space-y-2 text-xs"
+          className="p-2.5 rounded-xl border space-y-1.5 text-xs"
           style={{
             backgroundColor: 'var(--athlon-surface)',
             borderColor: 'var(--athlon-border)',
           }}
         >
           {/* Date & Time */}
-          <div className="flex items-center justify-between text-[11.5px]">
-            <span className="text-foreground/55 font-semibold flex items-center gap-1.5 shrink-0">
-              <Clock className="w-3.5 h-3.5 text-primary shrink-0" /> Date &amp; Time
+          <div className="flex items-center justify-between text-[11px] gap-2">
+            <span className="text-foreground/75 font-semibold flex items-center gap-1.5 shrink-0">
+              <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>{dateFormatted}</span>
             </span>
-            <div className="text-right">
-              <div className="font-bold text-foreground">{dateFormatted}</div>
-              <div className="text-[10.5px] font-mono text-foreground/60">
-                {startTimeFormatted} – {endTimeFormatted}
-              </div>
-            </div>
+            <span className="font-mono text-[10.5px] font-bold text-foreground/80 shrink-0">
+              {startTimeFormatted} – {endTimeFormatted}
+            </span>
           </div>
 
           {/* Venue & Location */}
           {(session.venueName || session.city || session.state) && (
-            <div className="flex items-start justify-between text-[11.5px] pt-1 border-t border-border/40 gap-2">
-              <span className="text-foreground/55 font-semibold flex items-center gap-1.5 shrink-0 pt-0.5">
-                <MapPin className="w-3.5 h-3.5 text-primary shrink-0" /> Court Venue
-              </span>
-              <div className="text-right space-y-0.5 max-w-[200px]">
-                <div className="font-bold text-foreground truncate">
+            <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-border/30 gap-2">
+              <span className="text-foreground/75 font-semibold flex items-center gap-1.5 min-w-0 truncate">
+                <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="truncate">
                   {session.venueName || 'Court Venue'}
-                </div>
-                {(session.city || session.state) && (
-                  <div className="text-[10px] text-foreground/60 font-medium truncate">
-                    {[session.city, session.state].filter(Boolean).join(', ')}
-                  </div>
-                )}
-                {session.googleMapUrl && (
-                  <div className="pt-0.5">
-                    <a
-                      href={session.googleMapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline"
-                    >
-                      <Navigation className="w-2.5 h-2.5" />
-                      <span>View on Maps</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
-                  </div>
-                )}
-              </div>
+                  {session.city ? `, ${session.city}` : ''}
+                </span>
+              </span>
+              {session.googleMapUrl && (
+                <a
+                  href={session.googleMapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 text-[9.5px] font-bold text-primary hover:underline shrink-0"
+                >
+                  <Navigation className="w-2.5 h-2.5" />
+                  <span>Map</span>
+                </a>
+              )}
             </div>
           )}
-
-          {/* Capacity Progress Bar */}
-          <div className="pt-1.5 space-y-1 border-t border-border/40">
-            <div className="flex items-center justify-between text-[10.5px]">
-              <span className="text-foreground/60 font-semibold flex items-center gap-1">
-                <Users className="w-3 h-3 text-primary" /> Roster Capacity
-              </span>
-              <span className="font-mono font-bold text-foreground">
-                {current} / {max} slots ({spotsLeft > 0 ? `${spotsLeft} open` : 'Full'})
-              </span>
-            </div>
-            <div className="w-full h-2 rounded-full bg-foreground/10 overflow-hidden p-[1px]">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  fillPct >= 100 ? 'bg-rose-500' : fillPct >= 75 ? 'bg-amber-400' : 'bg-primary'
-                }`}
-                style={{ width: `${fillPct}%` }}
-              />
-            </div>
-          </div>
         </div>
 
-        {/* Attending Player Avatars */}
+        {/* Squad & Capacity (Integrated Strip) */}
         <div className="space-y-1.5 pt-0.5">
-          <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-foreground/50">
-            <span>Confirmed Squad ({current})</span>
-            {spotsLeft > 0 && (
-              <span className="text-primary font-bold lowercase">
-                {spotsLeft} spot{spotsLeft > 1 ? 's' : ''} left
-              </span>
-            )}
-          </div>
-
-          {session.rsvps && session.rsvps.length > 0 ? (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {session.rsvps
-                .filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING')
-                .slice(0, 8)
-                .map((r) => (
-                  <div
-                    key={(r as any).rsvpId || (r as any).userUuid}
-                    title={r.fullName || (r as any).userName}
-                    className="w-7 h-7 rounded-full border text-[10px] font-black flex items-center justify-center text-primary shadow-sm"
-                    style={{
-                      backgroundColor: 'var(--athlon-surface)',
-                      borderColor: 'var(--athlon-border)',
-                    }}
-                  >
-                    {(r as any).avatarUrl || (r as any).userAvatar ? (
-                      <img
-                        src={(r as any).avatarUrl || (r as any).userAvatar}
-                        alt={r.fullName || (r as any).userName}
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    ) : (
-                      ((r.fullName || (r as any).userName || 'P') as string).charAt(0).toUpperCase()
-                    )}
+          <div className="flex items-center justify-between gap-2">
+            {/* Avatars Stack */}
+            <div className="flex items-center min-w-0">
+              {session.rsvps && session.rsvps.filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING').length > 0 ? (
+                <div className="flex items-center">
+                  <div className="flex items-center -space-x-1.5 overflow-hidden">
+                    {session.rsvps
+                      .filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING')
+                      .slice(0, 4)
+                      .map((r) => (
+                        <div
+                          key={(r as any).rsvpId || (r as any).userUuid}
+                          title={r.fullName || (r as any).userName}
+                          className="w-5.5 h-5.5 rounded-full border border-card text-[9px] font-black flex items-center justify-center text-primary shadow-xs shrink-0 overflow-hidden"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                          }}
+                        >
+                          {(r as any).avatarUrl || (r as any).userAvatar ? (
+                            <img
+                              src={(r as any).avatarUrl || (r as any).userAvatar}
+                              alt={r.fullName || (r as any).userName}
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            ((r.fullName || (r as any).userName || 'P') as string).charAt(0).toUpperCase()
+                          )}
+                        </div>
+                      ))}
                   </div>
-                ))}
-              {session.rsvps.filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING').length > 8 && (
-                <span className="text-[10px] font-bold text-foreground/50">
-                  +{session.rsvps.filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING').length - 8} more
+                  {session.rsvps.filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING').length > 4 && (
+                    <span className="text-[10px] font-bold text-foreground/50 ml-1.5">
+                      +{session.rsvps.filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING').length - 4}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-[10px] text-foreground/45 italic">
+                  Be first to join!
                 </span>
               )}
             </div>
-          ) : (
-            <div className="text-[11px] text-foreground/45 italic py-0.5">
-              Be the first to confirm your spot!
+
+            {/* Slots Counter */}
+            <div className="text-[10.5px] font-bold shrink-0">
+              <span className="font-mono text-foreground">{current}</span>
+              <span className="text-foreground/40 font-normal">/{max}</span>
+              <span className="ml-1 text-[10px] font-semibold text-primary">
+                ({spotsLeft > 0 ? `${spotsLeft} left` : 'Full'})
+              </span>
             </div>
-          )}
+          </div>
+
+          {/* Slim Progress Bar */}
+          <div className="w-full h-1.5 rounded-full bg-foreground/10 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                fillPct >= 100 ? 'bg-rose-500' : fillPct >= 75 ? 'bg-amber-400' : 'bg-primary'
+              }`}
+              style={{ width: `${fillPct}%` }}
+            />
+          </div>
         </div>
       </div>
 
       {/* Actions Bar */}
       <div
-        className="pt-3.5 mt-3.5 border-t flex items-center justify-between gap-2"
+        className="pt-2.5 mt-2.5 border-t flex items-center justify-between gap-2 relative z-10"
         style={{ borderColor: 'var(--athlon-border)' }}
       >
         {!isLoggedIn ? (
           <button
             onClick={handleActionClick}
-            className="flex-1 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 bg-primary text-black hover:bg-primary/90 shadow-[0_2px_12px_var(--athlon-primary-glow)]"
+            className="flex-1 h-9.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 bg-primary text-black hover:bg-primary/90 shadow-[0_2px_10px_var(--athlon-primary-glow)]"
           >
-            <LogIn className="w-4 h-4 stroke-[2.5]" />
+            <LogIn className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Login to Join {cost > 0 ? `(₹${cost})` : ''}</span>
           </button>
         ) : (
           <button
             onClick={handleActionClick}
             disabled={!isGoing && isFull}
-            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${
+            className={`flex-1 h-9.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${
               isGoing
                 ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
                 : isFull
                 ? 'bg-surface text-foreground/40 cursor-not-allowed border'
-                : 'bg-primary text-black hover:bg-primary/90 shadow-[0_2px_12px_var(--athlon-primary-glow)]'
+                : 'bg-primary text-black hover:bg-primary/90 shadow-[0_2px_10px_var(--athlon-primary-glow)]'
             }`}
             style={{
               borderColor: isFull ? 'var(--athlon-border)' : undefined,
@@ -332,8 +317,8 @@ export function CommunitySessionCard({
           >
             {isGoing ? (
               <>
-                <Check className="w-4 h-4 stroke-[3]" />
-                <span>I&apos;m Playing (Confirmed)</span>
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                <span>Confirmed (Playing)</span>
               </>
             ) : isFull ? (
               <span>Session Full</span>
@@ -355,14 +340,14 @@ export function CommunitySessionCard({
         {canManage && onAttendance && (
           <button
             onClick={() => onAttendance(session)}
-            className="px-3.5 py-3 rounded-2xl border text-foreground font-bold text-xs flex items-center gap-1.5 hover:bg-surface transition-colors cursor-pointer shrink-0"
+            className="h-9.5 px-3 rounded-xl border text-foreground font-bold text-xs flex items-center gap-1 hover:bg-surface transition-colors cursor-pointer shrink-0"
             style={{
               backgroundColor: 'var(--athlon-surface)',
               borderColor: 'var(--athlon-border)',
             }}
             title="Roll Call & Attendance"
           >
-            <UserCheck className="w-4 h-4 text-primary" />
+            <UserCheck className="w-3.5 h-3.5 text-primary" />
             <span className="hidden xs:inline">Roll Call</span>
           </button>
         )}
@@ -370,14 +355,14 @@ export function CommunitySessionCard({
         {canManage && onDelete && (
           <button
             onClick={() => onDelete(session)}
-            className="px-3 py-3 rounded-2xl border text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            className="h-9.5 px-2.5 rounded-xl border text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             style={{
               backgroundColor: 'var(--athlon-surface)',
               borderColor: 'var(--athlon-border)',
             }}
             title="Delete Session"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

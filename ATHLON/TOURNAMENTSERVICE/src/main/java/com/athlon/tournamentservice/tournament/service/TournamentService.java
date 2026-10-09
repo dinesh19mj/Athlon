@@ -66,7 +66,7 @@ public class TournamentService {
 				request.getMatchFormat(),
 				request.getVisibility() != null ? request.getVisibility() : "PRIVATE",
 				request.getCategory(),
-				request.getPlayersCount(),
+				request.getTeamCount(),
 				request.getLocation(),
 				request.getMapLink(),
 				request.getContactPhone(),
@@ -76,6 +76,9 @@ public class TournamentService {
 				request.getCreatedBy()
 		);
 
+		tournament.setState(request.getState());
+		tournament.setDistrict(request.getDistrict());
+		tournament.setCity(request.getCity());
 		tournament.setRegistrationClosingDate(request.getRegistrationClosingDate());
 		tournament.setGpayNumber(request.getGpayNumber());
 		if (request.getRegistrationMode() != null && !request.getRegistrationMode().isBlank()) {

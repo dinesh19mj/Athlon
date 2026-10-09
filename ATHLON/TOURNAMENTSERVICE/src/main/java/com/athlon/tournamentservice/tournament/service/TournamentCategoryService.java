@@ -40,11 +40,38 @@ public class TournamentCategoryService {
 	}
 
 	@Transactional(readOnly = true)
+	public List<TournamentCategoryResponse> getCategoriesByOrganizationUuid(UUID organizationUuid) {
+
+		return categoryRepository.findByOrganizationUuidAndIsActive(organizationUuid, 1).stream()
+				.map(TournamentCategoryResponse::fromEntity).collect(Collectors.toList());
+	}
+
+	@Transactional(readOnly = true)
 	public TournamentCategoryResponse getCategoryByUuid(UUID categoryUuid) {
 
 		TournamentCategory category = categoryRepository.findByCategoryUuid(categoryUuid)
 				.orElseThrow(() -> new ResourceNotFoundException("Category not found with UUID : " + categoryUuid));
 
 		return TournamentCategoryResponse.fromEntity(category);
+	}
+
+	@Transactional(readOnly = true)
+	public List<TournamentCategoryResponse> getCommonCategories(String sportType) {
+		if (sportType != null && !sportType.trim().isEmpty()) {
+			return categoryRepository.findCommonCategoriesBySport(sportType.trim(), 1).stream()
+					.map(TournamentCategoryResponse::fromEntity)
+					.collect(Collectors.toList());
+		}
+
+		return categoryRepository.findCommonCategories(1).stream()
+				.map(TournamentCategoryResponse::fromEntity)
+				.collect(Collectors.toList());
+	}
+
+	@Transactional(readOnly = true)
+	public List<TournamentCategoryResponse> getAllActiveCategories() {
+		return categoryRepository.findByIsActive(1).stream()
+				.map(TournamentCategoryResponse::fromEntity)
+				.collect(Collectors.toList());
 	}
 }

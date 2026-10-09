@@ -56,4 +56,30 @@ public class CategoryController {
 		return ResponseEntity.ok(ApiResponse.success("Categories retrieved successfully", response));
 	}
 
+	@GetMapping("/org/{organizationUuid}")
+	public ResponseEntity<ApiResponse<List<TournamentCategoryResponse>>> getCategoriesByOrganizationUuid(
+			@PathVariable("organizationUuid") UUID organizationUuid) {
+
+		List<TournamentCategoryResponse> response = categoryService.getCategoriesByOrganizationUuid(organizationUuid);
+
+		return ResponseEntity.ok(ApiResponse.success("Categories retrieved successfully", response));
+	}
+
+	@GetMapping("/common")
+	public ResponseEntity<ApiResponse<List<TournamentCategoryResponse>>> getCommonCategories(
+			@org.springframework.web.bind.annotation.RequestParam(value = "sport", required = false) String sport) {
+
+		List<TournamentCategoryResponse> response = categoryService.getCommonCategories(sport);
+
+		return ResponseEntity.ok(ApiResponse.success("Common categories retrieved successfully", response));
+	}
+
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<TournamentCategoryResponse>>> getAllActiveCategories() {
+
+		List<TournamentCategoryResponse> response = categoryService.getAllActiveCategories();
+
+		return ResponseEntity.ok(ApiResponse.success("Categories retrieved successfully", response));
+	}
+
 }

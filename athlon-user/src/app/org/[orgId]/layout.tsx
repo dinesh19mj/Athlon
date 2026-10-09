@@ -98,6 +98,9 @@ export default function OrganizationLayout({ children }: { children: React.React
     localStorage.setItem('athlon_org_sidebar_collapsed', String(nextState));
   };
 
+  const [fetchedOrg, setFetchedOrg] = useState<any>(null);
+  const [loadingOrg, setLoadingOrg] = useState(false);
+
   // Sync route with store on load
   useEffect(() => {
     if (orgId && activeWorkspaceId !== orgId) {
@@ -105,9 +108,40 @@ export default function OrganizationLayout({ children }: { children: React.React
     }
   }, [orgId, activeWorkspaceId, setActiveWorkspace]);
 
-  // An organization route is authoritative. Never render a persisted active
-  // workspace (or the first workspace) under a different organization URL.
-  const activeOrg = organizations.find((o) => o.id === orgId);
+  // Fetch organization by ID if not in local store cache
+  useEffect(() => {
+    if (!orgId) return;
+    const existing = organizations.find((o) => o.id === orgId);
+    if (!existing && !fetchedOrg) {
+      setLoadingOrg(true);
+      import('@/lib/api/organization').then(({ OrganizationService }) => {
+        OrganizationService.getById(orgId)
+          .then((res: any) => {
+            const data = res?.data || res;
+            if (data && (data.organizationUuid || data.uuid || data.id || data.name)) {
+              const orgObj = {
+                id: data.organizationUuid || data.uuid || String(data.id || orgId),
+                name: data.name || 'Workspace',
+                type: (data.type as any) || 'ORGANIZER',
+                logo: data.logo ? OrganizationService.getLogoUrl(data.logo) : undefined,
+                role: data.role || 'ADMIN',
+              };
+              setFetchedOrg(orgObj);
+            }
+          })
+          .catch((err) => console.warn('Could not fetch organization details:', err))
+          .finally(() => setLoadingOrg(false));
+      });
+    }
+  }, [orgId, organizations, fetchedOrg]);
+
+  // An organization route is authoritative.
+  const activeOrg = organizations.find((o) => o.id === orgId) || fetchedOrg || (loadingOrg ? null : {
+    id: orgId,
+    name: 'Workspace',
+    type: 'ORGANIZER' as any,
+    role: 'ADMIN',
+  });
 
   // Close mobile menu on scroll
   useEffect(() => {
@@ -126,7 +160,9 @@ export default function OrganizationLayout({ children }: { children: React.React
     };
   }, [isMenuOpen]);
 
-  if (!isMounted) return <div className="h-screen w-full bg-background animate-pulse" />;
+  if (!isMounted || (loadingOrg && !activeOrg)) {
+    return <div className="h-screen w-full bg-background animate-pulse flex items-center justify-center text-xs text-foreground/50">Loading workspace...</div>;
+  }
 
   if (!activeOrg) {
     return (

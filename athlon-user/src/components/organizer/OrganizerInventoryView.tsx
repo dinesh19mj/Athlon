@@ -51,6 +51,7 @@ import {
 import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 
 interface OrganizerInventoryViewProps {
   orgUuid: string;
@@ -353,10 +354,10 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
       {/* ========================================================================= */}
       {/* 📱 MOBILE VIEW (STYLISH, THEME-ALIGNED MOBILE FIRST INTERFACE)            */}
       {/* ========================================================================= */}
-      <div className="block md:hidden p-3.5 space-y-4 animate-in fade-in duration-300">
+      <div className="block md:hidden px-3.5 pb-3.5 space-y-4 animate-in fade-in duration-300 safe-header">
         
         {/* 1. Mobile Header App Bar */}
-        <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div
               className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md shrink-0 border"
@@ -390,22 +391,9 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
           {/* Quick Action Icons */}
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={() => openLogDrawer()}
-              className="p-2.5 rounded-xl border active:scale-95 transition-all shadow-sm flex items-center gap-1 text-xs font-bold"
-              style={{
-                backgroundColor: 'var(--athlon-surface)',
-                borderColor: 'var(--athlon-border)',
-                color: 'var(--athlon-text)',
-              }}
-              title="Audit Logs"
-            >
-              <History className="w-4 h-4 text-primary" />
-              <span className="text-[11px]">Logs</span>
-            </button>
-            <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="p-2.5 rounded-xl border active:scale-95 transition-all disabled:opacity-50"
+              className="p-2.5 rounded-xl border active:scale-95 transition-all disabled:opacity-50 hover:opacity-80 cursor-pointer shadow-xs"
               style={{
                 backgroundColor: 'var(--athlon-surface)',
                 borderColor: 'var(--athlon-border)',
@@ -446,7 +434,7 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
             )}
           </div>
 
-          {/* Big Number Counter & Quick Add Button */}
+          {/* Big Number Counter & Logs Action Button */}
           <div className="relative flex items-baseline justify-between gap-2">
             <div>
               <div className="text-3xl font-black text-primary tracking-tight font-mono">
@@ -460,14 +448,19 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
               </div>
             </div>
             
-            {canManage && (
-              <button
-                onClick={openAddModal}
-                className="px-4 py-2 rounded-xl text-black text-xs font-black tracking-wide flex items-center gap-1.5 hover:opacity-90 active:scale-95 shadow-md shadow-primary/25 shrink-0 transition-all bg-primary"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[3]" /> Add Asset
-              </button>
-            )}
+            <button
+              onClick={() => openLogDrawer()}
+              className="px-3.5 py-2 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center gap-1.5 hover:opacity-90 active:scale-95 shadow-xs shrink-0 transition-all cursor-pointer"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+                color: 'var(--athlon-text)',
+              }}
+              title="Audit Logs"
+            >
+              <History className="w-3.5 h-3.5 text-primary" />
+              <span>Logs</span>
+            </button>
           </div>
 
           {/* Interactive 3-Pill Stock Health Toggles */}
@@ -746,6 +739,16 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
               );
             })}
           </div>
+        )}
+
+        {/* Floating Quick Action Button on Mobile */}
+        {canManage && (
+          <Athlon3DFAB
+            onClick={openAddModal}
+            label="Add Asset"
+            title="Add Tournament Asset"
+            ariaLabel="Add Tournament Asset"
+          />
         )}
       </div>
 

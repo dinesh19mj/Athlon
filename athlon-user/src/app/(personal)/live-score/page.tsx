@@ -287,53 +287,84 @@ export default function LiveScorePage() {
   }, [displayedFinishedMatches]);
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-[#EF4444] selection:text-white">
+    <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-primary selection:text-black">
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - COMPACT & REFINED MOBILE EXPERIENCE
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24 overflow-y-auto">
         {/* Top Header */}
-        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5">
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
           <div className="flex items-center gap-2.5">
-            <Link href="/" className="p-1 -ml-1 text-foreground hover:text-red-500 transition-colors">
+            <Link href="/" className="p-1 -ml-1 text-foreground hover:text-primary transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-base font-black uppercase tracking-wider flex items-center gap-2">
-              <Radio className="w-4 h-4 text-red-500 animate-pulse" />
-              Match Center
+            <h1 className="text-sm font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+              <Radio className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+              <span>Match Center</span>
             </h1>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live Radar</span>
           </div>
         </header>
 
-        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-4 pt-3">
+        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-3.5 pt-3">
+          {/* Search Bar for Mobile */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search matches, players, courts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-8 py-2 rounded-xl text-xs font-medium border bg-surface/60 backdrop-blur-sm placeholder:text-foreground/40 focus:outline-none focus:border-primary transition-all"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground text-xs p-0.5"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
           {/* Segmented Control: Live Now vs Finished Results */}
           <div
-            className="flex p-1 rounded-xl border grid grid-cols-2 gap-1"
+            className="flex p-1 rounded-xl border grid grid-cols-2 gap-1 shadow-xs"
             style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
           >
             <button
               onClick={() => setActiveTab('live')}
-              className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'live'
-                  ? 'bg-red-500 text-white shadow-sm shadow-red-500/20'
+              className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 ${activeTab === 'live'
+                  ? parsedLiveMatches.length > 0
+                    ? 'bg-red-500 text-white shadow-sm shadow-red-500/20'
+                    : 'bg-surface text-foreground border shadow-xs'
                   : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+                }`}
+              style={{
+                borderColor: activeTab === 'live' && parsedLiveMatches.length === 0 ? 'var(--athlon-border)' : undefined,
+              }}
             >
               <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  parsedLiveMatches.length > 0 ? 'bg-white animate-pulse' : 'bg-foreground/30'
-                }`}
+                className={`w-1.5 h-1.5 rounded-full ${parsedLiveMatches.length > 0 ? 'bg-red-400 animate-pulse' : 'bg-foreground/30'
+                  }`}
               />
               <span>Live Now ({parsedLiveMatches.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('finished')}
-              className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                activeTab === 'finished'
+              className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 ${activeTab === 'finished'
                   ? 'bg-primary text-black shadow-sm shadow-primary/20'
                   : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
-              }`}
+                }`}
             >
               <Trophy className="w-3.5 h-3.5" />
               <span>Results ({parsedFinishedMatches.length})</span>
@@ -341,20 +372,20 @@ export default function LiveScorePage() {
           </div>
 
           {loading && (
-            <div className="py-16 text-center text-foreground/50">
-              <div className="w-7 h-7 border-3 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto mb-2.5" />
-              <p className="text-[11px] font-bold uppercase tracking-wider">Loading match center...</p>
+            <div className="py-12 text-center text-foreground/50">
+              <div className="w-7 h-7 border-3 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-2.5" />
+              <p className="text-[11px] font-bold uppercase tracking-wider">Connecting to Match Radar...</p>
             </div>
           )}
 
           {/* Mobile LIVE TAB */}
           {!loading && activeTab === 'live' && (
-            <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="space-y-3.5 animate-in fade-in duration-300">
               {/* Live Player Auctions List */}
               {liveAuctions.map((champ) => (
                 <section
                   key={champ.championshipUuid}
-                  className="rounded-2xl border p-4 shadow-lg space-y-3 relative overflow-hidden bg-gradient-to-br from-red-500/10 via-transparent to-transparent"
+                  className="rounded-2xl border p-3.5 shadow-md space-y-2.5 relative overflow-hidden bg-gradient-to-br from-red-500/10 via-transparent to-transparent"
                   style={{
                     backgroundColor: 'var(--athlon-card)',
                     borderColor: 'rgba(239, 68, 68, 0.4)',
@@ -366,26 +397,26 @@ export default function LiveScorePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                      <span className="text-red-500 font-black text-[11px] uppercase tracking-wider">LIVE PLAYER AUCTION</span>
+                      <span className="text-red-500 font-black text-[10.5px] uppercase tracking-wider">LIVE AUCTION FLOOR</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[9px] font-black uppercase">
+                    <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[8.5px] font-black uppercase">
                       BROADCASTING
                     </span>
                   </div>
 
                   <div>
                     <h3 className="text-sm font-black text-foreground tracking-tight">{champ.name}</h3>
-                    <p className="text-[11px] text-foreground/60 mt-0.5">
-                      {champ.location || champ.venue || 'Badminton Championship'} • Squad Floor Draft &amp; Live Franchise Bids
+                    <p className="text-[10.5px] text-foreground/60 mt-0.5">
+                      {champ.location || champ.venue || 'Badminton Championship'} • Squad Floor Draft &amp; Live Bids
                     </p>
                   </div>
 
                   <Link
                     href={`/home/team-championship/${champ.championshipUuid}/auction`}
-                    className="w-full py-2.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-md shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                    className="w-full py-2 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
                   >
                     <Gavel className="w-3.5 h-3.5" />
-                    <span>ENTER LIVE AUCTION FLOOR</span>
+                    <span>Enter Live Auction Floor</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </section>
@@ -393,27 +424,41 @@ export default function LiveScorePage() {
 
               {displayedLiveMatches.length === 0 && liveAuctions.length === 0 ? (
                 <div
-                  className="rounded-2xl border border-dashed p-8 text-center"
+                  className="rounded-2xl border p-6 text-center space-y-3 relative overflow-hidden shadow-xs"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <Radio className="w-8 h-8 text-foreground/25 mx-auto mb-2.5" />
-                  <p className="text-xs font-black text-foreground mb-1">No Active Live Matches</p>
-                  <p className="text-[11px] text-foreground/50 max-w-xs mx-auto mb-4">
-                    Live scores will update here in real-time when an umpire launches a match scoreboard.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('finished')}
-                    className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-foreground text-xs font-bold rounded-xl border border-foreground/10 transition-colors"
-                  >
-                    View Finished Matches
-                  </button>
+                  {/* Subtle pulsing background radar ring */}
+                  <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto relative">
+                    <Radio className="w-6 h-6 animate-pulse" />
+                    <span className="absolute inset-0 rounded-full border border-primary/30 animate-ping opacity-40" />
+                  </div>
+
+                  <div className="space-y-1 max-w-xs mx-auto">
+                    <p className="text-sm font-black text-foreground tracking-tight">No Active Live Matches</p>
+                    <p className="text-[11px] text-foreground/60 leading-relaxed">
+                      Court umpire scoreboards and live streams will broadcast here in real-time as matches start.
+                    </p>
+                  </div>
+
+                  {parsedFinishedMatches.length > 0 && (
+                    <div className="pt-1">
+                      <button
+                        onClick={() => setActiveTab('finished')}
+                        className="px-4 py-2 bg-primary text-black text-xs font-black rounded-xl shadow-md shadow-primary/20 hover:brightness-110 active:scale-95 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Trophy className="w-3.5 h-3.5" />
+                        <span>View {parsedFinishedMatches.length} Match Results</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3.5">
                   {displayedLiveMatches.map((match, idx) => (
                     <section
                       key={match.id || match.matchUuid || idx}
-                      className="rounded-2xl border p-4 shadow-md space-y-3 relative overflow-hidden"
+                      className="rounded-2xl border p-3.5 shadow-md space-y-2.5 relative overflow-hidden"
                       style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                     >
                       <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 animate-pulse" />
@@ -878,8 +923,8 @@ export default function LiveScorePage() {
                 <button
                   onClick={() => setActiveTab('live')}
                   className={`flex items-center gap-2 py-2 px-5 rounded-xl text-xs font-black transition-all ${activeTab === 'live'
-                      ? 'bg-red-500 text-white shadow-lg shadow-red-500/25 scale-[1.01]'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/25 scale-[1.01]'
+                    : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
                     }`}
                 >
                   <Radio className={`w-3.5 h-3.5 ${parsedLiveMatches.length > 0 ? 'animate-pulse' : ''}`} />
@@ -895,8 +940,8 @@ export default function LiveScorePage() {
                 <button
                   onClick={() => setActiveTab('finished')}
                   className={`flex items-center gap-2 py-2 px-5 rounded-xl text-xs font-black transition-all ${activeTab === 'finished'
-                      ? 'bg-primary text-black shadow-md shadow-primary/20 scale-[1.01]'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
+                    ? 'bg-primary text-black shadow-md shadow-primary/20 scale-[1.01]'
+                    : 'text-foreground/70 hover:text-foreground hover:bg-white/[0.04]'
                     }`}
                 >
                   <Trophy className="w-3.5 h-3.5" />

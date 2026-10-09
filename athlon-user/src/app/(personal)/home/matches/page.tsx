@@ -506,7 +506,7 @@ export default function PlayerMatchesPage() {
           TOP STICKY HEADER & TABS (Mobile & Desktop)
          ══════════════════════════════════════════════════════════════════════ */}
       <header
-        className="p-2.5 sm:p-4 md:px-8 md:py-5 border-b border-foreground/10 bg-surface/85 backdrop-blur-md sticky top-0 z-20 shadow-sm w-full max-w-full overflow-x-hidden"
+        className="p-2.5 sm:p-4 md:px-8 md:py-5 border-b border-foreground/10 bg-surface/85 backdrop-blur-md sticky top-0 z-20 shadow-sm w-full max-w-full overflow-x-hidden safe-header"
       >
         <div className="max-w-7xl mx-auto space-y-2 sm:space-y-3 w-full">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 w-full">

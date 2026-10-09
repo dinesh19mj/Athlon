@@ -519,7 +519,7 @@ export default function FacilitiesPage() {
 
       {/* ── STICKY COMPACT MOBILE HEADER ── */}
       <div
-        className="sticky top-0 z-30 px-4 py-3 border-b backdrop-blur-xl"
+        className="sticky top-0 z-30 px-4 py-3 border-b backdrop-blur-xl safe-header"
         style={{ backgroundColor: 'var(--athlon-sidebar)', borderColor: 'var(--athlon-border)' }}
       >
         <div className="flex items-center justify-between mb-2.5">

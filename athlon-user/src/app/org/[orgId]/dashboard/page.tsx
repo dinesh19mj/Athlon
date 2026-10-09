@@ -61,9 +61,11 @@ import { ClubFinanceService, FinanceSummary } from '@/lib/api/clubFinance';
 import { OrganizationService, OrganizationMemberResponse } from '@/lib/api/organization';
 import { ClubInventoryService, InventorySummary, ClubInventoryItem, AdjustStockPayload } from '@/lib/api/clubInventory';
 import { OrganizerInventoryService, OrganizerInventorySummary } from '@/lib/api/organizerInventory';
-import { TournamentService, Tournament } from '@/lib/api/tournaments';
+import { TournamentService, Tournament, RegistrationService, Registration, RegistrationPlayer } from '@/lib/api/tournaments';
 import { ClubMatchService, ClubMatch } from '@/lib/api/clubMatch';
 import { UserService } from '@/lib/api/user';
+import { useAuthStore } from '@/lib/store/useAuthStore';
+import { OrganizerRegistrationCard } from '@/components/organizer/OrganizerRegistrationCard';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
 import { CoachService, CoachDashboardSummary, CoachSchedule, CoachTrainee } from '@/lib/api/coach';
@@ -808,6 +810,133 @@ export default function OrganizationDashboard() {
   const [selectedCampusFilter, setSelectedCampusFilter] = useState('ALL');
   const [selectedSportFilter, setSelectedSportFilter] = useState('ALL');
 
+  const { userId: authUserId } = useAuthStore();
+  const currentUserId = authUserId || 1;
+
+  const [registrations, setRegistrations] = useState<Array<Registration & { tournamentName?: string; tournamentUuid?: string; sport?: string }>>([]);
+  const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
+  const [selectedRegFilter, setSelectedRegFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'PAID' | 'UNPAID' | 'REJECTED'>('ALL');
+  const [previewPhotoData, setPreviewPhotoData] = useState<{
+    url: string;
+    playerName: string;
+    teamName: string;
+    phone?: string;
+    regUuid: string;
+    status: string;
+  } | null>(null);
+
+  const loadRegistrationsForTournaments = async (tournList: Tournament[]) => {
+    try {
+      const regPromises = tournList.map(async (t) => {
+        const tId = t.tournamentId || (t as any).id;
+        if (!tId) return [];
+        try {
+          const list = await RegistrationService.getByTournament(Number(tId));
+          const resData = (list as any)?.data || list;
+          const validList: Registration[] = Array.isArray(resData) ? resData : [];
+          return validList.map((r) => ({
+            ...r,
+            tournamentName: (t as any).tournamentName || t.name,
+            tournamentUuid: t.tournamentUuid,
+            sport: t.sport,
+          }));
+        } catch {
+          return [];
+        }
+      });
+
+      const results = await Promise.all(regPromises);
+      const flattened = results.flat();
+      setRegistrations(flattened);
+
+      // Background lookup player photos
+      const phonesToFetch = new Set<string>();
+      flattened.forEach((r) => {
+        r.players?.forEach((p: RegistrationPlayer) => {
+          if (p.phoneNumber) {
+            const clean = p.phoneNumber.replace(/\D/g, '');
+            if (clean.length >= 10) phonesToFetch.add(clean.slice(-10));
+          }
+        });
+      });
+
+      const photoMap: Record<string, string> = {};
+      const fetchPhotoPromises = Array.from(phonesToFetch).map(async (phone) => {
+        try {
+          const u = await UserService.getUserByPhone(phone);
+          const userData = (u as any)?.data || u;
+          if (userData && (userData.photo || userData.avatar || userData.profilePic)) {
+            const pic = userData.photo || userData.avatar || userData.profilePic;
+            photoMap[phone] = pic.startsWith('http') || pic.startsWith('data:') ? pic : UserService.getPhotoUrl(pic);
+          }
+        } catch {
+          // Ignore
+        }
+      });
+      await Promise.allSettled(fetchPhotoPromises);
+      setPlayerPhotos((prev) => ({ ...prev, ...photoMap }));
+    } catch (err) {
+      console.error('Failed to load tournament registrations', err);
+    }
+  };
+
+  const handleApproveRegistration = async (regUuid: string) => {
+    try {
+      await RegistrationService.updateStatus(regUuid, 'APPROVED', Number(currentUserId));
+      setRegistrations((prev) =>
+        prev.map((r) => (r.registrationUuid === regUuid || r.uuid === regUuid ? { ...r, status: 'APPROVED' } : r))
+      );
+      setToastMessage('Registration approved successfully!');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) {
+      console.error('Failed to approve registration', error);
+      setToastMessage('Failed to approve registration');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  const handleRejectRegistration = async (regUuid: string) => {
+    try {
+      await RegistrationService.updateStatus(regUuid, 'REJECTED', Number(currentUserId));
+      setRegistrations((prev) =>
+        prev.map((r) => (r.registrationUuid === regUuid || r.uuid === regUuid ? { ...r, status: 'REJECTED' } : r))
+      );
+      setToastMessage('Registration rejected');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) {
+      console.error('Failed to reject registration', error);
+      setToastMessage('Failed to reject registration');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  const handlePaymentUpdate = async (regUuid: string, newStatus: 'PAID' | 'PENDING') => {
+    try {
+      await RegistrationService.updatePaymentStatus(regUuid, newStatus, Number(currentUserId));
+      setRegistrations((prev) =>
+        prev.map((r) => (r.registrationUuid === regUuid || r.uuid === regUuid ? { ...r, paymentStatus: newStatus } : r))
+      );
+      setToastMessage(`Payment status updated to ${newStatus}`);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) {
+      console.error('Failed to update payment status', error);
+      setToastMessage('Failed to update payment status');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  const filteredRegistrations = useMemo(() => {
+    return registrations.filter((r) => {
+      if (selectedRegFilter === 'ALL') return true;
+      if (selectedRegFilter === 'PENDING') return r.status === 'PENDING';
+      if (selectedRegFilter === 'APPROVED') return r.status === 'APPROVED';
+      if (selectedRegFilter === 'PAID') return r.paymentStatus === 'PAID';
+      if (selectedRegFilter === 'UNPAID') return r.paymentStatus !== 'PAID';
+      if (selectedRegFilter === 'REJECTED') return r.status === 'REJECTED';
+      return true;
+    });
+  }, [registrations, selectedRegFilter]);
+
   const [coachProfile, setCoachProfile] = useState<{
     experienceYears: number;
     certifications: string[];
@@ -1043,6 +1172,9 @@ export default function OrganizationDashboard() {
         if (tournRes.status === 'fulfilled') {
           const tList = Array.isArray(tournRes.value) ? tournRes.value : ((tournRes.value as any)?.data || []);
           setTournaments(tList);
+          if (tList.length > 0) {
+            loadRegistrationsForTournaments(tList);
+          }
         }
         if (acadRes.status === 'fulfilled' && acadRes.value) {
           setAcademyDashboard(acadRes.value as AcademyDashboardSummary);
@@ -1364,7 +1496,7 @@ export default function OrganizationDashboard() {
           id: `/org/${org.id}/centres`,
           label: 'Centres',
           shortLabel: 'Centres',
-          icon3d: 'facilities',
+          icon3d: 'centres',
           description: 'Campus branches & locations',
           icon: Building2,
           color: 'text-violet-400',
@@ -1912,14 +2044,9 @@ export default function OrganizationDashboard() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - COMPACT & REFINED DASHBOARD
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-24 overflow-y-auto">
-        {/* ─── 0. TOP-LEVEL APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
-        <div className="px-4 pt-0 pb-0 flex justify-center max-w-7xl mx-auto">
-          <AppModeSwitcher />
-        </div>
-
+      <div className="block md:hidden pb-24 overflow-y-auto safe-header">
         {/* HERO VIDEO CARD */}
-        <div className="px-4 relative z-10 mt-1.5 mb-3.5 max-w-7xl mx-auto">
+        <div className="px-4 relative z-10 mt-2 mb-3.5 max-w-7xl mx-auto">
           <div
             className="relative w-full h-[175px] sm:h-[200px] rounded-[20px] overflow-hidden border shadow-md flex items-center justify-center"
             style={{
@@ -2496,6 +2623,96 @@ export default function OrganizationDashboard() {
             })}
           </div>
         </div>
+
+        {/* ORGANIZER / TOURNAMENT REGISTRATION DESK (Mobile) */}
+        {(org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || tournaments.length > 0 || registrations.length > 0) && (
+          <div className="px-4 max-w-7xl mx-auto mt-4 space-y-3">
+            <div className="flex items-center justify-between pl-1 pr-1">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  <Trophy className="w-3.5 h-3.5" />
+                </div>
+                <h2 className="text-[11px] font-black text-foreground uppercase tracking-wider">
+                  Registered Teams
+                </h2>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-primary/15 text-primary border border-primary/25">
+                  {registrations.length} Entries
+                </span>
+              </div>
+              <Link
+                href={`/org/${org.id}/organizer`}
+                className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
+              >
+                <span>Full Desk</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-1">
+              {(['ALL', 'PENDING', 'APPROVED', 'UNPAID', 'PAID', 'REJECTED'] as const).map((filter) => {
+                const count =
+                  filter === 'ALL'
+                    ? registrations.length
+                    : filter === 'PENDING'
+                      ? registrations.filter((r) => r.status === 'PENDING').length
+                      : filter === 'APPROVED'
+                        ? registrations.filter((r) => r.status === 'APPROVED').length
+                        : filter === 'PAID'
+                          ? registrations.filter((r) => r.paymentStatus === 'PAID').length
+                          : filter === 'UNPAID'
+                            ? registrations.filter((r) => r.paymentStatus !== 'PAID').length
+                            : registrations.filter((r) => r.status === 'REJECTED').length;
+
+                return (
+                  <button
+                    key={filter}
+                    onClick={() => setSelectedRegFilter(filter)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 transition-all border ${selectedRegFilter === filter
+                        ? 'bg-primary text-black border-primary shadow-sm'
+                        : 'bg-surface border-border text-foreground/60 hover:text-foreground'
+                      }`}
+                  >
+                    {filter} {count > 0 && <span className="opacity-75">({count})</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {filteredRegistrations.length > 0 ? (
+              <div className="space-y-3">
+                {filteredRegistrations.slice(0, 15).map((reg, idx) => (
+                  <OrganizerRegistrationCard
+                    key={reg.registrationUuid || reg.uuid || `reg-mob-${idx}`}
+                    registration={reg}
+                    orgId={org.id}
+                    playerPhotos={playerPhotos}
+                    onApprove={handleApproveRegistration}
+                    onReject={handleRejectRegistration}
+                    onPaymentUpdate={handlePaymentUpdate}
+                    onPreviewPhoto={setPreviewPhotoData}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div
+                className="p-5 rounded-2xl border text-center space-y-2"
+                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              >
+                <Trophy className="w-7 h-7 text-foreground/30 mx-auto" />
+                <p className="text-xs font-bold text-foreground/70">
+                  {registrations.length === 0 ? 'No tournament registrations received yet' : `No ${selectedRegFilter.toLowerCase()} entries found`}
+                </p>
+                <Link
+                  href={`/org/${org.id}/tournaments/create`}
+                  className="text-[11px] font-bold text-primary hover:underline inline-block"
+                >
+                  + Host New Tournament
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* COACH SPECIFIC MOBILE SECTIONS */}
         {org.type === 'COACH' && (
@@ -3824,6 +4041,77 @@ export default function OrganizationDashboard() {
             </div>
           </section>
 
+          {/* ORGANIZER SPECIFIC TRACK: LIVE REGISTRATION DESK */}
+          {(org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || tournaments.length > 0 || registrations.length > 0) && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                  <div>
+                    <h2 className="text-lg font-black text-foreground">Live Tournament Registrations &amp; Entries</h2>
+                    <p className="text-xs text-foreground/50">
+                      {registrations.length} total entries received across all tournaments • Approve, collect payment &amp; verify player identity
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Filter Tabs */}
+                  <div className="flex items-center gap-1.5 p-1 rounded-2xl border bg-surface" style={{ borderColor: 'var(--athlon-border)' }}>
+                    {(['ALL', 'PENDING', 'APPROVED', 'UNPAID', 'PAID'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setSelectedRegFilter(tab)}
+                        className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${selectedRegFilter === tab
+                            ? 'bg-primary text-black shadow-sm'
+                            : 'text-foreground/60 hover:text-foreground'
+                          }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  <Link
+                    href={`/org/${org.id}/organizer`}
+                    className="px-4 py-2 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all shadow-md"
+                  >
+                    <span>Full Registration Console</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+
+              {filteredRegistrations.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredRegistrations.map((reg, idx) => (
+                    <OrganizerRegistrationCard
+                      key={reg.registrationUuid || reg.uuid || `desk-${idx}`}
+                      registration={reg}
+                      orgId={org.id}
+                      playerPhotos={playerPhotos}
+                      onApprove={handleApproveRegistration}
+                      onReject={handleRejectRegistration}
+                      onPaymentUpdate={handlePaymentUpdate}
+                      onPreviewPhoto={setPreviewPhotoData}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 rounded-[24px] border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                  <Trophy className="w-10 h-10 text-foreground/30 mx-auto" />
+                  <p className="text-sm font-bold text-foreground/70">No tournament registrations matching selected filter</p>
+                  <Link
+                    href={`/org/${org.id}/tournaments`}
+                    className="px-4 py-2 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5"
+                  >
+                    <span>View Tournaments</span>
+                  </Link>
+                </div>
+              )}
+            </section>
+          )}
+
           {/* 2. VENUE / COURT SPECIFIC TRACKS */}
           {(org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') ? (
             <>
@@ -5097,6 +5385,73 @@ export default function OrganizationDashboard() {
                 className="w-full py-1.5 text-center text-xs font-bold text-foreground/50 hover:text-foreground transition-colors cursor-pointer"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Athlete Photo Verification Modal */}
+      {previewPhotoData && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setPreviewPhotoData(null)}
+        >
+          <div
+            className="relative max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl border bg-card p-6 space-y-4 text-center"
+            style={{ borderColor: 'var(--athlon-border)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-primary">
+                Athlete Identity Check
+              </span>
+              <button
+                onClick={() => setPreviewPhotoData(null)}
+                className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-foreground/70 hover:text-foreground hover:scale-105 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative w-48 h-48 mx-auto rounded-2xl overflow-hidden border-2 border-primary/30 shadow-lg bg-surface/50 flex items-center justify-center">
+              <img
+                src={previewPhotoData.url}
+                alt={previewPhotoData.playerName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-foreground">
+                {previewPhotoData.playerName}
+              </h3>
+              <p className="text-xs font-semibold text-foreground/60 mt-0.5">
+                {previewPhotoData.teamName} {previewPhotoData.phone ? `• ${previewPhotoData.phone}` : ''}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={() => {
+                  handleApproveRegistration(previewPhotoData.regUuid);
+                  setPreviewPhotoData(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Approve Entry</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  handleRejectRegistration(previewPhotoData.regUuid);
+                  setPreviewPhotoData(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 border border-rose-500/30 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <X className="w-4 h-4" />
+                <span>Reject</span>
               </button>
             </div>
           </div>

@@ -43,13 +43,16 @@ import {
   Search,
   Filter,
   Vote,
+  Megaphone,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore, Organization } from '@/lib/store/useWorkspaceStore';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
+import { TournamentAnnouncementService, TournamentAnnouncement } from '@/lib/api/tournamentAnnouncement';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
+import { PublicAnnouncementCard } from '@/components/tournaments/PublicAnnouncementCard';
 import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
 import { CoachMarketplaceCard } from '@/components/marketplace/CoachMarketplaceCard';
 import { VenueMarketplaceCard } from '@/components/marketplace/VenueMarketplaceCard';
@@ -123,6 +126,7 @@ export default function PersonalHomePage() {
   const [activeRole, setActiveRole] = useState<'PLAYER' | string>('PLAYER');
 
   const [publicTournaments, setPublicTournaments] = useState<Tournament[]>([]);
+  const [publicAnnouncements, setPublicAnnouncements] = useState<TournamentAnnouncement[]>([]);
   const [publicChampionships, setPublicChampionships] = useState<TeamChampionship[]>([]);
   const [publicAcademies, setPublicAcademies] = useState<any[]>([]);
   const [publicCoaches, setPublicCoaches] = useState<any[]>([]);
@@ -143,6 +147,7 @@ export default function PersonalHomePage() {
   const liveScrollRef = useRef<HTMLDivElement>(null);
   const champsScrollRef = useRef<HTMLDivElement>(null);
   const tournsScrollRef = useRef<HTMLDivElement>(null);
+  const announcementsScrollRef = useRef<HTMLDivElement>(null);
   const sessionsScrollRef = useRef<HTMLDivElement>(null);
   const mobileSessionsScrollRef = useRef<HTMLDivElement>(null);
   const pollsScrollRef = useRef<HTMLDivElement>(null);
@@ -165,6 +170,10 @@ export default function PersonalHomePage() {
   useEffect(() => {
     TournamentService.getAll()
       .then((res) => setPublicTournaments(res.data.filter((t: Tournament) => t.visibility === 'PUBLIC')))
+      .catch(() => { });
+
+    TournamentAnnouncementService.getAll()
+      .then((res) => setPublicAnnouncements(res?.data || []))
       .catch(() => { });
 
     // Public Academies, Coaches & Venues with event-driven real-time sync
@@ -709,6 +718,18 @@ export default function PersonalHomePage() {
     });
   }, [publicTournaments, selectedSport, selectedPlace, searchQuery]);
 
+  const filteredAnnouncements = useMemo(() => {
+    return publicAnnouncements.filter((a) => {
+      const matchesSport = matchSport(a.sport, selectedSport);
+      const matchesPlace = matchPlace({ location: a.venueName, city: a.city, state: a.state }, selectedPlace);
+      const matchesQuery = matchSearchQuery(
+        `${a.title || ''} ${a.sport || ''} ${a.venueName || ''} ${a.city || ''} ${a.district || ''} ${a.state || ''} ${a.organizerName || ''} ${a.content || ''}`,
+        searchQuery
+      );
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [publicAnnouncements, selectedSport, selectedPlace, searchQuery]);
+
   const filteredChampionships = useMemo(() => {
     return publicChampionships.filter((c) => {
       const matchesSport = matchSport(c.sport, selectedSport);
@@ -854,6 +875,7 @@ export default function PersonalHomePage() {
 
   const totalFilteredMatches =
     filteredTournaments.length +
+    filteredAnnouncements.length +
     filteredChampionships.length +
     filteredVenues.length +
     filteredAcademies.length +
@@ -870,7 +892,7 @@ export default function PersonalHomePage() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden h-[calc(100vh-64px)] overflow-y-auto hide-scrollbar overscroll-contain max-w-full pb-8">
+      <div className="block md:hidden w-full max-w-full pb-8 safe-header">
         {/* ─── 0. TOP NOTCH APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
         <div className="px-4 pt-0 pb-0 flex justify-center">
           <AppModeSwitcher />
@@ -1808,6 +1830,37 @@ export default function PersonalHomePage() {
               </div>
             )}
 
+            {/* Tournament Announcements & Flyers */}
+            {filteredAnnouncements.length > 0 && (
+              <div className="px-4 pb-4 pt-1 overflow-hidden">
+                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Megaphone className="w-3.5 h-3.5 text-amber-500" />
+                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
+                      Announcements &amp; Flyers ({filteredAnnouncements.length})
+                    </h2>
+                  </div>
+                  <Link
+                    href="/tournaments"
+                    className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
+                  >
+                    View All <ChevronRight className="w-3 h-3 ml-0.5" />
+                  </Link>
+                </div>
+
+                <div className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                  {filteredAnnouncements.map((a) => (
+                    <div
+                      key={a.uuid || a.id}
+                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[300px] md:w-[320px] max-w-[340px]"
+                    >
+                      <PublicAnnouncementCard announcement={a} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* ── MOBILE SECTION: COMMUNITY GAME SESSIONS ── */}
             {filteredSessions.length > 0 && (
               <div className="px-4 pb-4 pt-1 overflow-hidden">
@@ -1845,41 +1898,7 @@ export default function PersonalHomePage() {
               </div>
             )}
 
-            {/* ── MOBILE SECTION: ACTIVE MEMBER POLLS & VOTES ── */}
-            {memberPolls.length > 0 && (
-              <div className="px-4 pb-4 pt-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-2.5 pl-0.5 pr-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <Vote className="w-3.5 h-3.5 text-primary" />
-                    <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">
-                      Active Member Polls &amp; Votes ({memberPolls.length})
-                    </h2>
-                  </div>
-                  <span className="text-[9.5px] font-bold text-primary/80 uppercase tracking-wider">
-                    1-Tap Vote
-                  </span>
-                </div>
 
-                <div
-                  ref={mobilePollsScrollRef}
-                  className="flex items-stretch gap-3 overflow-x-auto pb-2 snap-x scroll-px-4 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0"
-                >
-                  {memberPolls.map(({ poll, communityName }) => (
-                    <div
-                      key={poll.pollId}
-                      className="snap-start shrink-0 w-[calc(100vw-2.5rem)] sm:w-[320px] max-w-[350px] flex"
-                    >
-                      <CommunityPollCard
-                        poll={poll}
-                        communityName={communityName}
-                        onVote={handleMemberPollVote}
-                        className="w-full h-full shadow-md"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Action Required: Pending Lineups */}
             {pendingLineups.length > 0 && (
@@ -2819,6 +2838,54 @@ export default function PersonalHomePage() {
             </section>
           )}
 
+          {/* ── SECTION 4.1: 📢 TOURNAMENT ANNOUNCEMENTS & FLYERS (HORIZONTAL SCROLL) ── */}
+          {filteredAnnouncements.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Megaphone className="w-5 h-5 text-amber-500" />
+                  <div>
+                    <h2 className="text-base font-black text-foreground">
+                      Tournament Announcements &amp; Flyers ({filteredAnnouncements.length})
+                    </h2>
+                    <p className="text-xs text-foreground/50">Direct organizer announcements, community flyers &amp; open registrations</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link href="/tournaments" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                    View All ({filteredAnnouncements.length}) →
+                  </Link>
+                  <button
+                    onClick={() => scrollContainer(announcementsScrollRef, 'left')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollContainer(announcementsScrollRef, 'right')}
+                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                ref={announcementsScrollRef}
+                className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+              >
+                {filteredAnnouncements.map((a) => (
+                  <div key={a.uuid || a.id} className="snap-start shrink-0 w-[360px]">
+                    <PublicAnnouncementCard announcement={a} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* ── SECTION: 🏸 WEEKLY "LET'S PLAY" COMMUNITY SESSIONS (HORIZONTAL SCROLL) ── */}
           {filteredSessions.length > 0 && (
             <section className="space-y-4">
@@ -2872,57 +2939,7 @@ export default function PersonalHomePage() {
             </section>
           )}
 
-          {/* ── SECTION: 🗳️ ACTIVE MEMBER POLLS & VOTES (HORIZONTAL SCROLL) ── */}
-          {memberPolls.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Vote className="w-5 h-5 text-primary" />
-                  <div>
-                    <h2 className="text-base font-black text-foreground">
-                      Active Member Polls &amp; Votes ({memberPolls.length})
-                    </h2>
-                    <p className="text-xs text-foreground/50">
-                      Shape decisions, pick match days &amp; cast votes for communities you belong to!
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => scrollContainer(pollsScrollRef, 'left')}
-                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
-                    style={{ borderColor: 'var(--athlon-border)' }}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => scrollContainer(pollsScrollRef, 'right')}
-                    className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
-                    style={{ borderColor: 'var(--athlon-border)' }}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div
-                ref={pollsScrollRef}
-                className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-              >
-                {memberPolls.map(({ poll, communityName }) => (
-                  <div key={poll.pollId} className="snap-start shrink-0 w-[350px]">
-                    <CommunityPollCard
-                      poll={poll}
-                      communityName={communityName}
-                      onVote={handleMemberPollVote}
-                      className="w-full h-full shadow-md"
-                    />
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
 
           {/* ── SECTION 4.4: 🏟️ FEATURED SPORTS VENUES & TURFS (HORIZONTAL SCROLL) ── */}
           {filteredVenues.length > 0 && (

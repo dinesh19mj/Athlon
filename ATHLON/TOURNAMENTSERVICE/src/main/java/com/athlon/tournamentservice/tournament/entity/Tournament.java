@@ -69,11 +69,20 @@ public class Tournament {
 	@Column(name = "category")
 	private String category;
 
-	@Column(name = "playerscount")
-	private Integer playersCount;
+	@Column(name = "teamcount")
+	private Integer teamCount;
 
 	@Column(name = "location")
 	private String location;
+
+	@Column(name = "state")
+	private String state;
+
+	@Column(name = "district")
+	private String district;
+
+	@Column(name = "city")
+	private String city;
 
 	@Column(name = "maplink")
 	private String mapLink;
@@ -121,7 +130,7 @@ public class Tournament {
 
 	public Tournament(String name, String description, LocalDateTime startDate, LocalDateTime endDate, Long organizerId,
 			UUID organizerUuid, Long userId, UUID userUuid, String tournamentType, String sport, String matchFormat,
-			String visibility, String category, Integer playersCount, String location, String mapLink,
+			String visibility, String category, Integer teamCount, String location, String mapLink,
 			String contactPhone, Double registrationFees, String poster, String status, Long createdBy) {
 
 		this.name = name;
@@ -137,7 +146,7 @@ public class Tournament {
 		this.matchFormat = matchFormat;
 		this.visibility = visibility;
 		this.category = category;
-		this.playersCount = playersCount;
+		this.teamCount = teamCount;
 		this.location = location;
 		this.mapLink = mapLink;
 		this.contactPhone = contactPhone;
@@ -277,12 +286,20 @@ public class Tournament {
 		this.matchFormat = matchFormat;
 	}
 
+	public Integer getTeamCount() {
+		return teamCount;
+	}
+
+	public void setTeamCount(Integer teamCount) {
+		this.teamCount = teamCount;
+	}
+
 	public Integer getPlayersCount() {
-		return playersCount;
+		return teamCount;
 	}
 
 	public void setPlayersCount(Integer playersCount) {
-		this.playersCount = playersCount;
+		this.teamCount = playersCount;
 	}
 
 	public void setCreatedAt(LocalDateTime createdAt) {
@@ -315,6 +332,30 @@ public class Tournament {
 
 	public void setLocation(String location) {
 		this.location = location;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public String getDistrict() {
+		return district;
+	}
+
+	public void setDistrict(String district) {
+		this.district = district;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
 	}
 
 	public String getMapLink() {
@@ -440,7 +481,7 @@ public class Tournament {
 	public String toString() {
 		return "Tournament{" + "tournamentId=" + tournamentId + ", tournamentUuid=" + tournamentUuid + ", name='" + name
 				+ '\'' + ", tournamentType='" + tournamentType + '\'' + ", sport='" + sport + '\'' + ", category='"
-				+ category + '\'' + ", matchFormat='" + matchFormat + '\'' + ", playersCount=" + playersCount
+				+ category + '\'' + ", matchFormat='" + matchFormat + '\'' + ", teamCount=" + teamCount
 				+ ", organizerId=" + organizerId + ", organizerUuid=" + organizerUuid + ", userId=" + userId
 				+ ", userUuid=" + userUuid + ", visibility='" + visibility + '\'' + ", location='" + location + '\''
 				+ ", contactPhone='" + contactPhone + '\'' + ", registrationFees=" + registrationFees + ", status='"

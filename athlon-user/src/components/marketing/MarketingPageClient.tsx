@@ -33,13 +33,16 @@ import {
   UserCheck,
   Compass,
   Users,
+  Megaphone,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { ScoreService, LiveScore, isTournamentScore } from '@/lib/api/scores';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
+import { TournamentAnnouncementService, TournamentAnnouncement } from '@/lib/api/tournamentAnnouncement';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
+import { PublicAnnouncementCard } from '@/components/tournaments/PublicAnnouncementCard';
 import { VenueMarketplaceCard } from '@/components/marketplace/VenueMarketplaceCard';
 import { AcademyMarketplaceCard } from '@/components/marketplace/AcademyMarketplaceCard';
 import { CoachMarketplaceCard } from '@/components/marketplace/CoachMarketplaceCard';
@@ -85,6 +88,7 @@ export function MarketingPageClient() {
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [finishedScores, setFinishedScores] = useState<LiveScore[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [announcements, setAnnouncements] = useState<TournamentAnnouncement[]>([]);
   const [championships, setChampionships] = useState<TeamChampionship[]>([]);
   const [publicVenues, setPublicVenues] = useState<any[]>([]);
   const [publicAcademies, setPublicAcademies] = useState<any[]>([]);
@@ -110,6 +114,7 @@ export function MarketingPageClient() {
   const desktopCoachesRef = useRef<HTMLDivElement>(null);
   const desktopChampionshipsRef = useRef<HTMLDivElement>(null);
   const desktopTournamentsRef = useRef<HTMLDivElement>(null);
+  const desktopAnnouncementsRef = useRef<HTMLDivElement>(null);
   const desktopFinishedRef = useRef<HTMLDivElement>(null);
 
   const scrollContainer = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
@@ -160,6 +165,14 @@ export function MarketingPageClient() {
       })
       .catch(() => { })
       .finally(() => setLoading(false));
+
+    // 2.1 Fetch public tournament announcements
+    TournamentAnnouncementService.getAll()
+      .then((res) => {
+        const list = res?.data || [];
+        setAnnouncements(list);
+      })
+      .catch(() => { });
 
     // 3. Fetch public team championships
     const loadPublicChampionships = () => {
@@ -371,6 +384,18 @@ export function MarketingPageClient() {
     });
   }, [tournaments, selectedSport, selectedPlace, searchQuery]);
 
+  const filteredAnnouncements = useMemo(() => {
+    return announcements.filter((a) => {
+      const matchesSport = matchSport(a.sport, selectedSport);
+      const matchesPlace = matchPlace({ location: a.venueName, city: a.city, state: a.state }, selectedPlace);
+      const matchesQuery = matchSearchQuery(
+        `${a.title || ''} ${a.sport || ''} ${a.venueName || ''} ${a.city || ''} ${a.district || ''} ${a.state || ''} ${a.organizerName || ''} ${a.content || ''}`,
+        searchQuery
+      );
+      return matchesSport && matchesPlace && matchesQuery;
+    });
+  }, [announcements, selectedSport, selectedPlace, searchQuery]);
+
   const filteredChampionships = useMemo(() => {
     return championships.filter((c) => {
       const matchesSport = matchSport(c.sport, selectedSport);
@@ -457,6 +482,7 @@ export function MarketingPageClient() {
 
   const totalResults =
     filteredTournaments.length +
+    filteredAnnouncements.length +
     filteredChampionships.length +
     filteredVenues.length +
     filteredAcademies.length +
@@ -479,9 +505,9 @@ export function MarketingPageClient() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (hidden on md and above)
           ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden h-full overflow-y-auto overscroll-none touch-pan-y max-w-full pb-28">
+      <div className="block md:hidden h-full overflow-y-auto overscroll-none touch-pan-y max-w-full pb-28 pt-2.5">
         {/* ─── Top-Level App Mode Switcher (ATHLON ↔ MARKET) ─── */}
-        <div className="w-full max-w-lg mx-auto px-4 pt-0 pb-0 flex justify-center">
+        <div className="w-full max-w-lg mx-auto px-4 pt-1 pb-1 flex justify-center">
           <AppModeSwitcher />
         </div>
 
@@ -792,14 +818,14 @@ export function MarketingPageClient() {
 
               {/* 2. Bold Hero Typography */}
               <div className="space-y-1">
-                <h1 className="text-[23px] font-black leading-[1.12] tracking-tight uppercase text-foreground">
+                <h1 className="text-[19px] sm:text-[21px] font-black leading-[1.14] tracking-tight uppercase text-foreground">
                   <span>Compete Today.</span>
                   <br />
                   <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">
                     Champion Tomorrow.
                   </span>
                 </h1>
-                <p className="text-[11.5px] text-text-secondary leading-relaxed font-medium pt-0.5">
+                <p className="text-[11px] text-text-secondary leading-relaxed font-medium pt-0.5">
                   Discover tournaments, reserve courts, and track live match scoring instantly.
                 </p>
               </div>
@@ -808,31 +834,31 @@ export function MarketingPageClient() {
               <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <Link
                   href="/tournaments"
-                  className="flex items-center justify-center gap-1.5 text-[11px] font-black px-4 py-3 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-md tracking-wider uppercase"
+                  className="flex items-center justify-center gap-1.5 text-[9.5px] font-bold px-3 py-2.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md tracking-wider uppercase"
                   style={{
                     backgroundColor: 'var(--athlon-primary)',
                     color: 'var(--athlon-primary-foreground)',
-                    boxShadow: '0 6px 20px var(--athlon-primary-glow)',
+                    boxShadow: '0 4px 16px var(--athlon-primary-glow)',
                   }}
                 >
-                  <Trophy className="w-3.5 h-3.5" strokeWidth={2.5} style={{ color: 'var(--athlon-primary-foreground)' }} />
+                  <Trophy className="w-3.5 h-3.5" strokeWidth={2.2} style={{ color: 'var(--athlon-primary-foreground)' }} />
                   <span>Tournaments</span>
                 </Link>
                 <Link
                   href="/venues"
-                  className="flex items-center justify-center gap-1.5 border text-[11px] font-black px-4 py-3 rounded-2xl active:scale-95 transition-all shadow-sm tracking-wider uppercase backdrop-blur-md"
+                  className="flex items-center justify-center gap-1.5 border text-[9.5px] font-bold px-3 py-2.5 rounded-xl active:scale-95 transition-all shadow-sm tracking-wider uppercase backdrop-blur-md"
                   style={{
                     backgroundColor: 'var(--athlon-surface)',
                     borderColor: 'var(--athlon-border)',
                     color: 'var(--athlon-text)',
                   }}
                 >
-                  <Building2 className="w-3.5 h-3.5 text-primary" strokeWidth={2.5} />
+                  <Building2 className="w-3.5 h-3.5 text-primary" strokeWidth={2.2} />
                   <span>Book Venues</span>
                 </Link>
               </div>
 
-              {/* 4. Live Telemetry Strip */}
+              {/* 4. Live Telemetry Strip with Dynamic Counts */}
               <div
                 className="grid grid-cols-3 divide-x rounded-2xl p-2.5 mt-1 border backdrop-blur-md"
                 style={{
@@ -840,24 +866,51 @@ export function MarketingPageClient() {
                   borderColor: 'var(--athlon-border)',
                 }}
               >
-                <div className="flex flex-col items-center justify-center text-center px-1" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <span className="text-xs font-black text-foreground font-mono leading-none">500+</span>
+                <Link
+                  href="/tournaments"
+                  className="flex flex-col items-center justify-center text-center px-1 transition-opacity active:opacity-70"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <span className="text-xs font-black text-foreground font-mono leading-none">
+                    {loading ? '...' : (tournaments.length + championships.length)}
+                  </span>
                   <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
                     Events
                   </span>
-                </div>
-                <div className="flex flex-col items-center justify-center text-center px-1" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <span className="text-xs font-black text-primary font-mono leading-none">120+</span>
+                </Link>
+
+                <Link
+                  href="/venues"
+                  className="flex flex-col items-center justify-center text-center px-1 transition-opacity active:opacity-70"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <span className="text-xs font-black text-primary font-mono leading-none">
+                    {loading ? '...' : publicVenues.length}
+                  </span>
                   <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
                     Venues
                   </span>
-                </div>
-                <div className="flex flex-col items-center justify-center text-center px-1" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none">Live</span>
+                </Link>
+
+                <Link
+                  href="/live-score"
+                  className="flex flex-col items-center justify-center text-center px-1 transition-opacity active:opacity-70"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  {liveScores.length > 0 ? (
+                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <span>{liveScores.length} Live</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs font-black text-foreground/60 font-mono leading-none">
+                      0 Live
+                    </span>
+                  )}
                   <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
                     Scoring
                   </span>
-                </div>
+                </Link>
               </div>
             </div>
           </section>
@@ -946,14 +999,14 @@ export function MarketingPageClient() {
               {/* ── MOBILE SECTION 1: LIVE PLAYER AUCTIONS ── */}
               {liveAuctionChampionships.length > 0 && (
                 <section className="pt-1">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground">
                         Live Player Auctions ({liveAuctionChampionships.length})
                       </h2>
                     </div>
-                    <span className="text-[10px] font-black uppercase text-red-400">
+                    <span className="text-[9.5px] font-bold uppercase text-red-400">
                       🔴 Live Bids
                     </span>
                   </div>
@@ -978,10 +1031,10 @@ export function MarketingPageClient() {
                         </div>
 
                         <div className="space-y-1">
-                          <h3 className="text-base font-black text-foreground tracking-tight line-clamp-1">
+                          <h3 className="text-xs font-bold text-foreground tracking-tight line-clamp-1">
                             {champ.name}
                           </h3>
-                          <p className="text-xs text-foreground/60 line-clamp-1">
+                          <p className="text-[11px] text-foreground/60 line-clamp-1">
                             {champ.location || champ.venue || 'Arena'} • Live Franchise Draft Floor
                           </p>
                         </div>
@@ -996,11 +1049,11 @@ export function MarketingPageClient() {
 
                         <Link
                           href={`/home/team-championship/${champ.championshipUuid}/auction`}
-                          className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
+                          className="w-full py-2.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all"
                         >
-                          <Gavel className="w-4 h-4" />
+                          <Gavel className="w-3.5 h-3.5" />
                           <span>ENTER AUCTION ARENA</span>
-                          <ArrowRight className="w-4 h-4" />
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
                     ))}
@@ -1011,15 +1064,15 @@ export function MarketingPageClient() {
               {/* ── MOBILE SECTION 2: LIVE MATCH ARENA ── */}
               {filteredLiveScores.length > 0 && (
                 <section className="pt-1">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground">
                         Live Match Arena ({filteredLiveScores.length})
                       </h2>
                     </div>
-                    <Link href="/live-score" className="text-xs font-bold text-red-400 hover:underline flex items-center gap-0.5">
-                      Live Scores <ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/live-score" className="text-[11px] font-semibold text-red-400 hover:underline flex items-center gap-0.5">
+                      Live Scores <ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -1057,7 +1110,7 @@ export function MarketingPageClient() {
                           </div>
 
                           <div className="space-y-1 relative z-10">
-                            <h3 className="text-xs font-bold text-primary uppercase tracking-wider truncate">
+                            <h3 className="text-[11px] font-bold text-primary uppercase tracking-wider truncate">
                               {mTourn} • {mCat}
                             </h3>
                           </div>
@@ -1089,11 +1142,11 @@ export function MarketingPageClient() {
 
                           <Link
                             href={`/live-score/${score.matchUuid}`}
-                            className="w-full py-3 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all relative z-10"
+                            className="w-full py-2.5 bg-gradient-to-r from-red-500 via-rose-500 to-primary text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/25 hover:brightness-110 active:scale-95 transition-all relative z-10"
                           >
-                            <Tv className="w-4 h-4" />
+                            <Tv className="w-3.5 h-3.5" />
                             <span>WATCH LIVE SCORESHEET</span>
-                            <ArrowRight className="w-4 h-4" />
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
                       );
@@ -1104,19 +1157,19 @@ export function MarketingPageClient() {
 
               {/* ── MOBILE SECTION: WEEKLY COMMUNITY SESSIONS ── */}
               {filteredSessions.length > 0 && (
-                <section className="space-y-3 pt-1">
+                <section className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-primary" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <span>Community Sessions</span>
-                        <span className="text-[10.5px] font-mono text-primary font-extrabold bg-primary/10 px-2 py-0.2 rounded-full">
+                        <span className="text-[9.5px] font-mono text-primary font-bold bg-primary/10 px-1.5 py-0.2 rounded-full">
                           ({filteredSessions.length})
                         </span>
                       </h2>
                     </div>
-                    <Link href="/login?redirect=/home" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-                      Explore<ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/login?redirect=/home" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      Explore<ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -1142,19 +1195,19 @@ export function MarketingPageClient() {
 
               {/* ── MOBILE SECTION 3: FEATURED SPORTS VENUES & TURFS ── */}
               {filteredVenues.length > 0 && (
-                <section className="space-y-3 pt-1">
+                <section className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-primary" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <span>Book Courts &amp; Turfs</span>
-                        <span className="text-[10.5px] font-mono text-primary font-extrabold bg-primary/10 px-2 py-0.2 rounded-full">
+                        <span className="text-[9.5px] font-mono text-primary font-bold bg-primary/10 px-1.5 py-0.2 rounded-full">
                           ({filteredVenues.length})
                         </span>
                       </h2>
                     </div>
-                    <Link href="/venues" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-                      Explore<ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/venues" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      Explore<ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -1176,19 +1229,19 @@ export function MarketingPageClient() {
 
               {/* ── MOBILE SECTION 4: FEATURED SPORTS ACADEMIES & TRAINING CENTERS ── */}
               {filteredAcademies.length > 0 && (
-                <section className="space-y-3 pt-1">
+                <section className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4 text-emerald-400" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <span>Training Academies</span>
-                        <span className="text-[10.5px] font-mono text-emerald-400 font-extrabold bg-emerald-500/10 px-2 py-0.2 rounded-full">
+                        <span className="text-[9.5px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded-full">
                           ({filteredAcademies.length})
                         </span>
                       </h2>
                     </div>
-                    <Link href="/academies" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-                      Explore<ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/academies" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      Explore<ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -1210,19 +1263,19 @@ export function MarketingPageClient() {
 
               {/* ── MOBILE SECTION 5: PROFESSIONAL COACHES & MENTORS ── */}
               {filteredCoaches.length > 0 && (
-                <section className="space-y-3 pt-1">
+                <section className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="w-4 h-4 text-amber-400" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <span>Professional Coaches</span>
-                        <span className="text-[10.5px] font-mono text-amber-400 font-extrabold bg-amber-500/10 px-2 py-0.2 rounded-full">
+                        <span className="text-[9.5px] font-mono text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.2 rounded-full">
                           ({filteredCoaches.length})
                         </span>
                       </h2>
                     </div>
-                    <Link href="/coaches" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-                      Explore<ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/coaches" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      Explore<ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -1244,16 +1297,16 @@ export function MarketingPageClient() {
 
               {/* Team Championships Carousel */}
               {filteredChampionships.length > 0 && (
-                <section className="space-y-3 pt-1">
+                <section className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-primary" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-primary" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground">
                         Team Championships ({filteredChampionships.length})
                       </h2>
                     </div>
-                    <Link href="/tournaments" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-                      View All <ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/tournaments" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      View All <ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -1272,16 +1325,16 @@ export function MarketingPageClient() {
 
               {/* Tournaments Carousel */}
               {filteredTournaments.length > 0 && (
-                <section className="space-y-3 pt-1">
+                <section className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-primary" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-primary" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground">
                         Tournaments ({filteredTournaments.length})
                       </h2>
                     </div>
-                    <Link href="/tournaments" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-                      View All <ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/tournaments" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      View All <ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -1298,21 +1351,49 @@ export function MarketingPageClient() {
                 </section>
               )}
 
+              {/* Tournament Announcements / Flyers Carousel */}
+              {filteredAnnouncements.length > 0 && (
+                <section className="space-y-2.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Megaphone className="w-3.5 h-3.5 text-amber-500" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground">
+                        Announcements &amp; Flyers ({filteredAnnouncements.length})
+                      </h2>
+                    </div>
+                    <Link href="/tournaments" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      View All <ChevronRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+
+                  <div className="flex items-stretch gap-4 overflow-x-auto pb-4 snap-x scroll-px-6 hide-scrollbar -mx-4 px-4">
+                    {filteredAnnouncements.map((announcement) => (
+                      <div
+                        key={announcement.uuid || announcement.id}
+                        className="snap-start shrink-0 w-[calc(100vw-3rem)] sm:w-[320px] md:w-[340px] max-w-[360px]"
+                      >
+                        <PublicAnnouncementCard announcement={announcement} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* ── MOBILE SECTION: RECENT MATCH RESULTS ── */}
               {filteredFinishedScores.length > 0 && (
-                <section className="space-y-3 pt-1">
+                <section className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-primary" />
-                      <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                      <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                         <span>Recent Match Results</span>
-                        <span className="text-[10.5px] font-mono text-primary font-extrabold bg-primary/10 border border-primary/20 px-2 py-0.2 rounded-full">
+                        <span className="text-[9.5px] font-mono text-primary font-bold bg-primary/10 border border-primary/20 px-1.5 py-0.2 rounded-full">
                           ({filteredFinishedScores.length})
                         </span>
                       </h2>
                     </div>
-                    <Link href="/live-score" className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5">
-                      View All <ChevronRight className="w-3.5 h-3.5" />
+                    <Link href="/live-score" className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5">
+                      View All <ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
 
@@ -2326,6 +2407,60 @@ export function MarketingPageClient() {
                         className="snap-start shrink-0 w-[360px] lg:w-[380px]"
                       >
                         <PublicTournamentCard tournament={tournament} hrefPrefix="/tournaments" />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ── SECTION 6.1: TOURNAMENT ANNOUNCEMENTS & FLYERS SHOWCASE ── */}
+              {filteredAnnouncements.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <div className="flex items-center gap-2">
+                      <Megaphone className="w-5 h-5 text-amber-500" />
+                      <h2 className="text-lg font-black text-foreground">
+                        Tournament Flyers &amp; Announcements ({filteredAnnouncements.length})
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href="/tournaments"
+                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        View All <ChevronRight className="w-4 h-4" />
+                      </Link>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => scrollContainer(desktopAnnouncementsRef, 'left')}
+                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                          style={{ borderColor: 'var(--athlon-border)' }}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => scrollContainer(desktopAnnouncementsRef, 'right')}
+                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                          style={{ borderColor: 'var(--athlon-border)' }}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    ref={desktopAnnouncementsRef}
+                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-6 hide-scrollbar"
+                  >
+                    {filteredAnnouncements.map((announcement) => (
+                      <div
+                        key={announcement.uuid || announcement.id}
+                        className="snap-start shrink-0 w-[360px] lg:w-[380px]"
+                      >
+                        <PublicAnnouncementCard announcement={announcement} />
                       </div>
                     ))}
                   </div>

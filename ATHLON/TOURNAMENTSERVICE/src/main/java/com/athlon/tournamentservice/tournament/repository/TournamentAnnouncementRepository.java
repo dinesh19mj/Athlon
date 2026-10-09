@@ -10,7 +10,18 @@ import java.util.UUID;
 
 @Repository
 public interface TournamentAnnouncementRepository extends JpaRepository<TournamentAnnouncement, Long> {
+    
     Optional<TournamentAnnouncement> findByUuid(UUID uuid);
+    
     List<TournamentAnnouncement> findByTournamentIdAndIsActiveTrue(Long tournamentId);
-}
+    
+    List<TournamentAnnouncement> findByIsActiveTrueOrderByCreatedAtDesc();
 
+    List<TournamentAnnouncement> findByUserUuidAndIsActiveTrueOrderByCreatedAtDesc(UUID userUuid);
+
+    List<TournamentAnnouncement> findBySportIgnoreCaseAndIsActiveTrueOrderByCreatedAtDesc(String sport);
+
+    List<TournamentAnnouncement> findByCityContainingIgnoreCaseAndIsActiveTrueOrderByCreatedAtDesc(String city);
+
+    List<TournamentAnnouncement> findBySportIgnoreCaseAndCityContainingIgnoreCaseAndIsActiveTrueOrderByCreatedAtDesc(String sport, String city);
+}

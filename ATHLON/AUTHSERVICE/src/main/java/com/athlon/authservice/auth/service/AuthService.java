@@ -35,12 +35,14 @@ public class AuthService {
 	private final EmailService emailService;
 	private final SecurityProperties securityProperties;
 	private final UserRepository userRepository;
+	private final UserProfileRepository userProfileRepository;
 
 	public AuthService(CredentialsRepository credentialsRepository, LoginHistoryRepository loginHistoryRepository,
 			PasswordResetTokenRepository passwordResetTokenRepository,
 			EmailVerificationTokenRepository emailVerificationTokenRepository, JwtService jwtService,
 			RefreshTokenService refreshTokenService, PasswordService passwordService, EmailService emailService,
-			SecurityProperties securityProperties, UserRepository userRepository) {
+			SecurityProperties securityProperties, UserRepository userRepository,
+			UserProfileRepository userProfileRepository) {
 		this.credentialsRepository = credentialsRepository;
 		this.loginHistoryRepository = loginHistoryRepository;
 		this.passwordResetTokenRepository = passwordResetTokenRepository;
@@ -51,6 +53,7 @@ public class AuthService {
 		this.emailService = emailService;
 		this.securityProperties = securityProperties;
 		this.userRepository = userRepository;
+		this.userProfileRepository = userProfileRepository;
 	}
 
 	@Transactional
@@ -85,6 +88,69 @@ public class AuthService {
 			emailService.sendWelcomeEmail(request.getEmail());
 			emailService.sendEmailVerification(request.getEmail(), token);
 		}
+	}
+
+	@Transactional
+	public LoginResponse register(RegisterRequest request, String ipAddress, String userAgent) {
+		String effectivePhone = request.getPhone();
+		if (request.getEmail() != null && credentialsRepository.existsByEmail(request.getEmail())) {
+			throw new ConflictException("Email is already in use.");
+		}
+		if (effectivePhone != null && credentialsRepository.existsByPhone(effectivePhone)) {
+			throw new ConflictException("Phone number is already in use.");
+		}
+
+		// 1. Create User
+		User user = new User(request.getEmail(), null);
+		user.setUserUuid(UUID.randomUUID());
+		user.setIsActive(1);
+		user = userRepository.save(user);
+
+		// 2. Create UserProfile
+		UserProfile profile = new UserProfile(
+				user.getUserId(),
+				user.getUserUuid(),
+				request.getFirstName(),
+				request.getLastName(),
+				effectivePhone,
+				user.getUserId());
+		userProfileRepository.save(profile);
+
+		// 3. Create Credentials
+		Credentials credentials = new Credentials();
+		credentials.setUserUuid(user.getUserUuid());
+		credentials.setEmail(request.getEmail());
+		credentials.setPhone(effectivePhone);
+		credentials.setPasswordHash(passwordService.encodePassword(request.getPassword()));
+		credentials.setCredentialUuid(UUID.randomUUID());
+		credentials.setFailedLoginAttempts(0);
+		credentials.setAccountLocked(false);
+		credentials.setEmailVerified(false);
+		credentials = credentialsRepository.save(credentials);
+
+		if (request.getEmail() != null) {
+			try {
+				String token = TokenGenerator.generateUniqueToken();
+				EmailVerificationToken verificationToken = new EmailVerificationToken(
+						credentials.getCredentialId(),
+						credentials.getCredentialUuid(),
+						token,
+						LocalDateTime.now().plusHours(24));
+				emailVerificationTokenRepository.save(verificationToken);
+				emailService.sendWelcomeEmail(request.getEmail());
+				emailService.sendEmailVerification(request.getEmail(), token);
+			} catch (Exception ignored) {
+			}
+		}
+
+		loginHistoryRepository.save(
+				new LoginHistory(credentials.getCredentialId(), credentials.getCredentialUuid(), ipAddress, userAgent, "SUCCESS_REGISTER"));
+
+		String jwt = jwtService.generateAccessToken(credentials.getEmail(), user.getUserId(), user.getUserUuid());
+		String refreshToken = refreshTokenService.createRefreshToken(credentials.getCredentialId(), credentials.getCredentialUuid())
+				.getToken();
+
+		return new LoginResponse(jwt, refreshToken, user.getUserId(), user.getUserUuid());
 	}
 
 	@Transactional

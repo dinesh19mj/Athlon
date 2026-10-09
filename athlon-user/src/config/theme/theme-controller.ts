@@ -56,6 +56,12 @@ class ThemeController {
     const c = theme.colors;
     const s = theme.semantic;
 
+    // Update browser & mobile status bar theme color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', c.background);
+    }
+
     // Backgrounds & Surfaces
     root.style.setProperty('--athlon-background', c.background);
     root.style.setProperty('--athlon-background-secondary', c.backgroundSecondary);

@@ -143,7 +143,7 @@ export default function NotificationsPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24">
         {/* Header */}
-        <header className="px-4 py-3 border-b border-foreground/10 bg-surface/85 backdrop-blur-md sticky top-0 z-20 flex justify-between items-center">
+        <header className="px-4 py-3 border-b border-foreground/10 bg-surface/85 backdrop-blur-md sticky top-0 z-20 flex justify-between items-center safe-header">
           <div className="space-y-0.5">
             <h1 className="text-base font-black uppercase tracking-wide flex items-center gap-1.5 text-foreground">
               <Bell className="w-4 h-4 text-[#3B82F6]" /> Notifications

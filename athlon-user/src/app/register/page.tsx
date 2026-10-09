@@ -70,7 +70,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side: Login / Create Account Card (Unified Image 1 & 2 design) */}
-      <div className="w-full lg:w-7/12 h-full flex items-center justify-center px-4 py-4 sm:px-8 pb-20 lg:pb-0 relative z-10 overflow-y-auto">
+      <div className="w-full lg:w-7/12 h-full flex items-center justify-center px-4 py-4 sm:px-8 pb-20 lg:pb-0 relative z-10 overflow-y-auto safe-area-top">
         <Suspense
           fallback={
             <div className="w-full max-w-[440px] flex items-center justify-center py-20">

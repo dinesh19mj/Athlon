@@ -26,6 +26,7 @@ import {
   Image as ImageIcon,
   Tag,
   TicketCheck,
+  MapPin,
 } from 'lucide-react';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 
@@ -52,6 +53,7 @@ export type Athlon3DIconType =
   | 'finances'
   | 'inventory'
   | 'facilities'
+  | 'centres'
   | 'settings'
   | 'livestream'
   | 'setup'
@@ -122,6 +124,8 @@ function render2DIcon(type: Athlon3DIconType, active: boolean, size: number) {
     case 'inventory':
       return <Package style={style} strokeWidth={strokeWidth} />;
     case 'facilities':
+      return <MapPin style={style} strokeWidth={strokeWidth} />;
+    case 'centres':
       return <Building2 style={style} strokeWidth={strokeWidth} />;
     case 'settings':
       return <Settings style={style} strokeWidth={strokeWidth} />;
@@ -1238,6 +1242,49 @@ export function Athlon3DIcon({ type, className = '', size = 38, active = true, f
             {/* Shuttlecock popping out */}
             <circle cx="24" cy="12" r="3" fill="#FFFFFF" stroke="var(--athlon-primary)" strokeWidth="0.8" />
             <path d="M21 15L24 12L27 15" stroke="#FFFFFF" strokeWidth="1.2" />
+          </svg>
+        </div>
+      );
+
+    case 'centres':
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_rgba(139,92,246,0.45)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible transition-transform duration-300 group-hover:scale-110">
+            <defs>
+              <linearGradient id="centreRoof" x1="12" y1="8" x2="36" y2="20" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#C4B5FD" />
+                <stop offset="50%" stopColor="#8B5CF6" />
+                <stop offset="100%" stopColor="#6D28D9" />
+              </linearGradient>
+              <linearGradient id="centreFacade" x1="12" y1="18" x2="36" y2="42" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="30%" stopColor="var(--athlon-card)" />
+                <stop offset="100%" stopColor="#0B1322" />
+              </linearGradient>
+              <linearGradient id="centreDoor" x1="20" y1="30" x2="28" y2="42" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#8B5CF6" />
+                <stop offset="100%" stopColor="var(--athlon-primary, #54AC68)" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="24" cy="43" rx="16" ry="3" fill="rgba(0,0,0,0.5)" />
+            {/* Main Campus Building Body */}
+            <path d="M10 20L24 12L38 20V40H10V20Z" fill="url(#centreFacade)" stroke="var(--athlon-border)" strokeWidth="1" />
+            {/* Modern Angular Canopy Roof */}
+            <path d="M8 20L24 10L40 20L24 16L8 20Z" fill="url(#centreRoof)" stroke="#FFFFFF" strokeWidth="0.8" filter="drop-shadow(0 2px 6px rgba(139,92,246,0.5))" />
+            {/* Campus Towers & Window Matrix */}
+            <rect x="14" y="22" width="5" height="5" rx="1" fill="#8B5CF6" opacity="0.8" />
+            <rect x="29" y="22" width="5" height="5" rx="1" fill="#8B5CF6" opacity="0.8" />
+            <rect x="14" y="29" width="5" height="5" rx="1" fill="#8B5CF6" opacity="0.8" />
+            <rect x="29" y="29" width="5" height="5" rx="1" fill="#8B5CF6" opacity="0.8" />
+            {/* Grand Academy Portal / Entrance */}
+            <path d="M21 40V30C21 28.3 22.3 27 24 27C25.7 27 27 28.3 27 30V40H21Z" fill="url(#centreDoor)" stroke="#FFFFFF" strokeWidth="0.8" />
+            {/* Floating Academy Crest / Top Star */}
+            <circle cx="24" cy="7" r="2.5" fill="var(--athlon-primary, #54AC68)" filter="drop-shadow(0 0 5px var(--athlon-primary-glow))" />
           </svg>
         </div>
       );

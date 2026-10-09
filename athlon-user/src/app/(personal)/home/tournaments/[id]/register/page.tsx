@@ -295,7 +295,7 @@ export default function RegistrationPage() {
     const timer = setTimeout(async () => {
       setPlayer1Check((prev) => ({ ...prev, isChecking: true }));
       try {
-        const res: any = await api.get(`/api/user/by-phone/${cleanPhone}`);
+        const res: any = await UserService.getUserByPhone(cleanPhone);
         if (res?.data) {
           const u = res.data;
           setPlayer1((prev) => ({
@@ -345,7 +345,7 @@ export default function RegistrationPage() {
     const timer = setTimeout(async () => {
       setPlayer2Check((prev) => ({ ...prev, isChecking: true }));
       try {
-        const res: any = await api.get(`/api/user/by-phone/${cleanPhone}`);
+        const res: any = await UserService.getUserByPhone(cleanPhone);
         if (res?.data) {
           const u = res.data;
           setPlayer2((prev) => ({
@@ -422,6 +422,31 @@ export default function RegistrationPage() {
       return;
     }
 
+    if (registrationType === 'someone_else' && !isPlayer1AthlonUser) {
+      alert('The entered competitor phone number is not registered on Athlon.');
+      return;
+    }
+
+    if (isPlayer1AlreadyRegistered) {
+      alert('This athlete is already registered for this tournament.');
+      return;
+    }
+
+    if (isDoubles) {
+      if (isSamePlayerPhone) {
+        alert('Partner phone number cannot be the same as Player 1.');
+        return;
+      }
+      if (!isPlayer2AthlonUser) {
+        alert('The doubles partner phone number is not registered on Athlon.');
+        return;
+      }
+      if (isPlayer2AlreadyRegistered) {
+        alert('The doubles partner is already registered for this tournament.');
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     const players = [];
@@ -483,6 +508,76 @@ export default function RegistrationPage() {
       setSubmitting(false);
     }
   };
+
+  const isPlayer1AthlonUser = registrationType === 'self' ? true : player1Check.isAppUser === true;
+  const isPlayer2AthlonUser = !isDoubles ? true : player2Check.isAppUser === true;
+
+  const isPlayer1AlreadyRegistered = useMemo(() => {
+    const phone = registrationType === 'self' ? userProfile?.phone : player1.phone;
+    const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+    const uuid = registrationType === 'self' ? userUuid : player1Check.user?.uuid;
+    if (!cleanPhone && !uuid) return false;
+
+    return validRegistrations.some((reg) => {
+      if (uuid && reg.primaryContactUuid === uuid) return true;
+      return (reg.players || []).some((p) => {
+        if (uuid && p.playerUuid && p.playerUuid === uuid) return true;
+        const pPhone = (p.phoneNumber || '').replace(/[^0-9]/g, '');
+        if (cleanPhone && pPhone) {
+          if (pPhone === cleanPhone) return true;
+          if (pPhone.length >= 10 && cleanPhone.length >= 10 && pPhone.slice(-10) === cleanPhone.slice(-10)) return true;
+        }
+        return false;
+      });
+    });
+  }, [registrationType, userProfile?.phone, player1.phone, userUuid, player1Check.user?.uuid, validRegistrations]);
+
+  const isPlayer2AlreadyRegistered = useMemo(() => {
+    if (!isDoubles) return false;
+    const cleanPhone = (player2.phone || '').replace(/[^0-9]/g, '');
+    const uuid = player2Check.user?.uuid;
+    if (!cleanPhone && !uuid) return false;
+
+    return validRegistrations.some((reg) => {
+      if (uuid && reg.primaryContactUuid === uuid) return true;
+      return (reg.players || []).some((p) => {
+        if (uuid && p.playerUuid && p.playerUuid === uuid) return true;
+        const pPhone = (p.phoneNumber || '').replace(/[^0-9]/g, '');
+        if (cleanPhone && pPhone) {
+          if (pPhone === cleanPhone) return true;
+          if (pPhone.length >= 10 && cleanPhone.length >= 10 && pPhone.slice(-10) === cleanPhone.slice(-10)) return true;
+        }
+        return false;
+      });
+    });
+  }, [isDoubles, player2.phone, player2Check.user?.uuid, validRegistrations]);
+
+  const isSamePlayerPhone = useMemo(() => {
+    if (!isDoubles) return false;
+    const rawP1 = registrationType === 'self' ? (userProfile?.phone || '') : (player1.phone || '');
+    const rawP2 = player2.phone || '';
+    const p1 = rawP1.replace(/[^0-9]/g, '');
+    const p2 = rawP2.replace(/[^0-9]/g, '');
+    if (!p1 || !p2 || p1.length < 10 || p2.length < 10) return false;
+    return p1 === p2 || p1.slice(-10) === p2.slice(-10);
+  }, [isDoubles, registrationType, userProfile?.phone, player1.phone, player2.phone]);
+
+  const isFormValid =
+    isPlayer1AthlonUser &&
+    !isPlayer1AlreadyRegistered &&
+    Boolean(player1.name.trim()) &&
+    Boolean(player1.phone.trim()) &&
+    player1.phone.replace(/[^0-9]/g, '').length >= 10 &&
+    (!isTeamSport || Boolean(teamName.trim())) &&
+    (!isDoubles || (
+      isPlayer2AthlonUser &&
+      !isPlayer2AlreadyRegistered &&
+      !isSamePlayerPhone &&
+      Boolean(player2.name.trim()) &&
+      Boolean(player2.phone.trim()) &&
+      player2.phone.replace(/[^0-9]/g, '').length >= 10
+    )) &&
+    (categoriesList.length === 0 || (Boolean(selectedCategory) && !isCategoryLocked(selectedCategory)));
 
   // ── SUCCESS STATE ─────────────────────────────────────────────────────────
   if (isSuccess) {
@@ -599,19 +694,12 @@ export default function RegistrationPage() {
     );
   }
 
-  const isFormValid =
-    Boolean(player1.name.trim()) &&
-    Boolean(player1.phone.trim()) &&
-    (!isTeamSport || Boolean(teamName.trim())) &&
-    (!isDoubles || (Boolean(player2.name.trim()) && Boolean(player2.phone.trim()))) &&
-    (categoriesList.length === 0 || (Boolean(selectedCategory) && !isCategoryLocked(selectedCategory)));
-
   // ── MAIN RENDER ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background text-foreground pb-32 selection:bg-primary selection:text-black">
       {/* ── 1. SLEEK FLOATING GLASS HEADER WITH DYNAMIC PROGRESS BAR ────────── */}
       <header
-        className="sticky top-0 z-50 backdrop-blur-xl border-b shadow-xs transition-all"
+        className="sticky top-0 z-50 backdrop-blur-xl border-b shadow-xs transition-all safe-header"
         style={{
           backgroundColor: 'var(--athlon-navigation, rgba(10, 15, 29, 0.85))',
           borderColor: 'var(--athlon-border)',
@@ -649,8 +737,8 @@ export default function RegistrationPage() {
           <div className="flex items-center gap-1.5 shrink-0">
             <div
               className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all flex items-center gap-1 ${step === 1
-                  ? 'bg-primary text-black border-primary font-black shadow-xs'
-                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                ? 'bg-primary text-black border-primary font-black shadow-xs'
+                : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                 }`}
             >
               {step > 1 ? <Check className="w-3 h-3 text-emerald-400" /> : <span>1</span>}
@@ -661,8 +749,8 @@ export default function RegistrationPage() {
 
             <div
               className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all flex items-center gap-1 ${step === 2
-                  ? 'bg-primary text-black border-primary font-black shadow-xs'
-                  : 'text-foreground/40 border-foreground/10 bg-foreground/5'
+                ? 'bg-primary text-black border-primary font-black shadow-xs'
+                : 'text-foreground/40 border-foreground/10 bg-foreground/5'
                 }`}
             >
               <span>2</span>
@@ -803,10 +891,10 @@ export default function RegistrationPage() {
                         disabled={isLocked}
                         onClick={() => !isLocked && setSelectedCategory(cat)}
                         className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between gap-2 active:scale-95 cursor-pointer shadow-2xs ${isLocked
-                            ? 'opacity-60 cursor-not-allowed border-red-500/25 bg-red-500/5 text-foreground/50'
-                            : isSelected
-                              ? 'border-primary ring-2 ring-primary/40 text-foreground font-black'
-                              : 'hover:border-foreground/30 text-foreground/80 font-bold'
+                          ? 'opacity-60 cursor-not-allowed border-red-500/25 bg-red-500/5 text-foreground/50'
+                          : isSelected
+                            ? 'border-primary ring-2 ring-primary/40 text-foreground font-black'
+                            : 'hover:border-foreground/30 text-foreground/80 font-bold'
                           }`}
                         style={{
                           backgroundColor: isLocked
@@ -885,8 +973,8 @@ export default function RegistrationPage() {
                 type="button"
                 onClick={() => setRegistrationType('self')}
                 className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${registrationType === 'self'
-                    ? 'bg-primary text-black font-black shadow-xs'
-                    : 'text-foreground/60 hover:text-foreground'
+                  ? 'bg-primary text-black font-black shadow-xs'
+                  : 'text-foreground/60 hover:text-foreground'
                   }`}
               >
                 <UserCheck className="w-3.5 h-3.5" />
@@ -900,8 +988,8 @@ export default function RegistrationPage() {
                 type="button"
                 onClick={() => setRegistrationType('someone_else')}
                 className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${registrationType === 'someone_else'
-                    ? 'bg-primary text-black font-black shadow-xs'
-                    : 'text-foreground/60 hover:text-foreground'
+                  ? 'bg-primary text-black font-black shadow-xs'
+                  : 'text-foreground/60 hover:text-foreground'
                   }`}
               >
                 <UserPlus className="w-3.5 h-3.5" />
@@ -957,13 +1045,33 @@ export default function RegistrationPage() {
             {/* ── D. PLAYER 1 (ME / PRIMARY COMPETITOR) CARD ─────────────────── */}
             <div
               className="rounded-3xl border p-4 sm:p-5 space-y-3.5 relative overflow-hidden shadow-xs"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: isPlayer1AlreadyRegistered || (registrationType === 'someone_else' && player1Check.isAppUser === false) ? 'rgba(239, 68, 68, 0.4)' : 'var(--athlon-border)' }}
             >
-              <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary via-emerald-400 to-primary/40" />
+              <div
+                className="absolute top-0 inset-x-0 h-0.5"
+                style={{
+                  background: isPlayer1AlreadyRegistered || (registrationType === 'someone_else' && player1Check.isAppUser === false)
+                    ? 'linear-gradient(90deg, #EF4444, #F87171, #EF4444)'
+                    : 'linear-gradient(90deg, var(--athlon-primary), #34D399, var(--athlon-primary))',
+                }}
+              />
 
               <div className="flex items-center justify-between gap-3 pt-0.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <div
+                    className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 border"
+                    style={{
+                      backgroundColor: isPlayer1AlreadyRegistered || (registrationType === 'someone_else' && player1Check.isAppUser === false)
+                        ? 'rgba(239, 68, 68, 0.1)'
+                        : 'var(--athlon-primary-soft)',
+                      borderColor: isPlayer1AlreadyRegistered || (registrationType === 'someone_else' && player1Check.isAppUser === false)
+                        ? 'rgba(239, 68, 68, 0.25)'
+                        : 'var(--athlon-primary)',
+                      color: isPlayer1AlreadyRegistered || (registrationType === 'someone_else' && player1Check.isAppUser === false)
+                        ? '#EF4444'
+                        : 'var(--athlon-primary)',
+                    }}
+                  >
                     <User className="w-4 h-4" />
                   </div>
                   <div>
@@ -982,14 +1090,18 @@ export default function RegistrationPage() {
                   </div>
                 </div>
 
-                {registrationType === 'self' && (
+                {/* Status Badges for Player 1 */}
+                {isPlayer1AlreadyRegistered ? (
+                  <span className="px-2.5 py-1 rounded-full bg-red-500/15 text-red-500 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Registered
+                  </span>
+                ) : registrationType === 'self' ? (
                   <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs">
                     <BadgeCheck className="w-3.5 h-3.5" />
                     Verified
                   </span>
-                )}
-
-                {registrationType === 'someone_else' && (
+                ) : (
                   <div>
                     {player1Check.isChecking && (
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
@@ -998,12 +1110,12 @@ export default function RegistrationPage() {
                     )}
                     {!player1Check.isChecking && player1Check.isAppUser === true && (
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs">
-                        <BadgeCheck className="w-3 h-3" /> Verified
+                        <BadgeCheck className="w-3.5 h-3.5" /> Verified User
                       </span>
                     )}
                     {!player1Check.isChecking && player1Check.isAppUser === false && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> Unregistered
+                      <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-500 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                        <X className="w-3.5 h-3.5" /> Not Athlon User
                       </span>
                     )}
                   </div>
@@ -1043,52 +1155,48 @@ export default function RegistrationPage() {
                     type="text"
                     value={player1.name}
                     onChange={(e) => setPlayer1({ ...player1, name: e.target.value })}
-                    disabled={registrationType === 'self'}
+                    disabled={registrationType === 'self' || player1Check.isAppUser === true || player1Check.isAppUser === false}
                     className="text-right text-xs font-bold bg-transparent focus:outline-none placeholder:text-foreground/30 disabled:opacity-80 flex-1 min-w-0"
                     style={{ color: 'var(--athlon-text)' }}
-                    placeholder="Enter athlete name"
+                    placeholder={registrationType === 'someone_else' && player1Check.isAppUser === null ? "Auto-fills with name" : "Enter athlete name"}
                   />
                 </div>
               </div>
 
-              {/* Photo Upload when unregistered */}
-              {registrationType === 'someone_else' && player1Check.isAppUser === false && (
-                <div
-                  className="p-3 rounded-2xl border space-y-2.5 animate-in fade-in duration-300"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <Camera className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-[11px] font-bold text-foreground">Athlete Photo (Optional)</span>
-                  </div>
-                  <input
-                    type="file"
-                    ref={player1FileInputRef}
-                    accept="image/*"
-                    onChange={(e) => handlePhotoUpload(e, 1)}
-                    className="hidden"
-                  />
-                  {player1Check.photo ? (
-                    <div className="flex items-center gap-2.5 p-2 rounded-xl bg-black/20 border border-white/10">
-                      <img src={player1Check.photo} alt="Player 1" className="w-9 h-9 rounded-lg object-cover" />
-                      <span className="text-xs font-bold text-foreground flex-1 truncate">Photo Attached</span>
+              {/* Duplicate Registration Error Banner for Player 1 */}
+              {isPlayer1AlreadyRegistered && (
+                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-400 animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1 flex-1">
+                    <p className="font-bold text-red-500">Already Registered for this Tournament</p>
+                    <p className="text-[11px] text-foreground/75 leading-relaxed">
+                      {registrationType === 'self'
+                        ? 'You already have an active entry for this event. Multiple registrations are not allowed.'
+                        : 'This athlete is already registered in this tournament.'}
+                    </p>
+                    {registrationType === 'self' && (
                       <button
                         type="button"
-                        onClick={() => handleRemovePhoto(1)}
-                        className="p-1 text-foreground/40 hover:text-red-400"
+                        onClick={() => router.push('/home/registered')}
+                        className="mt-1 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        View My Entry & Pass →
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => player1FileInputRef.current?.click()}
-                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 text-xs font-bold text-primary flex items-center justify-center gap-2 hover:bg-primary/10 transition-all cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5" /> Upload Photo
-                    </button>
-                  )}
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Not an Athlon User Alert for Player 1 */}
+              {registrationType === 'someone_else' && player1Check.isAppUser === false && (
+                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-400 animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-red-500">Not an Athlon User</p>
+                    <p className="text-[11px] text-foreground/75 mt-0.5 leading-relaxed">
+                      This phone number is not registered on Athlon. All tournament participants must create an Athlon account to register and compete.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1097,13 +1205,38 @@ export default function RegistrationPage() {
             {isDoubles && (
               <div
                 className="rounded-3xl border p-4 sm:p-5 space-y-3.5 relative overflow-hidden shadow-xs"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                style={{
+                  backgroundColor: 'var(--athlon-card)',
+                  borderColor: isSamePlayerPhone || isPlayer2AlreadyRegistered || player2Check.isAppUser === false
+                    ? 'rgba(239, 68, 68, 0.4)'
+                    : 'var(--athlon-border)',
+                }}
               >
-                <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500/40" />
+                <div
+                  className="absolute top-0 inset-x-0 h-0.5"
+                  style={{
+                    background: isSamePlayerPhone || isPlayer2AlreadyRegistered || player2Check.isAppUser === false
+                      ? 'linear-gradient(90deg, #EF4444, #F87171, #EF4444)'
+                      : 'linear-gradient(90deg, #3B82F6, #38BDF8, #3B82F6)',
+                  }}
+                />
 
                 <div className="flex items-center justify-between gap-3 pt-0.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+                    <div
+                      className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 border"
+                      style={{
+                        backgroundColor: isSamePlayerPhone || isPlayer2AlreadyRegistered || player2Check.isAppUser === false
+                          ? 'rgba(239, 68, 68, 0.1)'
+                          : 'rgba(59, 130, 246, 0.1)',
+                        borderColor: isSamePlayerPhone || isPlayer2AlreadyRegistered || player2Check.isAppUser === false
+                          ? 'rgba(239, 68, 68, 0.25)'
+                          : 'rgba(59, 130, 246, 0.3)',
+                        color: isSamePlayerPhone || isPlayer2AlreadyRegistered || player2Check.isAppUser === false
+                          ? '#EF4444'
+                          : '#3B82F6',
+                      }}
+                    >
                       <Users className="w-4 h-4" />
                     </div>
                     <div>
@@ -1117,22 +1250,27 @@ export default function RegistrationPage() {
                   </div>
 
                   <div>
-                    {player2Check.isChecking && (
+                    {isSamePlayerPhone ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-500 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5" /> Same as Player 1
+                      </span>
+                    ) : isPlayer2AlreadyRegistered ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-500 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5" /> Registered
+                      </span>
+                    ) : player2Check.isChecking ? (
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Checking
+                        <Loader2 className="w-3 h-3 animate-spin" /> Verifying
                       </span>
-                    )}
-                    {!player2Check.isChecking && player2Check.isAppUser === true && (
+                    ) : player2Check.isAppUser === true ? (
                       <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs">
-                        <BadgeCheck className="w-3.5 h-3.5" /> Verified
+                        <BadgeCheck className="w-3.5 h-3.5" /> Verified User
                       </span>
-                    )}
-                    {!player2Check.isChecking && player2Check.isAppUser === false && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> Unregistered
+                    ) : player2Check.isAppUser === false ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-500 border border-red-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                        <X className="w-3.5 h-3.5" /> Not Athlon User
                       </span>
-                    )}
-                    {player2Check.isAppUser === null && (
+                    ) : (
                       <span className="px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-500 border border-blue-500/30 text-[10px] font-black uppercase tracking-wider">
                         Required
                       </span>
@@ -1172,51 +1310,50 @@ export default function RegistrationPage() {
                       type="text"
                       value={player2.name}
                       onChange={(e) => setPlayer2({ ...player2, name: e.target.value })}
-                      className="text-right text-xs font-bold bg-transparent focus:outline-none placeholder:text-foreground/30 flex-1 min-w-0"
+                      disabled={player2Check.isAppUser === true || player2Check.isAppUser === false}
+                      className="text-right text-xs font-bold bg-transparent focus:outline-none placeholder:text-foreground/30 disabled:opacity-80 flex-1 min-w-0"
                       style={{ color: 'var(--athlon-text)' }}
-                      placeholder="Partner's full name"
+                      placeholder={player2Check.isAppUser === null ? "Auto-fills with name" : "Partner's full name"}
                     />
                   </div>
                 </div>
 
-                {/* Photo Upload for Partner */}
-                {player2Check.isAppUser === false && (
-                  <div
-                    className="p-3 rounded-2xl border space-y-2.5 animate-in fade-in duration-300"
-                    style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Camera className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-[11px] font-bold text-foreground">Partner Photo (Optional)</span>
+                {/* Partner Same Phone Error Banner */}
+                {isSamePlayerPhone && (
+                  <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-400 animate-in fade-in duration-200">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-red-500">Duplicate Partner Phone</p>
+                      <p className="text-[11px] text-foreground/75 mt-0.5 leading-relaxed">
+                        Partner phone number cannot be the same as Player 1. Please enter a different athlete's phone number.
+                      </p>
                     </div>
-                    <input
-                      type="file"
-                      ref={player2FileInputRef}
-                      accept="image/*"
-                      onChange={(e) => handlePhotoUpload(e, 2)}
-                      className="hidden"
-                    />
-                    {player2Check.photo ? (
-                      <div className="flex items-center gap-2.5 p-2 rounded-xl bg-black/20 border border-white/10">
-                        <img src={player2Check.photo} alt="Player 2" className="w-9 h-9 rounded-lg object-cover" />
-                        <span className="text-xs font-bold text-foreground flex-1 truncate">Partner Photo Attached</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePhoto(2)}
-                          className="p-1 text-foreground/40 hover:text-red-400"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => player2FileInputRef.current?.click()}
-                        className="w-full py-2.5 px-3 rounded-xl border border-dashed border-blue-500/40 bg-blue-500/5 text-xs font-bold text-blue-400 flex items-center justify-center gap-2 hover:bg-blue-500/10 transition-all cursor-pointer"
-                      >
-                        <Upload className="w-3.5 h-3.5" /> Upload Partner Photo
-                      </button>
-                    )}
+                  </div>
+                )}
+
+                {/* Partner Already Registered Error Banner */}
+                {!isSamePlayerPhone && isPlayer2AlreadyRegistered && (
+                  <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-400 animate-in fade-in duration-200">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-red-500">Registered</p>
+                      <p className="text-[11px] text-foreground/75 mt-0.5 leading-relaxed">
+                        This partner is already registered for this tournament in another entry.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Partner Not an Athlon User Alert */}
+                {!isSamePlayerPhone && !isPlayer2AlreadyRegistered && player2Check.isAppUser === false && (
+                  <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-400 animate-in fade-in duration-200">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-red-500">Partner Not Registered on Athlon</p>
+                      <p className="text-[11px] text-foreground/75 mt-0.5 leading-relaxed">
+                        This partner's phone number is not registered on Athlon. All doubles partners must have an active Athlon account before registering.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

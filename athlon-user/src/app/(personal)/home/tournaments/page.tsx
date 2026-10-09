@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ArrowLeft,
   Search,
@@ -25,14 +25,18 @@ import {
   LayoutGrid,
   List,
   GalleryHorizontal,
+  Megaphone,
+  Plus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
+import { TournamentAnnouncementService, TournamentAnnouncement } from '@/lib/api/tournamentAnnouncement';
 import { OrganizationService } from '@/lib/api/organization';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
+import { PublicAnnouncementCard } from '@/components/tournaments/PublicAnnouncementCard';
 
 export default function TournamentsPage() {
   const { userUuid } = useAuthStore();
@@ -42,11 +46,13 @@ export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [academyTournaments, setAcademyTournaments] = useState<Tournament[]>([]);
   const [championships, setChampionships] = useState<TeamChampionship[]>([]);
+  const [announcements, setAnnouncements] = useState<TournamentAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   const champsScrollRef = useRef<HTMLDivElement>(null);
   const tournsScrollRef = useRef<HTMLDivElement>(null);
+  const announcementsScrollRef = useRef<HTMLDivElement>(null);
 
   const scrollContainer = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
     if (ref.current) {
@@ -58,9 +64,10 @@ export default function TournamentsPage() {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const [res, champRes, userOrgsRes] = await Promise.allSettled([
+        const [res, champRes, annRes, userOrgsRes] = await Promise.allSettled([
           TournamentService.getAll(),
           TeamChampionshipService.getAllPublic(),
+          TournamentAnnouncementService.getAll(),
           userUuid ? OrganizationService.getByUserUuid(userUuid) : Promise.resolve(null as any),
         ]);
         if (res.status === 'fulfilled' && res.value?.data) {
@@ -71,6 +78,10 @@ export default function TournamentsPage() {
           const val = champRes.value as any;
           const list = Array.isArray(val) ? val : Array.isArray(val?.data) ? val.data : [];
           setChampionships(list);
+        }
+        if (annRes.status === 'fulfilled' && annRes.value?.data) {
+          const list = Array.isArray(annRes.value.data) ? annRes.value.data : [];
+          setAnnouncements(list);
         }
         if (userOrgsRes.status === 'fulfilled' && userOrgsRes.value) {
           const orgVal = userOrgsRes.value as any;
@@ -104,8 +115,9 @@ export default function TournamentsPage() {
   }, [userUuid]);
 
   const tabs = [
-    { id: 'all', label: 'All Events', count: tournaments.length + championships.length + academyTournaments.length },
+    { id: 'all', label: 'All Events', count: tournaments.length + championships.length + academyTournaments.length + announcements.length },
     ...(academyTournaments.length > 0 ? [{ id: 'academy', label: 'My Academy Events', count: academyTournaments.length }] : []),
+    { id: 'announcements', label: 'Community Flyers', count: announcements.length },
     { id: 'championships', label: 'Team Championships', count: championships.length },
     { id: 'tournaments', label: 'Tournaments', count: tournaments.length },
     { id: 'live', label: 'Live Now' },
@@ -115,6 +127,7 @@ export default function TournamentsPage() {
 
   const mobileTabs = [
     { id: 'all', label: 'All' },
+    { id: 'announcements', label: 'Flyers' },
     ...(academyTournaments.length > 0 ? [{ id: 'academy', label: 'Academy' }] : []),
     { id: 'upcoming', label: 'Upcoming' },
     { id: 'championships', label: 'Championships' },
@@ -140,7 +153,7 @@ export default function TournamentsPage() {
       matchesTab = t.status === 'UPCOMING' || isNaN(start) || now < start;
     } else if (activeTab === 'completed') {
       matchesTab = t.status === 'COMPLETED' || (!isNaN(end) && now > end);
-    } else if (activeTab === 'championships') {
+    } else if (activeTab === 'championships' || activeTab === 'announcements') {
       return false;
     }
 
@@ -179,7 +192,7 @@ export default function TournamentsPage() {
         now < start;
     } else if (activeTab === 'completed') {
       matchesTab = c.stage === 'COMPLETED' || (!isNaN(end) && now > end);
-    } else if (activeTab === 'tournaments') {
+    } else if (activeTab === 'tournaments' || activeTab === 'announcements') {
       return false;
     }
 
@@ -198,7 +211,46 @@ export default function TournamentsPage() {
     );
   });
 
-  const mobileTotalVisible = mobileFilteredTournaments.length + mobileFilteredChampionships.length;
+  // Mobile filtered announcements
+  const mobileFilteredAnnouncements = useMemo(() => {
+    return announcements.filter((a) => {
+      if (activeTab !== 'all' && activeTab !== 'announcements') return false;
+      if (selectedSport !== 'all' && selectedSport !== 'ALL' && a.sport?.toLowerCase() !== selectedSport.toLowerCase()) {
+        return false;
+      }
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.title?.toLowerCase().includes(q) ||
+        a.city?.toLowerCase().includes(q) ||
+        a.venueName?.toLowerCase().includes(q) ||
+        a.sport?.toLowerCase().includes(q)
+      );
+    });
+  }, [announcements, activeTab, selectedSport, searchQuery]);
+
+  // Desktop filtered announcements
+  const desktopAnnouncements = useMemo(() => {
+    return announcements.filter((a) => {
+      if (activeTab !== 'all' && activeTab !== 'announcements') return false;
+      if (selectedSport !== 'ALL' && selectedSport !== 'all' && a.sport?.toLowerCase() !== selectedSport.toLowerCase()) {
+        return false;
+      }
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.title?.toLowerCase().includes(q) ||
+        a.city?.toLowerCase().includes(q) ||
+        a.venueName?.toLowerCase().includes(q) ||
+        a.sport?.toLowerCase().includes(q)
+      );
+    });
+  }, [announcements, activeTab, selectedSport, searchQuery]);
+
+  const mobileTotalVisible =
+    (activeTab === 'championships' || activeTab === 'announcements' ? 0 : mobileFilteredTournaments.length) +
+    (activeTab === 'tournaments' || activeTab === 'announcements' ? 0 : mobileFilteredChampionships.length) +
+    mobileFilteredAnnouncements.length;
 
   const liveCount =
     tournaments.filter((t) => t.status === 'LIVE').length +
@@ -210,7 +262,8 @@ export default function TournamentsPage() {
 
   const totalChampionships = championships.length;
   const totalTournaments = tournaments.length;
-  const totalCount = totalTournaments + totalChampionships;
+  const totalAnnouncements = announcements.length;
+  const totalCount = totalTournaments + totalChampionships + totalAnnouncements;
 
   // Desktop Filter Tournaments
   const filteredTournaments = combinedTournaments.filter((t) => {
@@ -219,7 +272,7 @@ export default function TournamentsPage() {
     const end = new Date(t.endDate).getTime();
 
     let matchesTab = true;
-    if (activeTab === 'championships') {
+    if (activeTab === 'championships' || activeTab === 'announcements') {
       return false;
     } else if (activeTab === 'academy') {
       matchesTab = t.visibility === 'PRIVATE';
@@ -255,7 +308,7 @@ export default function TournamentsPage() {
     const end = c.endDate ? new Date(c.endDate).getTime() : NaN;
 
     let matchesTab = true;
-    if (activeTab === 'tournaments' || activeTab === 'academy') {
+    if (activeTab === 'tournaments' || activeTab === 'academy' || activeTab === 'announcements') {
       return false;
     } else if (activeTab === 'championships' || activeTab === 'all') {
       matchesTab = true;
@@ -296,13 +349,7 @@ export default function TournamentsPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-28 min-h-screen">
         {/* Compact Sticky Top Navbar */}
-        <header
-          className="sticky top-0 z-40 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b transition-all"
-          style={{
-            backgroundColor: 'var(--athlon-navigation)',
-            borderColor: 'var(--athlon-border)',
-          }}
-        >
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
           <div className="flex items-center gap-2.5 min-w-0">
             <Link
               href="/home"
@@ -323,6 +370,25 @@ export default function TournamentsPage() {
                 {mobileTotalVisible} active events
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Link
+              href="/tournaments/announce"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-amber-500/15 border border-amber-500/30 text-amber-500 hover:bg-amber-500/25 transition-all shadow-sm active:scale-95"
+            >
+              <Megaphone className="w-3 h-3" />
+              <span>Announce</span>
+            </Link>
+            {liveCount > 0 && (
+              <Link
+                href="/live-score"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                <span>{liveCount} Live</span>
+              </Link>
+            )}
           </div>
         </header>
 
@@ -540,8 +606,31 @@ export default function TournamentsPage() {
             ) : viewMode === 'grid' ? (
               /* ── 1. GRID VIEW (Rich Stacked Bento Cards) ── */
               <>
+                {/* Community Announcements / Flyers */}
+                {mobileFilteredAnnouncements.length > 0 && (
+                  <div className="space-y-3">
+                    {activeTab === 'all' && (
+                      <div className="flex items-center justify-between px-0.5">
+                        <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-500">
+                          <Megaphone className="w-3.5 h-3.5" />
+                          <span>Community Flyers ({mobileFilteredAnnouncements.length})</span>
+                        </div>
+                        <Link href="/tournaments/announce" className="text-[10px] font-bold text-primary flex items-center gap-1">
+                          <Plus className="w-3 h-3" /> Post Flyer
+                        </Link>
+                      </div>
+                    )}
+                    {mobileFilteredAnnouncements.map((announcement) => (
+                      <PublicAnnouncementCard
+                        key={announcement.uuid}
+                        announcement={announcement}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 {/* Team Championships */}
-                {mobileFilteredChampionships.length > 0 && (
+                {activeTab !== 'announcements' && mobileFilteredChampionships.length > 0 && (
                   <div className="space-y-3">
                     {activeTab === 'all' && (
                       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-primary px-0.5">
@@ -559,9 +648,9 @@ export default function TournamentsPage() {
                 )}
 
                 {/* Individual Tournaments */}
-                {activeTab !== 'championships' && mobileFilteredTournaments.length > 0 && (
+                {activeTab !== 'championships' && activeTab !== 'announcements' && mobileFilteredTournaments.length > 0 && (
                   <div className="space-y-3">
-                    {activeTab === 'all' && mobileFilteredChampionships.length > 0 && (
+                    {activeTab === 'all' && (mobileFilteredChampionships.length > 0 || mobileFilteredAnnouncements.length > 0) && (
                       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-primary px-0.5 pt-2">
                         <Trophy className="w-3.5 h-3.5" />
                         <span>Tournaments &amp; Knockouts ({mobileFilteredTournaments.length})</span>
@@ -580,8 +669,54 @@ export default function TournamentsPage() {
             ) : viewMode === 'list' ? (
               /* ── 2. LIST VIEW (Compact High-Density Rows) ── */
               <div className="space-y-2">
+                {/* Community Flyers in List View */}
+                {mobileFilteredAnnouncements.map((a) => (
+                  <Link
+                    href={`/tournaments/announcements/${a.uuid}`}
+                    key={a.uuid}
+                    className="flex items-center justify-between p-3 rounded-2xl border transition-all hover:scale-[1.01] active:scale-[0.99] group shadow-sm"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0 group-hover:scale-105 transition-transform">
+                        <Megaphone className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-xs font-black text-foreground truncate group-hover:text-primary transition-colors">
+                            {a.title}
+                          </h4>
+                          <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[8px] font-black uppercase shrink-0">
+                            Flyer
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[9.5px] text-foreground/55 font-medium truncate mt-0.5">
+                          <span className="truncate">{a.sport || 'Sports'}</span>
+                          <span>•</span>
+                          <span className="truncate">{a.city || a.venueName || 'Venue TBA'}</span>
+                          {a.organizerName && (
+                            <>
+                              <span>•</span>
+                              <span className="text-foreground/75 font-bold truncate">By {a.organizerName}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-[9.5px] font-mono font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                        {a.entryFee ? `₹${a.entryFee}` : 'Free'}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </Link>
+                ))}
+
                 {/* Team Championships in List View */}
-                {mobileFilteredChampionships.map((c) => (
+                {activeTab !== 'announcements' && mobileFilteredChampionships.map((c) => (
                   <Link
                     href={`/home/team-championship/${c.championshipUuid || c.championshipId}`}
                     key={c.championshipId || c.championshipUuid}
@@ -623,7 +758,7 @@ export default function TournamentsPage() {
                 ))}
 
                 {/* Individual Tournaments in List View */}
-                {activeTab !== 'championships' &&
+                {activeTab !== 'championships' && activeTab !== 'announcements' &&
                   mobileFilteredTournaments.map((tournament) => {
                     const isFinished = tournament.status === 'COMPLETED' || tournament.status === 'FINISHED';
                     return (
@@ -681,8 +816,34 @@ export default function TournamentsPage() {
             ) : (
               /* ── 3. HORIZONTAL SCROLL / CAROUSEL VIEW ── */
               <div className="space-y-4">
+                {/* Community Flyers Carousel */}
+                {mobileFilteredAnnouncements.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-0.5">
+                      <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-500">
+                        <Megaphone className="w-3.5 h-3.5" />
+                        <span>Community Flyers ({mobileFilteredAnnouncements.length})</span>
+                      </div>
+                      <Link href="/tournaments/announce" className="text-[10px] font-bold text-primary flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Post Flyer
+                      </Link>
+                    </div>
+
+                    <div className="flex items-stretch gap-3.5 overflow-x-auto pb-3 snap-x scroll-px-3.5 hide-scrollbar -mx-3.5 px-3.5">
+                      {mobileFilteredAnnouncements.map((announcement) => (
+                        <div
+                          key={announcement.uuid}
+                          className="snap-start shrink-0 w-[84vw] sm:w-[320px] max-w-[340px]"
+                        >
+                          <PublicAnnouncementCard announcement={announcement} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Team Championships Carousel */}
-                {mobileFilteredChampionships.length > 0 && (
+                {activeTab !== 'announcements' && mobileFilteredChampionships.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between px-0.5">
                       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-400">
@@ -708,7 +869,7 @@ export default function TournamentsPage() {
                 )}
 
                 {/* Individual Tournaments Carousel */}
-                {activeTab !== 'championships' && mobileFilteredTournaments.length > 0 && (
+                {activeTab !== 'championships' && activeTab !== 'announcements' && mobileFilteredTournaments.length > 0 && (
                   <div className="space-y-2 pt-1">
                     <div className="flex items-center justify-between px-0.5">
                       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-primary">
@@ -769,7 +930,7 @@ export default function TournamentsPage() {
                 </div>
               </div>
 
-              {/* Quick Search */}
+              {/* Quick Search & Announce CTA */}
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div className="relative min-w-[320px]">
                   <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -782,6 +943,14 @@ export default function TournamentsPage() {
                     style={{ borderColor: 'var(--athlon-border)' }}
                   />
                 </div>
+
+                <Link
+                  href="/tournaments/announce"
+                  className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-500 text-xs font-black px-4 py-2.5 rounded-2xl hover:bg-amber-500/25 transition-all shadow-sm shrink-0 active:scale-95"
+                >
+                  <Megaphone className="w-4 h-4" />
+                  <span>Announce Tournament</span>
+                </Link>
               </div>
             </div>
 
@@ -847,7 +1016,7 @@ export default function TournamentsPage() {
                 Loading events catalog...
               </div>
             </div>
-          ) : filteredTournaments.length === 0 && filteredChampionships.length === 0 ? (
+          ) : filteredTournaments.length === 0 && filteredChampionships.length === 0 && desktopAnnouncements.length === 0 ? (
             <div
               className="text-center py-24 rounded-[32px] border p-8 space-y-4 max-w-xl mx-auto bg-card"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
@@ -872,6 +1041,61 @@ export default function TournamentsPage() {
             </div>
           ) : (
             <div className="space-y-12">
+              {/* 0. Community Tournament Flyers Section (Horizontal Scroll) */}
+              {desktopAnnouncements.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Megaphone className="w-5 h-5 text-amber-500" />
+                      <div>
+                        <h2 className="text-lg font-black text-foreground">
+                          Community Tournament Flyers ({desktopAnnouncements.length})
+                        </h2>
+                        <p className="text-xs text-foreground/50">
+                          Direct entry &amp; organizer contact announcements
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href="/tournaments/announce"
+                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Announce Yours
+                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => scrollContainer(announcementsScrollRef, 'left')}
+                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                          style={{ borderColor: 'var(--athlon-border)' }}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => scrollContainer(announcementsScrollRef, 'right')}
+                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
+                          style={{ borderColor: 'var(--athlon-border)' }}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    ref={announcementsScrollRef}
+                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
+                  >
+                    {desktopAnnouncements.map((a) => (
+                      <div key={a.uuid} className="snap-start shrink-0 w-[360px]">
+                        <PublicAnnouncementCard announcement={a} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* 1. Team Championships Section (Horizontal Scroll) */}
               {filteredChampionships.length > 0 && (
                 <section className="space-y-4">

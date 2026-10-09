@@ -15,6 +15,22 @@ public interface TournamentCategoryRepository extends JpaRepository<TournamentCa
 
     List<TournamentCategory> findByOrganizationIdAndIsActive(Long organizationId, Integer isActive);
 
+    List<TournamentCategory> findByOrganizationUuidAndIsActive(UUID organizationUuid, Integer isActive);
+
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM TournamentCategory c WHERE (c.organizationId IS NULL OR c.organizationId = 0) AND c.isActive = :isActive")
+    List<TournamentCategory> findCommonCategories(@org.springframework.data.repository.query.Param("isActive") Integer isActive);
+
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM TournamentCategory c WHERE (c.organizationId IS NULL OR c.organizationId = 0) AND (LOWER(c.sportType) = LOWER(:sportType) OR LOWER(c.sportType) = 'all') AND c.isActive = :isActive")
+    List<TournamentCategory> findCommonCategoriesBySport(@org.springframework.data.repository.query.Param("sportType") String sportType, @org.springframework.data.repository.query.Param("isActive") Integer isActive);
+
+    List<TournamentCategory> findBySportTypeIgnoreCaseAndIsActive(String sportType, Integer isActive);
+
+    List<TournamentCategory> findByIsActive(Integer isActive);
+
     boolean existsByOrganizationIdAndCategoryName(Long organizationId, String categoryName);
+
+    boolean existsByCategoryNameIgnoreCaseAndSportTypeIgnoreCase(String categoryName, String sportType);
+
+    boolean existsByCategoryNameIgnoreCaseAndOrganizationIdIsNull(String categoryName);
 }
 

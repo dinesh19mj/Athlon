@@ -180,13 +180,12 @@
 
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
 html {
-  height: 100%;
+  min-height: 100%;
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden !important;
-  position: relative;
-  overscroll-behavior-x: none !important;
-  overscroll-behavior-y: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   -webkit-text-size-adjust: 100%;
 }
@@ -196,9 +195,9 @@ body {
   min-height: 100dvh;
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden !important;
-  position: relative;
-  overscroll-behavior-x: none !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   background-color: var(--athlon-background);
   color: var(--athlon-text);
@@ -230,6 +229,68 @@ svg {
 ::selection {
   background-color: var(--athlon-primary-soft);
   color: var(--athlon-primary);
+}
+
+/* ─── Standardized Mobile Typography System ────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Standardize mobile headings */
+  h1:not([class*="text-"]) {
+    font-size: 0.9375rem !important; /* 15px */
+    line-height: 1.25rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  h2:not([class*="text-"]) {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1.125rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  h3:not([class*="text-"]) {
+    font-size: 0.6875rem !important; /* 11px */
+    line-height: 1rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.025em !important;
+  }
+}
+
+/* Mobile Standard Typography Utility Classes */
+.mobile-title {
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.mobile-heading {
+  font-size: 0.75rem; /* 12px */
+  line-height: 1.125rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mobile-subheading {
+  font-size: 0.6875rem; /* 11px */
+  line-height: 1rem;
+  font-weight: 700;
+}
+
+.mobile-caption {
+  font-size: 0.625rem; /* 10px */
+  line-height: 0.875rem;
+  font-weight: 600;
+}
+
+.mobile-badge {
+  font-size: 0.5625rem; /* 9px */
+  line-height: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* ─── Utility Classes ─────────────────────────────────────────────────────── */
@@ -611,11 +672,28 @@ html.light [class*="bg-gradient-"].text-white {
   user-select: none;
 }
 
-/* Prevent dynamic viewport height shifting and elastic pull on fixed bars */
-html,
-body {
-  min-height: 100%;
-  min-height: 100dvh;
+/* ─── Mobile Safe Area & Edge-to-Edge System ─────────────────────────────── */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+.safe-header {
+  padding-top: max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
+}
+
+.safe-area-top {
+  padding-top: max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-bottom-nav {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
 }
 
 @supports (-webkit-touch-callout: none) {

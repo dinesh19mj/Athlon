@@ -678,7 +678,7 @@ function TournamentRegistrationDetailView({
     >
       {/* Sticky Mobile App Bar */}
       <div
-        className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-3 flex items-center justify-between gap-2 shadow-sm"
+        className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-3 flex items-center justify-between gap-2 shadow-sm safe-header"
         style={{
           backgroundColor: "var(--athlon-card)",
           borderColor: "var(--athlon-border)",

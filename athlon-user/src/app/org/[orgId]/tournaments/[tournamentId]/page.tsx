@@ -984,10 +984,12 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                   </span>
                 </div>
 
-                {tournament.location && (
+                {(tournament.location || tournament.city || tournament.district || tournament.state) && (
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="truncate max-w-[200px] sm:max-w-none">{tournament.location}</span>
+                    <span className="truncate max-w-[200px] sm:max-w-none">
+                      {[tournament.location, tournament.city, tournament.district, tournament.state].filter(Boolean).join(', ')}
+                    </span>
                   </div>
                 )}
 
@@ -1383,15 +1385,34 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                       <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50 block">
                         Venue Location
                       </span>
-                      <p className="text-xs font-black text-foreground mt-0.5 truncate">
+                      <p className="text-xs font-black text-foreground mt-0.5">
                         {tournament.location || 'Location TBA'}
                       </p>
+                      {(tournament.city || tournament.district || tournament.state) && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          {tournament.city && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/10 text-primary border border-primary/20">
+                              City: {tournament.city}
+                            </span>
+                          )}
+                          {tournament.district && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-foreground/5 text-foreground/70 border border-foreground/10">
+                              District: {tournament.district}
+                            </span>
+                          )}
+                          {tournament.state && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              State: {tournament.state}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {tournament.mapLink && (
                         <a
                           href={tournament.mapLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[9.5px] font-black text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-md mt-1.5 transition-colors border border-primary/20"
+                          className="inline-flex items-center gap-1 text-[9.5px] font-black text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-md mt-2 transition-colors border border-primary/20"
                         >
                           <span>Open Google Maps</span>
                           <ExternalLink className="w-2.5 h-2.5" />

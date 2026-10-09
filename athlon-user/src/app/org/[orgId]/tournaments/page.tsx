@@ -385,7 +385,7 @@ export default function TournamentsPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden">
         {/* Modern Sticky Mobile Header */}
-        <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 py-3">
+        <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 py-3 safe-header">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={() => router.push(`/org/${orgId}/dashboard`)}

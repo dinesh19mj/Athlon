@@ -31,6 +31,13 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Athlon",
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'msapplication-navbutton-color': '#060A08',
+    'msapplication-TileColor': '#060A08',
+  },
   icons: {
     icon: [
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
@@ -44,7 +51,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#040806',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#060A08' },
+  ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -71,6 +81,17 @@ const themeInitScript = `
     var t = (savedKey && activeDict[savedKey]) ? activeDict[savedKey] : activeDict[defaultKey];
     var c = t.colors;
     var root = document.documentElement;
+
+    // Update meta theme-color immediately for seamless mobile status bar tinting
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', c.background);
+    } else {
+      var m = document.createElement('meta');
+      m.name = 'theme-color';
+      m.content = c.background;
+      document.head.appendChild(m);
+    }
 
     // Backgrounds & Surfaces
     root.style.setProperty('--athlon-background', c.background);
@@ -198,7 +219,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.className} dark h-full antialiased`}
+      className={`${inter.className} dark min-h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

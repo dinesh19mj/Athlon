@@ -376,14 +376,6 @@ function ClubInventoryView({ orgUuid, orgName, org }: { orgUuid: string; orgName
           {/* Quick Action Icons */}
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={openLogDrawer}
-              className="p-2.5 rounded-xl bg-surface border border-foreground/10 text-foreground/80 active:scale-95 transition-all shadow-sm flex items-center gap-1 text-xs font-bold"
-              title="Audit Logs"
-            >
-              <History className="w-4 h-4 text-primary" />
-              <span className="text-[11px]">Logs</span>
-            </button>
-            <button
               onClick={handleRefresh}
               disabled={refreshing}
               className="p-2.5 rounded-xl bg-surface border border-foreground/10 text-foreground/70 active:scale-95 transition-all disabled:opacity-50"
@@ -424,14 +416,14 @@ function ClubInventoryView({ orgUuid, orgName, org }: { orgUuid: string; orgName
               </div>
             </div>
             
-            {canManage && (
-              <button
-                onClick={() => openAddModal()}
-                className="px-3.5 py-2 rounded-xl bg-primary text-black text-xs font-black tracking-wide flex items-center gap-1.5 hover:opacity-90 active:scale-95 shadow-md shadow-primary/20 shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[3]" /> Add Item
-              </button>
-            )}
+            <button
+              onClick={openLogDrawer}
+              className="px-3.5 py-2 rounded-xl bg-surface border border-foreground/10 text-foreground/80 hover:text-foreground text-xs font-black uppercase tracking-wider flex items-center gap-1.5 hover:opacity-90 active:scale-95 shadow-sm shrink-0 transition-all cursor-pointer"
+              title="Audit Logs"
+            >
+              <History className="w-3.5 h-3.5 text-primary" />
+              <span>Logs</span>
+            </button>
           </div>
 
           {/* Interactive 3-Pill Stock Health Toggles */}

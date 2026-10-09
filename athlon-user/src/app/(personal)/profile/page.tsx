@@ -349,7 +349,7 @@ export default function ProfilePage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-20 overflow-y-auto">
         {/* Top Navbar */}
-        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5">
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
           <div className="flex items-center gap-2">
             <Link href="/home" className="p-1.5 -ml-1.5 text-foreground hover:text-primary transition-colors">
               <ArrowLeft className="w-5 h-5" />

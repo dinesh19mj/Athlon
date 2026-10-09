@@ -28,24 +28,35 @@ import {
   List,
   GalleryHorizontal,
   Clock,
+  Megaphone,
 } from 'lucide-react';
 import Link from 'next/link';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
 import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampionship';
+import { TournamentAnnouncementService, TournamentAnnouncement } from '@/lib/api/tournamentAnnouncement';
 import { PublicTournamentCard } from '@/components/tournaments/PublicTournamentCard';
 import { PublicTeamChampionshipCard } from '@/components/tournaments/PublicTeamChampionshipCard';
+import { PublicAnnouncementCard } from '@/components/tournaments/PublicAnnouncementCard';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { themeController } from '@/config/theme';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 
 export default function TournamentsPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isUserLoggedIn = mounted && isAuthenticated;
   const [activeTab, setActiveTab] = useState('upcoming');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'carousel'>('grid');
-  const [desktopFilter, setDesktopFilter] = useState<'all' | 'championships' | 'upcoming' | 'live' | 'completed'>('all');
+  const [desktopFilter, setDesktopFilter] = useState<'all' | 'announcements' | 'championships' | 'upcoming' | 'live' | 'completed'>('all');
   const [selectedSport, setSelectedSport] = useState<string>('all');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [championships, setChampionships] = useState<TeamChampionship[]>([]);
+  const [announcements, setAnnouncements] = useState<TournamentAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -59,9 +70,10 @@ export default function TournamentsPage() {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const [res, champRes] = await Promise.allSettled([
+        const [res, champRes, annRes] = await Promise.allSettled([
           TournamentService.getAll(),
           TeamChampionshipService.getAllPublic(),
+          TournamentAnnouncementService.getAll(),
         ]);
         if (res.status === 'fulfilled' && res.value?.data) {
           const activePublic = (res.value.data || []).filter((t: Tournament) => t.visibility === 'PUBLIC');
@@ -72,8 +84,12 @@ export default function TournamentsPage() {
           const list = Array.isArray(val) ? val : (Array.isArray(val?.data) ? val.data : []);
           setChampionships(list);
         }
+        if (annRes.status === 'fulfilled' && annRes.value?.data) {
+          const list = Array.isArray(annRes.value.data) ? annRes.value.data : [];
+          setAnnouncements(list);
+        }
       } catch (err) {
-        console.error('Failed to load tournaments and championships', err);
+        console.error('Failed to load tournaments, championships, and announcements', err);
       } finally {
         setLoading(false);
       }
@@ -83,6 +99,7 @@ export default function TournamentsPage() {
 
   const mobileTabs = [
     { id: 'all', label: 'All' },
+    { id: 'announcements', label: 'Flyers' },
     { id: 'upcoming', label: 'Upcoming' },
     { id: 'championships', label: 'Championships' },
     { id: 'live', label: 'Live' },
@@ -153,15 +170,61 @@ export default function TournamentsPage() {
     );
   });
 
-  const mobileTotalVisible = (activeTab === 'championships' ? 0 : mobileFilteredTournaments.length) + mobileFilteredChampionships.length;
+  // Mobile filtered announcements
+  const mobileFilteredAnnouncements = useMemo(() => {
+    return announcements.filter((a) => {
+      if (activeTab === 'championships' || activeTab === 'live' || activeTab === 'completed') {
+        return false;
+      }
+      if (selectedSport !== 'all' && a.sport?.toLowerCase() !== selectedSport.toLowerCase()) {
+        return false;
+      }
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.title?.toLowerCase().includes(q) ||
+        a.venueName?.toLowerCase().includes(q) ||
+        a.city?.toLowerCase().includes(q) ||
+        a.sport?.toLowerCase().includes(q) ||
+        a.organizerName?.toLowerCase().includes(q)
+      );
+    });
+  }, [announcements, activeTab, selectedSport, searchQuery]);
+
+  const mobileTotalVisible = 
+    (activeTab === 'championships' || activeTab === 'announcements' ? 0 : mobileFilteredTournaments.length) + 
+    (activeTab === 'announcements' ? 0 : mobileFilteredChampionships.length) +
+    mobileFilteredAnnouncements.length;
 
   // Desktop Metrics
-  const totalCount = tournaments.length + championships.length;
+  const totalCount = tournaments.length + championships.length + announcements.length;
   const totalChampionships = championships.length;
+  const totalAnnouncements = announcements.length;
   const liveCount =
     tournaments.filter((t) => t.status === 'LIVE').length +
     championships.filter((c) => c.stage === 'LEAGUE_STAGE' || c.stage === 'KNOCKOUT_STAGE').length;
-  const upcomingCount = totalCount - liveCount;
+  const upcomingCount = tournaments.length + championships.length - liveCount;
+
+  // Desktop filtered announcements
+  const desktopAnnouncements = useMemo(() => {
+    if (desktopFilter === 'championships' || desktopFilter === 'live' || desktopFilter === 'completed') {
+      return [];
+    }
+    return announcements.filter((a) => {
+      if (selectedSport !== 'all' && a.sport?.toLowerCase() !== selectedSport.toLowerCase()) {
+        return false;
+      }
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        a.title?.toLowerCase().includes(q) ||
+        a.venueName?.toLowerCase().includes(q) ||
+        a.city?.toLowerCase().includes(q) ||
+        a.sport?.toLowerCase().includes(q) ||
+        a.organizerName?.toLowerCase().includes(q)
+      );
+    });
+  }, [announcements, desktopFilter, selectedSport, searchQuery]);
 
   // Desktop filtered tournaments
   const desktopTournaments = useMemo(() => {
@@ -237,13 +300,7 @@ export default function TournamentsPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-28 min-h-screen">
         {/* Compact Sticky Top Navbar */}
-        <header
-          className="sticky top-0 z-40 flex items-center justify-between px-3.5 py-2.5 backdrop-blur-xl border-b transition-all"
-          style={{
-            backgroundColor: 'var(--athlon-navigation)',
-            borderColor: 'var(--athlon-border)',
-          }}
-        >
+        <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
           <div className="flex items-center gap-2.5 min-w-0">
             <Link
               href="/"
@@ -272,6 +329,15 @@ export default function TournamentsPage() {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {isUserLoggedIn && (
+              <Link
+                href="/tournaments/announce"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-amber-500/15 border border-amber-500/30 text-amber-500 hover:bg-amber-500/25 transition-all shadow-sm"
+              >
+                <Megaphone className="w-3 h-3" />
+                <span>Announce</span>
+              </Link>
+            )}
             {liveCount > 0 && (
               <Link
                 href="/live-score"
@@ -535,8 +601,33 @@ export default function TournamentsPage() {
             ) : viewMode === 'grid' ? (
               /* ── 1. GRID VIEW (Rich Stacked Bento Cards) ── */
               <>
+                {/* Community Announcements / Flyers */}
+                {mobileFilteredAnnouncements.length > 0 && (
+                  <div className="space-y-3">
+                    {activeTab === 'all' && (
+                      <div className="flex items-center justify-between px-0.5">
+                        <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-500">
+                          <Megaphone className="w-3.5 h-3.5" />
+                          <span>Community Flyers ({mobileFilteredAnnouncements.length})</span>
+                        </div>
+                        {isUserLoggedIn && (
+                          <Link href="/tournaments/announce" className="text-[10px] font-bold text-primary flex items-center gap-1">
+                            <Plus className="w-3 h-3" /> Post Flyer
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                    {mobileFilteredAnnouncements.map((announcement) => (
+                      <PublicAnnouncementCard
+                        key={announcement.uuid}
+                        announcement={announcement}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 {/* Team Championships */}
-                {mobileFilteredChampionships.length > 0 && (
+                {activeTab !== 'announcements' && mobileFilteredChampionships.length > 0 && (
                   <div className="space-y-3">
                     {activeTab === 'all' && (
                       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-primary px-0.5">
@@ -554,9 +645,9 @@ export default function TournamentsPage() {
                 )}
 
                 {/* Individual Tournaments */}
-                {activeTab !== 'championships' && mobileFilteredTournaments.length > 0 && (
+                {activeTab !== 'championships' && activeTab !== 'announcements' && mobileFilteredTournaments.length > 0 && (
                   <div className="space-y-3">
-                    {activeTab === 'all' && mobileFilteredChampionships.length > 0 && (
+                    {activeTab === 'all' && (mobileFilteredChampionships.length > 0 || mobileFilteredAnnouncements.length > 0) && (
                       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-primary px-0.5 pt-2">
                         <Trophy className="w-3.5 h-3.5" />
                         <span>Tournaments & Knockouts ({mobileFilteredTournaments.length})</span>
@@ -873,7 +964,17 @@ export default function TournamentsPage() {
 
             {/* Right Action CTAs */}
             <div className="flex items-center gap-3">
-              {isAuthenticated ? (
+              {isUserLoggedIn && (
+                <Link
+                  href="/tournaments/announce"
+                  className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-500 text-sm font-black px-4 py-2.5 rounded-2xl hover:bg-amber-500/25 transition-all shadow-sm"
+                >
+                  <Megaphone className="w-4 h-4" />
+                  <span>Announce Tournament</span>
+                </Link>
+              )}
+
+              {isUserLoggedIn ? (
                 <Link
                   href="/home"
                   className="flex items-center gap-2 bg-primary text-black text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
@@ -1021,6 +1122,7 @@ export default function TournamentsPage() {
             >
               {[
                 { id: 'all', label: 'All Events', count: totalCount, icon: Layers },
+                { id: 'announcements', label: 'Community Flyers', count: totalAnnouncements, icon: Megaphone },
                 { id: 'championships', label: 'Team Championships', count: totalChampionships, icon: Shield },
                 { id: 'upcoming', label: 'Upcoming Draws', count: upcomingCount, icon: Calendar },
                 { id: 'live', label: 'Live in Arena', count: liveCount, icon: Tv, isLive: true },
@@ -1137,8 +1239,41 @@ export default function TournamentsPage() {
             </div>
           ) : (
             <div className="space-y-12">
+              {/* 0. Community Tournament Flyers Section */}
+              {desktopAnnouncements.length > 0 && (
+                <section className="space-y-5">
+                  <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
+                    <div className="flex items-center gap-2.5">
+                      <Megaphone className="w-5 h-5 text-amber-500" />
+                      <h2 className="text-lg font-black text-foreground">
+                        Community Tournament Flyers ({desktopAnnouncements.length})
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-foreground/50">Direct entry & contact announcements</span>
+                      {isUserLoggedIn && (
+                        <Link
+                          href="/tournaments/announce"
+                          className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Announce Yours
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+                    {desktopAnnouncements.map((announcement) => (
+                      <div key={announcement.uuid} className="h-full">
+                        <PublicAnnouncementCard announcement={announcement} />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* 1. Team Championships Section */}
-              {desktopChampionships.length > 0 && (
+              {desktopFilter !== 'announcements' && desktopChampionships.length > 0 && (
                 <section className="space-y-5">
                   <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
                     <div className="flex items-center gap-2.5">
@@ -1161,7 +1296,7 @@ export default function TournamentsPage() {
               )}
 
               {/* 2. Tournaments Section */}
-              {desktopTournaments.length > 0 && (
+              {desktopFilter !== 'announcements' && desktopTournaments.length > 0 && (
                 <section className="space-y-5">
                   <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--athlon-border)' }}>
                     <div className="flex items-center gap-2.5">

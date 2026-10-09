@@ -49,6 +49,28 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
     }
   };
 
+  const formatLocation = () => {
+    const parts: string[] = [];
+    if (tournament.location && tournament.location.trim()) {
+      parts.push(tournament.location.trim());
+    }
+    const city = tournament.city?.trim();
+    const district = tournament.district?.trim();
+    const state = tournament.state?.trim();
+
+    if (city && !parts.some((p) => p.toLowerCase().includes(city.toLowerCase()))) {
+      parts.push(city);
+    }
+    if (district && district.toLowerCase() !== city?.toLowerCase() && !parts.some((p) => p.toLowerCase().includes(district.toLowerCase()))) {
+      parts.push(district);
+    }
+    if (state && !parts.some((p) => p.toLowerCase().includes(state.toLowerCase()))) {
+      parts.push(state);
+    }
+
+    return parts.length > 0 ? parts.join(', ') : 'Venue TBA';
+  };
+
   const closingDate = formatClosingDate();
   const categories = tournament.category
     ? tournament.category.split(',').map((c) => c.trim()).filter(Boolean)
@@ -129,9 +151,9 @@ export function PublicTournamentCard({ tournament, hrefPrefix }: PublicTournamen
               >
                 {tournament.name}
               </h3>
-              <div className="flex items-center gap-1 text-[9.5px] font-bold text-foreground/45 truncate mt-0.5">
+              <div className="flex items-center gap-1 text-[9.5px] font-bold text-foreground/45 truncate mt-0.5" title={formatLocation()}>
                 <MapPin className="w-3 h-3 text-primary shrink-0" />
-                <span className="truncate">{tournament.location || 'Venue TBA'}</span>
+                <span className="truncate">{formatLocation()}</span>
               </div>
             </div>
           </div>

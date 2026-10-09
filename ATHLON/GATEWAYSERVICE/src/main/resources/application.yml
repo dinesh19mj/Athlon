@@ -11,32 +11,32 @@ spring:
       routes:
 
         - id: auth_route
-          uri: http://localhost:5051
+          uri: http://127.0.0.1:5051
           predicates:
             - Path=/api/auth/**
 
         - id: identity_route
-          uri: http://localhost:5052
+          uri: http://127.0.0.1:5052
           predicates:
             - Path=/api/identity/**
 
         - id: tournament_route
-          uri: http://localhost:5053
+          uri: http://127.0.0.1:5053
           predicates:
             - Path=/api/tournament/**
 
         - id: tournament_ws_route
-          uri: ws://localhost:5053
+          uri: ws://127.0.0.1:5053
           predicates:
             - Path=/ws/**
 
         - id: payment_route
-          uri: http://localhost:5054
+          uri: http://127.0.0.1:5054
           predicates:
             - Path=/api/payments/**
 
         - id: marketplace_route
-          uri: http://localhost:5055
+          uri: http://127.0.0.1:5055
           predicates:
             - Path=/api/marketplace/**, /api/platform/**
 

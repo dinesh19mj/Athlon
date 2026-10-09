@@ -311,7 +311,7 @@ export default function AcademiesPage() {
       )}
 
       {/* ── SLEEK MOBILE-FIRST HEADER & SEARCH HUB ── */}
-      <section className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-card/90 via-surface/60 to-background pt-3 sm:pt-6 pb-4 sm:pb-6 px-3.5 sm:px-6">
+      <section className="relative overflow-hidden border-b border-border/80 bg-gradient-to-b from-card/90 via-surface/60 to-background safe-header pb-4 sm:pb-6 px-3.5 sm:px-6">
         {/* Subtle Ambient Glow */}
         <div className="absolute top-0 right-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 left-10 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />

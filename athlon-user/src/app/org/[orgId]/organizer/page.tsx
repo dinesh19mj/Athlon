@@ -29,31 +29,86 @@ import {
   ArrowUpRight,
   Video,
   Settings,
-  Share2
+  Share2,
+  Search,
+  Filter,
+  RefreshCw,
+  X,
+  XCircle,
+  Eye,
+  ZoomIn
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
-import { TournamentService, Tournament } from '@/lib/api/tournaments';
+import { TournamentService, Tournament, RegistrationService, Registration, RegistrationPlayer } from '@/lib/api/tournaments';
+import { UserService } from '@/lib/api/user';
 import { ScoreService, LiveScore } from '@/lib/api/scores';
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
 import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
+import { OrganizerRegistrationCard } from '@/components/organizer/OrganizerRegistrationCard';
+
+export type EnhancedRegistration = Registration & {
+  tournamentName?: string;
+  tournamentUuid?: string;
+  sport?: string;
+};
 
 export default function OrganizerDashboardPage() {
   const params = useParams();
   const orgId = (params?.orgId as string) || '';
-  const { userEmail } = useAuthStore();
+  const { userEmail, userId } = useAuthStore();
   const { getActiveOrganization, organizations } = useWorkspaceStore();
   const activeOrg = getActiveOrganization() || organizations.find(o => o.id === orgId);
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [registrations, setRegistrations] = useState<EnhancedRegistration[]>([]);
+  const [playerPhotos, setPlayerPhotos] = useState<Record<string, string>>({});
   const [liveScores, setLiveScores] = useState<LiveScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState<'ALL' | 'ACTIVE' | 'UPCOMING'>('ALL');
+
+  // Registration Section Filters
+  const [regFilterStatus, setRegFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNPAID' | 'PAID'>('ALL');
+  const [selectedTournamentUuid, setSelectedTournamentUuid] = useState<string>('ALL');
+  const [regSearchQuery, setRegSearchQuery] = useState('');
+
+  // Photo Zoom Modal
+  const [previewPhotoModal, setPreviewPhotoModal] = useState<{
+    url: string;
+    playerName: string;
+    teamName: string;
+    phone?: string;
+    regUuid: string;
+    status: string;
+  } | null>(null);
 
   // Friendly name
   const displayName = activeOrg?.name || (userEmail
     ? userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1)
     : 'Organizer');
+
+  const fetchRegistrationsForTournaments = async (tournList: Tournament[]) => {
+    if (!tournList || tournList.length === 0) return [];
+    const regPromises = tournList.map(async (t: Tournament) => {
+      const tId = t.tournamentId || (t as any).id;
+      if (!tId) return [];
+      try {
+        const r = await RegistrationService.getByTournament(Number(tId));
+        const resData = (r as any)?.data || r;
+        const validList: Registration[] = Array.isArray(resData) ? resData : [];
+        return validList.map((reg) => ({
+          ...reg,
+          tournamentName: t.name || (t as any).tournamentName,
+          tournamentUuid: t.tournamentUuid,
+          sport: t.sport,
+        }));
+      } catch {
+        return [];
+      }
+    });
+    const allRegs = (await Promise.all(regPromises)).flat();
+    return allRegs;
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -66,12 +121,18 @@ export default function OrganizerDashboardPage() {
           ScoreService.getLive().catch(() => ({ data: [] }))
         ]);
 
+        const orgTournaments = tournRes?.data || [];
         if (isMounted) {
-          if (tournRes && tournRes.data) {
-            setTournaments(tournRes.data);
-          }
+          setTournaments(orgTournaments);
           if (liveRes && liveRes.data) {
             setLiveScores(liveRes.data);
+          }
+        }
+
+        if (orgTournaments.length > 0) {
+          const loadedRegs = await fetchRegistrationsForTournaments(orgTournaments);
+          if (isMounted) {
+            setRegistrations(loadedRegs);
           }
         }
       } catch (err) {
@@ -98,10 +159,88 @@ export default function OrganizerDashboardPage() {
     };
   }, [orgId]);
 
+  // Player photo background lookup
+  useEffect(() => {
+    const fetchMissingPlayerPhotos = async () => {
+      const phonesToFetch = new Set<string>();
+      registrations.forEach((reg) => {
+        reg.players?.forEach((p) => {
+          if (p.phoneNumber && !p.photo && !p.photoUrl && !p.avatar && !playerPhotos[p.phoneNumber]) {
+            phonesToFetch.add(p.phoneNumber);
+          }
+        });
+      });
+
+      if (phonesToFetch.size === 0) return;
+
+      const newPhotos: Record<string, string> = {};
+      await Promise.all(
+        Array.from(phonesToFetch).map(async (phone) => {
+          try {
+            const clean = phone.replace(/[^0-9]/g, '');
+            const userRes = await UserService.getUserByPhone(clean);
+            if (userRes?.data?.photo) {
+              newPhotos[phone] = UserService.getPhotoUrl(userRes.data.photo);
+            }
+          } catch {
+            // ignore
+          }
+        })
+      );
+
+      if (Object.keys(newPhotos).length > 0) {
+        setPlayerPhotos((prev) => ({ ...prev, ...newPhotos }));
+      }
+    };
+
+    if (registrations.length > 0) {
+      fetchMissingPlayerPhotos();
+    }
+  }, [registrations]);
+
+  // Handlers for Registration Card actions
+  const handleApprove = async (regUuid: string) => {
+    try {
+      await RegistrationService.updateStatus(regUuid, 'APPROVED', Number(userId));
+      setRegistrations((prev) =>
+        prev.map((r) => (r.registrationUuid === regUuid || r.uuid === regUuid ? { ...r, status: 'APPROVED' } : r))
+      );
+    } catch (error) {
+      console.error('Failed to approve registration', error);
+    }
+  };
+
+  const handleReject = async (regUuid: string) => {
+    try {
+      await RegistrationService.updateStatus(regUuid, 'REJECTED', Number(userId));
+      setRegistrations((prev) =>
+        prev.map((r) => (r.registrationUuid === regUuid || r.uuid === regUuid ? { ...r, status: 'REJECTED' } : r))
+      );
+    } catch (error) {
+      console.error('Failed to reject registration', error);
+    }
+  };
+
+  const handlePaymentUpdate = async (regUuid: string, newStatus: 'PAID' | 'PENDING') => {
+    try {
+      await RegistrationService.updatePaymentStatus(regUuid, newStatus, Number(userId));
+      setRegistrations((prev) =>
+        prev.map((r) => (r.registrationUuid === regUuid || r.uuid === regUuid ? { ...r, paymentStatus: newStatus } : r))
+      );
+    } catch (error) {
+      console.error('Failed to update payment status', error);
+    }
+  };
+
   // Statistics calculation
   const activeTournaments = tournaments.filter(t => t.isActive || t.status === 'ACTIVE' || t.status === 'IN_PROGRESS');
-  const totalEntries = tournaments.reduce((acc, t) => acc + (t.playersCount || 0), 0);
-  const totalRevenue = tournaments.reduce((acc, t) => acc + ((t.registrationFees || 0) * (t.playersCount || 0)), 0);
+  const totalRegisteredAthletes = registrations.reduce((acc, r) => acc + (r.players?.length || 1), 0);
+  const totalRevenue = registrations
+    .filter(r => r.paymentStatus === 'PAID' || r.status === 'APPROVED')
+    .reduce((acc, r) => {
+      const tourn = tournaments.find(t => t.tournamentId === r.tournamentId);
+      return acc + (tourn?.registrationFees || 0);
+    }, 0);
 
   // Filtered tournament list
   const filteredTournaments = tournaments.filter(t => {
@@ -109,6 +248,41 @@ export default function OrganizerDashboardPage() {
     if (filterTab === 'UPCOMING') return t.status === 'UPCOMING' || t.status === 'REGISTRATION_OPEN' || !t.status;
     return true;
   });
+
+  // Filtered registrations list for the cards grid
+  const filteredRegistrations = registrations.filter((reg) => {
+    // Tournament filter
+    if (selectedTournamentUuid !== 'ALL' && reg.tournamentUuid !== selectedTournamentUuid) {
+      return false;
+    }
+
+    // Status filter
+    if (regFilterStatus === 'PENDING' && reg.status !== 'PENDING') return false;
+    if (regFilterStatus === 'APPROVED' && reg.status !== 'APPROVED') return false;
+    if (regFilterStatus === 'REJECTED' && reg.status !== 'REJECTED') return false;
+    if (regFilterStatus === 'UNPAID' && reg.paymentStatus === 'PAID') return false;
+    if (regFilterStatus === 'PAID' && reg.paymentStatus !== 'PAID') return false;
+
+    // Search query
+    if (regSearchQuery.trim()) {
+      const q = regSearchQuery.toLowerCase();
+      const matchTeam = reg.teamName?.toLowerCase().includes(q);
+      const matchCat = reg.category?.toLowerCase().includes(q);
+      const matchTourn = reg.tournamentName?.toLowerCase().includes(q);
+      const matchPlayer = reg.players?.some(
+        (p) =>
+          p.playerName?.toLowerCase().includes(q) ||
+          p.phoneNumber?.toLowerCase().includes(q)
+      );
+      if (!matchTeam && !matchCat && !matchTourn && !matchPlayer) return false;
+    }
+
+    return true;
+  });
+
+  const pendingCount = registrations.filter(r => r.status === 'PENDING').length;
+  const unpaidCount = registrations.filter(r => r.paymentStatus !== 'PAID').length;
+  const approvedCount = registrations.filter(r => r.status === 'APPROVED').length;
 
   const activeLiveMatch = liveScores[0];
   const liveMeta = activeLiveMatch?.scoreMeta || {};
@@ -121,10 +295,7 @@ export default function OrganizerDashboardPage() {
   return (
     <div className="min-h-full bg-background text-foreground font-sans pb-24 overflow-y-auto selection:bg-primary selection:text-black">
 
-      {/* ─── 0. TOP-LEVEL APP MODE SWITCHER (ATHLON ↔ MARKET) ─── */}
-      <div className="px-4 md:px-8 pt-0 pb-0 flex justify-center">
-        <AppModeSwitcher />
-      </div>
+
 
       {/* ROLE SWITCHER HEADER */}
       <div className="px-4 md:px-8 pt-2 pb-2">
@@ -246,7 +417,7 @@ export default function OrganizerDashboardPage() {
               </span>
             </div>
             <div className="text-2xl md:text-3xl font-black tracking-tight text-foreground">
-              {totalEntries || '240+'}
+              {registrations.length > 0 ? registrations.length : totalRegisteredAthletes > 0 ? totalRegisteredAthletes : '0'}
             </div>
             <div className="text-xs font-semibold text-foreground/60 mt-1">
               Total Registrations
@@ -562,6 +733,172 @@ export default function OrganizerDashboardPage() {
           </div>
         </section>
 
+        {/* ─── Tournament Registered Entries Showcase (Organizer Cards) ─────────── */}
+        <section className="space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-1">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Live Registration Desk
+                </span>
+              </div>
+              <h2 className="text-lg md:text-xl font-black uppercase tracking-tight text-foreground flex items-center gap-2">
+                <span>Tournament Registered Entries</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-primary/10 border border-primary/25 text-primary">
+                  {registrations.length} Total
+                </span>
+              </h2>
+              <p className="text-xs text-foreground/60 mt-0.5">
+                Review athlete entries, verify photo IDs, approve squads, and manage payment settlements
+              </p>
+            </div>
+
+            {/* Quick Stats Badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {pendingCount > 0 && (
+                <span className="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{pendingCount} Pending Review</span>
+                </span>
+              )}
+              {unpaidCount > 0 && (
+                <span className="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 flex items-center gap-1.5">
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  <span>{unpaidCount} Unpaid Fees</span>
+                </span>
+              )}
+              {approvedCount > 0 && (
+                <span className="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{approvedCount} Approved</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Search, Tournament Filter, & Status Filter Controls Bar */}
+          <div
+            className="p-3.5 rounded-2xl border space-y-3 shadow-xs"
+            style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+          >
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              {/* Search Bar */}
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={regSearchQuery}
+                  onChange={(e) => setRegSearchQuery(e.target.value)}
+                  placeholder="Search by athlete name, phone, team name, or category..."
+                  className="w-full pl-9 pr-8 py-2 rounded-xl text-xs font-semibold bg-surface border border-border/70 text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary transition-colors"
+                />
+                {regSearchQuery && (
+                  <button
+                    onClick={() => setRegSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-foreground/40 hover:text-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Tournament Selector Dropdown */}
+              {tournaments.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary shrink-0 hidden sm:block" />
+                  <select
+                    value={selectedTournamentUuid}
+                    onChange={(e) => setSelectedTournamentUuid(e.target.value)}
+                    className="px-3 py-2 rounded-xl text-xs font-bold bg-surface border border-border/70 text-foreground focus:outline-none focus:border-primary transition-colors cursor-pointer"
+                  >
+                    <option value="ALL">All Tournaments ({tournaments.length})</option>
+                    {tournaments.map((t) => (
+                      <option key={t.tournamentUuid || t.tournamentId} value={t.tournamentUuid || String(t.tournamentId)}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar text-xs">
+              {(
+                [
+                  { id: 'ALL', label: `All (${registrations.length})` },
+                  { id: 'PENDING', label: `Pending (${pendingCount})` },
+                  { id: 'APPROVED', label: `Approved (${approvedCount})` },
+                  { id: 'UNPAID', label: `Unpaid (${unpaidCount})` },
+                  { id: 'PAID', label: `Paid (${registrations.length - unpaidCount})` },
+                  { id: 'REJECTED', label: 'Rejected' },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setRegFilterStatus(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                    regFilterStatus === tab.id
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'bg-surface border border-border/60 text-foreground/70 hover:text-foreground hover:border-primary/40'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Registrations Cards Grid */}
+          {filteredRegistrations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredRegistrations.map((reg) => (
+                <OrganizerRegistrationCard
+                  key={reg.registrationUuid || reg.uuid || reg.id}
+                  registration={reg}
+                  orgId={orgId}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  onPaymentUpdate={handlePaymentUpdate}
+                  onPreviewPhoto={(info) => setPreviewPhotoModal(info)}
+                  playerPhotos={playerPhotos}
+                  showTournamentLink={true}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="rounded-2xl p-8 border text-center flex flex-col items-center justify-center space-y-3"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20 text-primary">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 max-w-sm">
+                <h4 className="text-sm font-bold text-foreground">No Registered Entries Found</h4>
+                <p className="text-xs text-foreground/60">
+                  {regSearchQuery || regFilterStatus !== 'ALL' || selectedTournamentUuid !== 'ALL'
+                    ? 'No player entries match the selected filters or search terms.'
+                    : 'Players who register for your tournaments will appear here for one-click verification and approvals.'}
+                </p>
+              </div>
+              {(regSearchQuery || regFilterStatus !== 'ALL' || selectedTournamentUuid !== 'ALL') && (
+                <button
+                  onClick={() => {
+                    setRegSearchQuery('');
+                    setRegFilterStatus('ALL');
+                    setSelectedTournamentUuid('ALL');
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-surface border border-border text-foreground hover:border-primary transition-all"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+
         {/* ─── Tournaments Management List ─────────────────────────────────── */}
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
@@ -653,7 +990,7 @@ export default function OrganizerDashboardPage() {
                     {/* Action Hub Buttons */}
                     <div className="mt-4 pt-3 border-t border-border/40 grid grid-cols-2 gap-2">
                       <Link
-                        href={`/org/${orgId}/organizer/tournaments/${tournament.tournamentUuid || tournament.tournamentId}`}
+                        href={`/org/${orgId}/tournaments/${tournament.tournamentUuid || tournament.tournamentId}`}
                         className="py-2 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-surface border border-border hover:border-primary/50 text-foreground text-center transition-all"
                       >
                         Manage
@@ -694,6 +1031,90 @@ export default function OrganizerDashboardPage() {
         </section>
 
       </main>
+
+      {/* ─── Athlete Photo Zoom / Verification Modal ─── */}
+      {previewPhotoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setPreviewPhotoModal(null)}
+        >
+          <div
+            className="relative max-w-md w-full rounded-3xl overflow-hidden border p-6 space-y-5 shadow-2xl"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary block">
+                  Athlete Photo Verification
+                </span>
+                <h3 className="text-lg font-black text-foreground">{previewPhotoModal.playerName}</h3>
+                {previewPhotoModal.teamName && (
+                  <span className="text-xs text-foreground/60 font-semibold block">
+                    {previewPhotoModal.teamName}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setPreviewPhotoModal(null)}
+                className="p-2 rounded-xl bg-surface border border-border text-foreground/70 hover:text-foreground transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Photo Container */}
+            <div className="w-full aspect-square rounded-2xl overflow-hidden border border-border bg-black/40 relative flex items-center justify-center shadow-inner">
+              <img
+                src={previewPhotoModal.url}
+                alt={previewPhotoModal.playerName}
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                    previewPhotoModal.playerName
+                  )}`;
+                }}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-2 pt-1">
+              {previewPhotoModal.phone && (
+                <div className="text-xs text-foreground/70 font-mono text-center">
+                  Contact: <span className="font-bold text-foreground">{previewPhotoModal.phone}</span>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    handleApprove(previewPhotoModal.regUuid);
+                    setPreviewPhotoModal(null);
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-emerald-500 text-black font-black text-xs uppercase tracking-wider hover:bg-emerald-600 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Approve Entry</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleReject(previewPhotoModal.regUuid);
+                    setPreviewPhotoModal(null);
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/30 font-black text-xs uppercase tracking-wider hover:bg-red-500/25 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Reject</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
