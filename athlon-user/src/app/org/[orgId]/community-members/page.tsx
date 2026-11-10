@@ -336,7 +336,13 @@ export default function CommunityMembersPage() {
   const locationLabel = community?.location || community?.city || (org as any)?.city || 'Local Circle';
 
   return (
-    <div className="min-h-screen pb-28 md:pb-16 text-foreground" style={{ backgroundColor: 'var(--athlon-background)' }}>
+    <div
+      className="min-h-full w-full pb-28 md:pb-16 text-foreground"
+      style={{
+        backgroundColor: 'var(--athlon-bg)',
+        paddingTop: 'max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+      }}
+    >
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-emerald-500 text-black font-extrabold text-xs shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
@@ -345,168 +351,227 @@ export default function CommunityMembersPage() {
         </div>
       )}
 
-      {/* ── HERO HEADER BAR ── */}
-      <header
-        className="sticky top-0 z-30 border-b backdrop-blur-xl px-4 sm:px-6 py-3.5 transition-all"
-        style={{
-          backgroundColor: 'var(--athlon-card)',
-          borderColor: 'var(--athlon-border)',
-        }}
-      >
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
-          {/* Back & Title */}
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              href={`/org/${orgId}/dashboard`}
-              className="w-10 h-10 rounded-2xl border flex items-center justify-center text-foreground/75 hover:text-foreground hover:bg-surface transition-all active:scale-95 shrink-0 shadow-sm"
-              style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
-              title="Back to Dashboard"
-            >
-              <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
-            </Link>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25 inline-flex items-center gap-1">
-                  <span>🏸</span>
-                  <span className="truncate">{sportName}</span>
-                </span>
-                <span className="text-[10px] text-foreground/45 font-semibold hidden xs:inline">• {locationLabel}</span>
-              </div>
-              <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight leading-snug truncate mt-0.5">
-                Community Members
-              </h1>
-            </div>
-          </div>
-
-          {/* Action Tools */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleCopyInviteLink}
-              className={`px-3 py-2 rounded-2xl border text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${copiedLink
-                ? 'bg-emerald-500 text-black border-emerald-400 shadow-md shadow-emerald-500/20'
-                : 'hover:bg-surface text-foreground'
-                }`}
-              style={{
-                borderColor: !copiedLink ? 'var(--athlon-border)' : undefined,
-                backgroundColor: !copiedLink ? 'var(--athlon-surface)' : undefined,
-              }}
-              title="Copy Invite Link"
-            >
-              {copiedLink ? <CheckCheck className="w-3.5 h-3.5 stroke-[2.5]" /> : <Share2 className="w-3.5 h-3.5 text-primary" />}
-              <span className="hidden sm:inline">{copiedLink ? 'Copied!' : 'Invite'}</span>
-            </button>
-
-            <button
-              onClick={loadData}
-              disabled={refreshing}
-              className="w-10 h-10 rounded-2xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-surface transition-all active:scale-95 cursor-pointer shadow-sm"
-              style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
-              title="Refresh Roster"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* ── MAIN CONTENT CONTAINER ── */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-4 space-y-4">
-        {/* ── BENTO OVERVIEW STATS STRIP ── */}
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5">
-          {/* Card 1: Active Roster */}
+      <div className="w-full max-w-lg md:max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 flex flex-col gap-3.5 md:gap-6 pt-1.5">
+        {/* ── HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive) ── */}
+        <section
+          className="relative w-full rounded-[26px] overflow-hidden border p-4 sm:p-5 shadow-xl transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+            boxShadow:
+              '0 12px 32px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.15)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)',
+          }}
+        >
+          {/* Top Edge Neon Energy Rail */}
           <div
-            className="p-3 sm:p-4 rounded-[22px] border relative overflow-hidden flex flex-col justify-between shadow-sm group hover:border-primary/40 transition-colors"
-            style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-          >
-            <div className="flex items-center justify-between text-foreground/50">
-              <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider truncate">Roster</span>
-              <Users className="w-3.5 h-3.5 text-primary shrink-0" />
-            </div>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-xl sm:text-2xl font-black text-foreground font-mono">{activeMembers.length}</span>
-              <span className="text-[10px] text-foreground/50 font-bold hidden sm:inline">athletes</span>
-            </div>
-            <div className="text-[9.5px] text-emerald-400 font-bold mt-0.5 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Active Circle</span>
-            </div>
-          </div>
-
-          {/* Card 2: Sessions / Games Played */}
-          <div
-            className="p-3 sm:p-4 rounded-[22px] border relative overflow-hidden flex flex-col justify-between shadow-sm group hover:border-amber-500/40 transition-colors"
-            style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-          >
-            <div className="flex items-center justify-between text-foreground/50">
-              <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider truncate">Sessions</span>
-              <Activity className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            </div>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-xl sm:text-2xl font-black text-foreground font-mono">{totalGamesPlayed}</span>
-              <span className="text-[10px] text-foreground/50 font-bold hidden sm:inline">played</span>
-            </div>
-            <div className="text-[9.5px] text-amber-400 font-bold mt-0.5 flex items-center gap-1">
-              <Flame className="w-3 h-3 fill-amber-400" />
-              <span>Match Roster</span>
-            </div>
-          </div>
-
-          {/* Card 3: Leadership / Requests */}
-          <div
-            onClick={() => requestedMembers.length > 0 && setActiveTab('REQUESTS')}
-            className={`p-3 sm:p-4 rounded-[22px] border relative overflow-hidden flex flex-col justify-between shadow-sm transition-all ${requestedMembers.length > 0
-              ? 'border-rose-500/40 bg-rose-500/10 cursor-pointer hover:bg-rose-500/15'
-              : 'hover:border-purple-500/40'
-              }`}
+            className="absolute top-0 inset-x-0 h-[2px] opacity-75 pointer-events-none z-0"
             style={{
-              backgroundColor: requestedMembers.length === 0 ? 'var(--athlon-card)' : undefined,
-              borderColor: requestedMembers.length === 0 ? 'var(--athlon-border)' : undefined,
+              background: 'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
             }}
-          >
-            <div className="flex items-center justify-between text-foreground/50">
-              <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider truncate">
-                {requestedMembers.length > 0 ? 'Requests' : 'Captains'}
-              </span>
-              {requestedMembers.length > 0 ? (
-                <UserPlus className="w-3.5 h-3.5 text-rose-400 animate-bounce shrink-0" />
-              ) : (
-                <Shield className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-              )}
-            </div>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-xl sm:text-2xl font-black text-foreground font-mono">
-                {requestedMembers.length > 0 ? requestedMembers.length : adminMembers.length}
-              </span>
-              <span className="text-[10px] text-foreground/50 font-bold hidden sm:inline">
-                {requestedMembers.length > 0 ? 'pending' : 'leads'}
-              </span>
-            </div>
-            <div className={`text-[9.5px] font-bold mt-0.5 flex items-center gap-1 ${requestedMembers.length > 0 ? 'text-rose-400' : 'text-purple-400'}`}>
-              <span>{requestedMembers.length > 0 ? 'Tap to Review' : 'Admins & Hosts'}</span>
-            </div>
-          </div>
-        </div>
+          />
 
-        {/* ── SEARCH & FILTER CONTROLS ── */}
-        <div className="space-y-2.5">
-          <div className="relative">
-            <Search className="w-4 h-4 text-foreground/45 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search member by name, role, or skill level..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-10 py-3.5 rounded-[22px] border text-xs sm:text-sm font-semibold outline-none transition-all placeholder:text-foreground/40 focus:border-primary focus:ring-2 focus:ring-primary/15 shadow-sm"
+          {/* Stadium Floodlight Spotlights */}
+          <div
+            className="absolute -top-16 -right-16 w-60 h-60 rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-60 animate-pulse duration-1000 z-0"
+            style={{
+              background: 'radial-gradient(circle, var(--athlon-primary) 0%, rgba(52, 211, 153, 0.3) 40%, transparent 75%)',
+            }}
+          />
+
+          {/* Specular Sheen Arc */}
+          <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.12] dark:from-white/[0.04] via-transparent to-transparent pointer-events-none z-0" />
+
+          <div className="relative z-10 space-y-3.5">
+            {/* Top Control Bar inside Hero */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Link
+                  href={`/org/${orgId}/dashboard`}
+                  className="w-7 h-7 rounded-lg border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 transition-all shrink-0 shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Back to Dashboard"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+                </Link>
+
+                <div
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary-soft)',
+                    borderColor: 'var(--athlon-primary)',
+                  }}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span
+                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                    <span
+                      className="relative inline-flex rounded-full h-2 w-2"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary truncate">
+                    🏸 {sportName}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons: Plan & Limits, Invite & Refresh */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Link
+                  href={`/org/${orgId}/community/subscription`}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9.5px] font-bold uppercase tracking-wider active:scale-95 transition-all shadow-sm backdrop-blur-md cursor-pointer bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20"
+                  title="Community Plan & Member Capacity"
+                >
+                  <Sparkles className="w-3 h-3 text-sky-500" />
+                  <span className="hidden sm:inline">Plan</span>
+                </Link>
+
+                <button
+                  onClick={handleCopyInviteLink}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9.5px] font-bold uppercase tracking-wider active:scale-95 transition-all shadow-sm backdrop-blur-md cursor-pointer"
+                  style={{
+                    backgroundColor: copiedLink ? 'var(--athlon-primary)' : 'var(--athlon-surface)',
+                    borderColor: copiedLink ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                    color: copiedLink ? 'var(--athlon-primary-foreground)' : 'var(--athlon-text)',
+                  }}
+                  title="Copy Invite Link"
+                >
+                  {copiedLink ? <CheckCheck className="w-3 h-3 stroke-[2.5]" /> : <Share2 className="w-3 h-3 text-primary" />}
+                  <span>{copiedLink ? 'Copied' : 'Invite'}</span>
+                </button>
+
+                <button
+                  onClick={loadData}
+                  disabled={refreshing}
+                  className="w-7 h-7 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 cursor-pointer shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Refresh Roster"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Title & Subtitle */}
+            <div className="space-y-1">
+              <h1 className="text-[19px] sm:text-[21px] font-black leading-[1.14] tracking-tight uppercase text-foreground">
+                <span>Community</span>{' '}
+                <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">
+                  Members
+                </span>
+              </h1>
+              <p className="text-[11px] text-text-secondary leading-relaxed font-medium pt-0.5">
+                Active player roster, circle captains &amp; roll call
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="flex items-center justify-center gap-1.5 text-[9.5px] font-bold px-3 py-2.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md tracking-wider uppercase cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary-foreground)',
+                  boxShadow: '0 4px 16px var(--athlon-primary-glow)',
+                }}
+              >
+                <UserPlus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Add Player</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab(activeTab === 'ADMINS' ? 'ALL' : 'ADMINS')}
+                className="flex items-center justify-center gap-1.5 border text-[9.5px] font-bold px-3 py-2.5 rounded-xl active:scale-95 transition-all shadow-sm tracking-wider uppercase backdrop-blur-md cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-text)',
+                }}
+              >
+                <Shield className="w-3.5 h-3.5 text-primary" strokeWidth={2.2} />
+                <span>Captains</span>
+              </button>
+            </div>
+
+            {/* Live Telemetry Strip with Dynamic Counts */}
+            <div
+              className="grid grid-cols-3 divide-x rounded-2xl p-2.5 mt-1 border backdrop-blur-md"
               style={{
-                backgroundColor: 'var(--athlon-card)',
+                backgroundColor: 'var(--athlon-surface)',
                 borderColor: 'var(--athlon-border)',
               }}
+            >
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-foreground font-mono leading-none">
+                  {loading ? '...' : activeMembers.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                  Roster
+                </span>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-primary font-mono leading-none">
+                  {loading ? '...' : totalGamesPlayed}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                  Sessions
+                </span>
+              </div>
+
+              <div
+                onClick={() => requestedMembers.length > 0 && setActiveTab('REQUESTS')}
+                className={`flex flex-col items-center justify-center text-center px-1 ${
+                  requestedMembers.length > 0 ? 'cursor-pointer' : ''
+                }`}
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span
+                  className={`text-xs font-black font-mono leading-none ${
+                    requestedMembers.length > 0 ? 'text-rose-400' : 'text-emerald-400'
+                  }`}
+                >
+                  {loading ? '...' : requestedMembers.length > 0 ? requestedMembers.length : adminMembers.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                  {requestedMembers.length > 0 ? 'Requests' : 'Captains'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── SEARCH & FILTER CONTROLS (Design System Section 4.2 & 4.3) ── */}
+        <div className="space-y-2.5">
+          {/* Search Input */}
+          <div
+            className="flex items-center w-full px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl border transition-all backdrop-blur-md focus-within:ring-1 focus-within:ring-primary shadow-inner"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <Search className="w-3.5 h-3.5 text-foreground/40 mr-2 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search member by name, role, or skill..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 min-w-0 bg-transparent text-xs focus:outline-none placeholder:text-foreground/40 text-foreground font-medium truncate"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="w-7 h-7 rounded-xl flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground hover:bg-surface"
+                className="p-1 hover:text-foreground text-foreground/40 transition-colors shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -514,94 +579,61 @@ export default function CommunityMembersPage() {
           </div>
 
           {/* Segmented Filter Pills */}
-          <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 hide-scrollbar">
+          <div className="flex items-center justify-between gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar -mx-1 px-1">
             <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => setActiveTab('ALL')}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 ${activeTab === 'ALL'
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'border hover:bg-surface text-foreground/75'
-                  }`}
-                style={{
-                  borderColor: activeTab !== 'ALL' ? 'var(--athlon-border)' : undefined,
-                  backgroundColor: activeTab !== 'ALL' ? 'var(--athlon-card)' : undefined,
-                }}
-              >
-                <span>All</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'ALL' ? 'bg-black/20 text-black' : 'bg-surface text-foreground/55'}`}>
-                  {members.length}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('ACTIVE')}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 ${activeTab === 'ACTIVE'
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'border hover:bg-surface text-foreground/75'
-                  }`}
-                style={{
-                  borderColor: activeTab !== 'ACTIVE' ? 'var(--athlon-border)' : undefined,
-                  backgroundColor: activeTab !== 'ACTIVE' ? 'var(--athlon-card)' : undefined,
-                }}
-              >
-                <span>Active Players</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'ACTIVE' ? 'bg-black/20 text-black' : 'bg-surface text-foreground/55'}`}>
-                  {activeMembers.length}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('ADMINS')}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 ${activeTab === 'ADMINS'
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'border hover:bg-surface text-foreground/75'
-                  }`}
-                style={{
-                  borderColor: activeTab !== 'ADMINS' ? 'var(--athlon-border)' : undefined,
-                  backgroundColor: activeTab !== 'ADMINS' ? 'var(--athlon-card)' : undefined,
-                }}
-              >
-                <span>Host &amp; Captains</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${activeTab === 'ADMINS' ? 'bg-black/20 text-black' : 'bg-surface text-foreground/55'}`}>
-                  {adminMembers.length}
-                </span>
-              </button>
-
-              {requestedMembers.length > 0 && (
-                <button
-                  onClick={() => setActiveTab('REQUESTS')}
-                  className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 ${activeTab === 'REQUESTS'
-                    ? 'bg-amber-400 text-black shadow-md shadow-amber-400/20'
-                    : 'border border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+              {[
+                { id: 'ALL', label: 'All', count: members.length },
+                { id: 'ACTIVE', label: 'Active Players', count: activeMembers.length },
+                { id: 'ADMINS', label: 'Host & Captains', count: adminMembers.length },
+                ...(requestedMembers.length > 0
+                  ? [{ id: 'REQUESTS', label: 'Join Requests', count: requestedMembers.length, urgent: true }]
+                  : []),
+              ].map((tab) => {
+                const isSelected = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer active:scale-95 flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'border-primary shadow-[0_2px_12px_var(--athlon-primary-glow)] font-black'
+                        : 'text-foreground/70 border-border bg-card/60 hover:bg-card'
                     }`}
-                >
-                  <Sparkles className="w-3 h-3 fill-amber-400" />
-                  <span>Join Requests</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black bg-black text-amber-400">
-                    {requestedMembers.length}
-                  </span>
-                </button>
-              )}
+                    style={{
+                      backgroundColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-card)',
+                      borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                      color: isSelected ? 'var(--athlon-primary-foreground)' : undefined,
+                    }}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[9.5px] font-mono font-bold ${
+                        isSelected ? 'bg-black/20 text-black' : 'bg-surface text-foreground/50'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Sort Toggle */}
-            <div className="flex items-center gap-1 text-[11px] font-bold text-foreground/50 shrink-0 ml-auto">
-              <button
-                onClick={() => setSortBy(sortBy === 'ACTIVITY' ? 'NAME' : 'ACTIVITY')}
-                className="px-2.5 py-1.5 rounded-xl border flex items-center gap-1 hover:bg-surface transition-colors cursor-pointer text-foreground/70"
-                style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-card)' }}
-                title="Toggle Sort"
-              >
-                <SlidersHorizontal className="w-3 h-3 text-primary" />
-                <span>Sort: {sortBy === 'ACTIVITY' ? 'Most Active' : 'Name'}</span>
-              </button>
-            </div>
+            <button
+              onClick={() => setSortBy(sortBy === 'ACTIVITY' ? 'NAME' : 'ACTIVITY')}
+              className="shrink-0 px-2.5 py-1.5 rounded-xl border flex items-center gap-1 text-[10.5px] font-bold text-foreground/70 hover:bg-surface cursor-pointer ml-auto"
+              style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-card)' }}
+              title="Toggle Sort"
+            >
+              <SlidersHorizontal className="w-3 h-3 text-primary" />
+              <span>{sortBy === 'ACTIVITY' ? 'Active' : 'Name'}</span>
+            </button>
           </div>
         </div>
 
         {/* ── PENDING REQUESTS URGENT CARD (WHEN TAB IS REQUESTS OR REQUESTS EXIST) ── */}
         {requestedMembers.length > 0 && (activeTab === 'REQUESTS' || activeTab === 'ALL') && (
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-amber-400">
               <span className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
@@ -609,52 +641,52 @@ export default function CommunityMembersPage() {
               </span>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {requestedMembers.map((req) => {
                 const name = req.fullName || req.userName || 'New Athlete';
                 return (
                   <div
                     key={req.communityMemberUuid || req.userUuid}
-                    className="p-4 rounded-[26px] border border-amber-500/35 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
+                    className="p-3.5 rounded-2xl border border-amber-500/35 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-md"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black text-base flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
                         {name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-black text-sm text-foreground truncate">{name}</h4>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-black text-xs text-foreground truncate">{name}</h4>
+                          <span className="px-2 py-0.2 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
                             Requested
                           </span>
                         </div>
                         {req.requestMessage ? (
-                          <p className="text-xs text-foreground/75 italic line-clamp-1">
+                          <p className="text-[11px] text-foreground/75 italic line-clamp-1">
                             &quot;{req.requestMessage}&quot;
                           </p>
                         ) : (
-                          <p className="text-[11px] text-foreground/50 font-medium">
-                            Requested to join via session or community link
+                          <p className="text-[10px] text-foreground/50 font-medium">
+                            Requested to join via session link
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                       <button
                         onClick={() => handleResolveJoin(req.userUuid, 'ACTIVE')}
                         disabled={isProcessingAction}
-                        className="px-4 py-2.5 rounded-2xl bg-emerald-500 text-black font-black text-xs hover:bg-emerald-400 active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black font-bold text-[9.5px] uppercase tracking-wider hover:bg-emerald-400 active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1 cursor-pointer"
                       >
-                        <Check className="w-4 h-4 stroke-[3]" />
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                         <span>Approve</span>
                       </button>
                       <button
                         onClick={() => handleResolveJoin(req.userUuid, 'REJECTED')}
                         disabled={isProcessingAction}
-                        className="px-3.5 py-2.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 font-bold text-xs hover:bg-rose-500/25 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 font-bold text-[9.5px] uppercase tracking-wider hover:bg-rose-500/25 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
                       >
-                        <X className="w-4 h-4 stroke-[2.5]" />
+                        <X className="w-3.5 h-3.5 stroke-[2.5]" />
                         <span>Decline</span>
                       </button>
                     </div>
@@ -665,22 +697,40 @@ export default function CommunityMembersPage() {
           </div>
         )}
 
+        {/* ── SECTION TITLE ROW (Design System Section 2) ── */}
+        <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-primary" />
+            <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <span>Roster List</span>
+              <span className="text-[9.5px] font-mono text-primary font-bold bg-primary/10 px-1.5 py-0.2 rounded-full">
+                ({filteredMembers.length})
+              </span>
+            </h2>
+          </div>
+          {filteredMembers.length > 0 && (
+            <span className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider">
+              {activeTab === 'ALL' ? 'All Members' : activeTab === 'ACTIVE' ? 'Active Players' : 'Captains'}
+            </span>
+          )}
+        </div>
+
         {/* ── MEMBERS GRID / ROSTER LIST ── */}
         {loading ? (
           <div className="py-20 text-center space-y-3">
-            <div className="w-9 h-9 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+            <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
             <p className="text-xs font-bold text-foreground/50">Loading player roster...</p>
           </div>
         ) : filteredMembers.length === 0 ? (
           <div
-            className="py-16 text-center rounded-[28px] border space-y-3.5 p-6"
+            className="py-12 text-center rounded-[26px] border space-y-3 p-6"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
             }}
           >
-            <div className="w-14 h-14 rounded-2xl bg-surface border flex items-center justify-center text-foreground/40 mx-auto shadow-sm">
-              <Users className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-2xl bg-surface border flex items-center justify-center text-foreground/40 mx-auto shadow-sm">
+              <Users className="w-6 h-6" />
             </div>
             <h3 className="text-base font-black text-foreground">No members found</h3>
             <p className="text-xs text-foreground/50 max-w-sm mx-auto">
@@ -693,7 +743,7 @@ export default function CommunityMembersPage() {
             {canManage && (
               <button
                 onClick={handleCopyInviteLink}
-                className="mt-2 px-5 py-2.5 rounded-2xl bg-primary text-black font-black text-xs hover:bg-primary/90 active:scale-95 transition-all shadow-md inline-flex items-center gap-1.5 cursor-pointer"
+                className="mt-1 px-4 py-2 rounded-xl bg-primary text-black font-bold text-[9.5px] uppercase tracking-wider hover:bg-primary/90 active:scale-95 transition-all shadow-md inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>Share Community Invite</span>
@@ -701,7 +751,7 @@ export default function CommunityMembersPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-3.5">
             {filteredMembers.map((member) => {
               const name = member.fullName || member.userName || 'Community Athlete';
               const initial = name.charAt(0).toUpperCase();
@@ -714,10 +764,11 @@ export default function CommunityMembersPage() {
               return (
                 <div
                   key={member.communityMemberUuid || member.userUuid || member.memberId}
-                  className={`rounded-[28px] border p-4.5 sm:p-5 flex flex-col justify-between gap-3.5 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden group hover:-translate-y-0.5 ${isOwner
-                    ? 'border-amber-500/35 hover:border-amber-400 shadow-amber-500/5'
-                    : 'hover:border-primary/40'
-                    }`}
+                  className={`rounded-2xl border p-3.5 sm:p-4 flex flex-col justify-between gap-3 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden group ${
+                    isOwner
+                      ? 'border-amber-500/35 hover:border-amber-400 shadow-amber-500/5'
+                      : 'hover:border-primary/40'
+                  }`}
                   style={{
                     backgroundColor: 'var(--athlon-card)',
                     borderColor: !isOwner ? 'var(--athlon-border)' : undefined,
@@ -725,16 +776,16 @@ export default function CommunityMembersPage() {
                 >
                   {/* Subtle Accent Glow for Host */}
                   {isOwner && (
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
+                    <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10" />
                   )}
 
                   {/* Top: Avatar, Names & Badges */}
-                  <div className="flex items-start justify-between gap-3 relative z-10">
-                    <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="flex items-start justify-between gap-2.5 relative z-10">
+                    <div className="flex items-center gap-3 min-w-0">
                       {/* Avatar with Halo Ring */}
                       <div className="relative shrink-0">
                         <div
-                          className={`w-13 h-13 rounded-2xl text-base font-black flex items-center justify-center text-primary shadow-sm overflow-hidden transition-transform group-hover:scale-105 ${roleConfig.avatarRing}`}
+                          className={`w-11 h-11 rounded-xl text-sm font-black flex items-center justify-center text-primary shadow-sm overflow-hidden transition-transform group-hover:scale-105 ${roleConfig.avatarRing}`}
                           style={{
                             backgroundColor: 'var(--athlon-surface)',
                           }}
@@ -752,30 +803,30 @@ export default function CommunityMembersPage() {
 
                         {/* Pulsating Active Status Indicator */}
                         {member.status === 'ACTIVE' && (
-                          <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-card absolute -bottom-0.5 -right-0.5 shadow-md flex items-center justify-center">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-card absolute -bottom-0.5 -right-0.5 shadow-md flex items-center justify-center">
+                            <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
                           </span>
                         )}
                       </div>
 
                       {/* Name & Role Badge */}
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-black text-base text-foreground tracking-tight truncate group-hover:text-primary transition-colors">
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-black text-sm text-foreground tracking-tight truncate group-hover:text-primary transition-colors">
                             {name}
                           </h3>
 
                           {/* Role Badge */}
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${roleConfig.badgeClass}`}
+                            className={`px-2 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${roleConfig.badgeClass}`}
                           >
-                            <RoleIcon className="w-3 h-3 stroke-[2.5]" />
+                            <RoleIcon className="w-2.5 h-2.5 stroke-[2.5]" />
                             <span>{roleConfig.label}</span>
                           </span>
                         </div>
 
                         {/* Subtitle Details: Joined Date & Skill */}
-                        <div className="flex items-center gap-2 text-[11px] text-foreground/55 font-semibold flex-wrap">
+                        <div className="flex items-center gap-1.5 text-[10.5px] text-foreground/50 font-medium flex-wrap">
                           {member.joinedAt && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3 text-foreground/40" />
@@ -786,7 +837,7 @@ export default function CommunityMembersPage() {
                           {member.skillLevel && member.skillLevel !== 'ALL' && (
                             <>
                               <span className="text-foreground/30">•</span>
-                              <span className="text-primary font-extrabold px-2 py-0.2 rounded-md bg-primary/10 border border-primary/20 text-[10px]">
+                              <span className="text-primary font-bold px-1.5 py-0.2 rounded bg-primary/10 border border-primary/20 text-[9.5px]">
                                 {member.skillLevel}
                               </span>
                             </>
@@ -800,7 +851,7 @@ export default function CommunityMembersPage() {
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => setMemberToEditRole(member)}
-                          className="px-2.5 py-1.5 rounded-xl border text-[10.5px] font-extrabold hover:bg-surface transition-all cursor-pointer text-foreground/75 active:scale-95 shadow-sm"
+                          className="px-2.5 py-1 rounded-lg border text-[9.5px] font-bold uppercase tracking-wider hover:bg-surface transition-all cursor-pointer text-foreground/75 active:scale-95 shadow-sm"
                           style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
                           title="Change Role"
                         >
@@ -808,11 +859,11 @@ export default function CommunityMembersPage() {
                         </button>
                         <button
                           onClick={() => setMemberToDelete(member)}
-                          className="w-8 h-8 rounded-xl border border-rose-500/25 text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm"
+                          className="w-7 h-7 rounded-lg border border-rose-500/25 text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm"
                           style={{ backgroundColor: 'var(--athlon-surface)' }}
                           title="Remove Member"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     )}
@@ -820,23 +871,23 @@ export default function CommunityMembersPage() {
 
                   {/* Bento Performance Mini-Bar inside Card */}
                   <div
-                    className="p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs"
+                    className="p-2.5 rounded-xl border flex items-center justify-between gap-2.5 text-xs"
                     style={{
                       backgroundColor: 'var(--athlon-surface)',
                       borderColor: 'var(--athlon-border)',
                     }}
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       {/* Games Counter */}
                       <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary">
-                          <Activity className="w-3.5 h-3.5" />
+                        <div className="w-5 h-5 rounded-md bg-primary/15 border border-primary/25 flex items-center justify-center text-primary">
+                          <Activity className="w-3 h-3" />
                         </div>
                         <div>
                           <div className="font-mono font-black text-foreground text-xs leading-none">
                             {gamesPlayed} {gamesPlayed === 1 ? 'game' : 'games'}
                           </div>
-                          <div className="text-[9.5px] font-bold text-foreground/45 uppercase tracking-wider">
+                          <div className="text-[8.5px] font-bold text-foreground/45 uppercase tracking-wider">
                             Sessions
                           </div>
                         </div>
@@ -844,15 +895,15 @@ export default function CommunityMembersPage() {
 
                       {/* Matches Counter if present */}
                       {member.matchesPlayed !== undefined && member.matchesPlayed > 0 && (
-                        <div className="flex items-center gap-1.5 border-l pl-3 border-border/50">
-                          <div className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-blue-400">
-                            <Trophy className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-1.5 border-l pl-2.5 border-border/50">
+                          <div className="w-5 h-5 rounded-md bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-blue-400">
+                            <Trophy className="w-3 h-3" />
                           </div>
                           <div>
                             <div className="font-mono font-black text-foreground text-xs leading-none">
                               {member.matchesPlayed} matches
                             </div>
-                            <div className="text-[9.5px] font-bold text-foreground/45 uppercase tracking-wider">
+                            <div className="text-[8.5px] font-bold text-foreground/45 uppercase tracking-wider">
                               Record
                             </div>
                           </div>
@@ -861,8 +912,8 @@ export default function CommunityMembersPage() {
                     </div>
 
                     {/* Member Status Pill */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <div className="flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                         <span>{member.status || 'ACTIVE'}</span>
                       </span>
@@ -873,7 +924,7 @@ export default function CommunityMembersPage() {
             })}
           </div>
         )}
-      </main>
+      </div>
 
       {/* ── ROLE EDIT BOTTOM SHEET / MODAL ── */}
       {memberToEditRole && (
@@ -1275,6 +1326,7 @@ export default function CommunityMembersPage() {
           label="Add Player"
           title="Add / Invite Member"
           ariaLabel="Add / Invite Member"
+          className="fixed bottom-22 right-4 md:bottom-8 md:right-8 z-40"
         />
       )}
     </div>

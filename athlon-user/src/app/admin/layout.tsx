@@ -22,6 +22,7 @@ import {
   Layers,
   Palette,
   SlidersHorizontal,
+  Globe,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
@@ -66,7 +67,9 @@ const NAV_GROUPS: AdminNavGroup[] = [
   {
     group: 'Platform Governance',
     items: [
+      { name: 'SEO Management', href: '/admin/seo', icon: Globe },
       { name: 'App Modules', href: '/admin/modules', icon: SlidersHorizontal },
+      { name: 'Organization Modules', href: '/admin/organization-modules', icon: Layers },
       { name: 'Audit Logs', href: '/admin/audit-logs', icon: History },
       { name: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3 },
     ],
@@ -155,7 +158,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     >
       {/* Top Banner / Navbar */}
       <header 
-        className="h-16 border-b backdrop-blur-xl sticky top-0 z-50 flex items-center justify-between px-3 sm:px-6 lg:px-8"
+        className="sticky top-0 z-50 min-h-16 border-b backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-8 py-2.5 safe-header shadow-xs transition-all"
         style={{
           backgroundColor: 'var(--athlon-surface)',
           borderColor: 'var(--athlon-border)',
@@ -284,8 +287,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
 
         {/* Admin Content Area */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 pb-16 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
             {children}
           </div>
         </main>

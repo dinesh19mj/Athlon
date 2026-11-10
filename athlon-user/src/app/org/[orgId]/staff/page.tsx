@@ -264,7 +264,7 @@ export default function StaffPage() {
             <Link
               href={`/org/${orgUuid}/dashboard`}
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-foreground/70 shrink-0 transition"
-              title="Back to Dashboard"
+              title="Back to Home"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>

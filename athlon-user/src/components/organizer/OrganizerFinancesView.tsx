@@ -29,7 +29,9 @@ import {
   Edit3,
   SlidersHorizontal,
   Check,
-  AlertCircle
+  AlertCircle,
+  Wallet,
+  Eye,
 } from 'lucide-react';
 import {
   OrganizerFinance,
@@ -369,36 +371,38 @@ export default function OrganizerFinancesView({ orgUuid, orgName }: OrganizerFin
       {/* 📱 MOBILE VIEW (HIGH PERFORMANCE & LUXURY ORGANIZER TREASURY)             */}
       {/* ========================================================================= */}
       <div className="block md:hidden p-3.5 space-y-4 animate-in fade-in duration-300">
-        {/* 1. Mobile Header */}
-        <div className="flex items-center justify-between gap-3 pt-1">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-yellow-500/20 via-primary/15 to-transparent border border-primary/25 flex items-center justify-center text-lg shadow-inner shrink-0">
-              🏆
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1 className="text-base font-black text-foreground tracking-tight truncate">
-                  Organizer Treasury
-                </h1>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+        {/* 1. Mobile Header matching Venues sample page */}
+        <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-border/80 safe-header pb-3 px-3.5 -mx-3.5 -mt-3.5 mb-3.5 shadow-xs">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-yellow-500/20 via-primary/15 to-transparent border border-primary/25 flex items-center justify-center text-base shadow-xs shrink-0">
+                🏆
               </div>
-              <p className="text-[11px] font-semibold text-foreground/50 truncate">
-                {orgName || 'Tournament Organization'} • {finances.length} records
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-base font-black text-foreground tracking-tight truncate">
+                    Organizer Treasury
+                  </h1>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                </div>
+                <p className="text-[10px] font-semibold text-foreground/50 truncate mt-0.5">
+                  {orgName || 'Tournament Organization'} • {finances.length} records
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="w-9 h-9 rounded-xl bg-surface border border-border/80 text-foreground/70 active:scale-95 transition-all disabled:opacity-50 shadow-xs flex items-center justify-center"
+                title="Refresh Finances"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+              </button>
             </div>
           </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2.5 rounded-xl bg-surface border border-foreground/10 text-foreground/70 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
-              title="Refresh Finances"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-            </button>
-          </div>
-        </div>
+        </header>
 
         {/* 2. Tournament Switcher Tabs */}
         {tournaments.length > 0 && (
@@ -832,300 +836,555 @@ export default function OrganizerFinancesView({ orgUuid, orgName }: OrganizerFin
       </div>
 
       {/* ========================================================================= */}
-      {/* 🖥️ DESKTOP VIEW (EXECUTIVE TREASURY & EVENT FINANCIAL WORKSPACE)           */}
+      {/* 🖥️ DESKTOP VIEW (LUXURY SPORTS-TECH COMMAND CONSOLE)                       */}
       {/* ========================================================================= */}
-      <div className="hidden md:block max-w-7xl mx-auto px-6 pt-6 space-y-6 animate-in fade-in duration-300">
-        {/* Top Header */}
-        <div className="flex items-center justify-between gap-4 pb-2 border-b border-foreground/5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-500/20 via-primary/15 to-transparent border border-primary/30 flex items-center justify-center text-2xl shadow-inner">
-              🏆
-            </div>
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-24 space-y-8 animate-in fade-in duration-300">
+        {/* Executive Command Banner */}
+        <div
+          className="relative rounded-3xl border p-6 lg:p-8 overflow-hidden shadow-sm"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Ambient Lighting Glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-foreground tracking-tight">
-                  Organizer Financial Treasury
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                  Organizer Ledger
+              {/* Badge & Breadcrumb */}
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-primary">
+                  Tournament Operations Suite
+                </span>
+                <span className="text-foreground/30">•</span>
+                <span className="text-xs font-semibold text-foreground/50">
+                  Treasury &amp; Financial Ledger
                 </span>
               </div>
-              <p className="text-xs font-semibold text-foreground/50 mt-0.5">
-                Manage tournament revenue streams, sponsorships, venue rentals, umpire stipends, and prize allocations.
+
+              <h1 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+                Tournament Financial Treasury
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {filteredFinances.length} {filteredFinances.length === 1 ? 'Record' : 'Records'}
+                </span>
+              </h1>
+              <p className="text-sm text-foreground/60 mt-1.5 max-w-2xl">
+                Oversee tournament registration fees, sponsorship revenues, court rentals, umpire stipends, and prize allocations with real-time audit tracking.
               </p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="px-3.5 py-2 rounded-xl bg-surface border border-foreground/10 text-foreground/70 hover:text-foreground text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-              <span>Refresh</span>
-            </button>
-            {canManage && (
-              <>
-                <button
-                  onClick={() => handleOpenAdd('EXPENSE')}
-                  className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" /> Add Cost
-                </button>
-                <button
-                  onClick={() => handleOpenAdd('INCOME')}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-black flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
-                >
-                  <IndianRupee className="w-3.5 h-3.5 stroke-[3]" /> Log Revenue
-                </button>
-              </>
-            )}
+            {/* Quick Actions */}
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2.5 rounded-xl border text-foreground/70 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+                title="Refresh Financial Ledger"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+              </button>
+
+              {canManage && (
+                <>
+                  <button
+                    onClick={() => handleOpenAdd('EXPENSE')}
+                    className="px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-xs active:scale-95 transition-all"
+                  >
+                    <Plus className="w-4 h-4 stroke-[3]" />
+                    <span>Add Cost</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenAdd('INCOME')}
+                    className="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider bg-emerald-500 text-black shadow-md hover:opacity-95 active:scale-95 transition-all flex items-center gap-2"
+                  >
+                    <IndianRupee className="w-4 h-4 stroke-[3]" />
+                    <span>Log Revenue</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Desktop Metric Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="p-5 rounded-3xl bg-surface border border-foreground/10 space-y-2 relative overflow-hidden shadow-sm">
+        {/* ─── 4-Metric Executive Telemetry HUD ────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Net P&L */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-primary/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
-                Net Tournament P&L
+                Net Tournament P&amp;L
               </span>
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${Number(summary?.netProfit || 0) >= 0
-                  ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                  : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                }`}>
+              <span
+                className={`text-[9.5px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                  Number(summary?.netProfit || 0) >= 0
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                }`}
+              >
                 {Number(summary?.netProfit || 0) >= 0 ? 'Surplus' : 'Deficit'}
               </span>
             </div>
-            <div className="text-3xl font-black font-mono text-primary tracking-tight">
+            <div
+              className={`text-2xl font-black mt-2 font-mono tracking-tight ${
+                Number(summary?.netProfit || 0) >= 0
+                  ? 'text-primary'
+                  : 'text-rose-600 dark:text-rose-400'
+              }`}
+            >
               ₹{Number(summary?.netProfit || 0).toLocaleString('en-IN')}
             </div>
-            <p className="text-[11px] text-foreground/40 font-medium">
-              Overall ledger balance across selected filters
-            </p>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <Wallet className="w-3.5 h-3.5 text-primary" />
+              <span>Overall net balance across events</span>
+            </div>
           </div>
 
-          <div className="p-5 rounded-3xl bg-surface border border-foreground/10 space-y-2 relative overflow-hidden shadow-sm">
+          {/* 2. Total Inflow / Revenue */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-emerald-500/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500">
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 Total Revenue
               </span>
-              <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-3xl font-black font-mono text-emerald-500 tracking-tight">
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 font-mono tracking-tight">
               +₹{Number(summary?.totalIncome || 0).toLocaleString('en-IN')}
             </div>
-            <p className="text-[11px] text-foreground/40 font-medium">
-              Registrations, brand deals, stall rents
-            </p>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Entry fees, sponsorships &amp; stalls</span>
+            </div>
           </div>
 
-          <div className="p-5 rounded-3xl bg-surface border border-foreground/10 space-y-2 relative overflow-hidden shadow-sm">
+          {/* 3. Total Outflow / Costs */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-rose-500/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black uppercase tracking-wider text-rose-500">
+              <span className="text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
                 Total Costs
               </span>
-              <ArrowDownRight className="w-4 h-4 text-rose-500" />
+              <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                <ArrowDownRight className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-3xl font-black font-mono text-rose-500 tracking-tight">
+            <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2 font-mono tracking-tight">
               -₹{Number(summary?.totalExpense || 0).toLocaleString('en-IN')}
             </div>
-            <p className="text-[11px] text-foreground/40 font-medium">
-              Prizes, venue, officials, equipment
-            </p>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <Tag className="w-3.5 h-3.5 text-rose-500" />
+              <span>Court rent, prizes, umpires &amp; gear</span>
+            </div>
           </div>
 
-          <div className="p-5 rounded-3xl bg-surface border border-foreground/10 space-y-2 relative overflow-hidden shadow-sm">
+          {/* 4. Pending Settlements */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-amber-500/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
                 Pending Settlements
               </span>
-              <Clock className="w-4 h-4 text-amber-500" />
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <Clock className="w-4 h-4" />
+              </div>
             </div>
-            <div className="flex items-baseline gap-2 font-mono">
-              <span className="text-lg font-black text-emerald-500">
+            <div className="flex items-baseline gap-2 font-mono mt-2">
+              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
                 +₹{Number(summary?.pendingReceivables || 0).toLocaleString('en-IN')}
               </span>
               <span className="text-xs text-foreground/30">/</span>
-              <span className="text-lg font-black text-rose-500">
+              <span className="text-lg font-black text-rose-600 dark:text-rose-400">
                 -₹{Number(summary?.pendingPayables || 0).toLocaleString('en-IN')}
               </span>
             </div>
-            <p className="text-[11px] text-foreground/40 font-medium">
-              Unpaid receivables vs pending vendor payables
-            </p>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <span>Uncollected entries vs pending payables</span>
+            </div>
           </div>
         </div>
 
-        {/* Filters and Search Bar */}
-        <div className="p-4 rounded-3xl bg-surface border border-foreground/10 space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
-              <input
-                type="text"
-                placeholder="Search description, sponsor, vendor, receipt..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-background border border-foreground/10 rounded-2xl pl-10 pr-9 py-2 text-xs font-bold text-foreground placeholder:text-foreground/35 focus:outline-none focus:border-primary"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-foreground/40 hover:text-foreground"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Tournament Selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-foreground/50">Tournament:</span>
-              <select
-                value={selectedTournamentUuid}
-                onChange={(e) => setSelectedTournamentUuid(e.target.value)}
-                className="bg-background border border-foreground/10 rounded-xl px-3 py-1.5 text-xs font-bold text-foreground focus:outline-none cursor-pointer"
+        {/* ─── Search & Filter Command Deck ────────────────────────────── */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-4 rounded-2xl border shadow-xs"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search description, sponsor, vendor, receipt..."
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/40 shadow-2xs"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border-subtle)',
+                color: 'var(--athlon-text)',
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1 text-xs"
               >
-                <option value="ALL">All Tournaments</option>
-                {tournaments.map((t) => (
-                  <option key={t.tournamentUuid} value={t.tournamentUuid}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-            {/* Type Filter */}
-            <div className="flex items-center gap-1 bg-background border border-foreground/10 rounded-xl p-1">
-              {(['ALL', 'INCOME', 'EXPENSE'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTypeFilter(t)}
-                  className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${typeFilter === t
-                      ? 'bg-foreground text-background shadow-sm'
-                      : 'text-foreground/60 hover:text-foreground'
-                    }`}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Tournament Selector */}
+            {tournaments.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground/50">Event:</span>
+                <select
+                  value={selectedTournamentUuid}
+                  onChange={(e) => setSelectedTournamentUuid(e.target.value)}
+                  className="px-3 py-2 rounded-xl border text-xs font-bold transition-all focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border-subtle)',
+                    color: 'var(--athlon-text)',
+                  }}
                 >
-                  {t === 'ALL' ? 'All' : t === 'INCOME' ? 'Revenue' : 'Costs'}
-                </button>
-              ))}
+                  <option value="ALL">All Tournaments</option>
+                  {tournaments.map((t) => (
+                    <option key={t.tournamentUuid} value={t.tournamentUuid}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Type Filter Tabs */}
+            <div
+              className="flex items-center gap-1 p-1 rounded-xl border"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border-subtle)',
+              }}
+            >
+              {(['ALL', 'INCOME', 'EXPENSE'] as const).map((t) => {
+                const isSelected = typeFilter === t;
+                const label = t === 'ALL' ? 'All Records' : t === 'INCOME' ? 'Revenue (+)' : 'Costs (-)';
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setTypeFilter(t)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                      isSelected
+                        ? t === 'INCOME'
+                          ? 'bg-emerald-500 text-black shadow-sm font-black'
+                          : t === 'EXPENSE'
+                          ? 'bg-rose-500 text-white shadow-sm font-black'
+                          : 'bg-primary text-primary-foreground shadow-sm font-black'
+                        : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Transactions Table */}
-        <div className="rounded-3xl bg-surface border border-foreground/10 overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-foreground/5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-black text-foreground">Transaction Stream</h3>
-              <span className="text-xs text-foreground/40 font-bold font-mono">
-                ({filteredFinances.length} records)
-              </span>
-            </div>
-          </div>
-
+        {/* ─── Desktop Financial Ledger Data Table ─────────────────────── */}
+        <div
+          className="rounded-2xl border shadow-xs overflow-hidden"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
           {loading ? (
-            <div className="p-12 text-center text-foreground/50 font-bold text-xs">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary mb-2" />
-              Loading tournament ledger...
-            </div>
-          ) : filteredFinances.length === 0 ? (
-            <div className="p-16 text-center text-foreground/50 space-y-2">
-              <div className="text-3xl">🏆</div>
-              <div className="text-sm font-bold text-foreground">No financial records found</div>
-              <p className="text-xs text-foreground/40 max-w-sm mx-auto">
-                No entries match the current filters. Log revenue or costs to build the tournament ledger.
+            <div className="py-24 text-center space-y-3">
+              <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto" />
+              <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+                Loading Tournament Ledger &amp; Cashflow...
               </p>
             </div>
+          ) : filteredFinances.length === 0 ? (
+            <div className="py-20 text-center flex flex-col items-center justify-center p-8">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-3">
+                <Receipt className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-black text-foreground mb-1">No Financial Records Found</h4>
+              <p className="text-xs text-foreground/50 max-w-sm mb-4">
+                {searchTerm || selectedTournamentUuid !== 'ALL' || typeFilter !== 'ALL'
+                  ? 'No transactions match your search query or filter selection.'
+                  : 'Start tracking venue costs, umpire stipends, shuttle purchases, entry fee inflows, and brand deals.'}
+              </p>
+              {searchTerm || selectedTournamentUuid !== 'ALL' || typeFilter !== 'ALL' ? (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedTournamentUuid('ALL');
+                    setTypeFilter('ALL');
+                    setSelectedCategory('ALL');
+                  }}
+                  className="px-4 py-2 border text-foreground text-xs font-bold rounded-xl transition-colors hover:border-primary"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  Reset All Filters
+                </button>
+              ) : canManage ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenAdd('EXPENSE')}
+                    className="px-4 py-2 rounded-xl bg-rose-500 text-white text-xs font-black shadow-md"
+                  >
+                    <Plus className="w-3.5 h-3.5 inline mr-1" /> Add Cost
+                  </button>
+                  <button
+                    onClick={() => handleOpenAdd('INCOME')}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 text-black text-xs font-black shadow-md"
+                  >
+                    <IndianRupee className="w-3.5 h-3.5 inline mr-1" /> Log Revenue
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : (
-            <table className="w-full text-left text-xs">
-              <thead className="bg-foreground/5 text-foreground/50 uppercase font-black tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Description & Category</th>
-                  <th className="py-3 px-4">Tournament</th>
-                  <th className="py-3 px-4">Party / Vendor</th>
-                  <th className="py-3 px-4">Payment</th>
-                  <th className="py-3 px-4 text-right">Amount</th>
-                  {canManage && <th className="py-3 px-4 text-right">Actions</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-foreground/5 font-semibold text-foreground/80">
-                {filteredFinances.map((item) => {
-                  const isExpense = item.transactionType === 'EXPENSE';
-                  const catObj = (isExpense ? ORGANIZER_EXPENSE_CATEGORIES : ORGANIZER_INCOME_CATEGORIES).find(
-                    (c) => c.id === item.category
-                  );
-                  return (
-                    <tr key={item.financeUuid} className="hover:bg-foreground/[0.02] transition-colors">
-                      <td className="py-3.5 px-4 font-mono text-foreground/60 whitespace-nowrap">
-                        {item.transactionDate ? item.transactionDate.split('T')[0] : '—'}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">{catObj?.icon || '📦'}</span>
-                          <div>
-                            <div className="font-bold text-foreground">{item.title}</div>
-                            <div className="text-[10px] text-foreground/40">{catObj?.label || item.category}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        {item.tournamentName ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-                            {item.tournamentName}
-                          </span>
-                        ) : (
-                          <span className="text-foreground/30 text-[11px]">—</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-foreground/70">{item.paidToOrBy || '—'}</td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-foreground/5 text-foreground/70">
-                            {item.paymentMethod || 'UPI'}
-                          </span>
-                          {item.paymentStatus && item.paymentStatus !== 'COMPLETED' && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                              {item.paymentStatus}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-black text-sm whitespace-nowrap">
-                        <span className={isExpense ? 'text-rose-500' : 'text-emerald-500'}>
-                          {isExpense ? '-' : '+'}₹{Number(item.amount).toLocaleString('en-IN')}
-                        </span>
-                      </td>
-                      {canManage && (
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handleOpenEdit(item)}
-                              className="p-1.5 rounded-lg text-foreground/50 hover:text-foreground hover:bg-foreground/5"
-                              title="Edit"
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr
+                    className="border-b"
+                    style={{
+                      borderColor: 'var(--athlon-border-subtle)',
+                      backgroundColor: 'var(--athlon-surface)',
+                    }}
+                  >
+                    <th className="py-3.5 px-5 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Transaction &amp; Category
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Date &amp; Ref
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Tournament Event
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Party / Vendor
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Method &amp; Status
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50 text-right">
+                      Amount
+                    </th>
+                    <th className="py-3.5 px-5 font-black uppercase tracking-wider text-[10.5px] text-foreground/50 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  className="divide-y"
+                  style={{ borderColor: 'var(--athlon-border-subtle)' }}
+                >
+                  {filteredFinances.map((item) => {
+                    const isExpense = item.transactionType === 'EXPENSE';
+                    const catObj = (isExpense ? ORGANIZER_EXPENSE_CATEGORIES : ORGANIZER_INCOME_CATEGORIES).find(
+                      (c) => c.id === item.category
+                    );
+
+                    return (
+                      <tr
+                        key={item.financeUuid}
+                        onClick={() => setSelectedTxDetail(item)}
+                        className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors cursor-pointer group"
+                      >
+                        {/* 1. Transaction Title & Category */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0 border"
+                              style={{
+                                backgroundColor: 'var(--athlon-surface)',
+                                borderColor: 'var(--athlon-border-subtle)',
+                              }}
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.financeUuid)}
-                              className="p-1.5 rounded-lg text-rose-500/70 hover:text-rose-500 hover:bg-rose-500/10"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              {catObj?.icon || (isExpense ? '📉' : '📈')}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-black text-foreground text-xs truncate max-w-[200px] group-hover:text-primary transition-colors">
+                                {item.title}
+                              </div>
+                              <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
+                                {catObj?.label || item.category}
+                              </span>
+                            </div>
                           </div>
                         </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+                        {/* 2. Date & Ref */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="font-mono text-xs text-foreground/80">
+                            {item.transactionDate ? item.transactionDate.split('T')[0] : '—'}
+                          </div>
+                          {item.invoiceOrReceiptNo && (
+                            <span className="text-[10px] font-mono text-primary font-bold">
+                              #{item.invoiceOrReceiptNo}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 3. Tournament Event */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {item.tournamentName ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border text-foreground/80 max-w-[170px] truncate"
+                              style={{
+                                backgroundColor: 'var(--athlon-surface)',
+                                borderColor: 'var(--athlon-border-subtle)',
+                              }}
+                            >
+                              <Trophy className="w-3 h-3 text-primary shrink-0" />
+                              <span className="truncate">{item.tournamentName}</span>
+                            </span>
+                          ) : (
+                            <span className="text-foreground/30 text-xs italic">General Ops</span>
+                          )}
+                        </td>
+
+                        {/* 4. Party / Vendor */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="text-xs font-semibold text-foreground/70">
+                            {item.paidToOrBy || '—'}
+                          </span>
+                        </td>
+
+                        {/* 5. Method & Status */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border text-foreground/70"
+                              style={{
+                                backgroundColor: 'var(--athlon-surface)',
+                                borderColor: 'var(--athlon-border-subtle)',
+                              }}
+                            >
+                              {item.paymentMethod || 'UPI'}
+                            </span>
+                            {item.paymentStatus && item.paymentStatus !== 'COMPLETED' ? (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                {item.paymentStatus}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                Paid
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* 6. Amount */}
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap font-mono font-black text-sm">
+                          <span
+                            className={
+                              isExpense
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-emerald-600 dark:text-emerald-400'
+                            }
+                          >
+                            {isExpense ? '- ' : '+ '}₹{Number(item.amount).toLocaleString('en-IN')}
+                          </span>
+                        </td>
+
+                        {/* 7. Actions */}
+                        <td
+                          className="py-3.5 px-5 text-right whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setSelectedTxDetail(item)}
+                              className="p-1.5 rounded-lg border text-foreground/60 hover:text-primary hover:border-primary transition-colors shadow-2xs"
+                              style={{
+                                backgroundColor: 'var(--athlon-surface)',
+                                borderColor: 'var(--athlon-border-subtle)',
+                              }}
+                              title="View receipt dossier"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            {canManage && (
+                              <>
+                                <button
+                                  onClick={() => handleOpenEdit(item)}
+                                  className="p-1.5 rounded-lg border text-foreground/60 hover:text-foreground hover:border-primary transition-colors shadow-2xs"
+                                  style={{
+                                    backgroundColor: 'var(--athlon-surface)',
+                                    borderColor: 'var(--athlon-border-subtle)',
+                                  }}
+                                  title="Edit Transaction"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.financeUuid)}
+                                  className="p-1.5 rounded-lg border text-foreground/60 hover:text-rose-500 hover:border-rose-500 transition-colors shadow-2xs"
+                                  style={{
+                                    backgroundColor: 'var(--athlon-surface)',
+                                    borderColor: 'var(--athlon-border-subtle)',
+                                  }}
+                                  title="Delete Record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

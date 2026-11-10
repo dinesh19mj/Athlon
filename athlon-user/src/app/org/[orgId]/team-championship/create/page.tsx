@@ -27,11 +27,16 @@ import {
   Zap,
   Sparkles,
   CheckCircle2,
+  Lock,
+  Crown,
 } from "lucide-react";
 import Link from "next/link";
 import { TeamChampionshipService } from "@/lib/api/teamChampionship";
 import { OrganizationService } from "@/lib/api/organization";
+import { OrganizerSubscriptionService } from "@/lib/api/organizerSubscription";
+import { useOrganizerEntitlementsStore } from "@/store/useOrganizerEntitlementsStore";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { compressImageFile, COMPRESSION_PRESETS } from "@/lib/utils/imageCompression";
 
 const WIZARD_STEPS = [
   { id: 1, title: "Basic Info", icon: Trophy },
@@ -113,19 +118,44 @@ export default function CreateTeamChampionshipPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orgData, setOrgData] = useState<any>(null);
 
+  const {
+    walletByOrg,
+    loadEntitlements,
+    refreshWallet,
+    hasFeature,
+    isAuctionAllowed,
+    openFeaturePaywall,
+    openCreditPaywall,
+  } = useOrganizerEntitlementsStore();
+  const organizerWallet = walletByOrg[orgUuid];
+  const isOrganizerWorkspace = !orgData?.type || orgData?.type === "ORGANIZER";
+  const hasTeamChampionshipFeature = !isOrganizerWorkspace || hasFeature(orgUuid, "TEAM_CHAMPIONSHIP");
+  const canUseLiveAuction = !isOrganizerWorkspace || isAuctionAllowed(orgUuid);
+
   useEffect(() => {
     const loadOrg = async () => {
       try {
         const res = await OrganizationService.getById(orgUuid);
         if (res && res.data) {
           setOrgData(res.data);
+          if (!res.data.type || res.data.type === "ORGANIZER") {
+            loadEntitlements(orgUuid);
+          }
         }
       } catch (err) {
         console.error("Failed to load organization", err);
       }
     };
     loadOrg();
-  }, [orgUuid]);
+  }, [orgUuid, loadEntitlements]);
+
+  useEffect(() => {
+    if (isOrganizerWorkspace && organizerWallet) {
+      if (organizerWallet.auctionCreditsAvailable < 1 || !canUseLiveAuction) {
+        setFormData((prev) => (prev.auctionMode !== "NO_AUCTION" ? { ...prev, auctionMode: "NO_AUCTION" } : prev));
+      }
+    }
+  }, [isOrganizerWorkspace, organizerWallet, canUseLiveAuction]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -396,20 +426,47 @@ export default function CreateTeamChampionshipPage() {
   };
 
   // Poster Handler
-  const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePosterChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPosterFile(file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData((prev) => ({ ...prev, posterPreview: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const res = await compressImageFile(file, COMPRESSION_PRESETS.BANNER);
+      setPosterFile(res.file);
+      setFormData((prev) => ({ ...prev, posterPreview: res.previewUrl }));
+    } catch {
+      setPosterFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFormData((prev) => ({ ...prev, posterPreview: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Final Submission
   const handlePublish = async () => {
     try {
+      if (isOrganizerWorkspace) {
+        if (!hasTeamChampionshipFeature) {
+          openFeaturePaywall(orgUuid, "TEAM_CHAMPIONSHIP", "Team Championships & Franchise Leagues");
+          return;
+        }
+        if (organizerWallet && organizerWallet.tournamentCreditsAvailable < 1) {
+          openCreditPaywall(orgUuid, "TOURNAMENT_CREDIT");
+          return;
+        }
+        if (formData.auctionMode !== "NO_AUCTION") {
+          if (!canUseLiveAuction) {
+            openFeaturePaywall(orgUuid, "TEAM_CHAMPIONSHIP", "Live Player Auction Bidding Engine");
+            return;
+          }
+          if (!organizerWallet || organizerWallet.auctionCreditsAvailable < 1) {
+            openCreditPaywall(orgUuid, "AUCTION_ACTIVATION_CREDIT");
+            return;
+          }
+        }
+      }
+
       setIsSubmitting(true);
       if (!orgData?.orgId) {
         throw new Error("Organization not loaded");
@@ -529,6 +586,27 @@ export default function CreateTeamChampionshipPage() {
 
       const result = await TeamChampionshipService.create(multipartData);
       if (result && result.championshipUuid) {
+        if (isOrganizerWorkspace) {
+          try {
+            await OrganizerSubscriptionService.consumeTournamentCredit({
+              organizationId: orgData.orgId,
+              tournamentUuid: result.championshipUuid,
+              isAuctionMode: formData.auctionMode !== "NO_AUCTION",
+              notes: `Created Team Championship: ${formData.name}`,
+            });
+            if (formData.auctionMode !== "NO_AUCTION") {
+              await OrganizerSubscriptionService.consumeAuctionCredit({
+                organizationId: orgData.orgId,
+                tournamentUuid: result.championshipUuid,
+                activatedBy: userId ? Number(userId) : undefined,
+                notes: `Activated Live Auction for ${formData.name}`,
+              });
+            }
+            await refreshWallet(orgUuid);
+          } catch (creditErr) {
+            console.warn("Championship created; credit ledger sync warning:", creditErr);
+          }
+        }
         router.push(`/org/${orgUuid}/team-championship/${result.championshipUuid}`);
       }
     } catch (err: any) {
@@ -542,31 +620,77 @@ export default function CreateTeamChampionshipPage() {
     <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-primary selection:text-black">
       {/* Top Header */}
       <header
-        className="sticky top-0 z-40 backdrop-blur-xl border-b px-4 sm:px-8 py-4 flex items-center justify-between"
+        className="sticky top-0 z-40 backdrop-blur-xl border-b border-border/80 safe-header pb-3 px-3.5 sm:px-8 sm:py-4 flex items-center justify-between gap-2.5"
         style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border)" }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <Link
             href={`/org/${orgUuid}/tournaments`}
-            className="p-2 rounded-xl border border-foreground/10 hover:bg-foreground/5 transition-all text-foreground/70"
+            title="Go Back"
+            className="w-9 h-9 rounded-xl border border-border/80 bg-surface/80 hover:bg-surface text-foreground/80 hover:text-foreground flex items-center justify-center transition-all active:scale-95 shadow-xs shrink-0 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <div>
-            <h1 className="text-base sm:text-lg font-black tracking-tight text-foreground">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-black tracking-tight text-foreground truncate">
               Create Team Championship
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-black">
-          <span className="text-primary">Step {currentStep}</span>
-          <span className="text-foreground/40">of {WIZARD_STEPS.length}</span>
+        <div className="flex items-center gap-1.5 text-xs font-black shrink-0">
+          <span className="text-primary font-bold">Step {currentStep}</span>
+          <span className="text-foreground/40 font-semibold">of {WIZARD_STEPS.length}</span>
         </div>
       </header>
 
       {/* Stepper Progress Bar */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 space-y-4">
+        {isOrganizerWorkspace && organizerWallet && (
+          <div
+            className="rounded-2xl border p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            style={{ backgroundColor: "var(--athlon-card)", borderColor: "var(--athlon-border)" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary shrink-0">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-foreground">{organizerWallet.activeTierName}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/15 text-primary border border-primary/25">
+                    {organizerWallet.tournamentCreditsAvailable} Tournament Cr
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                    {organizerWallet.auctionCreditsAvailable} Auction Pass
+                  </span>
+                </div>
+                <p className="text-[11px] text-foreground/60 mt-0.5">
+                  {!hasTeamChampionshipFeature
+                    ? "Team Championships & Franchise Leagues require Tournament Pro or Business Pack."
+                    : "Team Championship enabled • Live Auction requires 1 Auction Pass credit."}
+                </p>
+              </div>
+            </div>
+            {!hasTeamChampionshipFeature ? (
+              <button
+                type="button"
+                onClick={() => openFeaturePaywall(orgUuid, "TEAM_CHAMPIONSHIP", "Team Championships & Franchise Leagues")}
+                className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black shrink-0"
+              >
+                Unlock Pro Pack
+              </button>
+            ) : organizerWallet.auctionCreditsAvailable < 1 ? (
+              <button
+                type="button"
+                onClick={() => openCreditPaywall(orgUuid, "AUCTION_ACTIVATION_CREDIT")}
+                className="px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-black shrink-0 hover:bg-amber-500/25 transition-all"
+              >
+                + Get Auction Pass
+              </button>
+            ) : null}
+          </div>
+        )}
         <div className="flex items-center overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar gap-2">
           {WIZARD_STEPS.map((step) => {
             const Icon = step.icon;
@@ -864,22 +988,49 @@ export default function CreateTeamChampionshipPage() {
               {/* Auction Modes */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { id: "FULL_AUCTION", title: "Full Auction", desc: "All players selected via auction bidding" },
-                  { id: "PARTIAL_AUCTION", title: "Partial Auction", desc: "Reserved players locked + auction remaining" },
-                  { id: "NO_AUCTION", title: "No Auction", desc: "Direct squad selection without bidding" },
-                ].map((mode) => (
-                  <button
-                    key={mode.id}
-                    onClick={() => setFormData({ ...formData, auctionMode: mode.id as any })}
-                    className={`p-4 rounded-2xl border text-left transition-all ${formData.auctionMode === mode.id
-                      ? "border-primary bg-primary/10 text-primary shadow-sm"
-                      : "border-foreground/10 bg-surface hover:border-foreground/20 text-foreground/80"
-                      }`}
-                  >
-                    <h4 className="text-xs font-black uppercase tracking-wider">{mode.title}</h4>
-                    <p className="text-[11px] text-foreground/60 mt-1">{mode.desc}</p>
-                  </button>
-                ))}
+                  { id: "FULL_AUCTION", title: "Full Auction", desc: "All players selected via auction bidding", requiresAuctionCredit: true },
+                  { id: "PARTIAL_AUCTION", title: "Partial Auction", desc: "Reserved players locked + auction remaining", requiresAuctionCredit: true },
+                  { id: "NO_AUCTION", title: "No Auction", desc: "Direct squad selection without bidding", requiresAuctionCredit: false },
+                ].map((mode) => {
+                  const needsCredit = mode.requiresAuctionCredit && isOrganizerWorkspace && (!organizerWallet || organizerWallet.auctionCreditsAvailable < 1);
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => {
+                        if (mode.requiresAuctionCredit && isOrganizerWorkspace) {
+                          if (!canUseLiveAuction) {
+                            openFeaturePaywall(orgUuid, "TEAM_CHAMPIONSHIP", "Live Player Auction Engine");
+                            return;
+                          }
+                          if (!organizerWallet || organizerWallet.auctionCreditsAvailable < 1) {
+                            openCreditPaywall(orgUuid, "AUCTION_ACTIVATION_CREDIT");
+                            return;
+                          }
+                        }
+                        setFormData({ ...formData, auctionMode: mode.id as any });
+                      }}
+                      className={`p-4 rounded-2xl border text-left transition-all relative ${formData.auctionMode === mode.id
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-foreground/10 bg-surface hover:border-foreground/20 text-foreground/80"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-xs font-black uppercase tracking-wider">{mode.title}</h4>
+                        {mode.requiresAuctionCredit && isOrganizerWorkspace && (
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                            needsCredit
+                              ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                              : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                          }`}>
+                            {needsCredit ? "1 Auction Pass Req." : `${organizerWallet?.auctionCreditsAvailable || 0} Pass Ready`}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-foreground/60 mt-1">{mode.desc}</p>
+                    </button>
+                  );
+                })}
               </div>
 
               {formData.auctionMode !== "NO_AUCTION" && (

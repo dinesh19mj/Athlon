@@ -62,10 +62,10 @@ export function MarketHeroBanner() {
   const slide = SLIDES[activeIdx];
 
   return (
-    <div className="w-full relative select-none">
+    <div className="w-full h-full relative select-none">
       <div
         className={`
-          relative w-full rounded-[24px] overflow-hidden border p-5 sm:p-6 shadow-xl transition-all duration-300
+          relative w-full h-full rounded-[24px] overflow-hidden border p-5 sm:p-6 lg:p-7 shadow-xl transition-all duration-300 flex flex-col justify-between
           ${
             isDark
               ? 'bg-[#0A120E] border-white/[0.12]'

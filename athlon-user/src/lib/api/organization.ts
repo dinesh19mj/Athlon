@@ -61,6 +61,9 @@ export interface Organization {
   logo?: string;
   isActive?: number;
   role?: string;
+  planCode?: string;
+  planUuid?: string;
+  billingCycle?: string;
   subscriptionPackageUuid?: string;
   profile?: OrganizationProfile;
 }

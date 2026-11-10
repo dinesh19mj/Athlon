@@ -24,9 +24,13 @@ import jakarta.validation.Valid;
 public class AcademyStaffController {
 
     private final AcademyStaffService staffService;
+    private final com.athlon.identityservice.subscription.service.AcademyEntitlementService entitlementService;
 
-    public AcademyStaffController(AcademyStaffService staffService) {
+    public AcademyStaffController(
+            AcademyStaffService staffService,
+            com.athlon.identityservice.subscription.service.AcademyEntitlementService entitlementService) {
         this.staffService = staffService;
+        this.entitlementService = entitlementService;
     }
 
     @GetMapping("/org/{organizationUuid}")
@@ -66,6 +70,9 @@ public class AcademyStaffController {
     public ResponseEntity<ApiResponse<AcademyStaffResponse>> addStaff(
             @PathVariable("organizationUuid") UUID organizationUuid,
             @Valid @RequestBody AddAcademyStaffRequest request) {
+
+        // Subscription Coach Seat Validation
+        entitlementService.validateCoachCapacity(organizationUuid);
 
         AcademyStaffResponse staff = staffService.addStaffByPhone(organizationUuid, request, null);
         return ResponseEntity.ok(ApiResponse.success("Staff member added successfully", staff));

@@ -33,6 +33,7 @@ import Link from "next/link";
 import { TeamChampionshipService, TeamChampionship } from "@/lib/api/teamChampionship";
 import { UserService, UserResponse } from "@/lib/api/user";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { compressImageFile, COMPRESSION_PRESETS } from "@/lib/utils/imageCompression";
 
 interface PlayerCheckState {
   isChecking: boolean;
@@ -171,21 +172,26 @@ export default function RegisterPlayerForChampionshipPage() {
   }, [player.phone, registrationType]);
 
   // Photo Upload Handler
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Photo size should be less than 5MB");
-      return;
+    try {
+      const res = await compressImageFile(file, COMPRESSION_PRESETS.AVATAR);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setPlayerCheck((prev) => ({ ...prev, photo: base64 }));
+      };
+      reader.readAsDataURL(res.file);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setPlayerCheck((prev) => ({ ...prev, photo: base64 }));
+      };
+      reader.readAsDataURL(file);
     }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      setPlayerCheck((prev) => ({ ...prev, photo: base64 }));
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleRemovePhoto = () => {

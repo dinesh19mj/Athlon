@@ -358,9 +358,6 @@ export const VenueMarketplaceCard: React.FC<VenueMarketplaceCardProps> = ({
       {/* Sport Blueprint Skeleton Background */}
       <SportCardSkeletonBackground sport={primarySport} />
 
-      {/* Top Gradient Accent Trim */}
-      <div className="h-[2px] w-full bg-gradient-to-r from-emerald-400 via-primary to-teal-400 relative z-10" />
-
       {/* ── TOP HERO COVER AREA ── */}
       <div className="relative h-32 sm:h-40 w-full bg-surface-hover overflow-hidden z-10">
         {/* Cover Photo */}

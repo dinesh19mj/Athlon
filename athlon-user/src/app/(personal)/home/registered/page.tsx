@@ -209,8 +209,12 @@ export default function RegisteredTournamentsPage() {
         color: 'var(--athlon-text)',
       }}
     >
-      {/* ── MOBILE-FIRST TOP APP BAR ────────────────────────────────────────── */}
-      <header
+      {/* ══════════════════════════════════════════════════════════════════════
+          1. MOBILE VIEW ONLY (< md) - 100% UNTOUCHED ORIGINAL DESIGN
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="block md:hidden">
+        {/* ── MOBILE-FIRST TOP APP BAR ────────────────────────────────────────── */}
+        <header
         className="sticky top-0 z-30 border-b backdrop-blur-xl transition-colors duration-200 shadow-xs safe-header"
         style={{
           backgroundColor: 'var(--athlon-card)',
@@ -693,6 +697,525 @@ export default function RegisteredTournamentsPage() {
           </div>
         )}
       </main>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          2. DESKTOP VIEW ONLY (>= md) - REDESIGNED PREMIUM ATHLON EXPERIENCE
+         ══════════════════════════════════════════════════════════════════════ */}
+      <div className="hidden md:block min-h-screen bg-background text-foreground pb-24">
+        {/* Desktop Ambient Hero Banner & Telemetry HUD (No Sticky Navbar) */}
+        <section
+          className="relative w-full border-b overflow-hidden"
+          style={{
+            backgroundColor: 'var(--athlon-surface)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Subtle Ambient Glows */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8 space-y-6">
+            {/* Header + Telemetry Row */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              {/* Left Title */}
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/home"
+                    className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all shadow-xs active:scale-95 shrink-0 hover:bg-white/5 cursor-pointer text-foreground/80 hover:text-foreground mr-1"
+                    style={{
+                      backgroundColor: 'var(--athlon-card)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                    title="Return to Athlete Workspace"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Link>
+
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 border border-primary/25 text-primary">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                    Athlete Credentials &amp; Passes
+                  </div>
+
+                  <button
+                    onClick={handleManualRefresh}
+                    disabled={refreshing}
+                    className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-95 cursor-pointer hover:bg-white/5"
+                    style={{
+                      backgroundColor: 'var(--athlon-card)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                    title="Sync passes"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--athlon-primary)' }} />
+                  </button>
+                </div>
+
+                <h1 className="text-3xl lg:text-4xl font-black text-foreground tracking-tight uppercase">
+                  Registered Tournaments
+                </h1>
+                <p className="text-sm text-foreground/60 leading-relaxed font-medium">
+                  Review confirmed match day entries, view payment credentials, check team rosters, and open your verified athlete QR match passes.
+                </p>
+              </div>
+
+              {/* Right: 4 Telemetry Stat Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
+                <div
+                  className="p-4 rounded-2xl border flex flex-col justify-between min-w-[130px] shadow-xs"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">Total</span>
+                    <Trophy className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl font-black font-mono text-foreground">{registrations.length}</span>
+                    <span className="text-[9px] font-bold text-foreground/40 uppercase">Entries</span>
+                  </div>
+                </div>
+
+                <div
+                  className="p-4 rounded-2xl border flex flex-col justify-between min-w-[130px] shadow-xs"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500/80">Confirmed</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl font-black font-mono text-emerald-400">{approvedCount}</span>
+                    <span className="text-[9px] font-bold text-emerald-500/50 uppercase">Approved</span>
+                  </div>
+                </div>
+
+                <div
+                  className="p-4 rounded-2xl border flex flex-col justify-between min-w-[130px] shadow-xs"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-500/80">In Review</span>
+                    <Clock className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl font-black font-mono text-amber-400">{pendingCount}</span>
+                    <span className="text-[9px] font-bold text-amber-500/50 uppercase">Pending</span>
+                  </div>
+                </div>
+
+                <div
+                  className="p-4 rounded-2xl border flex flex-col justify-between min-w-[130px] shadow-xs"
+                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-500/80">Fees</span>
+                    <CreditCard className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl font-black font-mono text-blue-400">
+                      {unpaidCount > 0 ? `${unpaidCount} Due` : 'Paid ✓'}
+                    </span>
+                    <span className="text-[9px] font-bold text-blue-500/50 uppercase">Status</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Ribbon & Search Bar */}
+            <div
+              className="p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              {/* Filter Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto hide-scrollbar">
+                {(
+                  [
+                    { id: 'ALL', label: 'All Entries', count: registrations.length, dot: null },
+                    { id: 'APPROVED', label: 'Confirmed', count: approvedCount, dot: 'bg-emerald-500' },
+                    { id: 'PENDING', label: 'In Review', count: pendingCount, dot: 'bg-amber-500' },
+                    { id: 'UNPAID', label: 'Unpaid', count: unpaidCount, dot: 'bg-amber-400' },
+                    { id: 'PAID', label: 'Paid', count: paidCount, dot: 'bg-emerald-400' },
+                  ] as const
+                ).map((tab) => {
+                  const isActive = statusFilter === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setStatusFilter(tab.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-all flex items-center gap-2 border cursor-pointer ${
+                        isActive
+                          ? 'bg-primary text-black border-primary shadow-xs'
+                          : 'bg-surface hover:bg-surface/80 text-foreground/70 border-foreground/10'
+                      }`}
+                    >
+                      {tab.dot && <span className={`w-2 h-2 rounded-full ${tab.dot}`} />}
+                      <span>{tab.label}</span>
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/10 text-foreground/80">
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search Box */}
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tournaments, teams..."
+                  className="w-full pl-10 pr-9 py-2 rounded-xl text-xs font-bold border transition-all outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                    color: 'var(--athlon-text)',
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground text-xs"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Desktop Cards Feed (2-3 Column Grid) */}
+        <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="rounded-[24px] border p-6 animate-pulse space-y-4"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="h-6 w-32 rounded-lg bg-surface" />
+                  <div className="h-8 w-4/5 rounded-lg bg-surface" />
+                  <div className="h-20 rounded-xl bg-surface" />
+                </div>
+              ))}
+            </div>
+          ) : filteredRegistrations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+              {filteredRegistrations.map((reg, idx) => {
+                const tourn = reg.tournamentDetails;
+                const tournUuid = tourn?.tournamentUuid || reg.uuid;
+                const isApproved = reg.status === 'APPROVED';
+                const isPaid = reg.paymentStatus === 'PAID';
+                const isRejected = reg.status === 'REJECTED';
+                const sportBadge = getSportBadge(tourn?.sport || 'Badminton');
+
+                return (
+                  <div
+                    key={reg.registrationUuid || reg.uuid || `desk-reg-${idx}`}
+                    className="rounded-[24px] border overflow-hidden transition-all duration-300 shadow-md hover:shadow-xl hover:border-primary/40 flex flex-col justify-between group"
+                    style={{
+                      backgroundColor: 'var(--athlon-card)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    <div>
+                      {/* Top Accent Gradient Line */}
+                      <div className="h-1 w-full bg-gradient-to-r from-primary via-emerald-400 to-amber-400" />
+
+                      <div className="p-6 space-y-4">
+                        {/* 1. Header Badges: Sport + Category + Status */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs"
+                              style={{
+                                backgroundColor: 'var(--athlon-primary-soft)',
+                                borderColor: 'var(--athlon-primary)',
+                                color: 'var(--athlon-primary)',
+                              }}
+                            >
+                              <span>{sportBadge.icon}</span>
+                              <span>{sportBadge.label}</span>
+                            </span>
+
+                            {reg.category && (
+                              <span
+                                className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider border"
+                                style={{
+                                  backgroundColor: 'var(--athlon-surface)',
+                                  borderColor: 'var(--athlon-border)',
+                                  color: 'var(--athlon-text)',
+                                }}
+                              >
+                                {reg.category}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {/* Payment Pill */}
+                            <span
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1"
+                              style={{
+                                backgroundColor: isPaid ? 'var(--athlon-primary-soft)' : 'var(--athlon-surface)',
+                                color: isPaid ? 'var(--athlon-primary)' : 'var(--athlon-text-muted)',
+                                borderColor: isPaid ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                              }}
+                            >
+                              <CreditCard className="w-3 h-3" />
+                              <span>{isPaid ? 'PAID' : 'UNPAID'}</span>
+                            </span>
+
+                            {/* Status Pill */}
+                            <span
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1"
+                              style={{
+                                backgroundColor: isApproved ? 'rgba(16, 185, 129, 0.15)' : 'var(--athlon-surface)',
+                                color: isApproved ? '#10b981' : 'var(--athlon-text-secondary)',
+                                borderColor: isApproved ? 'rgba(16, 185, 129, 0.3)' : 'var(--athlon-border)',
+                              }}
+                            >
+                              {isApproved ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              ) : isRejected ? (
+                                <XCircle className="w-3 h-3 text-rose-500" />
+                              ) : (
+                                <Clock className="w-3 h-3 text-amber-500" />
+                              )}
+                              <span>{isApproved ? 'CONFIRMED' : reg.status || 'PENDING'}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 2. Tournament Name & Location */}
+                        <div className="space-y-1.5">
+                          <Link
+                            href={tournUuid ? `/home/tournaments/${tournUuid}` : '#'}
+                            className="text-lg font-black uppercase tracking-tight text-foreground transition-colors hover:text-primary flex items-start justify-between gap-2 group-hover:text-primary"
+                          >
+                            <span className="line-clamp-2 leading-snug">
+                              {tourn?.name || `Tournament #${reg.tournamentId}`}
+                            </span>
+                            <ArrowUpRight className="w-4 h-4 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity mt-1" />
+                          </Link>
+
+                          <div className="flex items-center gap-3 text-xs text-foreground/60 flex-wrap">
+                            <span className="flex items-center gap-1 font-semibold">
+                              <Calendar className="w-3.5 h-3.5 text-primary" />
+                              <span>
+                                {tourn?.startDate
+                                  ? new Date(tourn.startDate).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                  : 'Date TBD'}
+                              </span>
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 font-semibold truncate max-w-[200px]">
+                              <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="truncate">{tourn?.location || reg.place || 'Venue TBD'}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 3. Team & Players Roster Box */}
+                        <div
+                          className="rounded-2xl p-3.5 border space-y-2.5"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-foreground/60">
+                            <span className="flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-primary" />
+                              <span>{reg.teamName || 'Solo Player'}</span>
+                            </span>
+                            <span className="font-mono font-bold text-primary">
+                              {reg.players?.length || 1} {(reg.players?.length || 1) === 1 ? 'Player' : 'Players'}
+                            </span>
+                          </div>
+
+                          {/* Players List */}
+                          <div className="space-y-1.5">
+                            {reg.players && reg.players.length > 0 ? (
+                              reg.players.map((p, pIdx) => {
+                                const avatar = resolvePlayerPhoto(p);
+                                const pKey = p.registrationPlayerUuid || `p-${pIdx}-${p.playerName}`;
+                                const isBroken = brokenImages[pKey];
+                                return (
+                                  <div
+                                    key={pKey}
+                                    className="flex items-center gap-2.5 p-2 rounded-xl border"
+                                    style={{
+                                      backgroundColor: 'var(--athlon-card)',
+                                      borderColor: 'var(--athlon-border)',
+                                    }}
+                                  >
+                                    {avatar && !isBroken ? (
+                                      <img
+                                        src={avatar}
+                                        alt=""
+                                        onError={() => setBrokenImages((prev) => ({ ...prev, [pKey]: true }))}
+                                        className="w-8 h-8 rounded-lg object-cover shrink-0 border"
+                                        style={{ borderColor: 'var(--athlon-border)' }}
+                                      />
+                                    ) : (
+                                      <div
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 border"
+                                        style={{
+                                          backgroundColor: 'var(--athlon-primary-soft)',
+                                          borderColor: 'var(--athlon-primary)',
+                                          color: 'var(--athlon-primary)',
+                                        }}
+                                      >
+                                        {p.playerName?.charAt(0).toUpperCase() || 'P'}
+                                      </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                      <div className="text-xs font-black text-foreground truncate">
+                                        {p.playerName}
+                                      </div>
+                                      <div className="text-[10px] font-mono text-foreground/50 truncate flex items-center gap-1">
+                                        <Phone className="w-2.5 h-2.5" />
+                                        <span>{p.phoneNumber || 'Contact on file'}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-xs text-foreground/50 italic py-1">
+                                Registered by {userEmail || 'Athlete'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Ticket Perforation & Action Deck */}
+                    <div
+                      className="p-4 px-6 border-t flex items-center justify-between gap-3 mt-auto"
+                      style={{
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="text-xs font-mono font-black text-foreground">
+                        {tourn?.registrationFees != null && tourn.registrationFees > 0 ? (
+                          <span>Fee: ₹{Number(tourn.registrationFees).toLocaleString('en-IN')}</span>
+                        ) : (
+                          <span className="text-emerald-500">Free Entry</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Digital Match Pass Button */}
+                        <button
+                          onClick={() => setSelectedPass(reg)}
+                          className="px-3.5 py-2 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs active:scale-95 transition-all hover:bg-white/5 cursor-pointer"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                            color: 'var(--athlon-text)',
+                          }}
+                        >
+                          <QrCode className="w-4 h-4 text-primary" />
+                          <span>QR Pass</span>
+                        </button>
+
+                        {/* Tournament Hub Button */}
+                        {tournUuid && (
+                          <Link
+                            href={`/home/tournaments/${tournUuid}`}
+                            className="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-1 shadow-md active:scale-95 transition-all hover:opacity-90 cursor-pointer"
+                            style={{
+                              backgroundColor: 'var(--athlon-primary)',
+                              color: 'var(--athlon-primary-foreground, #050807)',
+                            }}
+                          >
+                            <span>Tournament Hub</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Desktop Empty State */
+            <div
+              className="rounded-[28px] border p-16 text-center space-y-4 shadow-sm max-w-xl mx-auto"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div
+                className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border shadow-inner"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-primary)',
+                }}
+              >
+                <Trophy className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-black uppercase tracking-tight text-foreground">
+                  {searchQuery || statusFilter !== 'ALL' ? 'No Matching Passes Found' : 'No Registrations Found'}
+                </h3>
+                <p className="text-xs text-foreground/60 max-w-sm mx-auto leading-relaxed">
+                  {searchQuery || statusFilter !== 'ALL'
+                    ? 'Try clearing your search query or selecting a different status filter above.'
+                    : "You haven't entered any tournaments yet. Join exciting championships, track brackets, and earn athlete ratings!"}
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-center gap-3">
+                {(searchQuery || statusFilter !== 'ALL') && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setStatusFilter('ALL');
+                    }}
+                    className="px-4 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider hover:bg-white/5 active:scale-95 transition-all cursor-pointer"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    Clear Filters
+                  </button>
+                )}
+                <Link
+                  href="/tournaments"
+                  className="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all hover:opacity-90"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary)',
+                    color: 'var(--athlon-primary-foreground, #050807)',
+                  }}
+                >
+                  Explore Tournaments
+                </Link>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* ── DIGITAL ATHLETE MATCH PASS MODAL ─────────────────────────────────── */}
       {selectedPass && (

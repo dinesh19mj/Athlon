@@ -37,11 +37,16 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { useOrganizerEntitlementsStore } from '@/store/useOrganizerEntitlementsStore';
+import { useVenueEntitlementsStore } from '@/store/useVenueEntitlementsStore';
+import { OrganizerPaywallModal } from '@/components/organizer/OrganizerPaywallModal';
+import { FeaturePaywallModal } from '@/components/venue/FeaturePaywallModal';
 import ContextSwitcher from '@/components/ContextSwitcher';
 import { Athlon3DIcon, Athlon3DIconProps } from '@/components/common/Athlon3DIcon';
 
 function getOrg3DIconType(name: string): Athlon3DIconProps['type'] {
   const n = name.toLowerCase();
+  if (n === 'home' || n.includes('home') || n.includes('dashboard')) return 'home';
   if (n.includes('tournament') || n.includes('event') || n.includes('cup') || n.includes('league')) return 'tournaments';
   if (n.includes('stream') || n.includes('broadcast') || n.includes('livestream') || (n.includes('live') && !n.includes('calendar') && !n.includes('score') && !n.includes('grid'))) return 'livestream';
   if (n.includes('post') || n.includes('blog') || n.includes('gallery') || n.includes('feed') || n.includes('media') || n.includes('article')) return 'posts';
@@ -143,6 +148,32 @@ export default function OrganizationLayout({ children }: { children: React.React
     role: 'ADMIN',
   });
 
+  const {
+    walletByOrg,
+    fetchEntitlements,
+    hasFeature,
+    openFeaturePaywall,
+  } = useOrganizerEntitlementsStore();
+
+  const {
+    entitlementsByOrg: venueEntitlementsByOrg,
+    fetchEntitlements: fetchVenueEntitlements,
+    hasFeature: hasVenueFeature,
+    openFeaturePaywall: openVenueFeaturePaywall,
+  } = useVenueEntitlementsStore();
+
+  const organizerWallet = orgId ? walletByOrg[orgId] : undefined;
+  const venueEntitlements = orgId ? venueEntitlementsByOrg[orgId] : undefined;
+
+  useEffect(() => {
+    if (orgId && activeOrg?.type === 'ORGANIZER') {
+      fetchEntitlements(orgId);
+    }
+    if (orgId && (activeOrg?.type === 'COURT' || (activeOrg?.type as string) === 'VENUE_MANAGER')) {
+      fetchVenueEntitlements(orgId);
+    }
+  }, [orgId, activeOrg?.type, fetchEntitlements, fetchVenueEntitlements]);
+
   // Close mobile menu on scroll
   useEffect(() => {
     const handleScroll = () => {
@@ -178,7 +209,7 @@ export default function OrganizationLayout({ children }: { children: React.React
 
   // 1. Original Mobile Navigation Resolver (100% UNTOUCHED)
   const getNavItems = () => {
-    const base = [{ name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3 }];
+    const base = [{ name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home }];
 
     if (activeOrg.type === 'ORGANIZER') {
       return [
@@ -189,6 +220,7 @@ export default function OrganizationLayout({ children }: { children: React.React
         { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
         { name: 'Roles & Officials', href: `/org/${orgId}/roles`, icon: Shield },
         { name: 'Results', href: `/org/${orgId}/results`, icon: Activity },
+        { name: 'Subscription & Credits', href: `/org/${orgId}/organizer/subscription`, icon: Sparkles },
       ];
     }
     if (activeOrg.type === 'ACADEMY') {
@@ -244,11 +276,14 @@ export default function OrganizationLayout({ children }: { children: React.React
         { name: 'Calendar', href: `/org/${orgId}/venue/calendar`, icon: CalendarDays },
         { name: 'Bookings', href: `/org/${orgId}/venue/bookings`, icon: ClipboardList },
         { name: 'Recurring', href: `/org/${orgId}/venue/recurring`, icon: Layers },
+        { name: 'Customers', href: `/org/${orgId}/venue/customers`, icon: Users },
         { name: 'Facilities', href: `/org/${orgId}/venue/facilities`, icon: Building },
+        { name: 'Memberships', href: `/org/${orgId}/venue/memberships`, icon: CreditCard },
         { name: 'Pricing', href: `/org/${orgId}/venue/pricing`, icon: Tag },
         { name: 'Blocks', href: `/org/${orgId}/venue/blocks`, icon: Shield },
         { name: 'Reports', href: `/org/${orgId}/venue/reports`, icon: TrendingUp },
         { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard },
+        { name: 'Subscription', href: `/org/${orgId}/venue/subscription`, icon: Shield },
         { name: 'Settings', href: `/org/${orgId}/settings`, icon: Settings },
       ];
     }
@@ -279,7 +314,7 @@ export default function OrganizationLayout({ children }: { children: React.React
         {
           title: 'Training & Operations',
           items: [
-            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home, badge: null, isLive: false },
             { name: 'Sessions & Schedule', href: `/org/${orgId}/batches`, icon: CalendarDays, badge: null, isLive: false },
             { name: 'Daily Attendance', href: `/org/${orgId}/attendance`, icon: ClipboardList, badge: null, isLive: false },
           ],
@@ -313,7 +348,7 @@ export default function OrganizationLayout({ children }: { children: React.React
         {
           title: 'Operations',
           items: [
-            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home, badge: null, isLive: false },
             { name: 'Centres & Campuses', href: `/org/${orgId}/centres`, icon: MapPin, badge: null, isLive: false },
             { name: 'Facilities & Courts', href: `/org/${orgId}/facilities`, icon: Building, badge: null, isLive: false },
             { name: 'Coaching & Batches', href: `/org/${orgId}/batches`, icon: Layers, badge: null, isLive: false },
@@ -363,7 +398,7 @@ export default function OrganizationLayout({ children }: { children: React.React
         {
           title: 'Club Operations',
           items: [
-            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home, badge: null, isLive: false },
             { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy, badge: null, isLive: false },
             { name: 'Members', href: `/org/${orgId}/members`, icon: Users, badge: null, isLive: false },
             { name: 'Matches & Games', href: `/org/${orgId}/matches`, icon: Activity, badge: null, isLive: false },
@@ -390,34 +425,145 @@ export default function OrganizationLayout({ children }: { children: React.React
     }
 
     if (activeOrg.type === 'COURT' || (activeOrg.type as string) === 'VENUE_MANAGER') {
+      const hasRecurring = hasVenueFeature(orgId, 'VENUE_RECURRING_BOOKINGS');
+      const hasCrm = hasVenueFeature(orgId, 'VENUE_ADVANCED_CRM');
+      const hasMemberships = hasVenueFeature(orgId, 'VENUE_MEMBERSHIPS');
+      const hasDynamicPricing = hasVenueFeature(orgId, 'VENUE_DYNAMIC_PRICING');
+      const hasAnalytics = hasVenueFeature(orgId, 'VENUE_ADVANCED_ANALYTICS');
+      const venueTierBadge = venueEntitlements?.planName
+        ? venueEntitlements.planName.replace(/^Venue\s+/i, '').toUpperCase()
+        : 'PLAN';
+      const courtsQuotaBadge = venueEntitlements
+        ? `${venueEntitlements.usage?.FACILITIES_USED ?? 1}/${venueEntitlements.limits?.MAX_FACILITIES ?? 1} Courts`
+        : null;
+
       return [
         {
           title: 'Venue Operations',
           items: [
-            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home, badge: null, isLive: false },
             { name: 'Live Calendar', href: `/org/${orgId}/venue/calendar`, icon: CalendarDays, badge: 'Live', isLive: true },
             { name: 'Bookings & Walk-ins', href: `/org/${orgId}/venue/bookings`, icon: ClipboardList, badge: null, isLive: false },
-            { name: 'Recurring Series', href: `/org/${orgId}/venue/recurring`, icon: Layers, badge: null, isLive: false },
+            {
+              name: 'Recurring Series',
+              href: `/org/${orgId}/venue/recurring`,
+              icon: Layers,
+              badge: hasRecurring ? null : 'STARTER+',
+              isLive: false,
+              lockedVenueFeature: hasRecurring ? undefined : 'VENUE_RECURRING_BOOKINGS',
+            },
+            {
+              name: 'Customers & CRM',
+              href: `/org/${orgId}/venue/customers`,
+              icon: Users,
+              badge: hasCrm ? null : 'PRO',
+              isLive: false,
+              lockedVenueFeature: hasCrm ? undefined : 'VENUE_ADVANCED_CRM',
+            },
           ],
         },
         {
           title: 'Facility Management',
           items: [
-            { name: 'Facilities & Courts', href: `/org/${orgId}/venue/facilities`, icon: Building, badge: null, isLive: false },
-            { name: 'Pricing & Slot Rates', href: `/org/${orgId}/venue/pricing`, icon: Tag, badge: null, isLive: false },
+            { name: 'Facilities & Courts', href: `/org/${orgId}/venue/facilities`, icon: Building, badge: courtsQuotaBadge, isLive: false },
+            {
+              name: 'Memberships & Passes',
+              href: `/org/${orgId}/venue/memberships`,
+              icon: CreditCard,
+              badge: hasMemberships ? null : 'PRO',
+              isLive: false,
+              lockedVenueFeature: hasMemberships ? undefined : 'VENUE_MEMBERSHIPS',
+            },
+            {
+              name: 'Pricing & Slot Rates',
+              href: `/org/${orgId}/venue/pricing`,
+              icon: Tag,
+              badge: hasDynamicPricing ? null : 'STARTER+',
+              isLive: false,
+              lockedVenueFeature: hasDynamicPricing ? undefined : 'VENUE_DYNAMIC_PRICING',
+            },
             { name: 'Blocks & Maintenance', href: `/org/${orgId}/venue/blocks`, icon: Shield, badge: null, isLive: false },
           ],
         },
         {
           title: 'Insights & Treasury',
           items: [
-            { name: 'Reports & Revenue', href: `/org/${orgId}/venue/reports`, icon: TrendingUp, badge: null, isLive: false },
+            {
+              name: 'Reports & Revenue',
+              href: `/org/${orgId}/venue/reports`,
+              icon: TrendingUp,
+              badge: hasAnalytics ? null : 'PRO',
+              isLive: false,
+              lockedVenueFeature: hasAnalytics ? undefined : 'VENUE_ADVANCED_ANALYTICS',
+            },
             { name: 'Venue Finances', href: `/org/${orgId}/finances`, icon: CreditCard, badge: null, isLive: false },
           ],
         },
         {
           title: 'Settings & Administration',
           items: [
+            { name: 'Subscription & Quotas', href: `/org/${orgId}/venue/subscription`, icon: Shield, badge: venueTierBadge, isLive: false },
+            { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
+          ],
+        },
+      ];
+    }
+
+    if (activeOrg.type === 'ORGANIZER') {
+      const hasTeamChamp = hasFeature(orgId, 'TEAM_CHAMPIONSHIP');
+      const hasInventory = hasFeature(orgId, 'TOURNAMENT_INVENTORY');
+      const tierBadge = organizerWallet?.activeTierName
+        ? organizerWallet.activeTierName.replace(/^Tournament\s+/i, '').toUpperCase()
+        : 'PLAN';
+      const creditsBadge =
+        organizerWallet && typeof organizerWallet.tournamentCreditsAvailable === 'number'
+          ? `${organizerWallet.tournamentCreditsAvailable} Cr`
+          : null;
+
+      return [
+        {
+          title: 'Tournament Operations',
+          items: [
+            { name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home, badge: null, isLive: false },
+            { name: 'Tournaments', href: `/org/${orgId}/tournaments`, icon: Trophy, badge: creditsBadge, isLive: false },
+            {
+              name: 'Team Championships',
+              href: `/org/${orgId}/team-championship/create`,
+              icon: Medal,
+              badge: hasTeamChamp ? null : 'PRO',
+              isLive: false,
+              lockedFeature: hasTeamChamp ? undefined : 'TEAM_CHAMPIONSHIP',
+            },
+            { name: 'Registrations', href: `/org/${orgId}/registrations`, icon: Users, badge: null, isLive: false },
+            { name: 'Results', href: `/org/${orgId}/results`, icon: Activity, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Operations & Treasury',
+          items: [
+            {
+              name: 'Inventory & Gear',
+              href: `/org/${orgId}/inventory`,
+              icon: Boxes,
+              badge: hasInventory ? null : 'PRO',
+              isLive: false,
+              lockedFeature: hasInventory ? undefined : 'TOURNAMENT_INVENTORY',
+            },
+            { name: 'Finances', href: `/org/${orgId}/finances`, icon: CreditCard, badge: null, isLive: false },
+            { name: 'Roles & Officials', href: `/org/${orgId}/roles`, icon: Shield, badge: null, isLive: false },
+          ],
+        },
+        {
+          title: 'Plan, Profile & Settings',
+          items: [
+            {
+              name: 'Subscription & Credits',
+              href: `/org/${orgId}/organizer/subscription`,
+              icon: Sparkles,
+              badge: tierBadge,
+              isLive: false,
+            },
+            { name: 'Org Profile', href: `/org/${orgId}/profile`, icon: Building2, badge: null, isLive: false },
             { name: 'Workspace Settings', href: `/org/${orgId}/settings`, icon: Settings, badge: null, isLive: false },
           ],
         },
@@ -429,7 +575,7 @@ export default function OrganizationLayout({ children }: { children: React.React
         {
           title: 'Play & Sessions',
           items: [
-            { name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false },
+            { name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home, badge: null, isLive: false },
             { name: "Let's Play Sessions", href: `/org/${orgId}/sessions`, icon: CalendarDays, badge: 'Live RSVP', isLive: false },
             { name: 'Members & Roles', href: `/org/${orgId}/community-members`, icon: Users, badge: null, isLive: false },
           ],
@@ -455,7 +601,7 @@ export default function OrganizationLayout({ children }: { children: React.React
     return [
       {
         title: 'Navigation',
-        items: [{ name: 'Dashboard', href: `/org/${orgId}/dashboard`, icon: BarChart3, badge: null, isLive: false }],
+        items: [{ name: 'Home', href: `/org/${orgId}/dashboard`, icon: Home, badge: null, isLive: false }],
       },
       {
         title: `${activeOrg.name} Hub`,
@@ -575,6 +721,19 @@ export default function OrganizationLayout({ children }: { children: React.React
                   <Link
                     key={item.name}
                     href={item.href}
+                    onClick={(e) => {
+                      const lockedFeat = (item as any).lockedFeature;
+                      if (lockedFeat) {
+                        e.preventDefault();
+                        openFeaturePaywall(orgId, lockedFeat, item.name);
+                        return;
+                      }
+                      const lockedVenueFeat = (item as any).lockedVenueFeature;
+                      if (lockedVenueFeat) {
+                        e.preventDefault();
+                        openVenueFeaturePaywall(orgId, lockedVenueFeat, item.name);
+                      }
+                    }}
                     title={isSidebarCollapsed ? item.name : undefined}
                     className={`flex items-center rounded-2xl transition-all font-bold text-xs group relative ${
                       isSidebarCollapsed ? 'justify-center p-3.5' : 'justify-between px-3.5 py-3'
@@ -596,14 +755,14 @@ export default function OrganizationLayout({ children }: { children: React.React
                     {!isSidebarCollapsed && item.badge && (
                       <span
                         className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                          item.badge === 'PRO'
+                          item.badge === 'PRO' || item.badge === 'STARTER+'
                             ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-sm'
                             : item.isLive
                             ? 'bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse'
                             : 'bg-primary/10 text-primary border border-primary/20'
                         }`}
                       >
-                        {item.badge === 'PRO' && <Lock className="w-2.5 h-2.5" />}
+                        {(item.badge === 'PRO' || item.badge === 'STARTER+') && <Lock className="w-2.5 h-2.5" />}
                         <span>{item.badge}</span>
                       </span>
                     )}
@@ -631,7 +790,7 @@ export default function OrganizationLayout({ children }: { children: React.React
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-black text-foreground">Athlete Portal</div>
-                  <div className="text-[10px] text-foreground/50 truncate">Personal Dashboard</div>
+                  <div className="text-[10px] text-foreground/50 truncate">Personal Hub</div>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
@@ -690,7 +849,11 @@ export default function OrganizationLayout({ children }: { children: React.React
       {/* ══════════════════════════════════════════════════════════════════════
           MAIN CONTENT AREA
          ══════════════════════════════════════════════════════════════════════ */}
-      <main className="flex-1 overflow-y-auto overscroll-y-contain overscroll-x-none overflow-x-hidden min-w-0 w-full max-w-full bg-background md:pb-0 pb-28">{children}</main>
+      <main className="flex-1 overflow-y-auto overscroll-y-contain overscroll-x-none overflow-x-hidden min-w-0 w-full max-w-full bg-background md:pb-0 pb-28">
+        {children}
+      </main>
+      <OrganizerPaywallModal />
+      <FeaturePaywallModal />
 
       {/* ══════════════════════════════════════════════════════════════════════
           MOBILE BOTTOM NAV

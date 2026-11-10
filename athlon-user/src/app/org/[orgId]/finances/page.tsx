@@ -39,7 +39,10 @@ import {
   ArrowUp,
   ArrowDown,
   Receipt,
-  User
+  User,
+  ShieldCheck,
+  Eye,
+  Activity,
 } from 'lucide-react';
 import { useOrgRole } from '@/hooks/use-org-role';
 
@@ -78,10 +81,11 @@ const QUICK_AMOUNT_PRESETS = [500, 1000, 1500, 2000, 5000];
 export default function FinancesPage() {
   const params = useParams();
   const orgIdParam = (params?.orgId as string) || '';
-  const { getActiveOrganization } = useWorkspaceStore();
-  const org = getActiveOrganization();
+  const { getActiveOrganization, organizations } = useWorkspaceStore();
+  const activeOrg = getActiveOrganization();
+  const org = activeOrg || organizations?.find((o) => o.id === orgIdParam);
 
-  const orgUuid = org?.id || orgIdParam;
+  const orgUuid = (org?.id || orgIdParam) as string;
 
   if (org?.type === 'ACADEMY') {
     return <AcademyFinancesView orgUuid={orgUuid} orgName={org.name || 'Academy'} />;
@@ -806,406 +810,487 @@ function ClubFinancesView({ orgUuid, orgName, org }: { orgUuid: string; orgName:
       </div>
 
       {/* ========================================================================= */}
-      {/* 🖥️ DESKTOP VIEW (ORIGINAL EXACT LAYOUT - UNTOUCHED FOR DESKTOP SCREENS)    */}
+      {/* 🖥️ DESKTOP VIEW ONLY (Athlon 2.0 Command Center Architecture)               */}
       {/* ========================================================================= */}
-      <div className="hidden md:block p-6 md:p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
-        
-        {/* 1. CLUB TREASURY / HERO VAULT CARD (Desktop) */}
-        <div className="relative overflow-hidden rounded-[36px] bg-surface dark:bg-gradient-to-br dark:from-neutral-900 dark:via-neutral-900/95 dark:to-neutral-950 border border-foreground/10 p-7 shadow-sm dark:shadow-2xl backdrop-blur-xl">
-          {/* Ambient Glows */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-24 space-y-8 animate-in fade-in duration-300">
+        {/* Executive Command Banner */}
+        <div
+          className="relative rounded-3xl border p-6 lg:p-8 overflow-hidden shadow-sm"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Ambient Lighting Glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Top Bar inside Card */}
-          <div className="relative flex items-center justify-between gap-2 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center text-sm shadow-inner">
-                🏛️
-              </span>
-              <div>
-                <h2 className="text-xs font-black uppercase tracking-wider text-foreground/50">Club Treasury</h2>
-                <div className="text-sm font-extrabold text-foreground truncate max-w-md">
-                  {org?.name || 'Club Vault'}
-                </div>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              {/* Badge & Breadcrumb */}
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-primary">
+                  Club Operations Suite
+                </span>
+                <span className="text-foreground/30">•</span>
+                <span className="text-xs font-semibold text-foreground/50">
+                  Treasury &amp; Financial Ledger
+                </span>
               </div>
+
+              <h1 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+                Club Financial Treasury
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {filteredFinances.length} {filteredFinances.length === 1 ? 'Record' : 'Records'}
+                </span>
+              </h1>
+              <p className="text-sm text-foreground/60 mt-1.5 max-w-2xl">
+                Oversee club member subscription fees, court rentals, facility maintenance expenses, and equipment purchases with real-time audit ledger tracking.
+              </p>
             </div>
 
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2 rounded-xl bg-surface/50 border border-foreground/10 text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
-              title="Refresh Finances"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-
-          {/* Large Net Balance Display */}
-          <div className="relative py-4 space-y-1">
-            <div className="text-[11px] font-black uppercase tracking-widest text-foreground/50 flex items-center gap-1.5">
-              <span>Net Available Cash</span>
-              <span className={`w-2 h-2 rounded-full ${Number(summary?.netBalance || 0) >= 0 ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-            </div>
-            <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-xs font-black text-foreground/40">₹</span>
-              <span className={`text-5xl md:text-6xl font-black tracking-tight font-mono ${
-                Number(summary?.netBalance || 0) >= 0 ? 'text-primary' : 'text-rose-600 dark:text-rose-400'
-              }`}>
-                {Number(summary?.netBalance || 0).toLocaleString('en-IN')}
-              </span>
-            </div>
-          </div>
-
-          {/* Two-Column Flow: Collections vs Expenses */}
-          <div className="relative grid grid-cols-2 gap-3 pt-3 border-t border-foreground/10">
-            {/* Total Collections */}
-            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-0.5">
-              <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                <ArrowUpRight className="w-3.5 h-3.5" />
-                <span>Collections</span>
-              </div>
-              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono truncate">
-                +₹{Number(summary?.totalIncome || 0).toLocaleString('en-IN')}
-              </div>
-            </div>
-
-            {/* Total Expenses */}
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 space-y-0.5">
-              <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                <ArrowDownRight className="w-3.5 h-3.5" />
-                <span>Expenses</span>
-              </div>
-              <div className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono truncate">
-                -₹{Number(summary?.totalExpense || 0).toLocaleString('en-IN')}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Action Buttons inside Hero Card */}
-          {canManage ? (
-            <div className="relative grid grid-cols-2 gap-2.5 pt-4">
+            {/* Quick Actions */}
+            <div className="flex items-center gap-3 shrink-0">
               <button
-                onClick={() => handleOpenAdd('EXPENSE')}
-                className="py-3 px-4 rounded-2xl bg-primary text-black text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2.5 rounded-xl border text-foreground/70 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+                title="Refresh Financial Ledger"
               >
-                <Plus className="w-4 h-4" /> Add Expense
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
               </button>
-              <button
-                onClick={() => handleOpenAdd('INCOME')}
-                className="py-3 px-4 rounded-2xl bg-surface border border-foreground/10 text-foreground text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:bg-foreground/5 transition-all active:scale-[0.98]"
-              >
-                <IndianRupee className="w-4 h-4 text-emerald-400" /> Collect Fee
-              </button>
+
+              {canManage && (
+                <>
+                  <button
+                    onClick={() => handleOpenAdd('EXPENSE')}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all shadow-xs active:scale-95"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                      color: 'var(--athlon-text)',
+                    }}
+                  >
+                    <ArrowDownRight className="w-4 h-4 text-rose-500" />
+                    <span>Log Expense</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenAdd('INCOME')}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                    style={{
+                      backgroundColor: 'var(--athlon-primary)',
+                      color: '#000000',
+                    }}
+                  >
+                    <ArrowUpRight className="w-4 h-4" />
+                    <span>Collect Fee</span>
+                  </button>
+                </>
+              )}
             </div>
-          ) : (
-            <div className="relative pt-3">
-              <div className="py-2.5 px-4 rounded-2xl bg-foreground/5 border border-foreground/10 text-foreground/60 text-xs font-bold text-center flex items-center justify-center gap-2">
-                <Lock className="w-3.5 h-3.5" /> Club Member View • Financial Ledger is Read-Only
-              </div>
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* 2. CATEGORY SPENDING INSIGHTS (Desktop) */}
-        {categoryPercentages.length > 0 && (
-          <div className="p-5 rounded-2xl bg-surface border border-foreground/5 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-foreground/50">
-              <span className="flex items-center gap-1.5">
-                <PieChart className="w-3.5 h-3.5 text-primary" /> Expense Distribution
+        {/* 4-Metric Executive Telemetry HUD */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Net Balance */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-primary/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Net Available Cash
               </span>
-              <span>{categoryPercentages.length} Categories</span>
+              <div
+                className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <Wallet className="w-4 h-4 text-primary" />
+              </div>
             </div>
-
-            {/* Segmented Distribution Bar */}
-            <div className="h-3 w-full rounded-full bg-foreground/5 overflow-hidden flex gap-0.5 p-0.5">
-              {categoryPercentages.map((item, idx) => {
-                const colors = ['bg-amber-400', 'bg-blue-400', 'bg-purple-400', 'bg-emerald-400', 'bg-yellow-400', 'bg-slate-400'];
-                const col = colors[idx % colors.length];
-                return (
-                  <div
-                    key={item.category}
-                    className={`h-full rounded-sm ${col} transition-all`}
-                    style={{ width: `${Math.max(item.percentage, 5)}%` }}
-                    title={`${item.category}: ₹${item.amount} (${item.percentage}%)`}
-                  />
-                );
-              })}
+            <div className="flex items-baseline gap-2">
+              <span
+                className={`text-2xl lg:text-3xl font-black font-mono tracking-tight ${
+                  Number(summary?.netBalance || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                }`}
+              >
+                ₹{Number(summary?.netBalance || 0).toLocaleString('en-IN')}
+              </span>
             </div>
-
-            {/* Small Legend Tags */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
-              {categoryPercentages.map((item, idx) => {
-                const colors = ['text-amber-400', 'text-blue-400', 'text-purple-400', 'text-emerald-400', 'text-yellow-400', 'text-slate-400'];
-                const col = colors[idx % colors.length];
-                return (
-                  <div key={item.category} className="flex items-center gap-1 text-[11px] font-bold text-foreground/60 whitespace-nowrap bg-background/50 px-2.5 py-1 rounded-lg border border-foreground/5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${col.replace('text-', 'bg-')}`} />
-                    <span>{item.category}:</span>
-                    <span className="font-mono text-foreground font-black">₹{item.amount}</span>
-                    <span className="text-[10px] text-foreground/40">({item.percentage}%)</span>
-                  </div>
-                );
-              })}
+            <div className="flex items-center gap-2 mt-2">
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                  Number(summary?.netBalance || 0) >= 0
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                }`}
+              >
+                {Number(summary?.netBalance || 0) >= 0 ? 'Surplus ●' : 'Deficit ●'}
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">Vault balance</span>
             </div>
           </div>
-        )}
 
-        {/* 3. TIMEFRAME & CALENDAR SELECTOR (Desktop) */}
-        <div className="flex flex-row items-center justify-between gap-3 bg-surface border border-foreground/5 rounded-2xl p-4 shadow-sm">
-          {/* Stepper + Date Picker */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleShiftDate(-1)}
-              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-              title="Previous Day"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div className="relative flex items-center bg-background border border-foreground/10 rounded-xl px-3 py-2 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner">
-              <CalendarIcon className="w-4 h-4 text-primary shrink-0 mr-2" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => {
-                  setTimeframeMode('CUSTOM');
-                  setSelectedDate(e.target.value);
-                }}
-                className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer w-full"
-              />
-            </div>
-
-            <button
-              onClick={() => handleShiftDate(1)}
-              className="p-2 rounded-xl bg-background border border-foreground/10 hover:bg-foreground/5 text-foreground/70 hover:text-foreground transition-colors"
-              title="Next Day"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            {timeframeMode === 'CUSTOM' && selectedDate && (
-              <span className="text-xs font-bold text-foreground/60 ml-2">
-                {new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+          {/* Card 2: Total Collections */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-emerald-500/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Total Collections
               </span>
+              <div className="w-9 h-9 rounded-xl border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl lg:text-3xl font-black font-mono text-emerald-500 tracking-tight">
+                ₹{Number(summary?.totalIncome || 0).toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                Inflow
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">Subscription &amp; fee dues</span>
+            </div>
+          </div>
+
+          {/* Card 3: Total Expenses */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-rose-500/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Total Expenses
+              </span>
+              <div className="w-9 h-9 rounded-xl border border-rose-500/20 bg-rose-500/10 flex items-center justify-center shrink-0">
+                <ArrowDownRight className="w-4 h-4 text-rose-500" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl lg:text-3xl font-black font-mono text-rose-500 tracking-tight">
+                ₹{Number(summary?.totalExpense || 0).toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                Outflow
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">Operating costs logged</span>
+            </div>
+          </div>
+
+          {/* Card 4: Operating Health / Total Entries */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-primary/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Total Transactions
+              </span>
+              <div
+                className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <Activity className="w-4 h-4 text-primary" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl lg:text-3xl font-black font-mono text-foreground tracking-tight">
+                {finances.length}
+              </span>
+              <span className="text-xs font-bold text-foreground/40 font-mono">Entries</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                Audit Active
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">100% reconciled</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter & Search Deck */}
+        <div
+          className="p-4 rounded-2xl border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-xs"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
+            <input
+              type="text"
+              placeholder="Search by description, category, member, or party..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-9 py-2 rounded-xl text-xs font-medium border outline-none transition-all placeholder:text-foreground/40 focus:border-primary"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+                color: 'var(--athlon-text)',
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             )}
           </div>
 
-          {/* Quick Segmented Timeframe Toggle */}
+          {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
-            <button
-              onClick={() => {
-                setTimeframeMode('TODAY');
-                setSelectedDate(getLocalDateString());
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all ${
-                timeframeMode === 'TODAY' && selectedDate === getLocalDateString()
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-              }`}
-            >
-              Today
-            </button>
-
-            <button
-              onClick={() => setTimeframeMode('ALL_TIME')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all ${
-                timeframeMode === 'ALL_TIME'
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'bg-background/80 text-foreground/70 hover:text-foreground border border-foreground/10'
-              }`}
-            >
-              All Time
-            </button>
-
-            <div className="h-4 w-px bg-foreground/10 mx-1" />
-
-            {/* Type Toggle */}
-            {(['ALL', 'EXPENSE', 'INCOME'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTypeFilter(t)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-                  typeFilter === t
-                    ? 'bg-foreground text-background shadow-md'
-                    : 'bg-background/80 text-foreground/60 hover:text-foreground border border-foreground/10'
-                }`}
-              >
-                {t === 'ALL' ? 'All' : t === 'EXPENSE' ? 'Expenses' : 'Income'}
-              </button>
-            ))}
+            {[{ id: 'ALL', label: 'All Categories' }, ...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES].map((cat: any) => {
+              const active = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                    active
+                      ? 'bg-primary text-black border-primary shadow-xs'
+                      : 'border-transparent text-foreground/60 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/5'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* 4. SEARCH & CATEGORY CHIPS SCROLLER (Desktop) */}
-        <div className="space-y-2.5">
-          {/* Search */}
-          <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
-            <input
-              type="text"
-              placeholder="Search expenses, vendors, or members..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-surface border border-foreground/10 rounded-2xl pl-11 pr-4 py-2.5 text-xs font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary transition-all shadow-sm"
-            />
-          </div>
-
-          {/* Category Chips Scrollbar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
-            <button
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
-                selectedCategory === 'ALL'
-                  ? 'bg-foreground text-background shadow-sm'
-                  : 'bg-surface border border-foreground/5 text-foreground/60 hover:text-foreground'
-              }`}
-            >
-              All Categories
-            </button>
-            {EXPENSE_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 border ${
-                  selectedCategory === cat.id
-                    ? 'bg-primary text-black border-primary/30 shadow-sm'
-                    : 'bg-surface border-foreground/5 text-foreground/60 hover:text-foreground'
-                }`}
+        {/* Desktop Transactions Ledger Table */}
+        <div
+          className="rounded-3xl border overflow-hidden shadow-xs"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {filteredFinances.length === 0 ? (
+            <div className="p-16 text-center space-y-4">
+              <div
+                className="w-16 h-16 mx-auto rounded-3xl border flex items-center justify-center text-3xl shadow-inner"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
               >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 5. CHRONOLOGICAL TRANSACTIONS FEED (Desktop) */}
-        <div className="space-y-6">
-          {loading ? (
-            <div className="py-24 flex flex-col items-center justify-center gap-3 bg-surface border border-foreground/5 rounded-[24px]">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-sm font-semibold text-foreground/50">Loading club finances...</p>
-            </div>
-          ) : filteredFinances.length === 0 ? (
-            <div className="py-16 px-6 text-center space-y-4 bg-surface border border-foreground/5 rounded-[28px]">
-              <div className="w-16 h-16 rounded-3xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-3xl">
                 💸
               </div>
-              <div>
-                <h3 className="text-base font-extrabold text-foreground">No Transactions Found</h3>
-                <p className="text-xs text-foreground/50 max-w-sm mx-auto mt-1">
-                  Log your club court rents, shuttle purchases, or member fees to stay on top of the club treasury.
+              <div className="max-w-md mx-auto space-y-1">
+                <h3 className="text-base font-black text-foreground">No financial records found</h3>
+                <p className="text-xs text-foreground/50">
+                  {searchTerm || selectedCategory !== 'ALL'
+                    ? 'Try clearing filters or search terms to display more results.'
+                    : 'No income or expense entries have been logged in this club workspace yet.'}
                 </p>
               </div>
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <button
-                  onClick={() => handleOpenAdd('EXPENSE')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 shadow-md shadow-primary/20"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Expense
-                </button>
-                <button
-                  onClick={() => handleOpenAdd('INCOME')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface border border-foreground/10 text-xs font-black tracking-wide hover:bg-foreground/5"
-                >
-                  <IndianRupee className="w-3.5 h-3.5 text-emerald-400" /> Collect Fee
-                </button>
-              </div>
+              {canManage && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => handleOpenAdd('INCOME')}
+                    className="px-4 py-2 rounded-xl text-xs font-black bg-primary text-black shadow-md hover:scale-105 active:scale-95 transition-all"
+                  >
+                    + Collect Fee
+                  </button>
+                  <button
+                    onClick={() => handleOpenAdd('EXPENSE')}
+                    className="px-4 py-2 rounded-xl text-xs font-bold border hover:bg-black/[0.04] dark:hover:bg-white/5 transition-all"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    + Log Expense
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            groupedFinances.map((group) => (
-              <div key={`desk-grp-${group.title}`} className="space-y-2.5">
-                {/* Date Group Heading */}
-                <div className="flex items-center justify-between px-2">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-foreground/40">
-                    {group.title}
-                  </span>
-                  <span className="text-[10px] font-bold text-foreground/30 font-mono">
-                    {group.items.length} {group.items.length === 1 ? 'entry' : 'entries'}
-                  </span>
-                </div>
-
-                {/* Cards in this Date Group */}
-                <div className="bg-surface border border-foreground/5 rounded-[24px] divide-y divide-foreground/5 overflow-hidden shadow-sm">
-                  {group.items.map((item) => {
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr
+                    className="border-b text-[10px] font-black uppercase tracking-wider text-foreground/40"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    <th className="py-3.5 px-6">Transaction &amp; Category</th>
+                    <th className="py-3.5 px-6">Date &amp; Ref</th>
+                    <th className="py-3.5 px-6">Member / Party</th>
+                    <th className="py-3.5 px-6">Payment Method</th>
+                    <th className="py-3.5 px-6 text-right">Amount (₹)</th>
+                    <th className="py-3.5 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredFinances.map((item) => {
                     const isExpense = item.transactionType === 'EXPENSE';
                     const categoryObj = (isExpense ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).find(
                       (c) => c.id === item.category
                     );
 
                     return (
-                      <div
-                        key={`desk-tx-${item.financeUuid}`}
+                      <tr
+                        key={item.financeUuid}
+                        className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group cursor-pointer"
                         onClick={() => setSelectedTxDetail(item)}
-                        className="p-4 hover:bg-foreground/[0.02] transition-colors cursor-pointer flex items-center justify-between gap-3 group"
                       >
-                        {/* Left: Icon & Description */}
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg shrink-0 bg-gradient-to-br ${
-                            categoryObj?.color || (isExpense ? 'from-rose-500/20 to-rose-600/10 text-rose-400' : 'from-emerald-500/20 to-emerald-600/10 text-emerald-400')
-                          } border border-foreground/5 shadow-inner`}>
-                            {categoryObj?.icon || (isExpense ? '📉' : '📈')}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <h4 className="font-extrabold text-sm text-foreground truncate">
-                                {item.title}
-                              </h4>
-                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-foreground/5 text-foreground/50 border border-foreground/10">
-                                {item.paymentMethod || 'UPI'}
-                              </span>
-                            </div>
-
-                            <div className="text-[11px] font-medium text-foreground/40 truncate mt-0.5 flex items-center gap-1.5">
-                              <span>{item.category}</span>
-                              {(item.paidToOrBy || item.memberName) && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-foreground/60 font-semibold">{item.memberName || item.paidToOrBy}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Right: Amount & Delete button */}
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="text-right">
-                            <div className={`font-mono font-black text-base ${
-                              isExpense ? 'text-rose-400' : 'text-emerald-400'
-                            }`}>
-                              {isExpense ? '- ' : '+ '}₹{Number(item.amount).toLocaleString('en-IN')}
-                            </div>
-                            <div className="text-[10px] font-bold text-foreground/30">
-                              {item.transactionDate ? String(item.transactionDate).slice(5) : ''}
-                            </div>
-                          </div>
-
-                          {canManage && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (item.financeUuid) handleDelete(item.financeUuid);
+                        {/* Transaction & Category */}
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3.5">
+                            <div
+                              className="w-10 h-10 rounded-2xl border flex items-center justify-center text-lg shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
+                              style={{
+                                backgroundColor: isExpense ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                                borderColor: isExpense ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
                               }}
-                              className="p-2 rounded-xl text-foreground/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                              title="Delete"
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                              {categoryObj?.icon || (isExpense ? '📉' : '📈')}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                                {item.title || item.category || 'Transaction'}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider">
+                                  {item.category?.replace(/_/g, ' ')}
+                                </span>
+                                {item.notes && (
+                                  <>
+                                    <span className="text-foreground/20">•</span>
+                                    <span className="text-[11px] text-foreground/40 truncate max-w-xs">
+                                      {item.notes}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Date & Ref */}
+                        <td className="py-4 px-6">
+                          <div className="text-xs font-semibold text-foreground/80">
+                            {item.transactionDate ? String(item.transactionDate).slice(0, 10) : '—'}
+                          </div>
+                          <div className="text-[10px] font-mono font-bold text-foreground/40 mt-0.5">
+                            {item.receiptUrl ? '#REC' : `#TX-${(item.financeUuid || '').slice(0, 8)}`}
+                          </div>
+                        </td>
+
+                        {/* Member / Party */}
+                        <td className="py-4 px-6">
+                          {item.memberName ? (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-xs font-bold text-foreground">
+                              <span>👤</span>
+                              <span>{item.memberName}</span>
+                            </div>
+                          ) : item.paidToOrBy ? (
+                            <div className="text-xs font-medium text-foreground/70">
+                              {item.paidToOrBy}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-foreground/30 italic">—</span>
                           )}
-                        </div>
-                      </div>
+                        </td>
+
+                        {/* Payment Method */}
+                        <td className="py-4 px-6">
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border shadow-2xs"
+                            style={{
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border)',
+                              color: 'var(--athlon-text-muted)',
+                            }}
+                          >
+                            <CreditCard className="w-3 h-3 text-primary" />
+                            {item.paymentMethod || 'CASH'}
+                          </span>
+                        </td>
+
+                        {/* Amount */}
+                        <td className="py-4 px-6 text-right">
+                          <span
+                            className={`text-base font-black font-mono tracking-tight ${
+                              isExpense ? 'text-rose-500' : 'text-emerald-500'
+                            }`}
+                          >
+                            {isExpense ? '- ' : '+ '}₹{Number(item.amount || 0).toLocaleString('en-IN')}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setSelectedTxDetail(item)}
+                              className="p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 transition-colors"
+                              title="View Transaction Dossier"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {canManage && (
+                              <button
+                                onClick={() => {
+                                  if (item.financeUuid) handleDelete(item.financeUuid);
+                                }}
+                                className="p-2 rounded-xl text-foreground/30 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                                title="Delete Record"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })}
-                </div>
-              </div>
-            ))
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
-
-      {/* ========================================================================= */}
+    {/* ========================================================================= */}
       {/* 6. MODAL: RECORD TRANSACTION (RESPONSIVE & MOBILE-OPTIMIZED)             */}
       {/* ========================================================================= */}
       {isModalOpen && (

@@ -33,6 +33,9 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Layers,
+  Filter,
+  CheckCheck,
+  ExternalLink,
 } from "lucide-react";
 import { TournamentService, RegistrationService, Tournament, Registration } from "@/lib/api/tournaments";
 import { Athlon3DIcon } from "@/components/common/Athlon3DIcon";
@@ -199,8 +202,8 @@ export default function RegistrationsPage() {
       className="min-h-screen pb-32 text-foreground transition-colors duration-200"
       style={{ backgroundColor: "var(--athlon-background)" }}
     >
-      {/* ─── Ultra-Stylish Mobile Hero Section ─────────────────────────────── */}
-      <div className="px-4 pt-4 pb-2 max-w-xl mx-auto space-y-3.5">
+      {/* ─── Ultra-Stylish Mobile Hero Section (Untouched) ─────────────────── */}
+      <div className="block md:hidden px-4 pt-4 pb-2 max-w-xl mx-auto space-y-3.5">
         {/* Top Mini Navigation Bar */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -236,7 +239,7 @@ export default function RegistrationsPage() {
 
         {/* ─── Telemetry Capsule ────────────────────────── */}
         <div
-          className="rounded-3xl p-4 border shadow-sm"
+          className="rounded-xl sm:rounded-2xl p-3.5 border shadow-2xs backdrop-blur-xs"
           style={{
             backgroundColor: "var(--athlon-card)",
             borderColor: "var(--athlon-border)",
@@ -275,26 +278,26 @@ export default function RegistrationsPage() {
           {/* 3-Column Segmented Telemetry Strip */}
           <div className="grid grid-cols-3 gap-2 pt-3 text-center">
             {/* 1. Events */}
-            <div className="p-2 rounded-2xl border" style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}>
-              <div className="text-[9px] font-black uppercase tracking-wider text-foreground/45">Events</div>
-              <div className="text-lg font-black text-foreground mt-0.5">{globalStats.tournamentsCount}</div>
-              <div className="text-[9px] font-bold text-primary truncate">Hosted</div>
+            <div className="p-1.5 rounded-lg border text-center" style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}>
+              <div className="text-[8.5px] font-bold uppercase tracking-wider text-foreground/45">Events</div>
+              <div className="text-base font-black text-foreground mt-0.5">{globalStats.tournamentsCount}</div>
+              <div className="text-[8.5px] font-medium text-primary truncate">Hosted</div>
             </div>
 
             {/* 2. Total Entries */}
-            <div className="p-2 rounded-2xl border" style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}>
-              <div className="text-[9px] font-black uppercase tracking-wider text-foreground/45">Entries</div>
-              <div className="text-lg font-black text-blue-600 dark:text-blue-400 mt-0.5">{globalStats.totalEntries}</div>
-              <div className="text-[9px] font-bold text-foreground/50 truncate">{globalStats.totalApproved} Confirmed</div>
+            <div className="p-1.5 rounded-lg border text-center" style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}>
+              <div className="text-[8.5px] font-bold uppercase tracking-wider text-foreground/45">Entries</div>
+              <div className="text-base font-black text-blue-600 dark:text-blue-400 mt-0.5">{globalStats.totalEntries}</div>
+              <div className="text-[8.5px] font-medium text-foreground/50 truncate">{globalStats.totalApproved} Confirmed</div>
             </div>
 
             {/* 3. Approval Rate */}
-            <div className="p-2 rounded-2xl border" style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}>
-              <div className="text-[9px] font-black uppercase tracking-wider text-foreground/45">Rate</div>
-              <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+            <div className="p-1.5 rounded-lg border text-center" style={{ backgroundColor: "var(--athlon-surface)", borderColor: "var(--athlon-border-subtle)" }}>
+              <div className="text-[8.5px] font-bold uppercase tracking-wider text-foreground/45">Rate</div>
+              <div className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
                 {globalStats.totalEntries > 0 ? Math.round((globalStats.totalApproved / globalStats.totalEntries) * 100) : 100}%
               </div>
-              <div className="text-[9px] font-bold text-foreground/50 truncate">Approval</div>
+              <div className="text-[8.5px] font-medium text-foreground/50 truncate">Approval</div>
             </div>
           </div>
         </div>
@@ -309,7 +312,7 @@ export default function RegistrationsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tournament, sport or venue..."
-              className="w-full pl-10 pr-9 py-2.5 rounded-2xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/35 shadow-sm"
+              className="w-full pl-10 pr-9 py-2 rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/35 shadow-2xs"
               style={{
                 backgroundColor: "var(--athlon-card)",
                 borderColor: "var(--athlon-border)",
@@ -334,7 +337,7 @@ export default function RegistrationsPage() {
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap border shrink-0 ${isActive
+                  className={`px-3 py-1 rounded-lg text-[10.5px] font-bold uppercase tracking-wider transition-all whitespace-nowrap border shrink-0 ${isActive
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                     : "text-foreground/55 hover:text-foreground"
                     }`}
@@ -405,34 +408,33 @@ export default function RegistrationsPage() {
                 <div
                   key={t.tournamentId || t.tournamentUuid}
                   onClick={() => setSelectedTournament(t)}
-                  className="group relative rounded-3xl border p-4 flex flex-col justify-between transition-all duration-200 active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm hover:border-primary/50"
+                  className="group relative rounded-xl sm:rounded-2xl border p-3.5 flex flex-col justify-between transition-all duration-200 active:scale-[0.99] cursor-pointer overflow-hidden shadow-2xs hover:border-primary/50"
                   style={{
                     backgroundColor: "var(--athlon-card)",
                     borderColor: counts.pending > 0 ? "rgba(251, 191, 36, 0.4)" : "var(--athlon-border)",
                   }}
                 >
-                  {/* Top Theme Color Line */}
-                  <div className="h-1 w-full absolute top-0 left-0 right-0 bg-primary" />
+                  {/* Top Theme Color Line - Removed on mobile as requested */}
 
                   {/* Card Content Top */}
                   <div>
                     <div className="flex items-start gap-3">
                       {/* Sport 3D Icon */}
-                      <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-sm">
-                        <Athlon3DIcon type="tournaments" size={24} />
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-2xs">
+                        <Athlon3DIcon type="tournaments" size={20} />
                       </div>
 
                       {/* Title & Metadata */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1.5">
-                          <h3 className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">
+                          <h3 className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
                             {t.name}
                           </h3>
                           {(() => {
                             const statusCfg = getStatusBadgeConfig(t.status);
                             return (
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 border ${statusCfg.className}`}
+                                className={`px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider shrink-0 border ${statusCfg.className}`}
                               >
                                 {statusCfg.label}
                               </span>
@@ -440,7 +442,7 @@ export default function RegistrationsPage() {
                           })()}
                         </div>
 
-                        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-foreground/55 truncate">
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[10.5px] text-foreground/55 truncate">
                           <span className="font-extrabold text-foreground/80 uppercase tracking-wider">
                             {t.sport || "Sport"}
                           </span>
@@ -460,7 +462,7 @@ export default function RegistrationsPage() {
                     </div>
 
                     {/* Registration Slot Capacity Progress Bar */}
-                    <div className="mt-3 pt-2.5 border-t space-y-1" style={{ borderColor: "var(--athlon-border-subtle)" }}>
+                    <div className="mt-2.5 pt-2 border-t space-y-1" style={{ borderColor: "var(--athlon-border-subtle)" }}>
                       <div className="flex items-center justify-between text-[10px] font-bold text-foreground/60">
                         <span className="flex items-center gap-1">
                           <Users className="w-3 h-3 text-primary" /> Slots
@@ -480,7 +482,7 @@ export default function RegistrationsPage() {
 
                   {/* Card Bottom: Metrics + Arrow */}
                   <div
-                    className="mt-3 pt-2.5 border-t flex items-center justify-between gap-2"
+                    className="mt-2.5 pt-2 border-t flex items-center justify-between gap-2"
                     style={{ borderColor: "var(--athlon-border-subtle)" }}
                   >
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -509,6 +511,420 @@ export default function RegistrationsPage() {
             })
           )}
         </div>
+      </div>
+
+      {/* ─── Luxury High-Tech Desktop View (Redesigned) ──────────────────── */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-24 space-y-8">
+        {/* Executive Header Banner */}
+        <div
+          className="relative rounded-3xl border p-6 lg:p-8 overflow-hidden shadow-sm"
+          style={{
+            backgroundColor: "var(--athlon-card)",
+            borderColor: "var(--athlon-border)",
+          }}
+        >
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              {/* Badge & Breadcrumb */}
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-primary">
+                  Athlon Command Center
+                </span>
+                <span className="text-foreground/30">•</span>
+                <span className="text-xs font-semibold text-foreground/50">
+                  Registrations & Roster Management
+                </span>
+              </div>
+
+              <h1 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+                Tournament Registrations
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {globalStats.tournamentsCount} Active {globalStats.tournamentsCount === 1 ? "Event" : "Events"}
+                </span>
+              </h1>
+              <p className="text-sm text-foreground/60 mt-1.5 max-w-2xl">
+                Oversee athlete applications, verify payments, approve official rosters, and track inflow across all your tournaments from a unified operations deck.
+              </p>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                href={`/org/${orgId}/tournaments`}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border shadow-xs hover:border-primary/50 transition-all active:scale-95"
+                style={{
+                  backgroundColor: "var(--athlon-surface)",
+                  borderColor: "var(--athlon-border)",
+                  color: "var(--athlon-text)",
+                }}
+              >
+                <Trophy className="w-4 h-4 text-primary" />
+                <span>All Tournaments</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── 4-Metric Executive Telemetry HUD ────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Verified Inflow */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-emerald-500/40 transition-all group"
+            style={{
+              backgroundColor: "var(--athlon-card)",
+              borderColor: "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Verified Inflow
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <CreditCard className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
+              ₹{globalStats.totalRevenue.toLocaleString("en-IN")}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Paid & confirmed entry fees</span>
+            </div>
+          </div>
+
+          {/* 2. Total Registrations */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-blue-500/40 transition-all group"
+            style={{
+              backgroundColor: "var(--athlon-card)",
+              borderColor: "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Total Athletes
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground mt-2">
+              {globalStats.totalEntries}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+              <span>{globalStats.totalApproved} Confirmed on roster</span>
+            </div>
+          </div>
+
+          {/* 3. Pending Review Queue */}
+          <div
+            className={`rounded-2xl border p-5 relative overflow-hidden shadow-xs transition-all group ${
+              globalStats.totalPending > 0
+                ? "border-amber-500/40 bg-amber-500/[0.03]"
+                : "hover:border-primary/40"
+            }`}
+            style={{
+              backgroundColor: globalStats.totalPending > 0 ? undefined : "var(--athlon-card)",
+              borderColor: globalStats.totalPending > 0 ? "rgba(245, 158, 11, 0.35)" : "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Pending Verification
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <Clock className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-2">
+              {globalStats.totalPending}
+              {globalStats.totalPending > 0 && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 animate-pulse uppercase tracking-wider">
+                  Needs Action
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <span>{globalStats.totalPending > 0 ? "Pending organizer decision" : "All applications reviewed"}</span>
+            </div>
+          </div>
+
+          {/* 4. Global Approval Velocity */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-primary/40 transition-all group"
+            style={{
+              backgroundColor: "var(--athlon-card)",
+              borderColor: "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Approval Rate
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground mt-2">
+              {globalStats.totalEntries > 0
+                ? Math.round((globalStats.totalApproved / globalStats.totalEntries) * 100)
+                : 100}%
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <Trophy className="w-3.5 h-3.5 text-primary" />
+              <span>Across {globalStats.tournamentsCount} hosted events</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Search & Status Filter Deck ─────────────────────────────── */}
+        <div
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 rounded-2xl border shadow-xs"
+          style={{
+            backgroundColor: "var(--athlon-card)",
+            borderColor: "var(--athlon-border)",
+          }}
+        >
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tournament name, sport or venue..."
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/40 shadow-2xs"
+              style={{
+                backgroundColor: "var(--athlon-surface)",
+                borderColor: "var(--athlon-border-subtle)",
+                color: "var(--athlon-text)",
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1 text-xs"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Tabs */}
+          <div className="flex items-center gap-2">
+            {(["ALL", "UPCOMING", "ONGOING", "COMPLETED"] as const).map((st) => {
+              const isActive = statusFilter === st;
+              return (
+                <button
+                  key={st}
+                  onClick={() => setStatusFilter(st)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap border ${
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "text-foreground/60 hover:text-foreground border-transparent hover:border-black/10 dark:hover:border-white/10"
+                  }`}
+                  style={!isActive ? { backgroundColor: "var(--athlon-surface)" } : {}}
+                >
+                  {st === "ALL" ? "All Events" : st}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ─── Desktop Tournament Cards Grid ───────────────────────────── */}
+        {loading ? (
+          <div className="py-24 text-center space-y-3">
+            <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto" />
+            <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+              Loading Tournaments & Roster Telemetry...
+            </p>
+          </div>
+        ) : filteredTournaments.length === 0 ? (
+          <div
+            className="py-20 text-center rounded-3xl border border-dashed flex flex-col items-center justify-center p-8 shadow-xs"
+            style={{
+              backgroundColor: "var(--athlon-card)",
+              borderColor: "var(--athlon-border)",
+            }}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-3">
+              <Trophy className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-black text-foreground mb-1">No Tournaments Found</h3>
+            <p className="text-xs text-foreground/50 max-w-sm mb-4">
+              {searchQuery || statusFilter !== "ALL"
+                ? "No tournament matches your search query or filter selection."
+                : "Create your first tournament to start receiving and managing athlete registrations."}
+            </p>
+            {searchQuery || statusFilter !== "ALL" ? (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("ALL");
+                }}
+                className="px-4 py-2 border text-foreground text-xs font-bold rounded-xl transition-colors hover:border-primary"
+                style={{
+                  backgroundColor: "var(--athlon-surface)",
+                  borderColor: "var(--athlon-border)",
+                }}
+              >
+                Clear Filters
+              </button>
+            ) : (
+              <Link
+                href={`/org/${orgId}/tournaments`}
+                className="px-5 py-2.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider rounded-xl shadow-md flex items-center gap-2 hover:opacity-95 transition-opacity"
+              >
+                <Trophy className="w-4 h-4" />
+                <span>+ Create Tournament</span>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTournaments.map((t) => {
+              const counts = tournamentRegCounts[t.tournamentId] || {
+                total: 0,
+                approved: 0,
+                pending: 0,
+                revenue: 0,
+              };
+              const capacity = t.playersCount || 32;
+              const fillPct = Math.min(100, Math.round((counts.total / capacity) * 100));
+              const statusCfg = getStatusBadgeConfig(t.status);
+
+              return (
+                <div
+                  key={t.tournamentId || t.tournamentUuid}
+                  onClick={() => setSelectedTournament(t)}
+                  className="rounded-2xl border p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group relative overflow-hidden"
+                  style={{
+                    backgroundColor: "var(--athlon-card)",
+                    borderColor:
+                      counts.pending > 0 ? "rgba(245, 158, 11, 0.4)" : "var(--athlon-border)",
+                  }}
+                >
+                  {/* Subtle top indicator bar */}
+                  <div
+                    className={`absolute top-0 left-0 right-0 h-1 transition-colors ${
+                      counts.pending > 0 ? "bg-amber-500" : "bg-primary/40 group-hover:bg-primary"
+                    }`}
+                  />
+
+                  <div>
+                    {/* Header: 3D Icon, Status & Pending Alert */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        <Athlon3DIcon type="tournaments" size={24} />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusCfg.className}`}
+                        >
+                          {statusCfg.label}
+                        </span>
+                        {counts.pending > 0 && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 animate-pulse flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />
+                            <span>{counts.pending} Pending</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tournament Title & Info */}
+                    <div className="mt-3.5">
+                      <h3 className="text-base font-black text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                        {t.name}
+                      </h3>
+
+                      <div className="flex items-center gap-2 mt-1.5 text-xs text-foreground/60 flex-wrap">
+                        <span className="font-extrabold text-foreground/80 uppercase tracking-wider">
+                          {t.sport || "Sport"}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-foreground/40 shrink-0" />
+                          {formatDateStr(t.startDate)}
+                        </span>
+                        {t.location && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 truncate max-w-[140px]">
+                              <MapPin className="w-3.5 h-3.5 text-foreground/40 shrink-0" />
+                              <span className="truncate">{t.location}</span>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Capacity Progress Bar */}
+                    <div
+                      className="mt-4 pt-3 border-t space-y-1.5"
+                      style={{ borderColor: "var(--athlon-border-subtle)" }}
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold text-foreground/60">
+                        <span className="flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-primary" /> Roster Capacity
+                        </span>
+                        <span className="font-black text-foreground">
+                          {counts.total} / {capacity}{" "}
+                          <span className="text-[10px] font-semibold text-foreground/50">
+                            ({fillPct}%)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500 bg-primary"
+                          style={{ width: `${fillPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Bottom: Telemetry Badges & Action */}
+                  <div
+                    className="mt-4 pt-3 border-t flex items-center justify-between gap-2"
+                    style={{ borderColor: "var(--athlon-border-subtle)" }}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3" /> {counts.approved} Approved
+                      </span>
+                      {t.registrationFees ? (
+                        <span className="text-xs font-bold text-foreground/60">
+                          ₹{t.registrationFees} / entry
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          Free Entry
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs font-black text-primary group-hover:translate-x-1 transition-transform shrink-0">
+                      <span>View Registrations</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -676,7 +1092,9 @@ function TournamentRegistrationDetailView({
       className="min-h-screen pb-32 text-foreground transition-colors duration-200"
       style={{ backgroundColor: "var(--athlon-background)" }}
     >
-      {/* Sticky Mobile App Bar */}
+      {/* ─── Mobile Detail View (Untouched) ─────────────────────────── */}
+      <div className="block md:hidden">
+        {/* Sticky Mobile App Bar */}
       <div
         className="sticky top-0 z-30 backdrop-blur-xl border-b px-4 py-3 flex items-center justify-between gap-2 shadow-sm safe-header"
         style={{
@@ -1085,8 +1503,665 @@ function TournamentRegistrationDetailView({
           )}
         </div>
       </div>
+    </div>
 
-      {/* Deep Inspection Detail Drawer / Modal */}
+      {/* ─── Luxury High-Tech Desktop Detail View (Redesigned) ────── */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-6 pb-24 space-y-6">
+        {/* Desktop Command Navigation Bar */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-5 border-b"
+          style={{ borderColor: "var(--athlon-border-subtle)" }}
+        >
+          <div className="flex items-center gap-3.5">
+            <button
+              onClick={onBack}
+              className="p-2.5 rounded-xl border hover:bg-black/[0.04] dark:hover:bg-white/10 text-foreground/70 hover:text-foreground transition-all active:scale-95 shrink-0 shadow-xs"
+              style={{
+                backgroundColor: "var(--athlon-card)",
+                borderColor: "var(--athlon-border)",
+              }}
+              title="Back to All Tournaments"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <button
+                  onClick={onBack}
+                  className="text-xs font-bold text-foreground/50 hover:text-primary transition-colors flex items-center gap-1"
+                >
+                  <span>Registrations</span>
+                </button>
+                <span className="text-foreground/30">/</span>
+                <span className="text-xs font-bold text-primary">{tournament.sport || "Tournament"}</span>
+                <span className="text-foreground/30">/</span>
+                <span className="text-xs font-bold text-foreground/70">Roster Management</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+                  {tournament.name}
+                </h1>
+                {(() => {
+                  const statusCfg = getStatusBadgeConfig(tournament.status);
+                  return (
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.className}`}
+                    >
+                      {statusCfg.label}
+                    </span>
+                  );
+                })()}
+              </div>
+
+              <div className="flex items-center gap-2 mt-1 text-xs text-foreground/60 flex-wrap">
+                <span className="font-extrabold text-foreground/80 uppercase tracking-wider">
+                  {tournament.sport || "Sport"}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-foreground/40 shrink-0" />
+                  {formatDateStr(tournament.startDate)} - {formatDateStr(tournament.endDate)}
+                </span>
+                {tournament.location && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-foreground/40 shrink-0" />
+                      <span>{tournament.location}</span>
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Action Controls */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={handleShareLink}
+              className="px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 shadow-xs flex items-center gap-2"
+              style={{
+                backgroundColor: "var(--athlon-card)",
+                borderColor: "var(--athlon-border)",
+              }}
+              title="Copy public registration link"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black">
+                    Link Copied!
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4 text-primary" />
+                  <span>Share Link</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleExportCSV}
+              className="px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 shadow-xs flex items-center gap-2"
+              style={{
+                backgroundColor: "var(--athlon-card)",
+                borderColor: "var(--athlon-border)",
+              }}
+              title="Download registrations CSV"
+            >
+              <Download className="w-4 h-4 text-foreground/70" />
+              <span>Export CSV</span>
+            </button>
+
+            <Link
+              href={`/org/${orgId}/tournaments/${tournament.tournamentUuid || tournament.tournamentId}`}
+              className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-md active:scale-95 transition-all flex items-center gap-2 hover:opacity-95"
+              title="Manage tournament fixtures & settings"
+            >
+              <Trophy className="w-4 h-4" />
+              <span>Event Console</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* ─── 4-Metric Executive Event Telemetry HUD ──────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Total Registrations */}
+          <div
+            className="rounded-2xl border p-4.5 shadow-xs"
+            style={{
+              backgroundColor: "var(--athlon-card)",
+              borderColor: "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Total Registrations
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Users className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground mt-1.5">
+              {registrations.length}
+            </div>
+            <div className="text-[11px] font-medium text-foreground/50 mt-1">
+              Capacity: {tournament.playersCount || 32} slots (
+              {Math.min(
+                100,
+                Math.round((registrations.length / (tournament.playersCount || 32)) * 100)
+              )}
+              % booked)
+            </div>
+          </div>
+
+          {/* 2. Confirmed Roster */}
+          <div
+            className="rounded-2xl border p-4.5 shadow-xs"
+            style={{
+              backgroundColor: "var(--athlon-card)",
+              borderColor: "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Confirmed Roster
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5">
+              {approvedCount}
+            </div>
+            <div className="text-[11px] font-medium text-foreground/50 mt-1">
+              {registrations.length > 0
+                ? Math.round((approvedCount / registrations.length) * 100)
+                : 0}
+              % of total applications
+            </div>
+          </div>
+
+          {/* 3. Pending Review Queue */}
+          <div
+            className={`rounded-2xl border p-4.5 shadow-xs ${
+              pendingCount > 0 ? "border-amber-500/40 bg-amber-500/[0.03]" : ""
+            }`}
+            style={{
+              backgroundColor: pendingCount > 0 ? undefined : "var(--athlon-card)",
+              borderColor:
+                pendingCount > 0 ? "rgba(245, 158, 11, 0.35)" : "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Pending Verification
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <Clock className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-2">
+              {pendingCount}
+              {pendingCount > 0 && (
+                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 uppercase tracking-wider animate-pulse">
+                  Action Required
+                </span>
+              )}
+            </div>
+            <div className="text-[11px] font-medium text-foreground/50 mt-1">
+              {pendingCount > 0
+                ? "Awaiting organizer approval"
+                : "All entries processed"}
+            </div>
+          </div>
+
+          {/* 4. Collected Inflow */}
+          <div
+            className="rounded-2xl border p-4.5 shadow-xs"
+            style={{
+              backgroundColor: "var(--athlon-card)",
+              borderColor: "var(--athlon-border)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Collected Inflow
+              </span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <CreditCard className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5">
+              ₹{totalRevenue.toLocaleString("en-IN")}
+            </div>
+            <div className="text-[11px] font-medium text-foreground/50 mt-1">
+              {paidCount} paid @ ₹{feeAmount}/entry
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Desktop Filter Toolbar ──────────────────────────────────── */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-4 rounded-2xl border shadow-xs"
+          style={{
+            backgroundColor: "var(--athlon-card)",
+            borderColor: "var(--athlon-border)",
+          }}
+        >
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search athlete, team, phone or ID..."
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/40 shadow-2xs"
+              style={{
+                backgroundColor: "var(--athlon-surface)",
+                borderColor: "var(--athlon-border-subtle)",
+                color: "var(--athlon-text)",
+              }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1 text-xs"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Tabs + Payment Pills + Category Selector */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Status Pills */}
+            <div
+              className="flex items-center gap-1 p-1 rounded-xl border"
+              style={{
+                backgroundColor: "var(--athlon-surface)",
+                borderColor: "var(--athlon-border-subtle)",
+              }}
+            >
+              {[
+                { id: "ALL", label: "All", count: registrations.length },
+                { id: "PENDING", label: "Pending", count: pendingCount, alert: pendingCount > 0 },
+                { id: "APPROVED", label: "Approved", count: approvedCount },
+                { id: "REJECTED", label: "Rejected", count: rejectedCount },
+              ].map((tab) => {
+                const isSelected = statusFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setStatusFilter(tab.id as any)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-sm font-black"
+                        : "text-foreground/60 hover:text-foreground"
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        isSelected
+                          ? "bg-black/25 text-primary-foreground"
+                          : tab.alert
+                          ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black"
+                          : "bg-black/5 dark:bg-white/10 text-foreground/50"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Payment Filter Pills */}
+            <div
+              className="flex items-center gap-1 p-1 rounded-xl border"
+              style={{
+                backgroundColor: "var(--athlon-surface)",
+                borderColor: "var(--athlon-border-subtle)",
+              }}
+            >
+              {(["ALL", "PAID", "PENDING"] as const).map((pf) => {
+                const isSelected = paymentFilter === pf;
+                const label = pf === "ALL" ? "All Payment" : pf === "PAID" ? "Paid" : "Unpaid";
+                return (
+                  <button
+                    key={pf}
+                    onClick={() => setPaymentFilter(pf)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground shadow-sm font-black"
+                        : "text-foreground/60 hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Category Filter Pills (if any available) */}
+            {availableCategories.length > 0 && (
+              <div
+                className="flex items-center gap-1 p-1 rounded-xl border"
+                style={{
+                  backgroundColor: "var(--athlon-surface)",
+                  borderColor: "var(--athlon-border-subtle)",
+                }}
+              >
+                <button
+                  onClick={() => setCategoryFilter("ALL")}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    categoryFilter === "ALL"
+                      ? "bg-primary text-primary-foreground shadow-sm font-black"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  All Categories
+                </button>
+                {availableCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                      categoryFilter === cat
+                        ? "bg-primary text-primary-foreground shadow-sm font-black"
+                        : "text-foreground/60 hover:text-foreground"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Desktop Data Table View ─────────────────────────────────── */}
+        <div
+          className="rounded-2xl border shadow-xs overflow-hidden"
+          style={{
+            backgroundColor: "var(--athlon-card)",
+            borderColor: "var(--athlon-border)",
+          }}
+        >
+          {loading ? (
+            <div className="py-24 text-center space-y-3">
+              <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto" />
+              <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+                Loading Registered Athletes & Teams...
+              </p>
+            </div>
+          ) : filteredRegistrations.length === 0 ? (
+            <div className="py-20 text-center flex flex-col items-center justify-center p-8">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-3">
+                <Users className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-black text-foreground mb-1">No Entries Match Filter</h4>
+              <p className="text-xs text-foreground/50 max-w-sm mb-4">
+                No athlete registrations found matching your selected search query or filters.
+              </p>
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("ALL");
+                  setPaymentFilter("ALL");
+                  setCategoryFilter("ALL");
+                }}
+                className="px-4 py-2 border text-foreground text-xs font-bold rounded-xl transition-colors hover:border-primary"
+                style={{
+                  backgroundColor: "var(--athlon-surface)",
+                  borderColor: "var(--athlon-border)",
+                }}
+              >
+                Reset All Filters
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr
+                    className="border-b"
+                    style={{
+                      borderColor: "var(--athlon-border-subtle)",
+                      backgroundColor: "var(--athlon-surface)",
+                    }}
+                  >
+                    <th className="py-3.5 px-5 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Athlete / Squad
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Reg Code & Date
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Category
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Contact & Comms
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Payment Status
+                    </th>
+                    <th className="py-3.5 px-4 font-black uppercase tracking-wider text-[10.5px] text-foreground/50">
+                      Approval Status
+                    </th>
+                    <th className="py-3.5 px-5 font-black uppercase tracking-wider text-[10.5px] text-foreground/50 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  className="divide-y"
+                  style={{ borderColor: "var(--athlon-border-subtle)" }}
+                >
+                  {filteredRegistrations.map((reg, idx) => {
+                    const regUuid =
+                      reg.registrationUuid || reg.uuid || `reg-${reg.id || idx}`;
+                    const isApproved = reg.status === "APPROVED";
+                    const isRejected = reg.status === "REJECTED";
+                    const isPaid = reg.paymentStatus === "PAID";
+                    const primaryPlayer = reg.players?.[0];
+                    const displayName =
+                      reg.teamName || primaryPlayer?.playerName || "Athlete Entry";
+                    const regCode = `REG-${String(
+                      reg.registrationId || reg.id || idx + 1
+                    ).padStart(3, "0")}`;
+                    const isUpdating = actionInProgress === regUuid;
+                    const phone = primaryPlayer?.phoneNumber || "";
+
+                    return (
+                      <tr
+                        key={regUuid}
+                        className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group"
+                      >
+                        {/* 1. Athlete / Squad */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            {primaryPlayer?.photoUrl ? (
+                              <img
+                                src={primaryPlayer.photoUrl}
+                                alt={displayName}
+                                className="w-9 h-9 rounded-xl object-cover border border-primary/25 shrink-0"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-xs shrink-0">
+                                {displayName.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="font-black text-foreground text-xs truncate max-w-[180px]">
+                                {displayName}
+                              </div>
+                              {reg.players && reg.players.length > 1 && (
+                                <div className="text-[10px] text-foreground/50">
+                                  +{reg.players.length - 1} teammates
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 2. Reg Code & Date */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="font-mono text-[10px] font-black text-primary px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                            {regCode}
+                          </span>
+                          <div className="text-[10px] text-foreground/50 mt-1">
+                            {formatDateStr(reg.createdAt)}
+                          </div>
+                        </td>
+
+                        {/* 3. Category */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border text-foreground/70"
+                            style={{
+                              backgroundColor: "var(--athlon-surface)",
+                              borderColor: "var(--athlon-border-subtle)",
+                            }}
+                          >
+                            <Tag className="w-3 h-3 text-primary" />
+                            <span>{reg.category || "General"}</span>
+                          </span>
+                        </td>
+
+                        {/* 4. Contact & Comms */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {phone ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[11px] text-foreground/75">
+                                {phone}
+                              </span>
+                              <a
+                                href={`tel:${phone.replace(/\s+/g, "")}`}
+                                className="p-1.5 rounded-lg border hover:bg-primary/15 text-foreground/60 hover:text-primary transition-colors"
+                                style={{
+                                  backgroundColor: "var(--athlon-surface)",
+                                  borderColor: "var(--athlon-border-subtle)",
+                                }}
+                                title="Direct Phone Call"
+                              >
+                                <Phone className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={`https://wa.me/${phone.replace(/[^0-9]/g, "")}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1.5 rounded-lg border hover:bg-emerald-500/15 text-foreground/60 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+                                style={{
+                                  backgroundColor: "var(--athlon-surface)",
+                                  borderColor: "var(--athlon-border-subtle)",
+                                }}
+                                title="Direct WhatsApp Message"
+                              >
+                                <MessageCircle className="w-3 h-3" />
+                              </a>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-foreground/40 italic">
+                              No Phone
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 5. Payment Status */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                                isPaid
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                  : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                              }`}
+                            >
+                              {isPaid ? `₹${feeAmount} PAID` : "UNPAID"}
+                            </span>
+                            <button
+                              disabled={isUpdating}
+                              onClick={() =>
+                                handlePaymentUpdate(regUuid, isPaid ? "PENDING" : "PAID")
+                              }
+                              className="text-[10px] font-bold text-foreground/50 hover:text-foreground underline transition-colors disabled:opacity-50"
+                              title={isPaid ? "Mark as unpaid" : "Mark as paid"}
+                            >
+                              {isPaid ? "Mark Unpaid" : "Mark Paid"}
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* 6. Approval Status */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            {!isApproved && (
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleStatusUpdate(regUuid, "APPROVED")}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider transition-all shadow-xs flex items-center gap-1 active:scale-95 disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Approve</span>
+                              </button>
+                            )}
+
+                            {!isRejected && (
+                              <button
+                                disabled={isUpdating}
+                                onClick={() => handleStatusUpdate(regUuid, "REJECTED")}
+                                className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 active:scale-95 disabled:opacity-50"
+                              >
+                                <XCircle className="w-3 h-3" />
+                                <span>Reject</span>
+                              </button>
+                            )}
+
+                            {isApproved && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Approved</span>
+                              </span>
+                            )}
+
+                            {isRejected && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider">
+                                <XCircle className="w-3 h-3" />
+                                <span>Rejected</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* 7. Actions */}
+                        <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => setSelectedReg(reg)}
+                            className="px-3 py-1.5 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 text-foreground/75 hover:text-foreground hover:border-primary transition-all shadow-2xs active:scale-95"
+                            style={{
+                              backgroundColor: "var(--athlon-surface)",
+                              borderColor: "var(--athlon-border)",
+                            }}
+                          >
+                            <Eye className="w-3.5 h-3.5 text-primary" />
+                            <span>Dossier</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
       {selectedReg && (
         <RegistrationDetailDrawer
           registration={selectedReg}
@@ -1127,13 +2202,13 @@ function RegistrationDetailDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center p-0"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6"
       onClick={onClose}
     >
       <div className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md transition-opacity" />
 
       <div
-        className="relative z-10 w-full max-w-lg rounded-t-3xl border-t border-x shadow-2xl overflow-hidden flex flex-col max-h-[88vh] transition-all"
+        className="relative z-10 w-full max-w-lg md:max-w-2xl rounded-t-3xl md:rounded-3xl border-t md:border border-x shadow-2xl overflow-hidden flex flex-col max-h-[88vh] md:max-h-[85vh] transition-all"
         style={{
           backgroundColor: "var(--athlon-card)",
           borderColor: "var(--athlon-border)",
@@ -1141,7 +2216,7 @@ function RegistrationDetailDrawer({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Pull Handle */}
-        <div className="w-12 h-1.5 rounded-full bg-black/20 dark:bg-white/20 mx-auto mt-3 shrink-0" />
+        <div className="md:hidden w-12 h-1.5 rounded-full bg-black/20 dark:bg-white/20 mx-auto mt-3 shrink-0" />
 
         {/* Header */}
         <div

@@ -44,7 +44,9 @@ import {
   TrendingUp,
   Check,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  IndianRupee,
+  ShieldCheck,
 } from 'lucide-react';
 import { useOrgRole } from '@/hooks/use-org-role';
 
@@ -64,8 +66,9 @@ const UNITS = ['Tubes', 'Pieces', 'Sets', 'Boxes', 'Pairs', 'Bottles', 'Units'];
 export default function InventoryPage() {
   const params = useParams();
   const orgIdParam = (params?.orgId as string) || '';
-  const { getActiveOrganization } = useWorkspaceStore();
-  const org = getActiveOrganization();
+  const { getActiveOrganization, organizations } = useWorkspaceStore();
+  const activeOrg = getActiveOrganization();
+  const org = activeOrg || organizations?.find((o) => o.id === orgIdParam);
 
   const orgUuid = (org?.id || orgIdParam) as string;
 
@@ -767,365 +770,580 @@ function ClubInventoryView({ orgUuid, orgName, org }: { orgUuid: string; orgName
       </div>
 
       {/* ========================================================================= */}
-      {/* 🖥️ DESKTOP VIEW (EXACT SAME AS ORIGINAL - UNTOUCHED FOR DESKTOP SCREENS)  */}
+      {/* 🖥️ DESKTOP VIEW (LUXURY SPORTS-TECH COMMAND CONSOLE)                       */}
       {/* ========================================================================= */}
-      <div className="hidden md:block p-6 md:p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
-        
-        {/* 1. CLUB GEAR VAULT / HERO CARD (Desktop) */}
-        <div className="relative overflow-hidden rounded-[36px] bg-surface border border-foreground/10 p-7 shadow-sm">
-          {/* Ambient Glows */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-24 space-y-8 animate-in fade-in duration-300">
+        {/* Executive Command Banner */}
+        <div
+          className="relative rounded-3xl border p-6 lg:p-8 overflow-hidden shadow-sm"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Top Bar inside Card */}
-          <div className="relative flex items-center justify-between gap-2 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center text-sm shadow-inner">
-                📦
-              </span>
-              <div>
-                <h2 className="text-xs font-black uppercase tracking-wider text-foreground/50">Club Gear & Supplies</h2>
-                <div className="text-sm font-extrabold text-foreground truncate max-w-md">
-                  {org?.name || 'Club Inventory'}
-                </div>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              {/* Badge & Breadcrumb */}
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-primary">
+                  Athlon Operations Suite
+                </span>
+                <span className="text-foreground/30">•</span>
+                <span className="text-xs font-semibold text-foreground/50">
+                  Equipment, Supplies &amp; Gear Vault
+                </span>
               </div>
+
+              <h1 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+                Club Gear &amp; Supplies Vault
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {items.length} Tracked {items.length === 1 ? 'Item' : 'Items'}
+                </span>
+              </h1>
+              <p className="text-sm text-foreground/60 mt-1.5 max-w-2xl">
+                Oversee club racquets, shuttlecock tubes, court hardware, first-aid medical reserves, and shared gear with real-time stock allocation and audit tracking.
+              </p>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            {/* Quick Actions */}
+            <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={openLogDrawer}
-                className="px-3 py-1.5 rounded-xl bg-surface border border-foreground/10 text-foreground/70 hover:text-foreground text-xs font-bold transition-colors flex items-center gap-1.5"
-                title="Stock Movement Logs"
+                className="px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 shadow-xs"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-text)',
+                }}
+                title="View stock movement audit logs"
               >
-                <History className="w-3.5 h-3.5" />
+                <History className="w-4 h-4 text-primary" />
                 <span>Movement Logs</span>
               </button>
+
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="p-2 rounded-xl bg-surface border border-foreground/10 text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
-                title="Refresh Inventory"
+                className="p-2.5 rounded-xl border text-foreground/70 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+                title="Refresh inventory data"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
               </button>
-            </div>
-          </div>
 
-          {/* Large Total Units Display */}
-          <div className="relative py-3 space-y-1">
-            <div className="text-[11px] font-black uppercase tracking-widest text-foreground/50 flex items-center gap-1.5">
-              <span>Total Available Equipment & Supplies</span>
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            </div>
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-5xl md:text-6xl font-black text-primary tracking-tight">
-                {summary?.totalQuantity || 0}
-              </span>
-              <span className="text-base font-extrabold text-foreground/50">
-                Units in Stock across {summary?.totalCategories || 0} categories
-              </span>
-            </div>
-          </div>
-
-          {/* 3-Column Stock Health Status */}
-          <div className="relative grid grid-cols-3 gap-2.5 pt-3 border-t border-foreground/10">
-            {/* In Stock */}
-            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-0.5">
-              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> In Stock
-              </div>
-              <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                {summary?.inStockCount || 0} items
-              </div>
-            </div>
-
-            {/* Low Stock */}
-            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-0.5">
-              <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> Low Stock
-              </div>
-              <div className="text-lg font-black text-amber-600 dark:text-amber-400">
-                {summary?.lowStockCount || 0} items
-              </div>
-            </div>
-
-            {/* Out of Stock */}
-            <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 space-y-0.5">
-              <div className="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                <Archive className="w-3 h-3" /> Out of Stock
-              </div>
-              <div className="text-lg font-black text-rose-600 dark:text-rose-400">
-                {summary?.outOfStockCount || 0} items
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Action Buttons inside Hero Card */}
-          {canManage ? (
-            <div className="relative grid grid-cols-2 gap-2.5 pt-4">
-              <button
-                onClick={() => openAddModal()}
-                className="py-3 px-4 rounded-2xl bg-primary text-black text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Plus className="w-4 h-4" /> Add New Item
-              </button>
-              <button
-                onClick={openLogDrawer}
-                className="py-3 px-4 rounded-2xl bg-surface border border-foreground/10 text-foreground text-sm font-black tracking-wide flex items-center justify-center gap-2 hover:bg-foreground/5 transition-all active:scale-[0.98]"
-              >
-                <BarChart3 className="w-4 h-4 text-primary" /> View History
-              </button>
-            </div>
-          ) : (
-            <div className="relative grid grid-cols-2 gap-2.5 pt-4">
-              <div className="py-2.5 px-3 rounded-2xl bg-foreground/5 border border-foreground/10 text-foreground/60 text-xs font-bold flex items-center justify-center gap-1.5 text-center">
-                <Lock className="w-3.5 h-3.5" /> Member Catalog (Read-Only)
-              </div>
-              <button
-                onClick={openLogDrawer}
-                className="py-2.5 px-3 rounded-2xl bg-surface border border-foreground/10 text-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-foreground/5 transition-all"
-              >
-                <BarChart3 className="w-3.5 h-3.5 text-primary" /> Movement History
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 2. SEARCH & FILTER CONTROLS (Desktop) */}
-        <div className="space-y-2.5">
-          {/* Search Bar */}
-          <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
-            <input
-              type="text"
-              placeholder="Search shuttles, gear, racquets, or locations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-surface border border-foreground/10 rounded-2xl pl-11 pr-4 py-2.5 text-xs font-bold text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-primary transition-all shadow-sm"
-            />
-          </div>
-
-          {/* Category Chips Scrollbar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
-            <button
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
-                selectedCategory === 'ALL'
-                  ? 'bg-foreground text-background shadow-sm'
-                  : 'bg-surface border border-foreground/5 text-foreground/60 hover:text-foreground'
-              }`}
-            >
-              All Supplies
-            </button>
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 border ${
-                  selectedCategory === cat.id
-                    ? 'bg-primary text-black border-primary/30 shadow-sm'
-                    : 'bg-surface border-foreground/5 text-foreground/60 hover:text-foreground'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Status Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
-            <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider mr-1">Status:</span>
-            {[
-              { id: 'ALL', label: 'All' },
-              { id: 'IN_STOCK', label: 'In Stock' },
-              { id: 'LOW_STOCK', label: 'Low Stock ⚠️' },
-              { id: 'OUT_OF_STOCK', label: 'Out of Stock ❌' }
-            ].map((st) => (
-              <button
-                key={st.id}
-                onClick={() => setSelectedStatus(st.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                  selectedStatus === st.id
-                    ? 'bg-foreground text-background shadow-sm'
-                    : 'bg-surface border border-foreground/5 text-foreground/60 hover:text-foreground'
-                }`}
-              >
-                {st.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 3. INVENTORY ITEMS GRID (Desktop) */}
-        <div>
-          {loading ? (
-            <div className="py-24 flex flex-col items-center justify-center gap-3 bg-surface border border-foreground/5 rounded-[24px]">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-sm font-semibold text-foreground/50">Loading club inventory...</p>
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="py-16 px-6 text-center space-y-4 bg-surface border border-foreground/5 rounded-[28px]">
-              <div className="w-16 h-16 rounded-3xl bg-foreground/5 border border-foreground/10 mx-auto flex items-center justify-center text-3xl">
-                🏸
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-foreground">No Inventory Items Found</h3>
-                <p className="text-xs text-foreground/50 max-w-sm mx-auto mt-1">
-                  Add shuttle boxes, court nets, medical kits, and shared racquets to track club stock effortlessly.
-                </p>
-              </div>
               {canManage && (
                 <button
                   onClick={() => openAddModal()}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary text-black text-xs font-black tracking-wide hover:opacity-90 shadow-md shadow-primary/20"
+                  className="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider bg-primary text-primary-foreground shadow-md hover:opacity-95 active:scale-95 transition-all flex items-center gap-2"
                 >
-                  <Plus className="w-4 h-4" /> Add First Item
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>+ Add New Item</span>
                 </button>
               )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {filteredItems.map((item) => {
-                const catObj = CATEGORIES.find((c) => c.id === item.category);
-                const isOutOfStock = item.status === 'OUT_OF_STOCK' || item.quantity <= 0;
-                const isLowStock = item.status === 'LOW_STOCK' && !isOutOfStock;
+          </div>
+        </div>
 
-                return (
-                  <div
-                    key={`desktop-${item.itemUuid}`}
-                    className="p-5 rounded-[24px] bg-surface border border-foreground/5 space-y-3.5 shadow-sm hover:border-foreground/15 transition-all group relative overflow-hidden"
+        {/* ─── 4-Metric Executive Telemetry HUD ────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Total Stocked Units */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-primary/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Total Available Units
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Boxes className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground mt-2 font-mono">
+              {summary?.totalQuantity ?? items.reduce((acc, i) => acc + (i.quantity || 0), 0)}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <Layers className="w-3.5 h-3.5 text-primary" />
+              <span>Across {summary?.totalCategories || 0} active categories</span>
+            </div>
+          </div>
+
+          {/* 2. In Stock Ready */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-emerald-500/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                In-Stock Ready
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 font-mono">
+              {summary?.inStockCount || 0}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Sufficient club reserves for ongoing play</span>
+            </div>
+          </div>
+
+          {/* 3. Low Stock / Reorder Alarm */}
+          <div
+            className={`rounded-2xl border p-5 relative overflow-hidden shadow-xs transition-all group ${
+              (summary?.lowStockCount || 0) > 0
+                ? 'border-amber-500/40 bg-amber-500/[0.03]'
+                : 'hover:border-primary/40'
+            }`}
+            style={{
+              backgroundColor: (summary?.lowStockCount || 0) > 0 ? undefined : 'var(--athlon-card)',
+              borderColor:
+                (summary?.lowStockCount || 0) > 0
+                  ? 'rgba(245, 158, 11, 0.35)'
+                  : 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Low Stock Alarms
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2 font-mono flex items-center gap-2">
+              {summary?.lowStockCount || 0}
+              {(summary?.lowStockCount || 0) > 0 && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 animate-pulse uppercase tracking-wider font-sans">
+                  Restock
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <span>{(summary?.lowStockCount || 0) > 0 ? 'Items below minimum reserve' : 'All club reserves safe'}</span>
+            </div>
+          </div>
+
+          {/* 4. Equipment Valuation */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-primary/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Gear Valuation
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <IndianRupee className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground mt-2 font-mono">
+              ₹{(summary?.estimatedTotalValue || 0).toLocaleString('en-IN')}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <TrendingUp className="w-3.5 h-3.5 text-primary" />
+              <span>Estimated active gear replacement value</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Search & Status Command Bar ─────────────────────────────── */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-4 rounded-2xl border shadow-xs"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search shuttles, balls, racquets, racks, location..."
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/40 shadow-2xs"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border-subtle)',
+                color: 'var(--athlon-text)',
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1 text-xs"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter Pills */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {[
+              { id: 'ALL', label: `All Supplies (${items.length})` },
+              { id: 'IN_STOCK', label: `In Stock (${summary?.inStockCount || 0})` },
+              { id: 'LOW_STOCK', label: `Low Stock (${summary?.lowStockCount || 0})` },
+              { id: 'OUT_OF_STOCK', label: `Out of Stock (${summary?.outOfStockCount || 0})` },
+            ].map((st) => {
+              const isSelected = selectedStatus === st.id;
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => setSelectedStatus(st.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                      : 'text-foreground/60 hover:text-foreground border-transparent hover:border-black/10 dark:hover:border-white/10'
+                  }`}
+                  style={!isSelected ? { backgroundColor: 'var(--athlon-surface)' } : {}}
+                >
+                  <span>{st.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ─── Category Filter Carousel ────────────────────────────────── */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+          <button
+            onClick={() => setSelectedCategory('ALL')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider shrink-0 transition-all border ${
+              selectedCategory === 'ALL'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                : 'text-foreground/60 hover:text-foreground border-transparent hover:border-black/10 dark:hover:border-white/10'
+            }`}
+            style={selectedCategory !== 'ALL' ? { backgroundColor: 'var(--athlon-surface)' } : {}}
+          >
+            All Categories ({items.length})
+          </button>
+
+          {CATEGORIES.map((cat) => {
+            const count = items.filter((i) => i.category === cat.id).length;
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all border flex items-center gap-2 ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                    : 'text-foreground/60 hover:text-foreground border-transparent hover:border-black/10 dark:hover:border-white/10'
+                }`}
+                style={!isSelected ? { backgroundColor: 'var(--athlon-surface)' } : {}}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+                {count > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      isSelected
+                        ? 'bg-black/25 text-primary-foreground'
+                        : 'bg-black/5 dark:bg-white/10 text-foreground/50'
+                    }`}
                   >
-                    {/* Header: Icon, Name & Status Pill */}
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ─── Desktop Cards Grid ──────────────────────────────────────── */}
+        {loading ? (
+          <div className="py-24 text-center space-y-3">
+            <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto" />
+            <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+              Loading Club Equipment Vault...
+            </p>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div
+            className="py-20 text-center rounded-3xl border border-dashed flex flex-col items-center justify-center p-8 shadow-xs"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-3">
+              <Package className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-black text-foreground mb-1">No Inventory Items Found</h3>
+            <p className="text-xs text-foreground/50 max-w-sm mb-4">
+              {searchTerm || selectedCategory !== 'ALL' || selectedStatus !== 'ALL'
+                ? 'No equipment matches your active search query or filter selection.'
+                : 'Add shuttle boxes, court nets, medical kits, and shared racquets to track club stock effortlessly.'}
+            </p>
+            {searchTerm || selectedCategory !== 'ALL' || selectedStatus !== 'ALL' ? (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('ALL');
+                  setSelectedStatus('ALL');
+                }}
+                className="px-4 py-2 border text-foreground text-xs font-bold rounded-xl transition-colors hover:border-primary"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                Reset All Filters
+              </button>
+            ) : canManage ? (
+              <button
+                onClick={() => openAddModal()}
+                className="px-5 py-2.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider rounded-xl shadow-md flex items-center gap-2 hover:opacity-95 transition-opacity"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>+ Add First Item</span>
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredItems.map((item) => {
+              const catObj = CATEGORIES.find((c) => c.id === item.category);
+              const isOutOfStock = item.status === 'OUT_OF_STOCK' || item.quantity <= 0;
+              const isLowStock = item.status === 'LOW_STOCK' && !isOutOfStock;
+              const fillPct = Math.min(
+                100,
+                Math.max(
+                  8,
+                  Math.round((item.quantity / Math.max(item.minThreshold * 2, 10)) * 100)
+                )
+              );
+
+              return (
+                <div
+                  key={`desktop-${item.itemUuid}`}
+                  className="rounded-2xl border p-5 flex flex-col justify-between group hover:-translate-y-1 hover:shadow-xl relative overflow-hidden transition-all duration-300"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: isOutOfStock
+                      ? 'rgba(239, 68, 68, 0.4)'
+                      : isLowStock
+                      ? 'rgba(245, 158, 11, 0.4)'
+                      : 'var(--athlon-border)',
+                  }}
+                >
+                  {/* Subtle top indicator bar */}
+                  <div
+                    className={`h-1 w-full absolute top-0 left-0 right-0 ${
+                      isOutOfStock ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-primary'
+                    }`}
+                  />
+
+                  <div>
+                    {/* Header: Category Badge & Status Pill */}
                     <div className="flex items-start justify-between gap-2.5">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 bg-gradient-to-br ${
-                          catObj?.color || 'from-primary/20 to-primary/10 text-primary'
-                        } border border-foreground/5 shadow-inner`}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
                           {catObj?.icon || '📦'}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="font-black text-sm text-foreground truncate" title={item.itemName}>
+                          <h3 className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">
                             {item.itemName}
-                          </h4>
-                          <div className="text-[11px] font-medium text-foreground/40 truncate flex items-center gap-1.5 mt-0.5">
-                            <span>{catObj?.label || item.category}</span>
-                            {item.location && (
-                              <>
-                                <span>•</span>
-                                <span className="flex items-center gap-0.5 text-foreground/60 font-semibold">
-                                  <MapPin className="w-2.5 h-2.5 text-primary shrink-0" />
-                                  {item.location}
-                                </span>
-                              </>
-                            )}
-                          </div>
+                          </h3>
+                          <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
+                            {catObj?.label || item.category}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Status Badge */}
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
-                        isOutOfStock
-                          ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                          : isLowStock
-                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                          : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                      }`}>
-                        {isOutOfStock ? 'Out' : isLowStock ? 'Low' : 'Ready'}
+                      {/* Status Badges */}
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 border ${
+                          isOutOfStock
+                            ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                            : isLowStock
+                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 animate-pulse'
+                            : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                        }`}
+                      >
+                        {isOutOfStock ? 'Out of Stock' : isLowStock ? 'Low Stock' : 'Ready'}
                       </span>
                     </div>
 
-                    {/* Quantity & Stock Level Meter */}
-                    <div className="bg-background/60 rounded-2xl p-3 border border-foreground/5 space-y-2">
+                    {/* Stock Quantity Capsule */}
+                    <div
+                      className="mt-4 p-3.5 rounded-xl border space-y-2"
+                      style={{
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border-subtle)',
+                      }}
+                    >
                       <div className="flex items-baseline justify-between">
-                        <span className="text-[11px] font-bold text-foreground/50">Current Stock</span>
-                        <div className="flex items-baseline gap-1">
-                          <span className={`text-2xl font-black font-mono ${
-                            isOutOfStock ? 'text-rose-400' : isLowStock ? 'text-amber-400' : 'text-primary'
-                          }`}>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">
+                          Current Stock
+                        </span>
+                        <div className="flex items-baseline gap-1 font-mono">
+                          <span
+                            className={`text-2xl font-black ${
+                              isOutOfStock
+                                ? 'text-rose-500'
+                                : isLowStock
+                                ? 'text-amber-500'
+                                : 'text-primary'
+                            }`}
+                          >
                             {item.quantity}
                           </span>
-                          <span className="text-xs font-bold text-foreground/40 font-mono">
+                          <span className="text-xs font-bold text-foreground/60">
                             {item.unit || 'Units'}
                           </span>
                         </div>
                       </div>
 
                       {/* Stock Level Bar */}
-                      <div className="h-2 w-full rounded-full bg-foreground/10 overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${
-                            isOutOfStock ? 'bg-rose-500 w-0' : isLowStock ? 'bg-amber-400' : 'bg-primary'
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isOutOfStock
+                              ? 'bg-rose-500 w-0'
+                              : isLowStock
+                              ? 'bg-amber-500'
+                              : 'bg-primary'
                           }`}
-                          style={{
-                            width: `${Math.min(100, Math.max(8, (item.quantity / Math.max(item.minThreshold * 2, 10)) * 100))}%`
-                          }}
+                          style={{ width: `${fillPct}%` }}
                         />
                       </div>
 
-                      <div className="flex justify-between text-[10px] text-foreground/30 font-medium font-mono">
+                      <div className="flex items-center justify-between text-[10px] text-foreground/50 font-medium">
                         <span>Min Threshold: {item.minThreshold}</span>
                         {item.unitCost && <span>₹{item.unitCost} / {item.unit || 'unit'}</span>}
                       </div>
                     </div>
 
-                    {/* Quick Action Buttons */}
-                    {canManage ? (
-                      <div className="flex items-center justify-between gap-1.5 pt-1">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleQuickChange(item, -1)}
-                            disabled={item.quantity <= 0}
-                            className="px-2.5 py-1.5 rounded-xl bg-background border border-foreground/10 text-xs font-black text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-all disabled:opacity-30 disabled:pointer-events-none"
-                            title="Use 1 unit"
-                          >
-                            -1 {item.unit?.slice(0, 4) || ''}
-                          </button>
-                          <button
-                            onClick={() => handleQuickChange(item, 1)}
-                            className="px-2.5 py-1.5 rounded-xl bg-background border border-foreground/10 text-xs font-black text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all"
-                            title="Add 1 unit"
-                          >
-                            +1 {item.unit?.slice(0, 4) || ''}
-                          </button>
+                    {/* Meta info: Location & Valuation */}
+                    <div className="mt-3 space-y-1.5 text-xs text-foreground/60">
+                      {item.location && (
+                        <div className="flex items-center gap-1.5 truncate">
+                          <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="truncate">{item.location}</span>
                         </div>
+                      )}
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openAdjustModal(item, 'CONSUMED')}
-                            className="px-3 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground text-xs font-bold transition-colors"
-                          >
-                            Log Usage
-                          </button>
-                          <button
-                            onClick={() => openAddModal(item)}
-                            className="p-2 rounded-xl text-foreground/40 hover:text-foreground hover:bg-foreground/5 transition-colors"
-                            title="Edit Item"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.itemUuid)}
-                            className="p-2 rounded-xl text-foreground/20 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                      {item.unitCost ? (
+                        <div className="flex items-center justify-between text-[11px] text-foreground/50 pt-0.5">
+                          <span>Stock Valuation:</span>
+                          <span className="font-black text-foreground font-mono">
+                            ₹{(item.unitCost * item.quantity).toLocaleString('en-IN')}
+                          </span>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="pt-1 text-right">
-                        <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
-                          Club Stocked Equipment
-                        </span>
-                      </div>
-                    )}
+                      ) : null}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+
+                  {/* Card Bottom: Quick Change Buttons & Actions */}
+                  {canManage ? (
+                    <div
+                      className="mt-4 pt-3 border-t flex items-center justify-between gap-1.5"
+                      style={{ borderColor: 'var(--athlon-border-subtle)' }}
+                    >
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleQuickChange(item, -1)}
+                          disabled={item.quantity <= 0}
+                          className="px-2.5 py-1.5 rounded-xl border text-xs font-black text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/30 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border-subtle)',
+                          }}
+                          title="Use 1 unit"
+                        >
+                          -1 {item.unit?.slice(0, 4) || ''}
+                        </button>
+                        <button
+                          onClick={() => handleQuickChange(item, 1)}
+                          className="px-2.5 py-1.5 rounded-xl border text-xs font-black text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border-subtle)',
+                          }}
+                          title="Add 1 unit"
+                        >
+                          +1 {item.unit?.slice(0, 4) || ''}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openAdjustModal(item, 'CONSUMED')}
+                          className="px-3 py-1.5 rounded-xl font-bold text-xs bg-primary/10 hover:bg-primary hover:text-primary-foreground text-primary border border-primary/30 transition-all active:scale-95 shadow-2xs"
+                        >
+                          Log Usage
+                        </button>
+                        <button
+                          onClick={() => openAddModal(item)}
+                          className="p-1.5 rounded-lg border text-foreground/60 hover:text-foreground hover:border-primary transition-colors shadow-2xs"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border-subtle)',
+                          }}
+                          title="Edit Item"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.itemUuid)}
+                          className="p-1.5 rounded-lg border text-foreground/60 hover:text-rose-500 hover:border-rose-500 transition-colors shadow-2xs"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border-subtle)',
+                          }}
+                          title="Delete Item"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="mt-4 pt-3 border-t text-right"
+                      style={{ borderColor: 'var(--athlon-border-subtle)' }}
+                    >
+                      <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                        Club Stocked Equipment
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ========================================================================= */}

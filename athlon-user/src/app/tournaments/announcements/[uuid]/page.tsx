@@ -697,25 +697,37 @@ export default function TournamentAnnouncementDetailPage() {
         </main>
 
         {/* Floating action dock */}
-        <div className="fixed bottom-0 inset-x-0 z-40 px-3 pt-6 pb-[max(env(safe-area-inset-bottom),0.75rem)] bg-gradient-to-t from-background via-background/90 to-transparent pointer-events-none">
-          <div className="pointer-events-auto flex items-center gap-2 p-2 rounded-2xl bg-card/90 backdrop-blur-xl border border-border shadow-2xl shadow-black/40">
-            <div className="min-w-0 flex-1 pl-1.5">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Entry fee</p>
-              <p className="text-sm font-black text-emerald-400 truncate">{announcement.entryFee || 'Contact'}</p>
-            </div>
+        <div
+          className="fixed inset-x-3.5 z-40 px-4 py-2.5 bg-card/95 backdrop-blur-xl border border-border/90 rounded-2xl shadow-2xl flex items-center justify-between gap-3 max-w-lg mx-auto"
+          style={{
+            bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.875rem))',
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)',
+          }}
+        >
+          <div className="min-w-0">
+            <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground block">
+              Entry fee
+            </span>
+            <span className="text-sm sm:text-base font-black text-emerald-400 truncate block whitespace-nowrap mt-0.5">
+              {announcement.entryFee || 'Contact'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
             {whatsappLink && (
               <a
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp organizer"
-                className="w-11 h-11 shrink-0 rounded-xl bg-emerald-600 text-white flex items-center justify-center active:scale-90 transition-transform"
+                className="w-10 h-10 shrink-0 rounded-xl bg-emerald-600 text-white flex items-center justify-center active:scale-90 transition-transform"
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-4 h-4" />
               </a>
             )}
             {isClosed ? (
-              <span className="h-11 px-4 shrink-0 rounded-xl bg-muted text-muted-foreground text-xs font-bold flex items-center">
+              <span className="h-10 px-4 shrink-0 rounded-xl bg-muted text-muted-foreground text-xs font-bold flex items-center">
                 Closed
               </span>
             ) : announcement.externalRegistrationUrl ? (
@@ -723,16 +735,18 @@ export default function TournamentAnnouncementDetailPage() {
                 href={announcement.externalRegistrationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-11 px-4 shrink-0 rounded-xl bg-primary text-primary-foreground text-xs font-black flex items-center gap-1.5 shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+                className="h-10 px-4 shrink-0 rounded-xl bg-primary text-black text-xs font-black flex items-center gap-1.5 shadow-lg shadow-primary/30 active:scale-95 transition-transform"
               >
-                Register <ExternalLink className="w-3.5 h-3.5" />
+                <span>Register</span>
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
             ) : announcement.contactPhone ? (
               <a
                 href={`tel:${cleanPhone(announcement.contactPhone)}`}
-                className="h-11 px-4 shrink-0 rounded-xl bg-primary text-primary-foreground text-xs font-black flex items-center gap-1.5 shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+                className="h-10 px-4 shrink-0 rounded-xl bg-primary text-black text-xs font-black flex items-center gap-1.5 shadow-lg shadow-primary/30 active:scale-95 transition-transform"
               >
-                <Phone className="w-3.5 h-3.5" /> Call to Register
+                <Phone className="w-3.5 h-3.5" />
+                <span>Call to Register</span>
               </a>
             ) : null}
           </div>

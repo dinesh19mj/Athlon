@@ -32,9 +32,13 @@ import jakarta.validation.Valid;
 public class AcademyStudentController {
 
     private final AcademyStudentService academyStudentService;
+    private final com.athlon.identityservice.subscription.service.AcademyEntitlementService academyEntitlementService;
 
-    public AcademyStudentController(AcademyStudentService academyStudentService) {
+    public AcademyStudentController(
+            AcademyStudentService academyStudentService,
+            com.athlon.identityservice.subscription.service.AcademyEntitlementService academyEntitlementService) {
         this.academyStudentService = academyStudentService;
+        this.academyEntitlementService = academyEntitlementService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -111,6 +115,9 @@ public class AcademyStudentController {
     @PostMapping("/students/enroll")
     public ResponseEntity<ApiResponse<AcademyStudentResponse>> enrollStudent(
             @Valid @RequestBody EnrollStudentRequest request) {
+
+        // Subscription Trainee Capacity Validation
+        academyEntitlementService.validateStudentCapacity(request.getOrganizationUuid());
 
         AcademyStudentResponse student = academyStudentService.enrollStudent(request);
         return ResponseEntity.ok(ApiResponse.success("Student enrolled successfully", student));

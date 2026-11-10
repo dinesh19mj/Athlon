@@ -59,6 +59,13 @@ interface AcademyInternalConfig {
   targetLevels?: string[];
 }
 
+interface CoachCredentials {
+  experienceYears?: number | string;
+  certifications?: string[];
+  specializations?: string[];
+  playingAchievements?: string;
+}
+
 function parseAcademyTargetConfig(desc?: string): AcademyInternalConfig | null {
   if (!desc) return null;
   const match = desc.match(/\[ACADEMY_INTERNAL_CONFIG:\s*(\{.*?\})\s*\]/);
@@ -183,111 +190,143 @@ export default function AcademyDetailPage() {
   const logoRaw = profile?.logo || academy?.logo;
   const logoUrl = logoRaw
     ? (logoRaw.startsWith('http') || logoRaw.startsWith('data:') || logoRaw.startsWith('blob:')
-        ? logoRaw
-        : OrganizationService.getLogoUrl(logoRaw))
+      ? logoRaw
+      : OrganizationService.getLogoUrl(logoRaw))
     : '';
 
   const bannerRaw = profile?.banner || academy?.profile?.banner;
   const bannerUrl = bannerRaw
     ? (bannerRaw.startsWith('http') || bannerRaw.startsWith('data:') || bannerRaw.startsWith('blob:')
-        ? bannerRaw
-        : OrganizationService.getBannerUrl(bannerRaw))
+      ? bannerRaw
+      : OrganizationService.getBannerUrl(bannerRaw))
     : 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80';
 
   const sportsList: string[] = profile?.sportsOffered
     ? profile.sportsOffered.split(',').map((s) => s.trim()).filter(Boolean)
-    : ['Badminton', 'Table Tennis'];
+    : ((academy as any)?.sportsOffered ? ((academy as any).sportsOffered as string).split(',').map((s: string) => s.trim()).filter(Boolean) : []);
 
-  const amenitiesList: string[] = profile?.amenities
-    ? profile.amenities.split(',').map((a) => a.trim()).filter(Boolean)
-    : ['Air Conditioned', 'Pro Shop & Equipment', 'Locker Rooms & Showers', 'Certified Coaches', 'Video Analysis'];
+  // Robust parsing for coach credentials (if JSON) and standard amenities
+  const { amenitiesList, coachCredentials } = useMemo<{
+    amenitiesList: string[];
+    coachCredentials: CoachCredentials | null;
+  }>(() => {
+    const raw = profile?.amenities || (academy as any)?.amenities;
+    if (!raw) {
+      return { amenitiesList: [], coachCredentials: null };
+    }
+
+    let parsedObj: any = null;
+    let fallbackList: string[] = [];
+
+    if (typeof raw === 'object') {
+      parsedObj = raw;
+    } else if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          parsedObj = JSON.parse(trimmed);
+        } catch {
+          // not valid json, treat as regular string
+        }
+      }
+      if (!parsedObj) {
+        fallbackList = trimmed
+          .split(',')
+          .map((s: string) => s.trim().replace(/^["'{}\[\]]+|["'{}\[\]]+$/g, ''))
+          .filter((s: string) => s && !s.includes('":'));
+      }
+    }
+
+    if (parsedObj) {
+      if (Array.isArray(parsedObj)) {
+        return {
+          amenitiesList: parsedObj.map((x: any) => String(x).trim()).filter(Boolean),
+          coachCredentials: null,
+        };
+      }
+
+      const creds: CoachCredentials = {};
+      let hasCreds = false;
+
+      if (parsedObj.experienceYears !== undefined && parsedObj.experienceYears !== null && parsedObj.experienceYears !== '') {
+        creds.experienceYears = parsedObj.experienceYears;
+        hasCreds = true;
+      }
+      if (Array.isArray(parsedObj.certifications) && parsedObj.certifications.length > 0) {
+        const certs = parsedObj.certifications.map((s: any) => String(s).trim()).filter(Boolean);
+        if (certs.length > 0) {
+          creds.certifications = certs;
+          hasCreds = true;
+        }
+      } else if (typeof parsedObj.certifications === 'string' && parsedObj.certifications.trim()) {
+        const certs = parsedObj.certifications.split(',').map((s: string) => s.trim()).filter(Boolean);
+        if (certs.length > 0) {
+          creds.certifications = certs;
+          hasCreds = true;
+        }
+      }
+
+      if (Array.isArray(parsedObj.specializations) && parsedObj.specializations.length > 0) {
+        const specs = parsedObj.specializations.map((s: any) => String(s).trim()).filter(Boolean);
+        if (specs.length > 0) {
+          creds.specializations = specs;
+          hasCreds = true;
+        }
+      } else if (typeof parsedObj.specializations === 'string' && parsedObj.specializations.trim()) {
+        const specs = parsedObj.specializations.split(',').map((s: string) => s.trim()).filter(Boolean);
+        if (specs.length > 0) {
+          creds.specializations = specs;
+          hasCreds = true;
+        }
+      }
+
+      if (typeof parsedObj.playingAchievements === 'string' && parsedObj.playingAchievements.trim()) {
+        creds.playingAchievements = parsedObj.playingAchievements.trim();
+        hasCreds = true;
+      }
+
+      const explicitAmenities: string[] = Array.isArray(parsedObj.amenities)
+        ? parsedObj.amenities.map((a: any) => String(a).trim()).filter(Boolean)
+        : [];
+
+      return {
+        amenitiesList: explicitAmenities,
+        coachCredentials: hasCreds ? creds : null,
+      };
+    }
+
+    return {
+      amenitiesList: fallbackList,
+      coachCredentials: null,
+    };
+  }, [profile?.amenities, (academy as any)?.amenities]);
 
   const admissionStatus = profile?.admissionStatus || 'OPEN';
-  const openingTime = profile?.openingTime || '6:00 AM';
-  const closingTime = profile?.closingTime || '10:00 PM';
-  const operatingDays = profile?.operatingDays || 'Monday - Sunday';
-  const surfaceType = profile?.surfaceType || 'BWF Approved Synthetic Mats';
-  const totalCourts = profile?.totalCourts || courts.length || 6;
-  const establishedYear = profile?.establishedYear || 2021;
-  const monthlyFeeMin = profile?.monthlyFeeMin || 2000;
-  const monthlyFeeMax = profile?.monthlyFeeMax || 4500;
-  const pricePerHour = profile?.pricePerHour || 350;
+  const openingTime = profile?.openingTime || '';
+  const closingTime = profile?.closingTime || '';
+  const operatingDays = profile?.operatingDays || '';
+  const surfaceType = profile?.surfaceType || '';
+  const totalCourts = profile?.totalCourts !== undefined && profile?.totalCourts !== null ? profile.totalCourts : courts.length;
+  const establishedYear = profile?.establishedYear || null;
+  const monthlyFeeMin = profile?.monthlyFeeMin || 0;
+  const monthlyFeeMax = profile?.monthlyFeeMax || 0;
+  const pricePerHour = profile?.pricePerHour || 0;
 
-  const address = profile?.address || 'Athlon Training Facility';
-  const city = profile?.city || 'Bangalore';
-  const state = profile?.state || 'Karnataka';
-  const country = profile?.country || 'India';
-  const contactPhone = profile?.contactPhone || '+91 98765 43210';
-  const contactEmail = profile?.contactEmail || 'contact@academy.com';
+  const address = profile?.address || (academy as any)?.address || '';
+  const city = profile?.city || (academy as any)?.city || '';
+  const state = profile?.state || (academy as any)?.state || '';
+  const country = profile?.country || (academy as any)?.country || '';
+  const contactPhone = profile?.contactPhone || (profile as any)?.phone || (academy as any)?.contactPhone || (academy as any)?.phone || '';
+  const contactEmail = profile?.contactEmail || (profile as any)?.email || (academy as any)?.contactEmail || (academy as any)?.email || '';
   const website = profile?.website || '';
 
-  const bio = profile?.bio || profile?.description || 'Premier sports training academy dedicated to nurturing aspiring athletes with certified coaches, world-class court infrastructure, structured batch timings, and performance tracking.';
+  const bio = profile?.bio || profile?.description || '';
 
-  // Fallback demo batches if academy has not registered custom batches yet
-  const displayBatches: AcademyBatch[] = useMemo(() => {
-    if (batches.length > 0) return batches;
-    return [
-      {
-        batchUuid: 'batch-morning-1',
-        organizationUuid: academyId,
-        batchName: 'Morning Elite Champions Batch',
-        sportType: sportsList[0] || 'Badminton',
-        level: 'ADVANCED',
-        daysOfWeek: 'Mon, Wed, Fri',
-        startTime: '06:30 AM',
-        endTime: '08:00 AM',
-        monthlyFee: monthlyFeeMax,
-        maxCapacity: 12,
-        enrolledCount: 8,
-        coachName: 'Head Coach Alex Turner',
-        status: 'ACTIVE',
-      },
-      {
-        batchUuid: 'batch-evening-1',
-        organizationUuid: academyId,
-        batchName: 'Junior Foundation & Beginners Batch',
-        sportType: sportsList[0] || 'Badminton',
-        level: 'BEGINNER',
-        daysOfWeek: 'Tue, Thu, Sat',
-        startTime: '04:30 PM',
-        endTime: '06:00 PM',
-        monthlyFee: monthlyFeeMin,
-        maxCapacity: 16,
-        enrolledCount: 11,
-        coachName: 'Coach Sarah Miller',
-        status: 'ACTIVE',
-      },
-      {
-        batchUuid: 'batch-weekend-1',
-        organizationUuid: academyId,
-        batchName: 'Weekend Intensive Tournament Prep',
-        sportType: sportsList[0] || 'Badminton',
-        level: 'INTERMEDIATE',
-        daysOfWeek: 'Sat, Sun',
-        startTime: '09:00 AM',
-        endTime: '11:30 AM',
-        monthlyFee: Math.round((monthlyFeeMin + monthlyFeeMax) / 2),
-        maxCapacity: 10,
-        enrolledCount: 6,
-        coachName: 'Coach David Vance',
-        status: 'ACTIVE',
-      },
-    ];
-  }, [batches, sportsList, academyId, monthlyFeeMin, monthlyFeeMax]);
+  // Real batches only — no fake demo data
+  const displayBatches: AcademyBatch[] = batches;
 
-  const displayCourts: AcademyCourt[] = useMemo(() => {
-    if (courts.length > 0) return courts;
-    return Array.from({ length: totalCourts }).map((_, idx) => ({
-      courtUuid: `court-${idx + 1}`,
-      organizationUuid: academyId,
-      name: `Court ${idx + 1} (${surfaceType.split(' ')[0] || 'Synthetic'})`,
-      sportType: sportsList[idx % sportsList.length] || 'Badminton',
-      surfaceType: surfaceType,
-      courtNumber: String(idx + 1),
-      hourlyRate: pricePerHour,
-      status: 'ACTIVE',
-    }));
-  }, [courts, totalCourts, surfaceType, sportsList, pricePerHour, academyId]);
+  // Real courts only — no fake demo data
+  const displayCourts: AcademyCourt[] = courts;
 
   // Handle Share link
   const handleShare = () => {
@@ -371,38 +410,43 @@ export default function AcademyDetailPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           MOBILE VIEW: ULTRA-STYLISH APP-LIKE HERO & SHEET EXPERIENCE
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="md:hidden">
-        {/* Floating Top Floating Action Bar */}
-        <div className="fixed top-0 inset-x-0 z-50 px-4 py-3 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
+      <div className="md:hidden pb-36">
+        {/* Floating Top Action Bar with Safe-Area Notch Offset */}
+        <div
+          className="fixed top-0 inset-x-0 z-50 px-3.5 pb-3 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none"
+          style={{ paddingTop: 'max(0.75rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' }}
+        >
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-2xl active:scale-90 transition pointer-events-auto cursor-pointer"
+            className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-2xl active:scale-95 transition pointer-events-auto cursor-pointer"
             title="Go Back"
           >
-            <ArrowLeft className="w-5 h-5 text-primary" />
+            <ArrowLeft className="w-4 h-4 text-primary" />
           </button>
 
           <div className="flex items-center gap-2 pointer-events-auto">
             <button
               onClick={handleShare}
-              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-2xl active:scale-90 transition cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-2xl active:scale-95 transition cursor-pointer"
               title="Share"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4 text-primary" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-primary" />}
             </button>
 
-            <a
-              href={`tel:${contactPhone}`}
-              className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-2xl active:scale-90 transition cursor-pointer"
-              title="Call Academy"
-            >
-              <Phone className="w-4 h-4 text-primary" />
-            </a>
+            {contactPhone && (
+              <a
+                href={`tel:${contactPhone}`}
+                className="w-9 h-9 rounded-xl bg-black/60 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-2xl active:scale-95 transition cursor-pointer"
+                title="Call Academy"
+              >
+                <Phone className="w-3.5 h-3.5 text-primary" />
+              </a>
+            )}
           </div>
         </div>
 
-        {/* Cinematic Edge-to-Edge Mobile Cover Banner */}
-        <div className="relative h-72 w-full overflow-hidden bg-black">
+        {/* Edge-to-Edge Mobile Cover Banner */}
+        <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-black">
           <img
             src={bannerUrl}
             alt={name}
@@ -411,19 +455,22 @@ export default function AcademyDetailPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-black/40 to-black/30" />
 
           {/* Floating Status Indicator on Mobile Banner */}
-          <div className="absolute top-16 right-4 z-10">
+          <div
+            className="absolute right-3.5 z-10"
+            style={{ top: 'max(4.25rem, calc(env(safe-area-inset-top, 0px) + 3.75rem))' }}
+          >
             {admissionStatus === 'OPEN' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-xl">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 backdrop-blur-md shadow-xl">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 Admissions Open
               </span>
             ) : admissionStatus === 'LIMITED' ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-xl">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 backdrop-blur-md shadow-xl">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                 Limited Slots
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-xl">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40 backdrop-blur-md shadow-xl">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                 Waitlist
               </span>
@@ -432,9 +479,9 @@ export default function AcademyDetailPage() {
         </div>
 
         {/* Mobile Overlapping Identity Sheet Card */}
-        <div className="relative -mt-10 rounded-t-[32px] bg-background border-t border-border/80 px-4 pt-4 pb-2 z-20 space-y-4 shadow-2xl">
+        <div className="relative -mt-8 rounded-t-[28px] bg-background border-t border-border/80 px-3.5 pt-3.5 pb-2 z-20 space-y-3.5 shadow-2xl">
           {/* Logo & Headline */}
-          <div className="flex items-start gap-3.5">
+          <div className="flex items-start gap-3">
             <div className="w-16 h-16 rounded-2xl border-2 border-primary/50 overflow-hidden shadow-2xl flex items-center justify-center shrink-0 bg-card p-0.5 -mt-8 relative z-30">
               {logoUrl ? (
                 <img src={logoUrl} alt={name} className="w-full h-full object-cover rounded-[14px]" />
@@ -443,163 +490,285 @@ export default function AcademyDetailPage() {
               )}
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h1 className="text-lg font-black text-foreground tracking-tight leading-snug truncate">
+                <h1 className="text-base font-black text-foreground tracking-tight leading-snug truncate">
                   {name}
                 </h1>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-primary text-black">
+                <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase bg-primary text-black">
                   Verified
                 </span>
               </div>
-              <p className="text-xs text-text-secondary font-medium flex items-center gap-1 mt-0.5">
+              <p className="text-[11px] text-foreground/60 font-medium flex items-center gap-1 mt-0.5 flex-wrap">
                 <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span className="truncate">{city}, {state}</span>
-                <span className="text-text-muted">•</span>
-                <span>Est. {establishedYear}</span>
+                <span className="truncate">{[city, state].filter(Boolean).join(', ') || address || 'Location on request'}</span>
+                {establishedYear && (
+                  <>
+                    <span className="text-foreground/30">•</span>
+                    <span>Est. {establishedYear}</span>
+                  </>
+                )}
               </p>
             </div>
           </div>
 
-          {/* Horizontally Scrolling Quick Metric Story Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 pb-1">
-            <div className="px-3 py-2 rounded-2xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
-              <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                🏸
-              </div>
-              <div className="text-[11px] leading-tight">
-                <span className="font-extrabold text-foreground block">{sportsList.length} Sports</span>
-                <span className="text-[9px] text-text-muted">{sportsList[0] || 'Badminton'}</span>
-              </div>
-            </div>
+          {/* Horizontally Scrolling Quick Metric Story Chips - Only Render Available Real Data */}
+          {(sportsList.length > 0 || totalCourts > 0 || monthlyFeeMin > 0 || openingTime) && (
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-3.5 px-3.5 pb-1">
+              {sportsList.length > 0 && (
+                <div className="px-3 py-1.5 rounded-xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                    🏸
+                  </div>
+                  <div className="text-[11px] leading-tight">
+                    <span className="font-extrabold text-foreground block">
+                      {sportsList.length} {sportsList.length === 1 ? 'Sport' : 'Sports'}
+                    </span>
+                    <span className="text-[9px] text-foreground/50 truncate max-w-[90px] block">{sportsList[0]}</span>
+                  </div>
+                </div>
+              )}
 
-            <div className="px-3 py-2 rounded-2xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
-              <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                🏟️
-              </div>
-              <div className="text-[11px] leading-tight">
-                <span className="font-extrabold text-foreground block">{totalCourts} Courts</span>
-                <span className="text-[9px] text-text-muted">{surfaceType.split(' ')[0]}</span>
-              </div>
-            </div>
+              {totalCourts > 0 && (
+                <div className="px-3 py-1.5 rounded-xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                    🏟️
+                  </div>
+                  <div className="text-[11px] leading-tight">
+                    <span className="font-extrabold text-foreground block">
+                      {totalCourts} {totalCourts === 1 ? 'Court' : 'Courts'}
+                    </span>
+                    {surfaceType && (
+                      <span className="text-[9px] text-foreground/50 truncate max-w-[90px] block">
+                        {surfaceType.split(' ')[0]}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
-            <div className="px-3 py-2 rounded-2xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold text-xs">
-                💰
-              </div>
-              <div className="text-[11px] leading-tight">
-                <span className="font-extrabold text-emerald-400 block font-mono">₹{monthlyFeeMin.toLocaleString()}/mo</span>
-                <span className="text-[9px] text-text-muted">Starting Fee</span>
-              </div>
-            </div>
+              {monthlyFeeMin > 0 && (
+                <div className="px-3 py-1.5 rounded-xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                    💰
+                  </div>
+                  <div className="text-[11px] leading-tight">
+                    <span className="font-extrabold text-emerald-400 block font-mono">
+                      ₹{monthlyFeeMin.toLocaleString()}/mo
+                    </span>
+                    <span className="text-[9px] text-foreground/50">Starting Fee</span>
+                  </div>
+                </div>
+              )}
 
-            <div className="px-3 py-2 rounded-2xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
-              <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                ⏰
-              </div>
-              <div className="text-[11px] leading-tight">
-                <span className="font-extrabold text-foreground block">{openingTime}</span>
-                <span className="text-[9px] text-text-muted">Daily Hours</span>
-              </div>
+              {openingTime && (
+                <div className="px-3 py-1.5 rounded-xl bg-surface border border-border flex items-center gap-2 shrink-0 shadow-sm">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                    ⏰
+                  </div>
+                  <div className="text-[11px] leading-tight">
+                    <span className="font-extrabold text-foreground block">{openingTime}</span>
+                    <span className="text-[9px] text-foreground/50">Daily Hours</span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           {/* Segmented iOS-Style Tab Navigation */}
-          <div className="p-1 rounded-2xl bg-surface border border-border flex items-center gap-1 overflow-x-auto hide-scrollbar">
+          <div
+            className="flex items-center p-1 rounded-xl border relative gap-1 overflow-x-auto hide-scrollbar"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
             {[
               { id: 'overview', label: 'About' },
               { id: 'tournaments', label: `Events (${tournaments.length})` },
               { id: 'batches', label: `Batches (${displayBatches.length})` },
               { id: 'facilities', label: `Courts (${displayCourts.length})` },
-              { id: 'pricing', label: 'Fees' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 py-2 px-3 rounded-xl font-black text-xs transition-all whitespace-nowrap text-center cursor-pointer ${
-                  activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                    : 'text-text-secondary hover:text-foreground'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+              ...(monthlyFeeMin > 0 || displayBatches.some((b) => (b.monthlyFee || 0) > 0)
+                ? [{ id: 'pricing', label: 'Fees' }]
+                : []),
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center justify-center gap-1 flex-1 py-1.5 px-2 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${isActive
+                      ? 'bg-primary text-black shadow-sm font-black'
+                      : 'text-foreground/60 hover:text-foreground'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Mobile Content Panes */}
-          <div className="space-y-4 pt-1">
+          <div className="space-y-3.5 pt-1">
             {/* Overview Tab (Mobile) */}
             {activeTab === 'overview' && (
-              <div className="space-y-4">
-                {/* About Bio */}
-                <div className="p-4 rounded-2xl border border-border bg-card shadow-sm space-y-2">
-                  <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5" />
-                    Academy Overview
-                  </h3>
-                  <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line">
-                    {bio}
-                  </p>
-                </div>
+              <div className="space-y-3.5">
+                {/* About Bio - Rendered only if bio exists */}
+                {bio && (
+                  <div className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-1.5">
+                    <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5" />
+                      Academy Overview
+                    </h3>
+                    <p className="text-xs text-foreground/75 leading-relaxed whitespace-pre-line">
+                      {bio}
+                    </p>
+                  </div>
+                )}
 
                 {/* Sports Disciplines */}
-                <div className="p-4 rounded-2xl border border-border bg-card shadow-sm space-y-2.5">
-                  <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    <Dumbbell className="w-3.5 h-3.5" />
-                    Sports Coaching Offered
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {sportsList.map((sport) => (
-                      <div
-                        key={sport}
-                        className="px-3 py-1.5 rounded-xl bg-surface border border-border flex items-center gap-1.5 text-xs font-bold text-foreground"
-                      >
-                        <span className="text-primary">🏸</span>
-                        <span>{sport}</span>
-                      </div>
-                    ))}
+                {sportsList.length > 0 && (
+                  <div className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-2">
+                    <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <Dumbbell className="w-3.5 h-3.5" />
+                      Sports Coaching Offered
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sportsList.map((sport) => (
+                        <div
+                          key={sport}
+                          className="px-2.5 py-1 rounded-xl bg-surface border border-border flex items-center gap-1.5 text-xs font-bold text-foreground"
+                        >
+                          <span className="text-primary">🏸</span>
+                          <span>{sport}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Amenities List */}
-                <div className="p-4 rounded-2xl border border-border bg-card shadow-sm space-y-2.5">
-                  <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Facilities &amp; Amenities
-                  </h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {amenitiesList.map((amenity, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-2 text-xs font-semibold text-text-secondary"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>{amenity}</span>
+                {/* Coaching Credentials & Expertise */}
+                {coachCredentials && (
+                  <div className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5" />
+                        Coaching Expertise
+                      </h3>
+                      {coachCredentials.experienceYears !== undefined && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20 shrink-0">
+                          {coachCredentials.experienceYears} Years Exp
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Certifications */}
+                    {coachCredentials.certifications && coachCredentials.certifications.length > 0 && (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-foreground/50 block">
+                          Certifications
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {coachCredentials.certifications.map((cert, idx) => (
+                            <div
+                              key={idx}
+                              className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                              <span>{cert}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Specializations */}
+                    {coachCredentials.specializations && coachCredentials.specializations.length > 0 && (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-foreground/50 block">
+                          Tactical Specializations
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {coachCredentials.specializations.map((spec, idx) => (
+                            <div
+                              key={idx}
+                              className="px-2.5 py-1 rounded-xl bg-surface border border-border text-foreground text-xs font-semibold flex items-center gap-1.5"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                              <span>{spec}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Playing Achievements */}
+                    {coachCredentials.playingAchievements && (
+                      <div className="space-y-1 p-2.5 rounded-xl bg-surface border border-border text-xs">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-foreground/50 flex items-center gap-1">
+                          <Trophy className="w-3 h-3 text-amber-400" />
+                          Career Achievements
+                        </span>
+                        <p className="text-foreground/80 leading-relaxed font-medium">
+                          {coachCredentials.playingAchievements}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
+
+                {/* Facilities & Amenities */}
+                {amenitiesList.length > 0 && (
+                  <div className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-2">
+                    <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Facilities &amp; Amenities
+                    </h3>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {amenitiesList.map((amenity, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 text-xs font-medium text-foreground/80"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>{amenity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Contact & Location */}
-                <div className="p-4 rounded-2xl border border-border bg-card shadow-sm space-y-2.5">
-                  <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    Location &amp; Contact
-                  </h3>
-                  <p className="text-xs text-text-secondary">
-                    {address}, {city}, {state}
-                  </p>
-                  <div className="flex items-center gap-2 pt-1">
-                    <a
-                      href={`tel:${contactPhone}`}
-                      className="flex-1 py-2 rounded-xl bg-surface hover:bg-surface-hover border border-border text-xs font-bold text-foreground flex items-center justify-center gap-1.5 transition"
-                    >
-                      <Phone className="w-3.5 h-3.5 text-primary" />
-                      <span>{contactPhone}</span>
-                    </a>
+                {(address || city || state || contactPhone) && (
+                  <div className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-2">
+                    <h3 className="text-xs font-black text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                      Location &amp; Contact
+                    </h3>
+                    {(address || city || state) && (
+                      <p className="text-xs text-foreground/70">
+                        {[address, city, state].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                    {contactPhone && (
+                      <div className="pt-1">
+                        <a
+                          href={`tel:${contactPhone}`}
+                          className="w-full py-2 px-3 rounded-xl bg-surface hover:bg-surface-hover border border-border text-xs font-bold text-foreground flex items-center justify-center gap-1.5 transition"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-primary" />
+                          <span>{contactPhone}</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
+
+                {!bio && sportsList.length === 0 && amenitiesList.length === 0 && !coachCredentials && !address && !contactPhone && (
+                  <div className="p-6 rounded-2xl border border-dashed border-border bg-card/40 text-center space-y-1.5">
+                    <p className="text-xs font-bold text-foreground/60">More details about this academy will be updated soon.</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -607,13 +776,13 @@ export default function AcademyDetailPage() {
             {activeTab === 'tournaments' && (
               <div className="space-y-3">
                 {tournaments.length === 0 ? (
-                  <div className="p-8 rounded-2xl border border-dashed border-border bg-card/50 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
-                      <Trophy className="w-6 h-6" />
+                  <div className="p-8 rounded-2xl border border-dashed border-border bg-card/50 text-center space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
+                      <Trophy className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-black text-foreground">No Tournaments Scheduled</h4>
-                      <p className="text-xs text-text-secondary mt-1">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-foreground">No Tournaments Scheduled</h4>
+                      <p className="text-[11px] text-foreground/50 mt-1">
                         There are currently no internal or open tournaments scheduled. Check back soon!
                       </p>
                     </div>
@@ -635,7 +804,7 @@ export default function AcademyDetailPage() {
                           <div className="relative h-32 w-full rounded-xl overflow-hidden bg-black/40 border border-border">
                             <img src={banner} alt={t.name} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                            
+
                             <div className="absolute top-2 left-2 flex items-center gap-1.5 flex-wrap">
                               {isPrivate ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-primary text-black shadow-md">
@@ -759,164 +928,212 @@ export default function AcademyDetailPage() {
             {/* Batches Tab (Mobile) */}
             {activeTab === 'batches' && (
               <div className="space-y-3">
-                {displayBatches.map((b) => {
-                  const isFull = (b.enrolledCount || 0) >= (b.maxCapacity || 12);
-                  return (
-                    <div
-                      key={b.batchUuid}
-                      className="p-4 rounded-2xl border border-border bg-card shadow-sm space-y-3"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20">
-                          {b.sportType || 'Badminton'}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-surface text-text-secondary border border-border">
-                          {b.level || 'ALL LEVELS'}
-                        </span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-black text-foreground">{b.batchName}</h4>
-                        {b.coachName && (
-                          <p className="text-[11px] text-text-secondary mt-0.5">
-                            Coach: <span className="font-bold text-foreground">{b.coachName}</span>
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-surface border border-border text-xs space-y-1.5">
-                        <div className="flex justify-between text-text-secondary">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-primary" />
-                            <span>Days</span>
-                          </span>
-                          <span className="font-bold text-foreground">{b.daysOfWeek}</span>
-                        </div>
-                        <div className="flex justify-between text-text-secondary">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-primary" />
-                            <span>Timing</span>
-                          </span>
-                          <span className="font-bold text-primary font-mono">{b.startTime} - {b.endTime}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <div>
-                          <span className="text-[9px] font-bold text-text-muted uppercase block">Fee</span>
-                          <span className="text-sm font-black font-mono text-emerald-400">
-                            ₹{(b.monthlyFee || monthlyFeeMin).toLocaleString()}/mo
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() => handleOpenEnroll(b)}
-                          disabled={isFull}
-                          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-md shadow-primary/20 active:scale-95 cursor-pointer"
-                        >
-                          {isFull ? 'Full' : 'Enroll Batch'}
-                        </button>
-                      </div>
+                {displayBatches.length === 0 ? (
+                  <div className="p-8 rounded-2xl border border-dashed border-border bg-card/50 text-center space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
+                      <Users className="w-5 h-5" />
                     </div>
-                  );
-                })}
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-foreground">No Batches Published</h4>
+                      <p className="text-[11px] text-foreground/50 mt-1">
+                        Batch schedules and training slots will be listed here soon.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  displayBatches.map((b) => {
+                    const isFull = (b.enrolledCount || 0) >= (b.maxCapacity || 12);
+                    return (
+                      <div
+                        key={b.batchUuid}
+                        className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20">
+                            {b.sportType || 'Badminton'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-surface text-text-secondary border border-border">
+                            {b.level || 'ALL LEVELS'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-black text-foreground">{b.batchName}</h4>
+                          {b.coachName && (
+                            <p className="text-[11px] text-text-secondary mt-0.5">
+                              Coach: <span className="font-bold text-foreground">{b.coachName}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-surface border border-border text-xs space-y-1.5">
+                          {b.daysOfWeek && (
+                            <div className="flex justify-between text-text-secondary">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-primary" />
+                                <span>Days</span>
+                              </span>
+                              <span className="font-bold text-foreground">{b.daysOfWeek}</span>
+                            </div>
+                          )}
+                          {b.startTime && (
+                            <div className="flex justify-between text-text-secondary">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-primary" />
+                                <span>Timing</span>
+                              </span>
+                              <span className="font-bold text-primary font-mono">{b.startTime} - {b.endTime}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <div>
+                            <span className="text-[9px] font-bold text-text-muted uppercase block">Fee</span>
+                            <span className="text-sm font-black font-mono text-emerald-400">
+                              {b.monthlyFee ? `₹${b.monthlyFee.toLocaleString()}/mo` : 'Contact Academy'}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() => handleOpenEnroll(b)}
+                            disabled={isFull}
+                            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-md shadow-primary/20 active:scale-95 cursor-pointer disabled:opacity-50"
+                          >
+                            {isFull ? 'Full' : 'Enroll Batch'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
 
-            {/* Facilities Tab (Mobile) */}
+            {/* Facilities / Courts Tab (Mobile) */}
             {activeTab === 'facilities' && (
               <div className="space-y-3">
-                {displayCourts.map((court, idx) => (
-                  <div
-                    key={court.courtUuid || idx}
-                    className="p-4 rounded-2xl border border-border bg-card shadow-sm flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm shrink-0">
-                        {court.courtNumber || idx + 1}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-foreground">{court.name}</h4>
-                        <span className="text-[11px] text-text-secondary block">{court.surfaceType || surfaceType}</span>
-                      </div>
+                {displayCourts.length === 0 ? (
+                  <div className="p-8 rounded-2xl border border-dashed border-border bg-card/50 text-center space-y-2">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
+                      <Dumbbell className="w-5 h-5" />
                     </div>
-
-                    <div className="text-right">
-                      <span className="text-xs font-black font-mono text-emerald-400 block">
-                        ₹{court.hourlyRate || pricePerHour}/hr
-                      </span>
-                      <span className="text-[9px] text-emerald-400 font-bold">Active</span>
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-foreground">No Courts Listed</h4>
+                      <p className="text-[11px] text-foreground/50 mt-1">
+                        Court infrastructure and slot details will be posted here.
+                      </p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  displayCourts.map((court, idx) => (
+                    <div
+                      key={court.courtUuid || idx}
+                      className="p-3.5 rounded-2xl border border-border bg-card shadow-sm flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-xs shrink-0">
+                          {court.courtNumber || idx + 1}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground">{court.name}</h4>
+                          <span className="text-[11px] text-text-secondary block">
+                            {court.surfaceType || surfaceType || 'Standard Court'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        {(court.hourlyRate || pricePerHour > 0) && (
+                          <span className="text-xs font-black font-mono text-emerald-400 block">
+                            ₹{court.hourlyRate || pricePerHour}/hr
+                          </span>
+                        )}
+                        <span className="text-[9px] text-emerald-400 font-bold">Active</span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
             {/* Fees Tab (Mobile) */}
             {activeTab === 'pricing' && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl border border-border bg-card shadow-sm space-y-3">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary">
-                    Foundation Coaching
-                  </span>
-                  <div className="font-mono">
-                    <span className="text-2xl font-black text-foreground">₹{monthlyFeeMin.toLocaleString()}</span>
-                    <span className="text-xs text-text-secondary"> / month</span>
+              <div className="space-y-3.5">
+                {monthlyFeeMin > 0 && (
+                  <div className="p-4 rounded-2xl border-2 border-primary/50 bg-card shadow-md space-y-2.5">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-black">
+                      Academy Admission Fee
+                    </span>
+                    <div className="font-mono">
+                      <span className="text-2xl font-black text-foreground">₹{monthlyFeeMin.toLocaleString()}</span>
+                      <span className="text-xs text-text-secondary"> / month</span>
+                    </div>
+                    <p className="text-xs text-foreground/70">Coaching program with structured training schedules.</p>
+                    <button
+                      onClick={() => handleOpenEnroll()}
+                      className="w-full py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-md shadow-primary/20 active:scale-95 transition"
+                    >
+                      Apply for Admission
+                    </button>
                   </div>
-                  <p className="text-xs text-text-secondary">3 Days / Week structured foundation drills</p>
-                  <button
-                    onClick={() => handleOpenEnroll()}
-                    className="w-full py-2.5 rounded-xl bg-surface border border-border text-foreground font-bold text-xs"
-                  >
-                    Enroll Foundation
-                  </button>
-                </div>
+                )}
 
-                <div className="p-4 rounded-2xl border-2 border-primary bg-card shadow-lg space-y-3 relative">
-                  <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-primary text-black font-black text-[9px] uppercase shadow-md">
-                    Popular
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/20 text-primary">
-                    Elite Professional
-                  </span>
-                  <div className="font-mono">
-                    <span className="text-2xl font-black text-primary">₹{monthlyFeeMax.toLocaleString()}</span>
-                    <span className="text-xs text-text-secondary"> / month</span>
-                  </div>
-                  <p className="text-xs text-text-secondary">5-6 Days / Week high-performance training</p>
-                  <button
-                    onClick={() => handleOpenEnroll()}
-                    className="w-full py-2.5 rounded-xl bg-primary text-black font-black text-xs shadow-md shadow-primary/20"
-                  >
-                    Enroll Elite
-                  </button>
-                </div>
+                {displayBatches
+                  .filter((b) => (b.monthlyFee || 0) > 0)
+                  .map((b) => (
+                    <div key={b.batchUuid} className="p-3.5 rounded-2xl border border-border bg-card shadow-sm space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-foreground">{b.batchName}</h4>
+                        <span className="text-xs font-black font-mono text-emerald-400">
+                          ₹{(b.monthlyFee || 0).toLocaleString()}/mo
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-text-secondary">{b.daysOfWeek} • {b.startTime} - {b.endTime}</p>
+                      <button
+                        onClick={() => handleOpenEnroll(b)}
+                        className="w-full py-2 rounded-xl bg-surface border border-border text-foreground font-bold text-xs active:scale-95"
+                      >
+                        Enroll {b.batchName}
+                      </button>
+                    </div>
+                  ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* Fixed Mobile Bottom Action Bar */}
+        {/* Lifted Floating Action Dock - positioned above the bottom with safe-area clearance to ensure 100% visibility */}
         <div
-          className="fixed bottom-0 inset-x-0 p-3.5 bg-card/95 backdrop-blur-xl border-t border-border z-40 flex items-center justify-between shadow-2xl pb-safe fixed-bottom-nav max-w-lg mx-auto"
+          className="fixed inset-x-3.5 z-40 px-4 py-2.5 bg-card/95 backdrop-blur-xl border border-border/90 rounded-2xl shadow-2xl flex items-center justify-between gap-3 max-w-lg mx-auto"
           style={{
+            bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.875rem))',
             transform: 'translate3d(0, 0, 0)',
             WebkitTransform: 'translate3d(0, 0, 0)',
           }}
         >
-          <div>
-            <span className="text-[9px] font-extrabold uppercase tracking-wider text-text-muted block">Coaching Fee</span>
-            <div className="font-mono">
-              <span className="text-sm font-black text-foreground">₹{monthlyFeeMin.toLocaleString()}</span>
-              <span className="text-[10px] text-text-secondary"> / month</span>
-            </div>
+          <div className="min-w-0">
+            {monthlyFeeMin > 0 ? (
+              <>
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-muted-foreground block">Coaching Fee</span>
+                <div className="font-mono flex items-baseline gap-1 whitespace-nowrap mt-0.5">
+                  <span className="text-sm sm:text-base font-black text-foreground">₹{monthlyFeeMin.toLocaleString()}</span>
+                  <span className="text-[10px] text-muted-foreground">/ mo</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-primary block">Admissions</span>
+                <span className="text-xs font-black text-foreground">Open Now</span>
+              </>
+            )}
           </div>
 
           <button
             onClick={() => handleOpenEnroll()}
-            className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-black font-black text-xs shadow-xl shadow-primary/30 flex items-center gap-2 active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-black font-black text-xs shadow-xl shadow-primary/30 flex items-center gap-1.5 active:scale-95 cursor-pointer shrink-0"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
             <span>Apply for Admission</span>
           </button>
         </div>
@@ -1118,11 +1335,10 @@ export default function AcademyDetailPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${
-                    active
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer ${active
                       ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 font-black'
                       : 'bg-surface hover:bg-surface-hover text-text-secondary border border-border'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
@@ -1176,23 +1392,96 @@ export default function AcademyDetailPage() {
                   </div>
                 </div>
 
-                <div className="p-6 rounded-3xl border border-border bg-card shadow-lg space-y-4">
-                  <h3 className="text-base font-black text-foreground flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-primary" />
-                    Facilities &amp; Amenities
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {amenitiesList.map((amenity, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded-xl bg-surface border border-border/80 flex items-center gap-2.5 text-xs font-semibold text-foreground"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>{amenity}</span>
+                {/* Desktop Coach Credentials & Expertise */}
+                {coachCredentials && (
+                  <div className="p-6 rounded-3xl border border-border bg-card shadow-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-black text-foreground flex items-center gap-2">
+                        <Award className="w-4 h-4 text-primary" />
+                        Coaching Credentials &amp; Expertise
+                      </h3>
+                      {coachCredentials.experienceYears !== undefined && (
+                        <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                          {coachCredentials.experienceYears} Years Experience
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Certifications */}
+                    {coachCredentials.certifications && coachCredentials.certifications.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-foreground/50 block">
+                          Certifications
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {coachCredentials.certifications.map((cert, idx) => (
+                            <div
+                              key={idx}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-2"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span>{cert}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Specializations */}
+                    {coachCredentials.specializations && coachCredentials.specializations.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-foreground/50 block">
+                          Tactical Specializations
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {coachCredentials.specializations.map((spec, idx) => (
+                            <div
+                              key={idx}
+                              className="px-3 py-1.5 rounded-xl bg-surface border border-border text-foreground text-xs font-semibold flex items-center gap-2"
+                            >
+                              <span className="w-2 h-2 rounded-full bg-primary" />
+                              <span>{spec}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Playing Achievements */}
+                    {coachCredentials.playingAchievements && (
+                      <div className="space-y-1.5 p-3.5 rounded-2xl bg-surface border border-border text-xs">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-foreground/50 flex items-center gap-1.5">
+                          <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                          Career Achievements
+                        </span>
+                        <p className="text-foreground/80 leading-relaxed font-medium">
+                          {coachCredentials.playingAchievements}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
+
+                {/* Desktop Facilities & Amenities */}
+                {amenitiesList.length > 0 && (
+                  <div className="p-6 rounded-3xl border border-border bg-card shadow-lg space-y-4">
+                    <h3 className="text-base font-black text-foreground flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-primary" />
+                      Facilities &amp; Amenities
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {amenitiesList.map((amenity, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl bg-surface border border-border/80 flex items-center gap-2.5 text-xs font-semibold text-foreground"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>{amenity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -1300,95 +1589,107 @@ export default function AcademyDetailPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 gap-5">
-                {displayBatches.map((b) => {
-                  const isFull = (b.enrolledCount || 0) >= (b.maxCapacity || 12);
-                  return (
-                    <div
-                      key={b.batchUuid}
-                      className="p-5 rounded-3xl border border-border bg-card shadow-xl flex flex-col justify-between space-y-4 group hover:border-primary/50 transition-all"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                            {b.sportType || 'Badminton'}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                            b.level === 'ADVANCED' || b.level === 'ELITE'
-                              ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                              : b.level === 'INTERMEDIATE'
-                              ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          }`}>
-                            {b.level || 'ALL LEVELS'}
-                          </span>
+              {displayBatches.length === 0 ? (
+                <div className="p-12 rounded-3xl border border-dashed border-border bg-card/40 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary shadow-lg">
+                    <Users className="w-8 h-8" />
+                  </div>
+                  <div className="max-w-md mx-auto">
+                    <h3 className="text-base font-black text-foreground">No Coaching Batches Published</h3>
+                    <p className="text-xs text-text-secondary mt-1">
+                      This academy has not published any batch training schedules yet. Inquire directly or check back soon.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-5">
+                  {displayBatches.map((b) => {
+                    const isFull = (b.enrolledCount || 0) >= (b.maxCapacity || 12);
+                    return (
+                      <div
+                        key={b.batchUuid}
+                        className="p-5 rounded-3xl border border-border bg-card shadow-xl flex flex-col justify-between space-y-4 group hover:border-primary/50 transition-all"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                              {b.sportType || 'Badminton'}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${b.level === 'ADVANCED' || b.level === 'ELITE'
+                                ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                                : b.level === 'INTERMEDIATE'
+                                  ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              }`}>
+                              {b.level || 'ALL LEVELS'}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="text-base font-black text-foreground group-hover:text-primary transition-colors">
+                              {b.batchName}
+                            </h4>
+                            {b.coachName && (
+                              <p className="text-xs text-text-secondary mt-0.5">
+                                Coach: <span className="font-bold text-foreground">{b.coachName}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="p-3 rounded-2xl bg-surface border border-border space-y-2 text-xs">
+                            <div className="flex items-center justify-between text-text-secondary">
+                              <span className="flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-primary" />
+                                <span>Schedule</span>
+                              </span>
+                              <span className="font-bold text-foreground">{b.daysOfWeek || 'Mon, Wed, Fri'}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-text-secondary">
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-primary" />
+                                <span>Timing</span>
+                              </span>
+                              <span className="font-bold text-primary font-mono">{b.startTime} - {b.endTime}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-text-secondary">
+                              <span className="flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5 text-primary" />
+                                <span>Capacity</span>
+                              </span>
+                              <span className="font-bold text-foreground">
+                                {b.enrolledCount || 0} / {b.maxCapacity || 12} Enrolled
+                              </span>
+                            </div>
+                          </div>
                         </div>
 
-                        <div>
-                          <h4 className="text-base font-black text-foreground group-hover:text-primary transition-colors">
-                            {b.batchName}
-                          </h4>
-                          {b.coachName && (
-                            <p className="text-xs text-text-secondary mt-0.5">
-                              Coach: <span className="font-bold text-foreground">{b.coachName}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="p-3 rounded-2xl bg-surface border border-border space-y-2 text-xs">
-                          <div className="flex items-center justify-between text-text-secondary">
-                            <span className="flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-primary" />
-                              <span>Schedule</span>
-                            </span>
-                            <span className="font-bold text-foreground">{b.daysOfWeek || 'Mon, Wed, Fri'}</span>
-                          </div>
-
-                          <div className="flex items-center justify-between text-text-secondary">
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-primary" />
-                              <span>Timing</span>
-                            </span>
-                            <span className="font-bold text-primary font-mono">{b.startTime} - {b.endTime}</span>
-                          </div>
-
-                          <div className="flex items-center justify-between text-text-secondary">
-                            <span className="flex items-center gap-1.5">
-                              <Users className="w-3.5 h-3.5 text-primary" />
-                              <span>Capacity</span>
-                            </span>
-                            <span className="font-bold text-foreground">
-                              {b.enrolledCount || 0} / {b.maxCapacity || 12} Enrolled
+                        <div className="pt-3 border-t border-border flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] font-bold text-text-muted uppercase block">Monthly Fee</span>
+                            <span className="text-base font-black font-mono text-emerald-500">
+                              {b.monthlyFee ? `₹${b.monthlyFee.toLocaleString()}` : (monthlyFeeMin > 0 ? `₹${monthlyFeeMin.toLocaleString()}` : 'Contact Academy')}
                             </span>
                           </div>
+
+                          <button
+                            onClick={() => handleOpenEnroll(b)}
+                            disabled={isFull}
+                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer ${isFull
+                                ? 'bg-surface border border-border text-text-muted cursor-not-allowed'
+                                : 'bg-primary hover:bg-primary-hover text-primary-foreground shadow-md shadow-primary/20'
+                              }`}
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>{isFull ? 'Batch Full' : 'Enroll Batch'}</span>
+                          </button>
                         </div>
                       </div>
-
-                      <div className="pt-3 border-t border-border flex items-center justify-between">
-                        <div>
-                          <span className="text-[10px] font-bold text-text-muted uppercase block">Monthly Fee</span>
-                          <span className="text-base font-black font-mono text-emerald-500">
-                            ₹{(b.monthlyFee || monthlyFeeMin).toLocaleString()}
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() => handleOpenEnroll(b)}
-                          disabled={isFull}
-                          className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer ${
-                            isFull
-                              ? 'bg-surface border border-border text-text-muted cursor-not-allowed'
-                              : 'bg-primary hover:bg-primary-hover text-primary-foreground shadow-md shadow-primary/20'
-                          }`}
-                        >
-                          <UserPlus className="w-3.5 h-3.5" />
-                          <span>{isFull ? 'Batch Full' : 'Enroll Batch'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -1400,43 +1701,57 @@ export default function AcademyDetailPage() {
                 <p className="text-xs text-text-secondary">Standard tournament-grade court infrastructure with synthetic mats and LED lighting</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-5">
-                {displayCourts.map((court, idx) => (
-                  <div
-                    key={court.courtUuid || idx}
-                    className="p-5 rounded-3xl border border-border bg-card shadow-lg space-y-3 group hover:border-primary/40 transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center font-black text-primary text-sm">
-                        {court.courtNumber || idx + 1}
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Active
-                      </span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-base font-black text-foreground group-hover:text-primary transition-colors">
-                        {court.name}
-                      </h4>
-                      <p className="text-xs text-text-secondary mt-0.5">
-                        Sport: <span className="font-bold text-foreground">{court.sportType || 'Badminton'}</span>
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-2xl bg-surface border border-border space-y-1.5 text-xs text-text-secondary">
-                      <div className="flex justify-between">
-                        <span>Flooring Surface</span>
-                        <span className="font-bold text-foreground">{court.surfaceType || surfaceType}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Hourly Slot Rate</span>
-                        <span className="font-bold text-emerald-500 font-mono">₹{court.hourlyRate || pricePerHour}/hr</span>
-                      </div>
-                    </div>
+              {displayCourts.length === 0 ? (
+                <div className="p-12 rounded-3xl border border-dashed border-border bg-card/40 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary shadow-lg">
+                    <Dumbbell className="w-8 h-8" />
                   </div>
-                ))}
-              </div>
+                  <div className="max-w-md mx-auto">
+                    <h3 className="text-base font-black text-foreground">No Courts Listed</h3>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Court infrastructure and slot details will appear here as soon as published.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-5">
+                  {displayCourts.map((court, idx) => (
+                    <div
+                      key={court.courtUuid || idx}
+                      className="p-5 rounded-3xl border border-border bg-card shadow-lg space-y-3 group hover:border-primary/40 transition-all"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center font-black text-primary text-sm">
+                          {court.courtNumber || idx + 1}
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Active
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-base font-black text-foreground group-hover:text-primary transition-colors">
+                          {court.name}
+                        </h4>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          Sport: <span className="font-bold text-foreground">{court.sportType || 'Badminton'}</span>
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-surface border border-border space-y-1.5 text-xs text-text-secondary">
+                        <div className="flex justify-between">
+                          <span>Flooring Surface</span>
+                          <span className="font-bold text-foreground">{court.surfaceType || surfaceType}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Hourly Slot Rate</span>
+                          <span className="font-bold text-emerald-500 font-mono">₹{court.hourlyRate || pricePerHour}/hr</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

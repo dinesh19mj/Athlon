@@ -354,7 +354,12 @@ function MatchSetupContent() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. STYLISH COMPACT MOBILE TOP BAR
          ══════════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 py-2.5">
+      <header
+        className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 pb-2.5"
+        style={{
+          paddingTop: 'max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+        }}
+      >
         <div className="max-w-md mx-auto flex items-center justify-between gap-2">
           <button
             onClick={handlePrev}

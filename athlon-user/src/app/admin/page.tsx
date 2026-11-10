@@ -102,6 +102,7 @@ export default function AdminDashboardPage() {
   const platformModules = [
     { label: 'Users', icon3d: 'members' as const, href: '/admin/users' },
     { label: 'Orgs', icon3d: 'academies' as const, href: '/admin/organizations' },
+    { label: 'Org Modules', icon3d: 'batches' as const, href: '/admin/organization-modules' },
     { label: 'Tournaments', icon3d: 'tournaments' as const, href: '/admin/tournaments' },
     { label: 'Sports', icon3d: 'sports' as const, href: '/admin/sports' },
     { label: 'Packages', icon3d: 'pricing' as const, href: '/admin/subscriptions/plans' },
@@ -112,6 +113,7 @@ export default function AdminDashboardPage() {
       badge: (stats?.pendingSubscriptionRequests ?? 0) > 0 ? `${stats?.pendingSubscriptionRequests}` : undefined,
     },
     { label: 'Payments', icon3d: 'finances' as const, href: '/admin/payments' },
+    { label: 'SEO', icon3d: 'seo' as const, href: '/admin/seo' },
     { label: 'App Modules', icon3d: 'setup' as const, href: '/admin/modules' },
     { label: 'Audit Logs', icon3d: 'audit-logs' as const, href: '/admin/audit-logs' },
     { label: 'Reports', icon3d: 'reports' as const, href: '/admin/reports' },
@@ -123,9 +125,9 @@ export default function AdminDashboardPage() {
           MOBILE VIEW (max-width: md) — WORKSPACE DESIGN LANGUAGE
           Adapts dynamically to Light/Dark Mode & User's Selected Theme
           ───────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden space-y-4 pb-12">
+      <div className="block md:hidden space-y-4.5 pb-12">
         {/* 1. Compact Header Bar (~36px height) */}
-        <div className="flex items-center justify-between px-0.5 pt-1">
+        <div className="flex items-center justify-between px-0.5 pb-1">
           <div className="flex items-center gap-2 min-w-0">
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

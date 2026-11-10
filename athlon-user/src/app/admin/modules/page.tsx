@@ -222,9 +222,9 @@ export default function AdminAppModulesPage() {
           Removes bulky 4-KPI cards, verbose paragraphs, and fixes 
           bottom avatar overlap permanently.
           ───────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden space-y-3.5 pb-24">
+      <div className="block md:hidden space-y-4 pb-24">
         {/* 1. Sleek Compact Mobile Header */}
-        <div className="flex items-center justify-between px-0.5 pt-1">
+        <div className="flex items-center justify-between px-0.5 pb-1">
           <div className="flex items-center gap-2 min-w-0">
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center border shadow-xs shrink-0"

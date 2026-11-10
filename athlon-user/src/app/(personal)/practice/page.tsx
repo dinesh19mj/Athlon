@@ -28,7 +28,6 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
-import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import { usePracticeMatchStore, PracticeMatchRecord } from '@/lib/store/usePracticeMatchStore';
 
 type SportType = 'Badminton' | 'Cricket' | 'Football' | 'Volleyball';
@@ -72,48 +71,43 @@ export default function MobilePracticeHubPage() {
     id: SportType;
     label: string;
     icon: string;
-    badge: string;
-    badgeStyle: string;
-    glowColor: string;
+    iconBg: string;
+    hoverBorder: string;
     href: string;
   }[] = [
-    {
-      id: 'Badminton',
-      label: 'Badminton',
-      icon: '🏸',
-      badge: 'Voice Umpire',
-      badgeStyle: 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
-      glowColor: 'rgba(16, 185, 129, 0.22)',
-      href: '/match-setup?sport=Badminton',
-    },
-    {
-      id: 'Cricket',
-      label: 'Cricket',
-      icon: '🏏',
-      badge: 'Scorecard',
-      badgeStyle: 'text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/25',
-      glowColor: 'rgba(245, 158, 11, 0.22)',
-      href: '/match-setup?sport=Cricket',
-    },
-    {
-      id: 'Football',
-      label: 'Football',
-      icon: '⚽',
-      badge: 'Live Timer',
-      badgeStyle: 'text-sky-500 dark:text-sky-400 bg-sky-500/10 border-sky-500/25',
-      glowColor: 'rgba(14, 165, 233, 0.22)',
-      href: '/match-setup?sport=Football',
-    },
-    {
-      id: 'Volleyball',
-      label: 'Volleyball',
-      icon: '🏐',
-      badge: 'Rally Points',
-      badgeStyle: 'text-purple-500 dark:text-purple-400 bg-purple-500/10 border-purple-500/25',
-      glowColor: 'rgba(168, 85, 247, 0.22)',
-      href: '/match-setup?sport=Volleyball',
-    },
-  ];
+      {
+        id: 'Badminton',
+        label: 'Badminton',
+        icon: '🏸',
+        iconBg: 'bg-emerald-500/10 border-emerald-500/25 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40',
+        hoverBorder: 'hover:border-emerald-500/40 hover:shadow-[0_0_12px_rgba(16,185,129,0.18)]',
+        href: '/match-setup?sport=Badminton',
+      },
+      {
+        id: 'Cricket',
+        label: 'Cricket',
+        icon: '🏏',
+        iconBg: 'bg-amber-500/10 border-amber-500/25 group-hover:bg-amber-500/20 group-hover:border-amber-500/40',
+        hoverBorder: 'hover:border-amber-500/40 hover:shadow-[0_0_12px_rgba(245,158,11,0.18)]',
+        href: '/match-setup?sport=Cricket',
+      },
+      {
+        id: 'Football',
+        label: 'Football',
+        icon: '⚽',
+        iconBg: 'bg-sky-500/10 border-sky-500/25 group-hover:bg-sky-500/20 group-hover:border-sky-500/40',
+        hoverBorder: 'hover:border-sky-500/40 hover:shadow-[0_0_12px_rgba(14,165,233,0.18)]',
+        href: '/match-setup?sport=Football',
+      },
+      {
+        id: 'Volleyball',
+        label: 'Volleyball',
+        icon: '🏐',
+        iconBg: 'bg-purple-500/10 border-purple-500/25 group-hover:bg-purple-500/20 group-hover:border-purple-500/40',
+        hoverBorder: 'hover:border-purple-500/40 hover:shadow-[0_0_12px_rgba(168,85,247,0.18)]',
+        href: '/match-setup?sport=Volleyball',
+      },
+    ];
 
   const handleResumeMatch = (record: PracticeMatchRecord) => {
     router.push(record.liveRoute);
@@ -155,89 +149,108 @@ export default function MobilePracticeHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-primary/20">
-      
+    <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-primary selection:text-black pb-28">
+
       {/* ══════════════════════════════════════════════════════════════════════
-          1. STYLISH MOBILE TOP BAR
+          1. COMPACT STICKY TOP NAVBAR (ALIGNED WITH TOURNAMENTS REFERENCE)
          ══════════════════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 py-3">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Link
-              href="/home"
-              className="p-2 -ml-2 rounded-xl text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors shrink-0 active:scale-95"
-              title="Back"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
+      <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Link
+            href="/home"
+            className="w-8 h-8 rounded-xl flex items-center justify-center border text-foreground/80 hover:text-foreground transition-all hover:scale-105 active:scale-95 shrink-0"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border)',
+            }}
+            aria-label="Back to Home"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
 
-            <div className="w-9 h-9 rounded-2xl bg-primary/15 border border-primary/25 text-primary flex items-center justify-center font-black text-lg shrink-0 shadow-inner">
-              ⚡
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1 className="text-base font-black tracking-tight text-foreground truncate">
-                  Digital Umpire
-                </h1>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              </div>
-              <p className="text-[10.5px] font-semibold text-foreground/50 truncate">
-                Local Device Vault • Offline
-              </p>
-            </div>
+          <div className="min-w-0">
+            <h1 className="text-xs font-black uppercase tracking-wider text-foreground truncate">
+              Digital Umpire
+            </h1>
+            <p className="text-[10px] text-foreground/50 font-bold truncate">
+              Local Device Vault • Offline
+            </p>
           </div>
+        </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="px-2.5 py-1 rounded-xl bg-primary/10 text-primary border border-primary/20 text-[10.5px] font-black font-mono">
-              {records.length} {records.length === 1 ? 'Match' : 'Matches'}
-            </span>
-          </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+
+          <span
+            className="px-2 py-1 rounded-xl text-[10px] font-black font-mono border text-foreground/70"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            {records.length} {records.length === 1 ? 'Match' : 'Matches'}
+          </span>
         </div>
       </header>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MAIN MOBILE CONTAINER
+          MAIN MOBILE CONTAINER (MATCHING REFERENCE PADDING & GAP)
          ══════════════════════════════════════════════════════════════════════ */}
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+      <main className="w-full max-w-lg mx-auto px-3.5 flex flex-col gap-3.5 pt-3">
 
         {/* ══════════════════════════════════════════════════════════════════════
             2. HERO TACTICAL VAULT CARD
            ══════════════════════════════════════════════════════════════════════ */}
-        <div className="relative overflow-hidden rounded-[28px] bg-surface border border-foreground/10 p-4 shadow-sm space-y-3.5">
-          {/* Subtle Ambient Glows */}
-          <div className="absolute top-0 right-0 w-44 h-44 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
-          <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -ml-16 -mb-16" />
+        <div
+          className="relative overflow-hidden rounded-2xl border p-3.5 space-y-3"
+          style={{
+            backgroundColor: 'var(--athlon-surface)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Subtle Ambient Corner Glow */}
+          <div className="absolute top-0 right-0 w-36 h-36 bg-primary/10 rounded-full blur-2xl pointer-events-none -mr-12 -mt-12" />
 
           {/* Top Info Strip */}
           <div className="relative flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
               <Sparkles className="w-3 h-3" />
               Match Commander
             </span>
 
-            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-foreground/50">
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-foreground/50">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
               <span>Private Vault</span>
             </span>
           </div>
 
-          {/* Metrics Counter Pill Strip */}
-          <div className="relative grid grid-cols-3 gap-2 pt-1 border-t border-foreground/10">
-            <div className="p-2.5 rounded-2xl bg-foreground/5 border border-foreground/5 text-center">
-              <div className="text-[9.5px] font-black uppercase tracking-wider text-foreground/45">
+          {/* Metrics Counter Strip */}
+          <div className="relative grid grid-cols-3 gap-2 pt-2 border-t border-foreground/5">
+            <div
+              className="p-2 rounded-xl border text-center"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50">
                 Total Saved
               </div>
-              <div className="text-xl font-black font-mono text-primary mt-0.5">
+              <div className="text-lg font-black font-mono text-primary mt-0.5">
                 {records.length}
               </div>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-foreground/5 border border-foreground/5 text-center">
-              <div className="text-[9.5px] font-black uppercase tracking-wider text-foreground/45">
+            <div
+              className="p-2 rounded-xl border text-center"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50">
                 Live Now
               </div>
-              <div className="text-xl font-black font-mono text-rose-600 dark:text-rose-400 mt-0.5 flex items-center justify-center gap-1">
+              <div className="text-lg font-black font-mono text-rose-500 mt-0.5 flex items-center justify-center gap-1">
                 <span>{activeMatches.length}</span>
                 {activeMatches.length > 0 && (
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
@@ -245,11 +258,17 @@ export default function MobilePracticeHubPage() {
               </div>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-foreground/5 border border-foreground/5 text-center">
-              <div className="text-[9.5px] font-black uppercase tracking-wider text-foreground/45">
+            <div
+              className="p-2 rounded-xl border text-center"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50">
                 Completed
               </div>
-              <div className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+              <div className="text-lg font-black font-mono text-emerald-500 mt-0.5">
                 {pastMatches.length}
               </div>
             </div>
@@ -257,75 +276,41 @@ export default function MobilePracticeHubPage() {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            3. 1-TAP SPORT LAUNCHPAD (MOBILE CAROUSEL TILES)
+            3. START NEW MATCH QUICK-LAUNCH BAR (COMPACT 4-COL PODS)
            ══════════════════════════════════════════════════════════════════════ */}
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50 flex items-center gap-1.5">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-xs font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
               <Flame className="w-3.5 h-3.5 text-primary" /> Start New Match
             </span>
-            <span className="text-[10px] font-bold text-foreground/40">Tap Sport to Score</span>
+            <span className="text-[10px] font-bold text-foreground/40">Tap sport to score</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-4 gap-2">
             {sportsList.map((sport) => (
               <Link
                 key={sport.id}
                 href={sport.href}
-                className="group relative p-3.5 rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between gap-3 active:scale-[0.97] hover:shadow-lg"
+                className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-2xl border transition-all duration-200 active:scale-95 text-center shadow-xs overflow-hidden ${sport.hoverBorder}`}
                 style={{
-                  backgroundColor: 'var(--athlon-card)',
+                  backgroundColor: 'var(--athlon-surface)',
                   borderColor: 'var(--athlon-border)',
                 }}
               >
-                {/* Subtle Sport Ambient Corner Glow */}
+                {/* Subtle Hover Bloom Glow */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-b from-foreground/[0.04] to-transparent" />
+
+                {/* Sport Icon Squircle */}
                 <div
-                  className="absolute -top-6 -right-6 w-20 h-20 rounded-full blur-xl pointer-events-none transition-opacity duration-300 opacity-20 group-hover:opacity-40"
-                  style={{ backgroundColor: sport.glowColor }}
-                />
-
-                {/* Top Subtle Edge Highlight */}
-                <div
-                  className="absolute top-0 inset-x-0 h-[1.5px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                  style={{
-                    background: `linear-gradient(90deg, transparent, ${sport.glowColor}, transparent)`,
-                  }}
-                />
-
-                {/* Top Row: Icon Squircle & Feature Badge */}
-                <div className="flex items-center justify-between relative z-10">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl border shadow-xs group-hover:scale-105 transition-transform duration-300"
-                    style={{
-                      backgroundColor: 'var(--athlon-surface)',
-                      borderColor: 'var(--athlon-border)',
-                    }}
-                  >
-                    <span>{sport.icon}</span>
-                  </div>
-
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border backdrop-blur-md ${sport.badgeStyle}`}
-                  >
-                    {sport.badge}
-                  </span>
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg border transition-all duration-200 group-hover:scale-110 shadow-xs mb-1.5 ${sport.iconBg}`}
+                >
+                  <span className="select-none">{sport.icon}</span>
                 </div>
 
-                {/* Bottom Row: Sport Name & Action Arrow Button */}
-                <div className="flex items-center justify-between relative z-10 pt-0.5">
-                  <span className="font-black text-sm text-foreground group-hover:text-primary transition-colors tracking-tight">
-                    {sport.label}
-                  </span>
-
-                  <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 text-foreground/40 group-hover:text-primary-foreground group-hover:bg-primary group-hover:translate-x-0.5 group-hover:shadow-xs"
-                    style={{
-                      backgroundColor: 'var(--athlon-surface)',
-                    }}
-                  >
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                </div>
+                {/* Sport Name */}
+                <span className="text-[11px] font-black text-foreground group-hover:text-primary transition-colors tracking-tight truncate w-full px-0.5">
+                  {sport.label}
+                </span>
               </Link>
             ))}
           </div>
@@ -335,22 +320,25 @@ export default function MobilePracticeHubPage() {
             4. ACTIVE LIVE MATCHES IN PROGRESS (IF ANY)
            ══════════════════════════════════════════════════════════════════════ */}
         {activeMatches.length > 0 && (
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center gap-1.5 px-1">
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 px-0.5">
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-              <span className="text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
+              <span className="text-xs font-black uppercase tracking-wider text-rose-500">
                 Active Match In Progress ({activeMatches.length})
               </span>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {activeMatches.map((m) => (
                 <div
                   key={m.id}
-                  className="p-4 rounded-2xl bg-surface border-2 border-rose-500/40 shadow-md relative overflow-hidden space-y-3"
+                  className="p-3.5 rounded-2xl border-2 border-rose-500/40 relative overflow-hidden space-y-2.5 shadow-sm"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                  }}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-wider border border-rose-500/25">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-500 text-[10px] font-black uppercase tracking-wider border border-rose-500/25">
                       <Flame className="w-3 h-3 fill-current" /> {m.sport}
                     </span>
                     <span className="text-[10px] font-mono font-bold text-foreground/50">
@@ -359,28 +347,29 @@ export default function MobilePracticeHubPage() {
                   </div>
 
                   <div>
-                    <div className="text-sm font-black text-foreground">
+                    <div className="text-xs font-black text-foreground">
                       {m.teamALabel} <span className="text-rose-500 font-extrabold mx-1">VS</span> {m.teamBLabel}
                     </div>
-                    <div className="text-[11px] text-foreground/50 mt-0.5 font-medium">
+                    <div className="text-[10px] text-foreground/50 mt-0.5 font-medium">
                       {m.category}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-foreground/10">
+                  <div className="flex items-center gap-2 pt-2 border-t border-foreground/5">
                     <button
                       onClick={() => handleResumeMatch(m)}
-                      className="flex-1 py-2.5 px-3.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-rose-500/25 active:scale-95 transition-all"
+                      className="flex-1 py-2 px-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Resume Scoring</span>
                     </button>
                     <button
                       onClick={() => removeRecord(m.id)}
-                      className="p-2.5 rounded-xl bg-foreground/5 hover:bg-rose-500/10 text-foreground/50 hover:text-rose-500 transition-colors active:scale-95"
+                      className="p-2 rounded-xl border border-transparent hover:border-rose-500/20 text-foreground/40 hover:text-rose-500 transition-colors active:scale-95"
+                      style={{ backgroundColor: 'var(--athlon-card)' }}
                       title="Discard"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -390,16 +379,16 @@ export default function MobilePracticeHubPage() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
-            5. LOCAL MATCH VAULT & HISTORY STREAM
+            5. MATCH VAULT HISTORY & FILTERS
            ══════════════════════════════════════════════════════════════════════ */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2.5">
           {/* Section Header */}
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center justify-between px-0.5">
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+              <span className="text-xs font-black uppercase tracking-wider text-foreground/60">
                 Match Vault History
               </span>
-              <span className="px-2 py-0.2 rounded-full text-[9.5px] font-black font-mono bg-foreground/5 text-foreground/70 border border-foreground/10">
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-foreground/10 text-foreground/60">
                 {records.length}
               </span>
             </div>
@@ -412,13 +401,17 @@ export default function MobilePracticeHubPage() {
                       clearAll();
                       setConfirmClear(false);
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[10.5px] font-black"
+                    className="px-2 py-0.5 rounded-lg bg-rose-500 text-white text-[10px] font-black"
                   >
                     Confirm
                   </button>
                   <button
                     onClick={() => setConfirmClear(false)}
-                    className="px-2 py-1 rounded-lg bg-surface border border-foreground/10 text-[10.5px] font-bold"
+                    className="px-2 py-0.5 rounded-lg border text-[10px] font-bold"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
                   >
                     Cancel
                   </button>
@@ -426,7 +419,7 @@ export default function MobilePracticeHubPage() {
               ) : (
                 <button
                   onClick={() => setConfirmClear(true)}
-                  className="text-[10.5px] font-bold text-foreground/40 hover:text-rose-500 transition-colors flex items-center gap-1"
+                  className="text-[10px] font-bold text-foreground/40 hover:text-rose-500 transition-colors flex items-center gap-1"
                 >
                   <Trash2 className="w-3 h-3" /> Clear
                 </button>
@@ -434,41 +427,60 @@ export default function MobilePracticeHubPage() {
             )}
           </div>
 
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          {/* Search Bar (Matching Reference Search Bar) */}
+          <div className="relative w-full">
+            <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by player or team..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-surface border border-foreground/10 text-foreground placeholder:text-foreground/30 text-xs font-bold focus:outline-none focus:border-primary transition-colors shadow-sm"
+              className="w-full pl-9 pr-8 py-2 rounded-xl border text-xs font-medium outline-none focus:border-primary transition-all text-foreground placeholder:text-foreground/40"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          {/* Sport Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar pb-0.5">
+          {/* Sport Filter Pills (Matching Reference Horizontal Scroll) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scroll-px-3 hide-scrollbar -mx-3.5 px-3.5">
             {['ALL', 'Badminton', 'Cricket', 'Football', 'Volleyball'].map((sp) => {
               const isSelected = selectedSportFilter === sp;
+              const sportIcon =
+                sp === 'ALL'
+                  ? '⚡'
+                  : sp === 'Badminton'
+                    ? '🏸'
+                    : sp === 'Cricket'
+                      ? '🏏'
+                      : sp === 'Football'
+                        ? '⚽'
+                        : '🏐';
+
               return (
                 <button
                   key={sp}
                   onClick={() => setSelectedSportFilter(sp)}
-                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border shadow-sm ${
-                    isSelected
-                      ? 'bg-primary text-black border-primary font-black'
-                      : 'bg-surface border-foreground/10 text-foreground/70 hover:text-foreground'
-                  }`}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all cursor-pointer border ${isSelected
+                    ? 'bg-primary text-black border-primary shadow-sm shadow-primary/20 scale-[1.02]'
+                    : 'border-transparent text-foreground/70 hover:text-foreground hover:bg-white/5'
+                    }`}
+                  style={{
+                    backgroundColor: isSelected ? undefined : 'var(--athlon-surface)',
+                    borderColor: isSelected ? undefined : 'var(--athlon-border)',
+                  }}
                 >
-                  {sp === 'ALL' ? 'All Sports' : sp}
+                  <span className="text-xs">{sportIcon}</span>
+                  <span>{sp === 'ALL' ? 'All Sports' : sp}</span>
                 </button>
               );
             })}
@@ -476,27 +488,48 @@ export default function MobilePracticeHubPage() {
 
           {/* Vault Match Stream Cards */}
           {filteredRecords.length === 0 ? (
-            <div className="p-8 text-center rounded-2xl bg-surface border border-foreground/10 flex flex-col items-center justify-center gap-2.5 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center justify-center text-foreground/30 text-2xl">
-                ⚔️
+            <div
+              className="py-12 px-4 text-center rounded-2xl border flex flex-col items-center justify-center space-y-3"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center justify-center text-foreground/40">
+                <Trophy className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-xs font-black text-foreground">No Local Matches in Vault</h4>
-                <p className="text-[11px] text-foreground/50 max-w-xs mt-0.5">
+                <h3 className="text-xs font-black uppercase tracking-wider text-foreground">
+                  No Matches Found
+                </h3>
+                <p className="text-[11px] text-foreground/50 mt-1 max-w-xs mx-auto">
                   {searchQuery || selectedSportFilter !== 'ALL'
-                    ? 'No matches match your filter.'
+                    ? 'No matches match your current filter.'
                     : 'Scored practice matches will be saved here on your device.'}
                 </p>
               </div>
-              <Link
-                href="/match-setup"
-                className="mt-1 px-4 py-2 rounded-xl bg-primary text-black font-black text-xs flex items-center gap-1.5 shadow-md shadow-primary/20 active:scale-95"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[3]" /> Setup New Match
-              </Link>
+
+              {(searchQuery || selectedSportFilter !== 'ALL') ? (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedSportFilter('ALL');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/25 text-primary text-[11px] font-bold hover:bg-primary/20 transition-all"
+                >
+                  Reset Filters
+                </button>
+              ) : (
+                <Link
+                  href="/match-setup"
+                  className="px-3.5 py-1.5 rounded-xl bg-primary text-black font-black text-[11px] hover:bg-primary/90 transition-all shadow-sm"
+                >
+                  Setup New Match
+                </Link>
+              )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {filteredRecords.map((m) => {
                 const isLive = m.status === 'live';
                 const isTeamAWinner = m.winner === 'A' || (m.winnerLabel && m.winnerLabel === m.teamALabel);
@@ -513,46 +546,56 @@ export default function MobilePracticeHubPage() {
                 return (
                   <div
                     key={m.id}
-                    className="p-4 rounded-3xl bg-surface border border-foreground/10 hover:border-foreground/20 transition-all shadow-sm flex flex-col justify-between gap-3 group"
+                    className="p-3.5 rounded-2xl border transition-all shadow-xs flex flex-col justify-between gap-2.5"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
                   >
                     <div>
                       {/* Meta Top Line */}
-                      <div className="flex items-center justify-between gap-2 mb-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-wider">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[9.5px] font-black uppercase tracking-wider">
                             {m.sport}
                           </span>
-                          <span className="text-[10.5px] font-bold text-foreground/45 font-mono">
+                          <span className="text-[10px] font-bold text-foreground/45 font-mono">
                             {formatDate(m.createdAt)} • {formatTime(m.createdAt)}
                           </span>
                         </div>
 
                         {isLive ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-wider border border-rose-500/25 animate-pulse">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 text-[9.5px] font-black uppercase tracking-wider border border-rose-500/25 animate-pulse">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
                             Live
                           </span>
                         ) : winnerDisplay ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/25 truncate max-w-[170px]">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[9.5px] font-black uppercase tracking-wider border border-emerald-500/25 truncate max-w-[160px]">
                             <Trophy className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{winnerDisplay === 'Tied' ? 'Match Tied' : `${winnerDisplay} Won`}</span>
+                            <span className="truncate">{winnerDisplay === 'Tied' ? 'Tied' : `${winnerDisplay} Won`}</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-foreground/5 text-foreground/60 text-[10px] font-bold uppercase">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-foreground/5 text-foreground/60 text-[9.5px] font-bold uppercase">
                             Finished
                           </span>
                         )}
                       </div>
 
                       {/* Teams & Scores Breakdown */}
-                      <div className="bg-background/80 border border-foreground/5 rounded-2xl p-3 space-y-2">
+                      <div
+                        className="rounded-xl p-2.5 space-y-1.5 border"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
                         {/* Team A Row */}
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             {isTeamAWinner && (
                               <span className="text-emerald-500 text-xs shrink-0 font-bold">🏆</span>
                             )}
-                            <span className={`text-xs sm:text-sm truncate ${isTeamAWinner ? 'font-black text-foreground' : 'font-bold text-foreground/80'}`}>
+                            <span className={`text-xs truncate ${isTeamAWinner ? 'font-black text-foreground' : 'font-bold text-foreground/80'}`}>
                               {m.teamALabel || 'Team A'}
                             </span>
                           </div>
@@ -572,7 +615,7 @@ export default function MobilePracticeHubPage() {
                             {isTeamBWinner && (
                               <span className="text-emerald-500 text-xs shrink-0 font-bold">🏆</span>
                             )}
-                            <span className={`text-xs sm:text-sm truncate ${isTeamBWinner ? 'font-black text-foreground' : 'font-bold text-foreground/80'}`}>
+                            <span className={`text-xs truncate ${isTeamBWinner ? 'font-black text-foreground' : 'font-bold text-foreground/80'}`}>
                               {m.teamBLabel || 'Team B'}
                             </span>
                           </div>
@@ -585,12 +628,12 @@ export default function MobilePracticeHubPage() {
                       </div>
 
                       {/* Category & Win Reason Footer Strip */}
-                      <div className="flex items-center justify-between gap-2 mt-2 px-1">
-                        <span className="text-[10.5px] text-foreground/50 font-medium">
+                      <div className="flex items-center justify-between gap-2 mt-1.5 px-0.5">
+                        <span className="text-[10px] text-foreground/50 font-medium">
                           {m.category}
                         </span>
                         {m.winReason && (
-                          <span className="text-[10.5px] font-bold text-primary truncate max-w-[200px]">
+                          <span className="text-[10px] font-bold text-primary truncate max-w-[180px]">
                             {m.winReason}
                           </span>
                         )}
@@ -598,32 +641,36 @@ export default function MobilePracticeHubPage() {
                     </div>
 
                     {/* Bottom Action Line */}
-                    <div className="flex items-center justify-between pt-2.5 border-t border-foreground/5 mt-0.5">
+                    <div className="flex items-center justify-between pt-2 border-t border-foreground/5">
                       {isLive ? (
                         <button
                           onClick={() => handleResumeMatch(m)}
-                          className="px-3.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-black flex items-center gap-1.5 shadow-sm shadow-rose-500/20 active:scale-95 transition-all"
+                          className="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-black flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
                         >
-                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <Play className="w-3 h-3 fill-current" />
                           <span>Resume Scoring</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleRematch(m)}
-                          className="px-3 py-1.5 rounded-xl bg-surface hover:bg-foreground/5 border border-foreground/10 text-xs font-bold text-foreground/80 flex items-center gap-1.5 transition-colors active:scale-95"
+                          className="px-3 py-1.5 rounded-xl border text-xs font-bold text-foreground/80 flex items-center gap-1.5 transition-colors active:scale-95"
+                          style={{
+                            backgroundColor: 'var(--athlon-card)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
                           title="Rematch"
                         >
-                          <RotateCcw className="w-3.5 h-3.5 text-primary" />
+                          <RotateCcw className="w-3 h-3 text-primary" />
                           <span>Rematch</span>
                         </button>
                       )}
 
                       <button
                         onClick={() => removeRecord(m.id)}
-                        className="p-1.5 rounded-xl text-foreground/30 hover:text-rose-500 hover:bg-rose-500/10 transition-colors active:scale-95"
+                        className="p-1.5 rounded-xl text-foreground/30 hover:text-rose-500 transition-colors active:scale-95"
                         title="Delete Match"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -635,17 +682,8 @@ export default function MobilePracticeHubPage() {
 
       </main>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          6. FLOATING ACTION BUTTON (FAB) FOR MATCH SETUP (ICON ONLY: +)
-         ══════════════════════════════════════════════════════════════════════ */}
-      <Athlon3DFAB
-        href="/match-setup"
-        label="Setup Match"
-        title="Setup New Match"
-        ariaLabel="Setup New Match"
-      />
-
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }

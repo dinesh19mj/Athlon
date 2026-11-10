@@ -1,5 +1,6 @@
 package com.athlon.identityservice.user.dto.response;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,8 +15,12 @@ public class UserResponse {
     private String city;
     private String district;
     private String state;
+    private LocalDate dob;
+    private String gender;
     private Integer isActive;
     private List<SportsProfileResponse> sportsProfiles;
+    private List<String> roles;
+    private String primaryRole;
 
     public UserResponse() {
     }
@@ -92,6 +97,22 @@ public class UserResponse {
         this.state = state;
     }
 
+    public LocalDate getDob() {
+        return dob;
+    }
+
+    public void setDob(LocalDate dob) {
+        this.dob = dob;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
     public Integer getIsActive() {
         return isActive;
     }
@@ -106,5 +127,21 @@ public class UserResponse {
 
     public void setSportsProfiles(List<SportsProfileResponse> sportsProfiles) {
         this.sportsProfiles = sportsProfiles;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
+
+    public String getPrimaryRole() {
+        return primaryRole;
+    }
+
+    public void setPrimaryRole(String primaryRole) {
+        this.primaryRole = primaryRole;
     }
 }

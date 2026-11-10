@@ -73,7 +73,13 @@ export const fetchClient = async <T>(
       } catch (e) {
         errorData = textData;
       }
-      console.error(`[API Error ${response.status}] ${method} ${url}:`, errorData || textData || response.statusText);
+      const errMessage = typeof errorData?.message === 'string' ? errorData.message : '';
+      const isReadOnlyWalletInit =
+        url.includes('/api/identity/subscriptions/organizer/') &&
+        errMessage.includes('cannot execute INSERT in a read-only transaction');
+      if (!isReadOnlyWalletInit) {
+        console.error(`[API Error ${response.status}] ${method} ${url}:`, errorData || textData || response.statusText);
+      }
       throw new ApiError(response.status, response.statusText, errorData);
     }
 

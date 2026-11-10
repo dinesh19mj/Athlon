@@ -4,6 +4,8 @@ import com.athlon.identityservice.venue.dto.*;
 import com.athlon.identityservice.venue.entity.*;
 import com.athlon.identityservice.venue.enums.*;
 import com.athlon.identityservice.venue.repository.*;
+import com.athlon.identityservice.subscription.enums.VenueFeatureCode;
+import com.athlon.identityservice.subscription.service.SubscriptionEntitlementService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class FacilityService {
     private final FacilityPricingRuleRepository pricingRuleRepository;
     private final FacilityBlockRepository blockRepository;
     private final FacilityMaintenanceRepository maintenanceRepository;
+    private final SubscriptionEntitlementService entitlementService;
 
     public FacilityService(
             VenueFacilityRepository facilityRepository,
@@ -31,7 +34,8 @@ public class FacilityService {
             FacilityAvailabilityRuleRepository availabilityRuleRepository,
             FacilityPricingRuleRepository pricingRuleRepository,
             FacilityBlockRepository blockRepository,
-            FacilityMaintenanceRepository maintenanceRepository
+            FacilityMaintenanceRepository maintenanceRepository,
+            SubscriptionEntitlementService entitlementService
     ) {
         this.facilityRepository = facilityRepository;
         this.venueRepository = venueRepository;
@@ -40,6 +44,7 @@ public class FacilityService {
         this.pricingRuleRepository = pricingRuleRepository;
         this.blockRepository = blockRepository;
         this.maintenanceRepository = maintenanceRepository;
+        this.entitlementService = entitlementService;
     }
 
     @Transactional
@@ -53,6 +58,11 @@ public class FacilityService {
                     .orElseThrow(() -> new IllegalArgumentException("Venue not found with UUID: " + request.getVenueUuid()));
         } else {
             throw new IllegalArgumentException("Venue ID or UUID is required.");
+        }
+
+        // Enforce Subscription Quota for facilities
+        if (venue.getOrganizationUuid() != null) {
+            entitlementService.assertQuota(venue.getOrganizationUuid(), "MAX_FACILITIES", 1);
         }
 
         VenueFacility facility = new VenueFacility();
@@ -97,7 +107,11 @@ public class FacilityService {
         }
 
         // Save Pricing Rules
-        if (request.getPricingRules() != null) {
+        if (request.getPricingRules() != null && !request.getPricingRules().isEmpty()) {
+            boolean hasDynamic = request.getPricingRules().stream().anyMatch(p -> p.getPricingType() != null && p.getPricingType() != PricingType.STANDARD);
+            if (hasDynamic && venue.getOrganizationUuid() != null) {
+                entitlementService.assertFeature(venue.getOrganizationUuid(), VenueFeatureCode.VENUE_DYNAMIC_PRICING);
+            }
             for (FacilityCreateRequest.PricingRuleInput p : request.getPricingRules()) {
                 DayOfWeek dow = p.getDayOfWeek() != null && !p.getDayOfWeek().trim().isEmpty() ? parseDayOfWeek(p.getDayOfWeek()) : null;
                 FacilityPricingRule rule = new FacilityPricingRule(
@@ -153,6 +167,14 @@ public class FacilityService {
         }
 
         if (request.getPricingRules() != null) {
+            boolean hasDynamic = request.getPricingRules().stream().anyMatch(p -> p.getPricingType() != null && p.getPricingType() != PricingType.STANDARD);
+            if (hasDynamic) {
+                venueRepository.findById(facility.getVenueId()).ifPresent(v -> {
+                    if (v.getOrganizationUuid() != null) {
+                        entitlementService.assertFeature(v.getOrganizationUuid(), VenueFeatureCode.VENUE_DYNAMIC_PRICING);
+                    }
+                });
+            }
             pricingRuleRepository.deleteByFacilityId(facility.getFacilityId());
             for (FacilityCreateRequest.PricingRuleInput p : request.getPricingRules()) {
                 DayOfWeek dow = p.getDayOfWeek() != null && !p.getDayOfWeek().trim().isEmpty() ? parseDayOfWeek(p.getDayOfWeek()) : null;

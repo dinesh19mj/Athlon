@@ -45,7 +45,10 @@ import { AcademyService, AcademyCentre } from '@/lib/api/academy';
 import { AcademyStudentService, AcademyBatch } from '@/lib/api/academyStudent';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { useOrganizerEntitlementsStore } from '@/store/useOrganizerEntitlementsStore';
+import { OrganizerSubscriptionService } from '@/lib/api/organizerSubscription';
 import { useOrgSports, getSportEmoji } from '@/lib/hooks/useOrgSports';
+import { compressImageFile, COMPRESSION_PRESETS } from '@/lib/utils/imageCompression';
 
 interface TournamentCategoryItem {
   id: string;
@@ -128,6 +131,31 @@ export default function CreateTournamentPage() {
   const isAcademy = activeOrg.type === 'ACADEMY';
   const isClub = activeOrg.type === 'CLUB';
   const isInternalOrg = isAcademy || isClub;
+
+  const {
+    walletByOrg,
+    fetchEntitlements,
+    refreshWallet,
+    hasFeature,
+    getLimit,
+    openFeaturePaywall,
+    openQuotaPaywall,
+    openCreditPaywall,
+  } = useOrganizerEntitlementsStore();
+
+  const organizerWallet = !isInternalOrg ? walletByOrg[orgUuid] : undefined;
+  const maxCategories = !isInternalOrg ? getLimit(orgUuid, 'MAX_CATEGORIES', 2) : 999;
+  const maxParticipants = !isInternalOrg ? getLimit(orgUuid, 'MAX_PARTICIPANTS', 32) : 9999;
+  const maxCourts = !isInternalOrg ? getLimit(orgUuid, 'MAX_COURTS', 2) : 99;
+  const maxOfficials = !isInternalOrg ? getLimit(orgUuid, 'MAX_OFFICIALS', 2) : 99;
+  const canOnlineRegister = isInternalOrg || hasFeature(orgUuid, 'ONLINE_REGISTRATION');
+  const canPaymentVerify = isInternalOrg || hasFeature(orgUuid, 'PAYMENT_VERIFICATION');
+
+  useEffect(() => {
+    if (orgUuid && !isInternalOrg) {
+      fetchEntitlements(orgUuid);
+    }
+  }, [orgUuid, isInternalOrg, fetchEntitlements]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orgCategories, setOrgCategories] = useState<any[]>([]);
@@ -236,6 +264,12 @@ export default function CreateTournamentPage() {
     teamEventCategories: [] as TeamEventCategoryConfig[],
     registrationMode: 'PUBLIC',
   });
+
+  useEffect(() => {
+    if (!isInternalOrg && organizerWallet && !canOnlineRegister && formData.registrationMode === 'PUBLIC') {
+      setFormData((prev) => ({ ...prev, registrationMode: 'ORGANIZER_MANAGED' }));
+    }
+  }, [isInternalOrg, organizerWallet, canOnlineRegister, formData.registrationMode]);
 
   const [statesList, setStatesList] = useState<string[]>([]);
   const [districtsList, setDistrictsList] = useState<string[]>([]);
@@ -381,12 +415,27 @@ export default function CreateTournamentPage() {
   };
 
   const addCategoryItem = (name = '', maxTeams: number | string = 16) => {
+    if (!isInternalOrg && customCategories.length >= maxCategories) {
+      openQuotaPaywall(
+        orgUuid,
+        'MAX_CATEGORIES',
+        'Tournament Categories',
+        customCategories.length,
+        customCategories.length + 1
+      );
+      return;
+    }
+    const currentTotal = customCategories.reduce((sum, c) => sum + (Number(c.maxTeams) || 0), 0);
+    const defaultSize = !isInternalOrg
+      ? Math.max(2, Math.min(Number(maxTeams) || 16, Math.max(2, maxParticipants - currentTotal)))
+      : maxTeams;
+
     setCustomCategories((prev) => [
       ...prev,
       {
         id: Date.now().toString(),
         name,
-        maxTeams,
+        maxTeams: defaultSize,
       },
     ]);
   };
@@ -396,6 +445,22 @@ export default function CreateTournamentPage() {
   };
 
   const updateCategoryItem = (id: string, field: keyof TournamentCategoryItem, value: any) => {
+    if (field === 'maxTeams' && !isInternalOrg && value !== '') {
+      const otherTotal = customCategories
+        .filter((c) => c.id !== id)
+        .reduce((sum, c) => sum + (Number(c.maxTeams) || 0), 0);
+      const nextTotal = otherTotal + (Number(value) || 0);
+      if (nextTotal > maxParticipants) {
+        openQuotaPaywall(
+          orgUuid,
+          'MAX_PARTICIPANTS',
+          'Total Participants Across Categories',
+          otherTotal,
+          nextTotal
+        );
+        return;
+      }
+    }
     setCustomCategories((prev) =>
       prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
     );
@@ -459,13 +524,19 @@ export default function CreateTournamentPage() {
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [posterFile, setPosterFile] = useState<File | null>(null);
 
-  const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePosterChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPosterFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setPosterPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const res = await compressImageFile(file, COMPRESSION_PRESETS.TOURNAMENT_POSTER);
+      setPosterFile(res.file);
+      setPosterPreview(res.previewUrl);
+    } catch {
+      setPosterFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setPosterPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const qrCodeInputRef = useRef<HTMLInputElement>(null);
@@ -473,13 +544,19 @@ export default function CreateTournamentPage() {
   const [qrCodePreview, setQrCodePreview] = useState<string | null>(null);
   const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
 
-  const handleQrCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleQrCodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setQrCodeFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setQrCodePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const res = await compressImageFile(file, COMPRESSION_PRESETS.PAYMENT_QR);
+      setQrCodeFile(res.file);
+      setQrCodePreview(res.previewUrl);
+    } catch {
+      setQrCodeFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setQrCodePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const isFormValid = !!(
@@ -501,6 +578,38 @@ export default function CreateTournamentPage() {
 
   const handleSubmit = async () => {
     try {
+      const multiCategoryActive =
+        isSportMultiCategoryAllowed(formData.sport) && isMultiCategory && customCategories.length > 0;
+      const categoryCount = multiCategoryActive ? customCategories.length : 1;
+      const participantCount = multiCategoryActive
+        ? customCategories.reduce((sum, c) => sum + (Number(c.maxTeams) || 0), 0)
+        : Number(formData.teamCount || formData.playersCount) || maxParticipants;
+
+      // Dynamic Plan Entitlement Checks for Organizer Workspaces
+      if (!isInternalOrg) {
+        if (organizerWallet && (organizerWallet.tournamentCreditsAvailable ?? 0) < 1) {
+          openCreditPaywall(orgUuid, 'TOURNAMENT_CREDIT');
+          return;
+        }
+        if (categoryCount > maxCategories) {
+          openQuotaPaywall(orgUuid, 'MAX_CATEGORIES', 'Tournament Categories', categoryCount, categoryCount);
+          return;
+        }
+        if (participantCount > maxParticipants) {
+          openQuotaPaywall(orgUuid, 'MAX_PARTICIPANTS', 'Total Participants', participantCount, participantCount);
+          return;
+        }
+        if (formData.registrationMode === 'PUBLIC' && !canOnlineRegister) {
+          openFeaturePaywall(
+            orgUuid,
+            'ONLINE_REGISTRATION',
+            'Public Online Registration',
+            'Online participant self-registration and payment verification require the Tournament Starter Pass or higher.'
+          );
+          return;
+        }
+      }
+
       setIsSubmitting(true);
 
       const orgResponse = await OrganizationService.getById(orgUuid);
@@ -551,8 +660,6 @@ export default function CreateTournamentPage() {
 
       form.append('tournamentType', formData.tournamentType);
       form.append('sport', formData.sport);
-      const multiCategoryActive =
-        isSportMultiCategoryAllowed(formData.sport) && isMultiCategory && customCategories.length > 0;
 
       if (formData.tournamentType === 'TEAM_EVENT') {
         form.append('teamEventCategories', JSON.stringify(formData.teamEventCategories));
@@ -561,14 +668,18 @@ export default function CreateTournamentPage() {
         form.append('category', categoryNames || 'Open');
         form.append('matchFormat', formData.matchFormat);
         const totalTeams = customCategories.reduce((sum, c) => sum + (Number(c.maxTeams) || 0), 0);
-        if (totalTeams > 0) {
-          form.append('teamCount', totalTeams.toString());
-          form.append('playersCount', totalTeams.toString());
+        const cappedTeams = !isInternalOrg ? Math.min(totalTeams || maxParticipants, maxParticipants) : totalTeams;
+        if (cappedTeams > 0) {
+          form.append('teamCount', cappedTeams.toString());
+          form.append('playersCount', cappedTeams.toString());
         }
       } else {
         form.append('matchFormat', formData.matchFormat);
         form.append('category', formData.category || 'Open');
-        const limit = formData.teamCount || formData.playersCount;
+        const rawLimit = formData.teamCount || formData.playersCount;
+        const limit = !isInternalOrg
+          ? Math.min(Number(rawLimit) || maxParticipants, maxParticipants)
+          : rawLimit;
         if (limit) {
           form.append('teamCount', limit.toString());
           form.append('playersCount', limit.toString());
@@ -600,7 +711,27 @@ export default function CreateTournamentPage() {
         form.append('upiQrCode', qrCodeFile);
       }
 
-      await TournamentService.create(form);
+      const createRes: any = await TournamentService.create(form);
+
+      // Consume 1 Tournament Credit and snapshot active plan entitlements for this tournament
+      if (!isInternalOrg) {
+        const createdObj = createRes?.data?.data || createRes?.data || createRes;
+        const createdUuid =
+          createdObj?.tournamentUuid || createdObj?.uuid || createdObj?.id || `TOURNEY_${Date.now()}`;
+        try {
+          await OrganizerSubscriptionService.consumeTournamentCredit({
+            organizationId: orgData.orgId,
+            tournamentUuid: String(createdUuid),
+            participantCount,
+            categoryCount,
+            notes: `Published Tournament: ${formData.name}`,
+          });
+          await refreshWallet(orgUuid);
+        } catch (creditErr) {
+          console.warn('Credit consumption warning:', creditErr);
+        }
+      }
+
       router.push(`/org/${orgUuid}/tournaments`);
     } catch (error: any) {
       console.error('Failed to create tournament', error);
@@ -625,30 +756,31 @@ export default function CreateTournamentPage() {
           1. MOBILE VIEW ONLY (< md) - THEME-ADAPTIVE MOBILE EXPERIENCE
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-36">
-        {/* Sticky Athletic Top Header */}
-        <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-foreground/10 shadow-xs">
-          <div className="px-4 py-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        {/* Sticky Athletic Top Header matching Venues sample page */}
+        <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/80 shadow-xs safe-header">
+          <div className="px-3.5 pb-3 flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
               <Link
                 href={`/org/${orgUuid}/tournaments`}
-                className="w-9 h-9 rounded-full bg-card border border-foreground/10 flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 transition-all shadow-xs"
+                title="Go Back"
+                className="w-9 h-9 rounded-xl border border-border/80 bg-surface/80 hover:bg-surface text-foreground/80 hover:text-foreground flex items-center justify-center transition-all active:scale-95 shadow-xs shrink-0 cursor-pointer"
               >
                 <ArrowLeftIcon className="w-4 h-4" />
               </Link>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <h1 className="text-xs font-black uppercase tracking-widest text-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  <h1 className="text-xs font-black uppercase tracking-widest text-foreground truncate">
                     Create Tournament
                   </h1>
                 </div>
-                <p className="text-[10px] text-foreground/50 font-medium">
+                <p className="text-[10px] text-foreground/50 font-medium truncate mt-0.5">
                   {activeOrg.name}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-primary" />
                 <span className="text-[10px] font-black text-primary font-mono">
@@ -668,6 +800,58 @@ export default function CreateTournamentPage() {
         </div>
 
         <div className="px-4 pt-5 space-y-6 max-w-xl mx-auto">
+          {!isInternalOrg && organizerWallet && (
+            <div
+              className="p-4 rounded-3xl border shadow-xs flex flex-col gap-3"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/30 text-[10px] font-black uppercase tracking-wider">
+                    {organizerWallet.activeTierName || 'Tournament Free'}
+                  </span>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                      (organizerWallet.tournamentCreditsAvailable ?? 0) > 0
+                        ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                        : 'bg-rose-500/15 text-rose-500 border-rose-500/30'
+                    }`}
+                  >
+                    {organizerWallet.tournamentCreditsAvailable ?? 0} Credit
+                    {(organizerWallet.tournamentCreditsAvailable ?? 0) === 1 ? '' : 's'} Left
+                  </span>
+                </div>
+                <Link
+                  href={`/org/${orgUuid}/organizer/subscription`}
+                  className="text-[10px] font-black uppercase tracking-wider text-primary hover:underline shrink-0"
+                >
+                  Upgrade Pack →
+                </Link>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 text-center">
+                <div className="p-2 rounded-xl bg-surface/80 border border-foreground/10">
+                  <div className="text-xs font-black font-mono text-foreground">{maxCategories}</div>
+                  <div className="text-[9px] font-bold text-foreground/50 uppercase">Categories</div>
+                </div>
+                <div className="p-2 rounded-xl bg-surface/80 border border-foreground/10">
+                  <div className="text-xs font-black font-mono text-foreground">{maxParticipants}</div>
+                  <div className="text-[9px] font-bold text-foreground/50 uppercase">Max Players</div>
+                </div>
+                <div className="p-2 rounded-xl bg-surface/80 border border-foreground/10">
+                  <div className="text-xs font-black font-mono text-foreground">{maxCourts}</div>
+                  <div className="text-[9px] font-bold text-foreground/50 uppercase">Max Courts</div>
+                </div>
+                <div className="p-2 rounded-xl bg-surface/80 border border-foreground/10">
+                  <div className="text-xs font-black font-mono text-foreground">{maxOfficials}</div>
+                  <div className="text-[9px] font-bold text-foreground/50 uppercase">Officials</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ════════════════════════════════════════════════════════════════
               BENTO CARD 1: EVENT SCOPE & REGISTRATION MODE
              ════════════════════════════════════════════════════════════════ */}
@@ -795,11 +979,23 @@ export default function CreateTournamentPage() {
                   },
                 ].map((opt) => {
                   const isSelected = formData.registrationMode === opt.value;
+                  const isLocked = opt.value === 'PUBLIC' && !canOnlineRegister;
                   const IconComp = opt.icon;
                   return (
                     <div
                       key={opt.value}
-                      onClick={() => setFormData({ ...formData, registrationMode: opt.value })}
+                      onClick={() => {
+                        if (isLocked) {
+                          openFeaturePaywall(
+                            orgUuid,
+                            'ONLINE_REGISTRATION',
+                            'Public Online Registration & Payments',
+                            'Online self-registration and payment verification require the Tournament Starter Pass or higher.'
+                          );
+                          return;
+                        }
+                        setFormData({ ...formData, registrationMode: opt.value });
+                      }}
                       className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${isSelected
                         ? 'border-primary bg-primary/10 shadow-xs'
                         : 'border-foreground/10 bg-card hover:border-foreground/20'
@@ -812,13 +1008,17 @@ export default function CreateTournamentPage() {
                         <IconComp className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <span className={`text-xs font-black ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                             {opt.label}
                           </span>
-                          {isSelected && (
+                          {isLocked ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1 shrink-0">
+                              <Lock className="w-2.5 h-2.5" /> STARTER+
+                            </span>
+                          ) : isSelected ? (
                             <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                          )}
+                          ) : null}
                         </div>
                         <p className="text-[10.5px] text-foreground/60 mt-0.5 leading-relaxed">
                           {opt.desc}
@@ -1502,22 +1702,43 @@ export default function CreateTournamentPage() {
                   <div className="pt-1">
                     <div className="flex items-center justify-between mb-1.5">
                       <label className={labelClass}>
-                        Max Teams Limit (Optional)
+                        Max Teams Limit {!isInternalOrg ? `(Plan Cap: ${maxParticipants})` : '(Optional)'}
                       </label>
                       <span className="text-[9.5px] font-black text-primary px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                        {formData.teamCount ? `${formData.teamCount} Teams Max` : 'Unlimited Entry'}
+                        {formData.teamCount
+                          ? `${formData.teamCount} Teams Max`
+                          : !isInternalOrg
+                          ? `Up to ${maxParticipants} Teams`
+                          : 'Unlimited Entry'}
                       </span>
                     </div>
                     <input
                       type="number"
                       min="2"
+                      max={!isInternalOrg ? maxParticipants : undefined}
                       value={formData.teamCount}
-                      onChange={(e) => setFormData({ ...formData, teamCount: e.target.value })}
-                      placeholder="e.g. 16, 32 or leave blank for unlimited"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!isInternalOrg && val !== '' && Number(val) > maxParticipants) {
+                          openQuotaPaywall(
+                            orgUuid,
+                            'MAX_PARTICIPANTS',
+                            'Participants / Teams',
+                            maxParticipants,
+                            Number(val)
+                          );
+                          setFormData({ ...formData, teamCount: String(maxParticipants) });
+                          return;
+                        }
+                        setFormData({ ...formData, teamCount: val });
+                      }}
+                      placeholder={!isInternalOrg ? `Max ${maxParticipants} on current plan` : 'e.g. 16, 32 or leave blank for unlimited'}
                       className={`${inputClass} font-mono`}
                     />
                     <p className="text-[10px] text-foreground/45 mt-1">
-                      Leave empty to accept unlimited team registrations.
+                      {!isInternalOrg
+                        ? `Your active plan allows up to ${maxParticipants} total participants/teams.`
+                        : 'Leave empty to accept unlimited team registrations.'}
                     </p>
                   </div>
                 </div>
@@ -1977,7 +2198,68 @@ export default function CreateTournamentPage() {
         </div>
 
         {/* 2-Column Desktop Grid Layout */}
-        <main className="max-w-7xl mx-auto px-8 py-10">
+        <main className="max-w-7xl mx-auto px-8 py-10 space-y-6">
+          {!isInternalOrg && organizerWallet && (
+            <div
+              className="p-5 rounded-3xl border shadow-lg flex flex-wrap items-center justify-between gap-4"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-foreground">
+                      Active Plan: {organizerWallet.activeTierName || 'Tournament Free'}
+                    </span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                        (organizerWallet.tournamentCreditsAvailable ?? 0) > 0
+                          ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                          : 'bg-rose-500/15 text-rose-500 border-rose-500/30'
+                      }`}
+                    >
+                      {organizerWallet.tournamentCreditsAvailable ?? 0} Tournament Credit
+                      {(organizerWallet.tournamentCreditsAvailable ?? 0) === 1 ? '' : 's'} Available
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/60 mt-0.5">
+                    Publishing this competition consumes 1 Tournament Credit and locks your plan quotas for this event.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="px-3 py-1.5 rounded-xl bg-surface border border-foreground/10">
+                    <span className="text-foreground/50 font-bold mr-1">Categories:</span>
+                    <span className="font-mono font-black text-foreground">Max {maxCategories}</span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-surface border border-foreground/10">
+                    <span className="text-foreground/50 font-bold mr-1">Participants:</span>
+                    <span className="font-mono font-black text-foreground">Max {maxParticipants}</span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-surface border border-foreground/10">
+                    <span className="text-foreground/50 font-bold mr-1">Courts:</span>
+                    <span className="font-mono font-black text-foreground">Max {maxCourts}</span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-surface border border-foreground/10">
+                    <span className="text-foreground/50 font-bold mr-1">Officials:</span>
+                    <span className="font-mono font-black text-foreground">Max {maxOfficials}</span>
+                  </div>
+                </div>
+
+                <Link
+                  href={`/org/${orgUuid}/organizer/subscription`}
+                  className="px-4 py-2 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-black uppercase tracking-wider transition-all"
+                >
+                  Upgrade / Top Up
+                </Link>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-12 gap-8 items-start">
             {/* Left Main Form Column (7 Cols) */}
             <div className="col-span-7 space-y-8">
@@ -2131,28 +2413,49 @@ export default function CreateTournamentPage() {
                         icon: Layers,
                         desc: 'Manual participant entry only',
                       },
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, registrationMode: opt.value })}
-                        className={`py-2.5 px-3 rounded-2xl border text-left transition-all ${formData.registrationMode === opt.value
-                          ? 'bg-primary/15 text-primary border-primary shadow-sm'
-                          : 'text-foreground/60 hover:text-foreground'
-                          }`}
-                        style={{
-                          backgroundColor:
-                            formData.registrationMode === opt.value ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
-                          borderColor: formData.registrationMode === opt.value ? 'var(--athlon-primary)' : 'var(--athlon-border)',
-                        }}
-                      >
-                        <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider">
-                          <opt.icon className="w-3.5 h-3.5" />
-                          <span>{opt.label}</span>
-                        </div>
-                        <div className="text-[10px] text-foreground/50 mt-1 font-normal leading-tight">{opt.desc}</div>
-                      </button>
-                    ))}
+                    ].map((opt) => {
+                      const isLocked = opt.value === 'PUBLIC' && !canOnlineRegister;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            if (isLocked) {
+                              openFeaturePaywall(
+                                orgUuid,
+                                'ONLINE_REGISTRATION',
+                                'Public Online Registration & Payments',
+                                'Online participant self-registration and payment verification require the Tournament Starter Pass or higher.'
+                              );
+                              return;
+                            }
+                            setFormData({ ...formData, registrationMode: opt.value });
+                          }}
+                          className={`py-2.5 px-3 rounded-2xl border text-left transition-all ${formData.registrationMode === opt.value
+                            ? 'bg-primary/15 text-primary border-primary shadow-sm'
+                            : 'text-foreground/60 hover:text-foreground'
+                            }`}
+                          style={{
+                            backgroundColor:
+                              formData.registrationMode === opt.value ? 'rgba(27, 156, 86, 0.15)' : 'var(--athlon-surface)',
+                            borderColor: formData.registrationMode === opt.value ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-1.5 font-black text-xs uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5">
+                              <opt.icon className="w-3.5 h-3.5" />
+                              <span>{opt.label}</span>
+                            </span>
+                            {isLocked && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-0.5">
+                                <Lock className="w-2.5 h-2.5" /> STARTER+
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-foreground/50 mt-1 font-normal leading-tight">{opt.desc}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -2421,18 +2724,37 @@ export default function CreateTournamentPage() {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-xs font-black uppercase tracking-wider text-foreground/60">
-                            Max Teams Limit
+                            Max Teams Limit {!isInternalOrg ? `(Max ${maxParticipants})` : ''}
                           </label>
                           <span className="text-[10px] font-bold text-primary">
-                            {formData.teamCount ? `${formData.teamCount} Teams` : 'Unlimited'}
+                            {formData.teamCount
+                              ? `${formData.teamCount} Teams`
+                              : !isInternalOrg
+                              ? `Plan Max: ${maxParticipants}`
+                              : 'Unlimited'}
                           </span>
                         </div>
                         <input
                           type="number"
                           min="2"
+                          max={!isInternalOrg ? maxParticipants : undefined}
                           value={formData.teamCount}
-                          onChange={(e) => setFormData({ ...formData, teamCount: e.target.value })}
-                          placeholder="Optional (leave empty for unlimited)"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (!isInternalOrg && val !== '' && Number(val) > maxParticipants) {
+                              openQuotaPaywall(
+                                orgUuid,
+                                'MAX_PARTICIPANTS',
+                                'Participants / Teams',
+                                maxParticipants,
+                                Number(val)
+                              );
+                              setFormData({ ...formData, teamCount: String(maxParticipants) });
+                              return;
+                            }
+                            setFormData({ ...formData, teamCount: val });
+                          }}
+                          placeholder={!isInternalOrg ? `Up to ${maxParticipants} teams` : 'Optional (leave empty for unlimited)'}
                           className={`${desktopInputClass} font-mono`}
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         />

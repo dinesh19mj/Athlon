@@ -20,6 +20,8 @@ public interface VenueFacilityRepository extends JpaRepository<VenueFacility, Lo
 
     List<VenueFacility> findByVenueIdAndStatus(Long venueId, FacilityStatus status);
 
+    long countByVenueIdIn(List<Long> venueIds);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("SELECT f FROM VenueFacility f WHERE f.facilityId = :facilityId")
     Optional<VenueFacility> findByIdForUpdate(@org.springframework.data.repository.query.Param("facilityId") Long facilityId);

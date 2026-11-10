@@ -459,7 +459,7 @@ export default function VenueBookingDetailPage() {
         </p>
         <Link
           href="/bookings"
-          className="px-5 py-2.5 rounded-xl bg-primary text-black text-xs font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+          className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all"
         >
           Return to Venues Directory
         </Link>
@@ -468,13 +468,14 @@ export default function VenueBookingDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black py-3 sm:py-6 px-3 sm:px-4 pb-48 sm:pb-56">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground py-3 sm:py-6 px-3 sm:px-4 pb-48 sm:pb-56 transition-colors duration-200">
       {/* Centered Modern Booking Sheet Container */}
       <div
-        className="w-full max-w-xl sm:max-w-2xl mx-auto rounded-2xl sm:rounded-[32px] border p-3.5 sm:p-5 md:p-6 shadow-2xl space-y-5"
+        className="w-full max-w-xl sm:max-w-2xl mx-auto rounded-2xl sm:rounded-[32px] border p-3.5 sm:p-5 md:p-6 shadow-xl dark:shadow-2xl space-y-5 transition-colors duration-200"
         style={{
           backgroundColor: 'var(--athlon-card)',
           borderColor: 'var(--athlon-border)',
+          boxShadow: 'var(--athlon-shadow)',
         }}
       >
         {/* ══════════════════════════════════════════════════════════════════════
@@ -537,8 +538,8 @@ export default function VenueBookingDetailPage() {
             </div>
 
             {bookingPartialWarning && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium max-w-md mx-auto text-left flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs font-medium max-w-md mx-auto text-left flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                 <span>{bookingPartialWarning}</span>
               </div>
             )}
@@ -627,7 +628,7 @@ export default function VenueBookingDetailPage() {
             <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2 max-w-md mx-auto">
               <Link
                 href="/my-bookings"
-                className="w-full py-3 rounded-xl bg-primary text-black font-black text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-all text-center flex items-center justify-center gap-1.5"
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-all text-center flex items-center justify-center gap-1.5"
               >
                 <CalendarCheck className="w-3.5 h-3.5" />
                 View in My Bookings
@@ -668,44 +669,56 @@ export default function VenueBookingDetailPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {facilities.map((fac) => {
-                  const isChosen = selectedFacility?.facilityId === fac.facilityId;
-                  const sportLabel = fac.sports?.[0]?.sportName || fac.surfaceType || 'Sport';
-                  const slotsCount = fac.facilityId === selectedFacility?.facilityId
-                    ? availableSlots.filter(s => s.isAvailable).length
-                    : (fac.pricingRules?.length ? 15 : 12);
+              {facilities.length === 0 ? (
+                <div
+                  className="p-4 rounded-xl border text-center text-xs text-foreground/60"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  No active courts or facilities configured for this venue yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {facilities.map((fac) => {
+                    const isChosen = selectedFacility?.facilityId === fac.facilityId;
+                    const sportLabel = fac.sports?.[0]?.sportName || fac.surfaceType || 'Sport';
+                    const slotsCount = fac.facilityId === selectedFacility?.facilityId
+                      ? availableSlots.filter(s => s.isAvailable).length
+                      : (fac.pricingRules?.length ? 15 : 12);
 
-                  return (
-                    <button
-                      key={fac.facilityId}
-                      type="button"
-                      onClick={() => handleFacilityChange(fac)}
-                      className={`text-left rounded-xl sm:rounded-2xl border p-2.5 sm:p-3 transition-all cursor-pointer relative overflow-hidden ${
-                        isChosen
-                          ? 'border-primary shadow-md shadow-primary/20 ring-1 ring-primary'
-                          : 'text-foreground/80 hover:border-primary/40'
-                      }`}
-                      style={{
-                        backgroundColor: isChosen ? 'var(--athlon-surface)' : 'var(--athlon-card)',
-                        borderColor: isChosen ? 'var(--athlon-primary)' : 'var(--athlon-border)',
-                      }}
-                    >
-                      {isChosen && (
-                        <div className="absolute top-0 right-0 w-8 h-8 pointer-events-none">
-                          <div className="absolute transform rotate-45 bg-primary text-black text-[8px] font-black right-[-24px] top-[4px] w-[60px] text-center">
-                            ACTIVE
+                    return (
+                      <button
+                        key={fac.facilityId}
+                        type="button"
+                        onClick={() => handleFacilityChange(fac)}
+                        className={`text-left rounded-xl sm:rounded-2xl border p-2.5 sm:p-3 transition-all cursor-pointer relative overflow-hidden ${
+                          isChosen
+                            ? 'border-primary shadow-md shadow-primary/20 ring-1 ring-primary text-foreground'
+                            : 'text-foreground/80 hover:border-primary/40'
+                        }`}
+                        style={{
+                          backgroundColor: isChosen ? 'var(--athlon-primary-soft)' : 'var(--athlon-surface)',
+                          borderColor: isChosen ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                        }}
+                      >
+                        {isChosen && (
+                          <div className="absolute top-0 right-0 w-8 h-8 pointer-events-none">
+                            <div className="absolute transform rotate-45 bg-primary text-primary-foreground text-[8px] font-black right-[-24px] top-[4px] w-[60px] text-center">
+                              ACTIVE
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      <span className="block text-xs sm:text-[13px] font-black truncate">{fac.name}</span>
-                      <span className="block text-[10px] text-foreground/50 font-medium truncate mt-0.5">
-                        {sportLabel} · <span className="text-primary font-bold">{slotsCount} live slots</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                        )}
+                        <span className="block text-xs sm:text-[13px] font-black truncate">{fac.name}</span>
+                        <span className="block text-[10px] text-foreground/60 font-medium truncate mt-0.5">
+                          {sportLabel} · <span className="text-primary font-bold">{slotsCount} live slots</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* ══════════════════════════════════════════════════════════════════
@@ -733,15 +746,15 @@ export default function VenueBookingDetailPage() {
                       }}
                       className={`flex flex-col items-center justify-center min-w-[54px] py-2 px-1 rounded-xl border transition-all text-center shrink-0 cursor-pointer ${
                         isDateSelected
-                          ? 'bg-primary text-black border-primary font-black shadow-sm scale-[1.02]'
-                          : 'text-foreground/70 hover:bg-foreground/5 font-semibold'
+                          ? 'bg-primary text-primary-foreground border-primary font-black shadow-sm scale-[1.02]'
+                          : 'text-foreground/80 hover:bg-foreground/5 font-semibold'
                       }`}
                       style={{
                         backgroundColor: isDateSelected ? undefined : 'var(--athlon-surface)',
                         borderColor: isDateSelected ? undefined : 'var(--athlon-border)',
                       }}
                     >
-                      <span className={`text-[8.5px] uppercase ${isDateSelected ? 'font-black text-black' : 'text-foreground/50'}`}>
+                      <span className={`text-[8.5px] uppercase ${isDateSelected ? 'font-black text-primary-foreground/90' : 'text-foreground/50'}`}>
                         {d.dayName}
                       </span>
                       <span className="text-sm font-black font-mono leading-tight">
@@ -783,7 +796,7 @@ export default function VenueBookingDetailPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedSlots([])}
-                    className="text-[10px] font-bold text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-500/20 bg-rose-500/5 cursor-pointer shrink-0"
+                    className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-500 dark:hover:text-rose-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-500/20 bg-rose-500/10 cursor-pointer shrink-0"
                   >
                     <X className="w-3 h-3" />
                     <span>Clear all ({selectedSlots.length})</span>
@@ -808,8 +821,8 @@ export default function VenueBookingDetailPage() {
                       onClick={() => setTimeFilter(tab.id)}
                       className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
                         isActive
-                          ? 'bg-primary text-black border-primary shadow-sm font-black'
-                          : 'text-foreground/70 hover:bg-foreground/5'
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                          : 'text-foreground/75 hover:bg-foreground/5'
                       }`}
                       style={{
                         backgroundColor: isActive ? undefined : 'var(--athlon-card)',
@@ -820,7 +833,7 @@ export default function VenueBookingDetailPage() {
                       <span>{tab.label}</span>
                       <span
                         className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                          isActive ? 'bg-black/20 text-black' : 'bg-foreground/10 text-foreground/60'
+                          isActive ? 'bg-black/20 dark:bg-black/25 text-primary-foreground' : 'bg-foreground/10 text-foreground/60'
                         }`}
                       >
                         {tab.count}
@@ -866,9 +879,9 @@ export default function VenueBookingDetailPage() {
                         onClick={() => handleToggleSlot(slot)}
                         className={`p-2 sm:p-2.5 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer relative ${
                           !slot.isAvailable
-                            ? 'opacity-25 cursor-not-allowed line-through'
+                            ? 'opacity-30 cursor-not-allowed line-through'
                             : isSlotChosen
-                            ? 'bg-primary text-black font-black border-primary shadow-md shadow-primary/20 scale-[1.02] ring-1 ring-primary'
+                            ? 'bg-primary text-primary-foreground font-black border-primary shadow-md shadow-primary/20 scale-[1.02] ring-1 ring-primary'
                             : 'hover:border-primary/50 text-foreground font-semibold'
                         }`}
                         style={{
@@ -878,13 +891,13 @@ export default function VenueBookingDetailPage() {
                       >
                         {isSlotChosen && (
                           <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-black/20 flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 text-black stroke-[3]" />
+                            <Check className="w-2.5 h-2.5 text-primary-foreground stroke-[3]" />
                           </span>
                         )}
                         <span className="text-xs font-bold font-mono">
                           {formatSlotTime12H(slot.startTime)}
                         </span>
-                        <span className={`text-[10.5px] font-mono font-black ${isSlotChosen ? 'text-black/80' : 'text-primary'}`}>
+                        <span className={`text-[10.5px] font-mono font-black ${isSlotChosen ? 'text-primary-foreground/90' : 'text-primary'}`}>
                           ₹{slot.price}
                         </span>
                       </button>
@@ -945,8 +958,8 @@ export default function VenueBookingDetailPage() {
                   3. Player & Contact
                 </h3>
                 {(isAuthenticated || userUuid || userEmail) && (
-                  <span className="text-[9.5px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span className="text-[9.5px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                     Prefilled from account
                   </span>
                 )}
@@ -1002,7 +1015,7 @@ export default function VenueBookingDetailPage() {
                     />
                   </div>
                   {playerPhone.length > 0 && !/^[6789]\d{9}$/.test(playerPhone.trim()) && (
-                    <p className="text-[9.5px] text-rose-400 font-medium">
+                    <p className="text-[9.5px] text-rose-600 dark:text-rose-400 font-medium">
                       Enter 10-digit mobile starting with 6, 7, 8, or 9
                     </p>
                   )}
@@ -1068,8 +1081,8 @@ export default function VenueBookingDetailPage() {
                         onClick={() => setPaymentMethod(m.id)}
                         className={`p-2 sm:p-2.5 rounded-xl border text-xs font-bold transition-all text-center flex flex-col items-center gap-1 cursor-pointer ${
                           isMethodSelected
-                            ? 'bg-primary text-black border-primary shadow-sm font-black scale-[1.01]'
-                            : 'text-foreground/70 hover:bg-foreground/5 font-semibold'
+                            ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black scale-[1.01]'
+                            : 'text-foreground/75 hover:bg-foreground/5 font-semibold'
                         }`}
                         style={{
                           backgroundColor: isMethodSelected ? undefined : 'var(--athlon-card)',
@@ -1087,7 +1100,7 @@ export default function VenueBookingDetailPage() {
 
             {/* Error Message */}
             {bookingError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{bookingError}</span>
               </div>
@@ -1101,11 +1114,10 @@ export default function VenueBookingDetailPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       {confirmedBookings.length === 0 && (
         <div
-          className="fixed bottom-10 sm:bottom-12 left-3.5 right-3.5 sm:left-1/2 sm:-translate-x-1/2 sm:w-[calc(100%-2rem)] sm:max-w-xl md:max-w-2xl z-50 rounded-2xl sm:rounded-3xl border shadow-2xl p-3 sm:p-4 backdrop-blur-2xl transition-all"
+          className="fixed bottom-10 sm:bottom-12 left-3.5 right-3.5 sm:left-1/2 sm:-translate-x-1/2 sm:w-[calc(100%-2rem)] sm:max-w-xl md:max-w-2xl z-50 rounded-2xl sm:rounded-3xl border p-3 sm:p-4 backdrop-blur-2xl transition-all duration-200 shadow-xl shadow-black/15 dark:shadow-2xl dark:shadow-black/60"
           style={{
-            backgroundColor: 'rgba(var(--athlon-card-rgb, 15, 23, 42), 0.94)',
-            borderColor: selectedSlots.length > 0 ? 'var(--athlon-primary)' : 'var(--athlon-border)',
-            boxShadow: '0 12px 36px -6px rgba(0, 0, 0, 0.5), 0 0 16px -2px rgba(var(--athlon-primary-rgb, 16, 185, 129), 0.15)',
+            backgroundColor: 'var(--athlon-card-elevated)',
+            borderColor: selectedSlots.length > 0 ? 'var(--athlon-primary)' : 'var(--athlon-border-strong)',
           }}
         >
           <div className="max-w-xl sm:max-w-2xl mx-auto space-y-2">
@@ -1118,26 +1130,26 @@ export default function VenueBookingDetailPage() {
                   borderColor: 'var(--athlon-border)',
                 }}
               >
-                <div className="flex items-center justify-between border-b pb-1.5 font-bold text-foreground/70" style={{ borderColor: 'var(--athlon-border)' }}>
+                <div className="flex items-center justify-between border-b pb-1.5 font-bold text-foreground/75" style={{ borderColor: 'var(--athlon-border)' }}>
                   <span>{selectedFacility?.name} · {selectedDateObj.dayName}, {selectedDateObj.month} {selectedDateObj.dayNum}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedSlots([])}
-                    className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                    className="text-[10px] text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                   >
                     Clear All
                   </button>
                 </div>
                 <div className="space-y-1.5">
                   {selectedSlots.map((slot) => (
-                    <div key={slot.startTime} className="flex items-center justify-between text-foreground/80 font-mono text-[11px]">
+                    <div key={slot.startTime} className="flex items-center justify-between text-foreground/85 font-mono text-[11px]">
                       <span>{formatSlotTime12H(slot.startTime)} – {formatSlotTime12H(slot.endTime)}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-bold">₹{slot.price}</span>
                         <button
                           type="button"
                           onClick={() => handleToggleSlot(slot)}
-                          className="hover:text-rose-400 text-foreground/40 transition-colors p-0.5 cursor-pointer"
+                          className="hover:text-rose-600 dark:hover:text-rose-400 text-foreground/40 transition-colors p-0.5 cursor-pointer"
                           title="Remove slot"
                         >
                           <X className="w-3 h-3" />
@@ -1163,7 +1175,7 @@ export default function VenueBookingDetailPage() {
                       <Clock className="w-3.5 h-3.5 text-primary" />
                       <span>No slots selected</span>
                     </div>
-                    <div className="text-[10px] sm:text-[10.5px] text-foreground/50">
+                    <div className="text-[10px] sm:text-[10.5px] text-foreground/60">
                       Pick court slots above to proceed
                     </div>
                   </div>
@@ -1180,7 +1192,7 @@ export default function VenueBookingDetailPage() {
                     <button
                       type="button"
                       onClick={() => setIsBreakdownOpen((prev) => !prev)}
-                      className="text-[10px] font-semibold text-foreground/60 hover:text-primary transition-colors flex items-center gap-0.5 cursor-pointer"
+                      className="text-[10px] font-semibold text-foreground/65 hover:text-primary transition-colors flex items-center gap-0.5 cursor-pointer"
                     >
                       <span>{isBreakdownOpen ? 'Hide breakdown' : 'View breakdown'}</span>
                       {isBreakdownOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
@@ -1194,7 +1206,19 @@ export default function VenueBookingDetailPage() {
                 type="button"
                 onClick={handleFloatingBarClick}
                 disabled={isProcessing || selectedSlots.length === 0}
-                className="py-3 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-primary text-black font-black text-xs sm:text-[13px] shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                className={`py-3 px-5 sm:px-6 rounded-xl sm:rounded-2xl font-black text-xs sm:text-[13px] transition-all flex items-center justify-center gap-2 shrink-0 ${
+                  selectedSlots.length === 0
+                    ? 'border text-foreground/50 cursor-not-allowed'
+                    : 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50'
+                }`}
+                style={
+                  selectedSlots.length === 0
+                    ? {
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border)',
+                      }
+                    : undefined
+                }
               >
                 {isProcessing ? (
                   <>

@@ -2,7 +2,14 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { Trophy, ShieldCheck } from 'lucide-react';
+import {
+  Trophy,
+  ShieldCheck,
+  Building2,
+  GraduationCap,
+  ArrowLeft,
+  Zap,
+} from 'lucide-react';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 import { AuthCard } from '@/components/auth/AuthCard';
 
@@ -15,56 +22,138 @@ export default function LoginPage() {
         <div className="absolute top-1/3 -right-24 w-72 h-72 bg-primary/10 rounded-full blur-[90px]" />
       </div>
 
-      {/* Left side: Branding/Visuals (Hidden on mobile) */}
+      {/* Left side: Branding / Live Sports Experience (Desktop only, hidden on mobile) */}
       <div
-        className="hidden lg:flex lg:w-5/12 h-full relative flex-col justify-between p-10 overflow-hidden border-r z-10"
+        className="hidden lg:flex lg:w-5/12 h-full relative flex-col justify-between p-8 xl:p-12 overflow-hidden border-r z-10"
         style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
       >
-        {/* Brand Header */}
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-            <Trophy className="w-5 h-5 text-black" />
-          </div>
-          <div>
-            <Link href="/" className="text-2xl font-black tracking-tight text-foreground flex items-center gap-1.5">
-              ATHLON <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">SPORTS</span>
-            </Link>
-          </div>
+        {/* Ambient Top Glow & Geometry Pattern */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="absolute -top-20 -left-20 w-80 h-80 bg-primary/10 rounded-full blur-[100px]" />
+          <div className="absolute bottom-10 right-0 w-72 h-72 bg-emerald-500/10 rounded-full blur-[90px]" />
+          <div
+            className="absolute inset-0 opacity-[0.025]"
+            style={{
+              backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
+              backgroundSize: '36px 36px',
+            }}
+          />
         </div>
 
-        {/* Hero Copy */}
-        <div className="relative z-10 max-w-md space-y-5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-foreground/5 border border-foreground/10 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_var(--athlon-primary)] animate-ping" />
-            <span className="text-xs font-semibold text-foreground/80 tracking-wider uppercase">Live Scoring Platform</span>
-          </div>
+        {/* 1. Brand Header */}
+        <div className="relative z-10 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div
+              className="w-11 h-11 rounded-2xl flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-lg"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                border: '1px solid var(--athlon-border)',
+                boxShadow: '0 0 20px var(--athlon-primary-soft)',
+              }}
+            >
+              <Trophy className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tight text-foreground leading-none">
+                ATHLON
+              </span>
+              <span
+                className="text-[10px] font-mono font-bold tracking-widest uppercase leading-tight mt-0.5"
+                style={{ color: 'var(--athlon-primary)' }}
+              >
+                Sports Platform
+              </span>
+            </div>
+          </Link>
 
-          <h1 className="text-4xl xl:text-5xl font-black text-foreground leading-tight tracking-tight">
-            The tournament experience, <span className="text-primary">elevated.</span>
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-xs font-bold text-foreground/60 hover:text-foreground px-3 py-1.5 rounded-xl border border-transparent hover:border-foreground/10 hover:bg-white/5 transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
+
+        {/* 2. Hero Content */}
+        <div className="relative z-10 max-w-lg space-y-6 my-auto py-6">
+          {/* Athletic Headline */}
+          <h1 className="text-4xl xl:text-5xl font-black text-foreground leading-[1.15] tracking-tight uppercase">
+            The Sports Platform,{' '}
+            <span className="bg-gradient-to-r from-primary via-emerald-400 to-amber-400 bg-clip-text text-transparent">
+              Elevated.
+            </span>
           </h1>
 
-          <p className="text-sm text-foreground/60 leading-relaxed">
-            Join thousands of players and organizers running seamless tournaments, tracking real-time scores, and managing brackets on Athlon.
+          <p className="text-sm xl:text-base text-foreground/70 leading-relaxed font-medium">
+            Book top venues, manage coaching academies, run championships with real-time digital umpiring, and track athlete ratings on a unified platform.
           </p>
 
-          {/* Feature Highlights */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="p-3 rounded-xl bg-foreground/[0.03] border border-foreground/10 backdrop-blur-sm">
-              <div className="text-primary font-bold text-base mb-0.5">Real-time</div>
-              <div className="text-xs text-foreground/60">Match &amp; Umpire Scoring</div>
+          {/* 4 Core Pillars Grid */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div
+              className="p-3 rounded-2xl border flex items-center gap-2.5 shadow-xs transition-all hover:bg-white/[0.02]"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <Building2 className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-foreground truncate">Venues &amp; Turfs</div>
+                <div className="text-[10.5px] text-foreground/50 truncate">Real-time Slot Booking</div>
+              </div>
             </div>
-            <div className="p-3 rounded-xl bg-foreground/[0.03] border border-foreground/10 backdrop-blur-sm">
-              <div className="text-primary font-bold text-base mb-0.5">Dynamic</div>
-              <div className="text-xs text-foreground/60">Brackets &amp; Leaderboards</div>
+
+            <div
+              className="p-3 rounded-2xl border flex items-center gap-2.5 shadow-xs transition-all hover:bg-white/[0.02]"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <Trophy className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-foreground truncate">Tournaments</div>
+                <div className="text-[10.5px] text-foreground/50 truncate">Live Digital Scoring</div>
+              </div>
+            </div>
+
+            <div
+              className="p-3 rounded-2xl border flex items-center gap-2.5 shadow-xs transition-all hover:bg-white/[0.02]"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-foreground truncate">Academies</div>
+                <div className="text-[10.5px] text-foreground/50 truncate">Rosters &amp; Fee Ledgers</div>
+              </div>
+            </div>
+
+            <div
+              className="p-3 rounded-2xl border flex items-center gap-2.5 shadow-xs transition-all hover:bg-white/[0.02]"
+              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-foreground truncate">Live Auctions</div>
+                <div className="text-[10.5px] text-foreground/50 truncate">Player Bidding Console</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="relative z-10 flex items-center justify-between text-xs text-foreground/40">
+        {/* 3. Branded Footer */}
+        <div
+          className="relative z-10 pt-4 border-t flex items-center justify-between text-xs text-foreground/50"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
           <span>© 2026 Athlon Sports Platform</span>
-          <span className="flex items-center gap-1.5 text-foreground/60">
-            <ShieldCheck className="w-4 h-4 text-primary" /> Official Engine
+          <span className="flex items-center gap-1.5 font-bold text-foreground/70">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <span>Encrypted &amp; Verified</span>
           </span>
         </div>
       </div>

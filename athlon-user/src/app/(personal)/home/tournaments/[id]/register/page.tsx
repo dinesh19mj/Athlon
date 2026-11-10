@@ -807,7 +807,7 @@ export default function RegistrationPage() {
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-3.5 sm:px-4 py-5 space-y-5">
+      <main className="max-w-3xl mx-auto px-3.5 sm:px-4 py-5 space-y-5 pb-36">
         {/* ══════════════════════════════════════════════════════════════════════
             STEP 1: DETAILS & PLAYER ENTRY
            ══════════════════════════════════════════════════════════════════════ */}
@@ -1582,25 +1582,24 @@ export default function RegistrationPage() {
 
       {/* ── 3. LUXURY STICKY FLOATING REGISTRATION DOCK ─────────────────────── */}
       <div
-        className="fixed bottom-0 inset-x-0 z-50 backdrop-blur-2xl border-t shadow-[0_-8px_30px_rgba(0,0,0,0.3)] px-4 py-3"
+        className="fixed inset-x-3.5 z-50 px-4 py-2.5 bg-card/95 backdrop-blur-xl border border-border/90 rounded-2xl shadow-2xl flex items-center justify-between gap-3 max-w-lg mx-auto"
         style={{
-          backgroundColor: 'var(--athlon-navigation, rgba(10, 15, 29, 0.9))',
-          borderColor: 'var(--athlon-border)',
-          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 12px))',
+          bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.875rem))',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
         }}
       >
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-black text-foreground/50 uppercase tracking-widest leading-none">
-              Total Entry Fee
+        <div className="flex flex-col min-w-0">
+          <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+            Total Entry Fee
+          </span>
+          <div className="flex items-baseline gap-1 mt-1 whitespace-nowrap">
+            <span className="text-base sm:text-lg font-black text-primary font-mono leading-none tracking-tight">
+              {tournament?.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
             </span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-lg sm:text-xl font-black text-primary font-mono leading-none">
-                {tournament?.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
-              </span>
-              <span className="text-[10px] text-foreground/40 font-semibold">/ entry</span>
-            </div>
+            <span className="text-[10px] text-muted-foreground font-semibold leading-none">/ entry</span>
           </div>
+        </div>
 
           {step === 1 ? (
             <button
@@ -1631,7 +1630,6 @@ export default function RegistrationPage() {
             </button>
           )}
         </div>
-      </div>
 
       {/* ── IMAGE ENLARGE / LIGHTBOX MODAL ───────────────────────── */}
       {previewImage && (

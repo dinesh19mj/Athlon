@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { useWorkspaceStore, Organization, WorkspaceType } from '@/lib/store/useWorkspaceStore';
 import {
   Trophy,
   Users,
@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
+import HomeIntroHero from '@/components/home/HomeIntroHero';
 import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
@@ -786,12 +787,46 @@ export default function OrganizationDashboard() {
   const params = useParams();
   const router = useRouter();
   const orgId = (params?.orgId as string) || '';
-  const { getActiveOrganization, organizations } = useWorkspaceStore();
+  const { getActiveOrganization, organizations, addOrganization, setActiveWorkspace } = useWorkspaceStore();
   const { themeKey } = useAthlonTheme();
   const backgroundVideo = getThemeVideo(themeKey);
-  const org = getActiveOrganization() || organizations.find((o) => o.id === orgId);
-  const { role, isAdmin, isCoach, isMember, canManage } = useOrgRole(org?.id);
-  const { canAccessModule } = usePermissions(org?.id);
+
+  const orgFromStore = getActiveOrganization() || organizations.find((o) => o.id === orgId);
+  const [fetchedOrg, setFetchedOrg] = useState<Organization | null>(null);
+
+  useEffect(() => {
+    if (!orgId) return;
+    const existing = organizations.find((o) => o.id === orgId);
+    if (!existing && !fetchedOrg) {
+      OrganizationService.getById(orgId)
+        .then((res: any) => {
+          const data = res?.data || res;
+          if (data && (data.organizationUuid || data.uuid || data.id || data.name)) {
+            const orgObj: Organization = {
+              id: data.organizationUuid || data.uuid || String(data.id || orgId),
+              name: data.name || 'Workspace',
+              type: (data.type as any) || 'ORGANIZER',
+              logo: data.logo ? OrganizationService.getLogoUrl(data.logo) : undefined,
+              role: data.role || 'ADMIN',
+            };
+            setFetchedOrg(orgObj);
+            addOrganization(orgObj);
+            setActiveWorkspace(orgObj.id);
+          }
+        })
+        .catch((err) => console.warn('Could not fetch org in dashboard:', err));
+    }
+  }, [orgId, organizations, fetchedOrg, addOrganization, setActiveWorkspace]);
+
+  const org: Organization = orgFromStore || fetchedOrg || {
+    id: orgId,
+    name: 'Workspace',
+    type: 'ORGANIZER' as WorkspaceType,
+    role: 'ADMIN',
+  };
+  const { role, isAdmin, isCoach, isMember, canManage } = useOrgRole(org.id);
+  const { canAccessModule } = usePermissions(org.id);
+  const [videoCompleted, setVideoCompleted] = useState(false);
 
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null);
   const [members, setMembers] = useState<OrganizationMemberResponse[]>([]);
@@ -1971,73 +2006,25 @@ export default function OrganizationDashboard() {
   const quickActions = getQuickActions();
   const OrgIcon = getOrgIcon();
 
-  // Mock workspace events for Organizer
-  const orgTournaments = [
-    {
-      id: 'tourn-1',
-      title: 'State Championship League 2026',
-      type: 'Team Championship',
-      sport: 'Badminton',
-      status: 'LIVE IN PLAY',
-      teams: 8,
-      matches: 24,
-      venue: 'Main Indoor Arena',
-      badge: 'Live',
-    },
-    {
-      id: 'tourn-2',
-      title: 'Summer Smash Masters Open',
-      type: 'Open Tournament',
-      sport: 'Badminton',
-      status: 'REGISTRATIONS OPEN',
-      teams: 48,
-      matches: 64,
-      venue: 'Central Court Complex',
-      badge: 'Upcoming',
-    },
-    {
-      id: 'tourn-3',
-      title: 'Junior District Cup 2026',
-      type: 'Junior Knockout',
-      sport: 'Badminton',
-      status: 'SCHEDULED',
-      teams: 32,
-      matches: 31,
-      venue: 'Sports Authority Stadium',
-      badge: 'Upcoming',
-    },
-  ];
+  const displayedTournaments = useMemo(() => {
+    return tournaments.map((t, idx) => ({
+      id: String(t.tournamentId || (t as any).id || t.tournamentUuid || `tourn-${idx}`),
+      title: (t as any).tournamentName || t.name || 'Athlon Tournament',
+      type: t.tournamentType || (t as any).category || 'Open Championship',
+      sport: t.sport || 'Badminton',
+      status: ((t as any).status || 'SCHEDULED').toUpperCase(),
+      teams: (t as any).maxTeams || (t as any).registeredTeamsCount || (t as any).teamsCount || 0,
+      matches: (t as any).matchCount || (t as any).fixturesCount || 0,
+      venue: (t as any).venueName || (t as any).venue || 'Main Stadium Arena',
+      badge: (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS' ? 'Live' : 'Upcoming',
+    }));
+  }, [tournaments]);
 
-  // Mock live courts for Organizer
-  const liveCourts = [
-    {
-      id: 'court-1',
-      court: 'Court 1',
-      tournament: 'State Championship League 2026',
-      match: 'Warriors BC vs Smashers United',
-      score: '21-18, 14-12',
-      status: 'Set 2 In Play',
-      streamLive: true,
-    },
-    {
-      id: 'court-2',
-      court: 'Court 2',
-      tournament: 'State Championship League 2026',
-      match: 'Apex Shuttlers vs Lightning Stars',
-      score: '19-21, 21-17, 8-5',
-      status: 'Deciding Set',
-      streamLive: true,
-    },
-    {
-      id: 'court-3',
-      court: 'Court 3',
-      tournament: 'State Championship League 2026',
-      match: 'Royal Strikers vs Phoenix Club',
-      score: 'Warm-up / Lineup Check',
-      status: 'Ready to Start',
-      streamLive: false,
-    },
-  ];
+  const liveMatches = useMemo(() => {
+    return clubMatches.filter(
+      (m) => (m as any).status === 'LIVE' || (m as any).status === 'IN_PROGRESS' || (m as any).isLive
+    );
+  }, [clubMatches]);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-black">
@@ -2045,26 +2032,27 @@ export default function OrganizationDashboard() {
           1. MOBILE VIEW ONLY (< md) - COMPACT & REFINED DASHBOARD
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden pb-24 overflow-y-auto safe-header">
-        {/* HERO VIDEO CARD */}
+        {/* HERO BANNER AREA (One-time video -> dynamic workspace hero card) */}
         <div className="px-4 relative z-10 mt-2 mb-3.5 max-w-7xl mx-auto">
-          <div
-            className="relative w-full h-[175px] sm:h-[200px] rounded-[20px] overflow-hidden border shadow-md flex items-center justify-center"
-            style={{
-              backgroundColor: 'var(--athlon-card)',
-              borderColor: 'var(--athlon-border)',
-            }}
-          >
-            <video
-              key={backgroundVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover rounded-[20px]"
-            >
-              <source src={backgroundVideo} type="video/mp4" />
-            </video>
-          </div>
+          {org && (
+            <HomeIntroHero
+              backgroundVideo={backgroundVideo}
+              activeRole={org.id}
+              activeOrg={org}
+              organizerStats={{
+                activeTournaments: tournaments.length,
+                registeredPlayers: registrations.length,
+                upcomingMatches: clubMatches.length,
+              }}
+              otherOrgStats={{
+                members: members.length,
+                students: studentsCount,
+                coaches: coachesCount,
+              }}
+              videoCompleted={videoCompleted}
+              onVideoComplete={() => setVideoCompleted(true)}
+            />
+          )}
         </div>
 
         {/* ROLE SWITCHER HEADER */}
@@ -2639,13 +2627,6 @@ export default function OrganizationDashboard() {
                   {registrations.length} Entries
                 </span>
               </div>
-              <Link
-                href={`/org/${org.id}/organizer`}
-                className="text-[10px] font-black text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5"
-              >
-                <span>Full Desk</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
             </div>
 
             {/* Filter Pills */}
@@ -3456,23 +3437,24 @@ export default function OrganizationDashboard() {
 
       {/* ══════════════════════════════════════════════════════════════════════
           2. DESKTOP VIEW ONLY (hidden on mobile, visible on md and above)
-             - PREMIUM COMMAND DECK WITH HORIZONTAL SCROLLING TRACKS
+             - ATHLON COMMAND CONSOLE • REDESIGNED PREMIUM RESPONSIVE GRID
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="hidden md:block min-h-screen pb-20 bg-background">
-        {/* Desktop Hero Command Banner (No background video) */}
+      <div className="hidden md:block min-h-screen pb-24 bg-background">
+        {/* Desktop Hero Command Banner */}
         <section
-          className="border-b px-8 py-10 bg-gradient-to-b from-card/80 via-card/40 to-background relative overflow-hidden"
+          className="border-b px-8 lg:px-12 py-10 bg-gradient-to-b from-card/90 via-card/50 to-background relative overflow-hidden"
           style={{ borderColor: 'var(--athlon-border)' }}
         >
           {/* Ambient Radar Glow */}
-          <div className="absolute top-0 right-1/4 w-[500px] h-[250px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-[400px] h-[200px] bg-yellow-500/5 rounded-full blur-[90px] pointer-events-none" />
+          <div className="absolute top-0 right-1/4 w-[550px] h-[260px] bg-primary/10 rounded-full blur-[110px] pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 w-[450px] h-[220px] bg-yellow-500/5 rounded-full blur-[90px] pointer-events-none" />
 
           <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-            {/* Top-Level App Mode Switcher (ATHLON ↔ MARKET) */}
-            <div className="flex items-center justify-between">
-              <div className="w-80">
-                <AppModeSwitcher showNotifications={false} />
+            {/* Top Workspace Operations Beacon */}
+            <div className="flex items-center gap-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 text-[11px] font-black uppercase tracking-widest shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>ATHLON WORKSPACE COMMAND • REAL-TIME OPERATIONS</span>
               </div>
             </div>
 
@@ -3480,7 +3462,7 @@ export default function OrganizationDashboard() {
             <div className="flex items-center justify-between gap-6 flex-wrap">
               <div className="flex items-center gap-5">
                 <div
-                  className="w-16 h-16 rounded-[24px] border p-1 shadow-2xl flex items-center justify-center relative overflow-hidden"
+                  className="w-20 h-20 rounded-[26px] border-2 p-1.5 shadow-2xl flex items-center justify-center relative overflow-hidden shrink-0 group"
                   style={{
                     backgroundColor: 'var(--athlon-surface)',
                     borderColor: 'var(--athlon-border)',
@@ -3489,96 +3471,144 @@ export default function OrganizationDashboard() {
                   {org.logo ? (
                     <img src={org.logo} alt={org.name} className="w-full h-full object-cover rounded-[20px]" />
                   ) : (
-                    <OrgIcon className="w-8 h-8 text-primary" />
+                    <div className="w-full h-full rounded-[20px] bg-primary/10 flex items-center justify-center">
+                      <OrgIcon className="w-10 h-10 text-primary" />
+                    </div>
                   )}
-                  <div className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-background" />
+                  <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-background shadow-md" />
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">{org.name}</h1>
-                    <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/30">
-                      {org.type === 'COURT' ? 'VENUE MANAGER' : `${org.type} Workspace`}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">{org.name}</h1>
+                    <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/30 shadow-sm">
+                      {org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER'
+                        ? '🏟️ VENUE MANAGER'
+                        : org.type === 'ORGANIZER'
+                          ? '🏆 TOURNAMENT ORGANIZER'
+                          : org.type === 'ACADEMY'
+                            ? '🎓 SPORTS ACADEMY'
+                            : org.type === 'COMMUNITY'
+                              ? '🌐 SPORTS COMMUNITY'
+                              : org.type === 'COACH'
+                                ? '🧢 PRO COACH'
+                                : `${org.type} WORKSPACE`}
                     </span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${isAdmin
-                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
-                      : isCoach
-                        ? 'bg-purple-500/15 text-purple-400 border border-purple-500/25'
-                        : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-                      }`}>
-                      {isAdmin ? '👑 Admin' : isCoach ? '🧢 Coach' : '👤 Member'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                      isAdmin
+                        ? 'bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30'
+                        : isCoach
+                          ? 'bg-purple-500/15 text-purple-500 dark:text-purple-400 border border-purple-500/30'
+                          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                    }`}>
+                      {isAdmin ? '👑 Owner / Admin' : isCoach ? '🧢 Head Coach' : '👤 Workspace Member'}
                     </span>
                   </div>
-                  <p className="text-xs text-foreground/50">
+                  <p className="text-xs lg:text-sm text-foreground/60 max-w-2xl font-medium leading-relaxed">
                     {isAdmin
                       ? (org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER'
-                        ? 'Central sports facility operations console, visual slot matrix, dynamic pricing & bookings'
-                        : 'Central management operations console, event coordination, and financial ledger')
-                      : 'Sports portal • View schedule, booking history, and venue facilities'}
+                        ? 'Central sports facility operations console, visual slot matrix, dynamic pricing & bookings.'
+                        : org.type === 'ORGANIZER' || org.type === 'ASSOCIATION'
+                          ? 'Tournament operations command, player registrations, bracket draws & live umpire console.'
+                          : org.type === 'ACADEMY'
+                            ? 'Student academy training batches, coach allocations, QR attendance & fee records.'
+                            : org.type === 'COMMUNITY'
+                              ? 'Sports circle community desk, pickup games, member polls & tournament draws.'
+                              : org.type === 'COACH'
+                                ? 'Coaching schedule desk, 1-on-1 sparring slots, client roster & certification showcase.'
+                                : 'Central management operations console, event coordination, and financial ledger.')
+                      : 'Sports portal • View schedule, booking history, and venue facilities.'}
                   </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
                 {isAdmin && (
                   org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER' ? (
                     <Link
                       href={`/org/${org.id}/venue/calendar`}
-                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
                       style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
                     >
                       <CalendarDays className="w-4 h-4" />
                       <span>Live Booking Grid</span>
                     </Link>
+                  ) : org.type === 'ACADEMY' ? (
+                    <Link
+                      href={`/org/${org.id}/students`}
+                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                      style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>+ Add Trainee</span>
+                    </Link>
+                  ) : org.type === 'COMMUNITY' ? (
+                    <Link
+                      href={`/org/${org.id}/sessions`}
+                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                      style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      <span>+ Host Session</span>
+                    </Link>
+                  ) : org.type === 'COACH' ? (
+                    <Link
+                      href={`/org/${org.id}/batches`}
+                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                      style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                    >
+                      <Clock className="w-4 h-4" />
+                      <span>+ Create Slot</span>
+                    </Link>
                   ) : (
                     <Link
                       href={`/org/${org.id}/tournaments/create`}
-                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                      className="flex items-center gap-2 bg-primary text-black text-xs font-black px-5 py-3 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
                       style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
                     >
                       <Trophy className="w-4 h-4" />
-                      <span>Create Tournament</span>
+                      <span>+ Create Tournament</span>
                     </Link>
                   )
                 )}
 
                 <Link
                   href={`/org/${org.id}/settings`}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-xs font-black uppercase tracking-wider text-foreground/70 hover:text-foreground hover:bg-white/5 transition-all"
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl border text-xs font-black uppercase tracking-wider text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all"
                   style={{ borderColor: 'var(--athlon-border)' }}
                 >
                   <Settings className="w-4 h-4 text-primary" />
-                  <span>{isAdmin ? 'Settings' : 'Workspace Info'}</span>
+                  <span>{isAdmin ? 'Workspace Settings' : 'Workspace Info'}</span>
                 </Link>
               </div>
             </div>
 
             {/* 4 Workspace Telemetry Highlight Cards */}
             {org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER' ? (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link
                   href={`/org/${org.id}/venue/calendar`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-emerald-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Live Slot Matrix</span>
-                    <CalendarDays className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <CalendarDays className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-foreground font-mono">Live Grid</span>
-                    <span className="text-xs font-bold text-emerald-400 font-mono">Active</span>
+                    <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">Live Grid</span>
+                    <span className="text-xs font-bold text-emerald-500 font-mono">Active</span>
                   </div>
-                  <span className="text-[11px] text-foreground/45 block">15/30/60m Multi-Court Matrix</span>
+                  <span className="text-[11px] text-foreground/50 block">15/30/60m Multi-Court Matrix</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/venue/facilities`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-purple-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Active Facilities</span>
                     <Building className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3586,21 +3616,21 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
                         {venueFacilities.length || 1}
                       </span>
                       <span className="text-xs font-bold text-purple-400 font-mono">Turfs &amp; Courts</span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Configured Sports Facilities</span>
+                  <span className="text-[11px] text-foreground/50 block">Configured Sports Facilities</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/venue/bookings`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Total Bookings</span>
                     <ClipboardList className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3608,21 +3638,21 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
                         {venueBookings.length}
                       </span>
                       <span className="text-xs font-bold text-blue-400 font-mono">Slots Reserved</span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Online app &amp; walk-in bookings</span>
+                  <span className="text-[11px] text-foreground/50 block">Online app &amp; walk-in bookings</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/venue/reports`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-rose-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-rose-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Venue Revenue</span>
                     <TrendingUp className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3630,23 +3660,23 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-28 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
                         ₹{Number(venueTotalRevenue || 0).toLocaleString('en-IN')}
                       </span>
-                      <span className="text-xs font-bold text-emerald-400 font-mono">Settled</span>
+                      <span className="text-xs font-bold text-emerald-500 font-mono">Settled</span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Collected slot booking revenue</span>
+                  <span className="text-[11px] text-foreground/50 block">Collected slot booking revenue</span>
                 </Link>
               </div>
             ) : org.type === 'ACADEMY' ? (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link
                   href={`/org/${org.id}/students`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Active Students</span>
                     <GraduationCap className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3654,23 +3684,23 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
-                        {academyDashboard?.activeStudents ?? 0}
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
+                        {academyDashboard?.activeStudents ?? studentsCount ?? 0}
                       </span>
                       <span className="text-xs font-bold text-blue-400 font-mono">
                         {academyDashboard?.activeBatches ?? 0} Batches
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Grassroots to Elite Training Roster</span>
+                  <span className="text-[11px] text-foreground/50 block">Grassroots to Elite Training Roster</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/attendance`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-emerald-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Today's Attendance</span>
                     <ClipboardList className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3678,23 +3708,23 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-emerald-400 font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-emerald-500 font-mono">
                         {academyDashboard?.todaysAttendancePercentage != null ? `${academyDashboard.todaysAttendancePercentage}%` : '0%'}
                       </span>
-                      <span className="text-xs font-bold text-emerald-500 font-mono">
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                         {academyDashboard?.todaysSessionsCount ?? 0} Slots
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Live QR &amp; Coach Digital Roll Call</span>
+                  <span className="text-[11px] text-foreground/50 block">Live QR &amp; Coach Digital Roll Call</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/finances`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-primary/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Coaching Fees</span>
                     <CreditCard className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
@@ -3702,7 +3732,7 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-28 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
                         ₹{Number(academyDashboard?.feesCollected || financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
                       </span>
                       <span className="text-xs font-bold text-rose-400 font-mono">
@@ -3710,15 +3740,15 @@ export default function OrganizationDashboard() {
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Monthly coaching billing cycle</span>
+                  <span className="text-[11px] text-foreground/50 block">Monthly coaching billing cycle</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/centres`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-purple-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Campuses &amp; Courts</span>
                     <Building className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3726,7 +3756,7 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
                         {academyDashboard?.totalCentres ?? 0} Campuses
                       </span>
                       <span className="text-xs font-bold text-purple-400 font-mono">
@@ -3734,43 +3764,43 @@ export default function OrganizationDashboard() {
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">
-                    {academyDashboard?.facilityUtilizationPercentage != null ? `${academyDashboard.facilityUtilizationPercentage}%` : '0%'} Arena Utilization Rate
+                  <span className="text-[11px] text-foreground/50 block">
+                    {academyDashboard?.facilityUtilizationPercentage != null ? `${academyDashboard.facilityUtilizationPercentage}%` : '0%'} Arena Utilization
                   </span>
                 </Link>
               </div>
             ) : org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' ? (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link
                   href={`/org/${org.id}/tournaments`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-yellow-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-yellow-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Tournaments Hosted</span>
-                    <Trophy className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
+                    <Trophy className="w-4 h-4 text-yellow-500 group-hover:scale-110 transition-transform" />
                   </div>
                   {loadingMetrics ? (
                     <div className="h-8 w-20 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-yellow-400 font-mono">{tournaments.length} Events</span>
-                      <span className="text-xs font-bold text-yellow-500 font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-yellow-500 font-mono">{tournaments.length}</span>
+                      <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400 font-mono">
                         {tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS' || (t as any).status === 'ONGOING').length > 0
                           ? `${tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS' || (t as any).status === 'ONGOING').length} Live`
                           : 'Championships'}
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Championships, Draws &amp; Schedules</span>
+                  <span className="text-[11px] text-foreground/50 block">Championships, Draws &amp; Schedules</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/inventory`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-emerald-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Tournament Inventory</span>
                     <Package className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
@@ -3778,25 +3808,25 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-20 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-primary font-mono">
-                        {organizerInventorySummary?.totalQuantity ?? inventorySummary?.totalQuantity ?? inventoryItems.length} Units
+                      <span className="text-2xl lg:text-3xl font-black text-primary font-mono">
+                        {organizerInventorySummary?.totalQuantity ?? inventorySummary?.totalQuantity ?? inventoryItems.length}
                       </span>
-                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                      <span className="text-xs font-bold text-emerald-500 font-mono">
                         {organizerInventorySummary?.inStockCount ?? inventorySummary?.inStockCount ?? 0} In Stock
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">
-                    {organizerInventorySummary?.lowStockCount ? `${organizerInventorySummary.lowStockCount} low stock alerts` : 'Match gear, tablets & awards'}
+                  <span className="text-[11px] text-foreground/50 block">
+                    {organizerInventorySummary?.lowStockCount ? `${organizerInventorySummary.lowStockCount} low stock alerts` : 'Match gear, shuttles & awards'}
                   </span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/members`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Staff &amp; Umpires</span>
                     <Users className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3804,21 +3834,21 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-16 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">{members.length}</span>
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">{members.length}</span>
                       <span className="text-xs font-bold text-blue-400 font-mono">
                         Crew &amp; Staff
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Assigned organizers &amp; court desk officials</span>
+                  <span className="text-[11px] text-foreground/50 block">Assigned organizers &amp; court officials</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/finances`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-primary/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Tournament Finances</span>
                     <CreditCard className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
@@ -3826,31 +3856,99 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
                         ₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
                       </span>
                       {financeSummary && (
-                        <span className={`text-xs font-bold font-mono ${Number(financeSummary.netBalance || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <span className={`text-xs font-bold font-mono ${Number(financeSummary.netBalance || 0) >= 0 ? 'text-emerald-500' : 'text-rose-400'}`}>
                           {Number(financeSummary.netBalance || 0) >= 0
-                            ? `+₹${Number(financeSummary.netBalance || 0).toLocaleString('en-IN')} Net`
-                            : `-₹${Math.abs(Number(financeSummary.netBalance || 0)).toLocaleString('en-IN')} Net`}
+                            ? `+₹${Number(financeSummary.netBalance || 0).toLocaleString('en-IN')}`
+                            : `-₹${Math.abs(Number(financeSummary.netBalance || 0)).toLocaleString('en-IN')}`}
                         </span>
                       )}
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">
+                  <span className="text-[11px] text-foreground/50 block">
                     {financeSummary ? `${financeSummary.transactionCount} transactions recorded` : 'Entry fees & tournament expenses'}
                   </span>
                 </Link>
               </div>
-            ) : (
-              <div className="grid grid-cols-4 gap-4">
+            ) : org.type === 'COACH' ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link
-                  href={`/org/${org.id}/finances`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-primary/40 transition-all group block"
+                  href={`/org/${org.id}/students`}
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Active Trainees</span>
+                    <Users className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">{coachTrainees.length}</span>
+                    <span className="text-xs font-bold text-blue-400 font-mono">Athletes</span>
+                  </div>
+                  <span className="text-[11px] text-foreground/50 block">Enrolled personal training roster</span>
+                </Link>
+
+                <Link
+                  href={`/org/${org.id}/batches`}
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/50 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/60">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Today's Slots</span>
+                    <Clock className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl lg:text-3xl font-black text-primary font-mono">{coachSchedules.length}</span>
+                    <span className="text-xs font-bold text-emerald-500 font-mono">Slots Active</span>
+                  </div>
+                  <span className="text-[11px] text-foreground/50 block">Scheduled personal drills &amp; sparring</span>
+                </Link>
+
+                <Link
+                  href={`/org/${org.id}/settings?tab=profile`}
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-500/50 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/60">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Coaching Tenure</span>
+                    <Award className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">{coachProfile.experienceYears}+</span>
+                    <span className="text-xs font-bold text-purple-400 font-mono">Years Pro</span>
+                  </div>
+                  <span className="text-[11px] text-foreground/50 block">Certified badminton master coach</span>
+                </Link>
+
+                <Link
+                  href={`/org/${org.id}/finances`}
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/60">
+                    <span className="text-[10px] font-black uppercase tracking-wider">Coaching Revenue</span>
+                    <CreditCard className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
+                      ₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-500 font-mono">Collected</span>
+                  </div>
+                  <span className="text-[11px] text-foreground/50 block">Package fees &amp; 1-on-1 sparring payments</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Link
+                  href={`/org/${org.id}/finances`}
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/50 transition-all group block"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                >
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Monthly Revenue</span>
                     <CreditCard className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
@@ -3858,30 +3956,29 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-24 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">
                         ₹{Number(financeSummary?.totalIncome || 0).toLocaleString('en-IN')}
                       </span>
                       {financeSummary && (
-                        <span className={`text-xs font-bold font-mono ${Number(financeSummary.netBalance || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                          }`}>
+                        <span className={`text-xs font-bold font-mono ${Number(financeSummary.netBalance || 0) >= 0 ? 'text-emerald-500' : 'text-rose-400'}`}>
                           {Number(financeSummary.netBalance || 0) >= 0
-                            ? `+₹${Number(financeSummary.netBalance || 0).toLocaleString('en-IN')} Net`
-                            : `-₹${Math.abs(Number(financeSummary.netBalance || 0)).toLocaleString('en-IN')} Net`}
+                            ? `+₹${Number(financeSummary.netBalance || 0).toLocaleString('en-IN')}`
+                            : `-₹${Math.abs(Number(financeSummary.netBalance || 0)).toLocaleString('en-IN')}`}
                         </span>
                       )}
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">
+                  <span className="text-[11px] text-foreground/50 block">
                     {financeSummary ? `${financeSummary.transactionCount} transactions recorded` : 'Verified payouts & fee collections'}
                   </span>
                 </Link>
 
                 <Link
                   href={org.type === 'COMMUNITY' ? `/org/${org.id}/community-members` : `/org/${org.id}/members`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Active Members</span>
                     <Users className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                   </div>
@@ -3889,45 +3986,45 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-16 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-foreground font-mono">{members.length}</span>
+                      <span className="text-2xl lg:text-3xl font-black text-foreground font-mono">{members.length}</span>
                       <span className="text-xs font-bold text-blue-400 font-mono">
                         {newMembersThisWeek > 0 ? `+${newMembersThisWeek} this week` : 'Active Roster'}
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Registered athlete roster</span>
+                  <span className="text-[11px] text-foreground/50 block">Registered athlete roster</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/tournaments`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-yellow-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-yellow-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Tournaments Active</span>
-                    <Trophy className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
+                    <Trophy className="w-4 h-4 text-yellow-500 group-hover:scale-110 transition-transform" />
                   </div>
                   {loadingMetrics ? (
                     <div className="h-8 w-20 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-yellow-400 font-mono">{tournaments.length} Events</span>
-                      <span className="text-xs font-bold text-yellow-500 font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-yellow-500 font-mono">{tournaments.length}</span>
+                      <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400 font-mono">
                         {tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length > 0
                           ? `${tournaments.filter(t => (t as any).status === 'LIVE' || (t as any).status === 'IN_PROGRESS').length} Live`
                           : 'Scheduled'}
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">Championships &amp; Opens</span>
+                  <span className="text-[11px] text-foreground/50 block">Championships &amp; Opens</span>
                 </Link>
 
                 <Link
                   href={`/org/${org.id}/inventory`}
-                  className="p-5 rounded-[24px] border space-y-2 relative overflow-hidden shadow-sm hover:border-emerald-500/40 transition-all group block"
+                  className="p-5 rounded-[26px] border space-y-2 relative overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all group block"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                 >
-                  <div className="flex items-center justify-between text-foreground/50">
+                  <div className="flex items-center justify-between text-foreground/60">
                     <span className="text-[10px] font-black uppercase tracking-wider">Club Supplies &amp; Gear</span>
                     <Package className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                   </div>
@@ -3935,15 +4032,15 @@ export default function OrganizationDashboard() {
                     <div className="h-8 w-20 bg-foreground/10 rounded animate-pulse my-1" />
                   ) : (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-primary font-mono">
+                      <span className="text-2xl lg:text-3xl font-black text-primary font-mono">
                         {inventorySummary?.totalQuantity || 0} Units
                       </span>
-                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                      <span className="text-xs font-bold text-emerald-500 font-mono">
                         {inventorySummary?.inStockCount || 0} In Stock
                       </span>
                     </div>
                   )}
-                  <span className="text-[11px] text-foreground/45 block">
+                  <span className="text-[11px] text-foreground/50 block">
                     {inventorySummary?.lowStockCount ? `${inventorySummary.lowStockCount} low stock alerts` : 'Shuttles & equipment ready'}
                   </span>
                 </Link>
@@ -3952,120 +4049,36 @@ export default function OrganizationDashboard() {
           </div>
         </section>
 
-        {/* Desktop Main Tracks (Horizontal Scrolling) */}
-        <main className="max-w-7xl mx-auto px-8 py-10 space-y-12">
-          {/* 1. Management Quick Action Tools (Horizontal Scroll) */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <div>
-                  <h2 className="text-lg font-black text-foreground">Management Tools &amp; Modules</h2>
-                  <p className="text-xs text-foreground/50">
-                    Quick operations console for {org.name} ({quickActions.length} tools available)
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => scrollTrack(toolsTrackRef, 'left')}
-                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                  style={{ borderColor: 'var(--athlon-border)' }}
-                  title="Scroll Left"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => scrollTrack(toolsTrackRef, 'right')}
-                  className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                  style={{ borderColor: 'var(--athlon-border)' }}
-                  title="Scroll Right"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={toolsTrackRef}
-              className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-            >
-              {quickActions.map((action) => {
-                const isLocked = (action as any).isLocked;
-                return (
-                  <div
-                    key={action.id}
-                    onClick={() => {
-                      if (isLocked) {
-                        setIsUpgradeModalOpen(true);
-                      } else {
-                        router.push(action.id);
-                      }
-                    }}
-                    className="snap-start shrink-0 w-[240px] p-5 rounded-[24px] border relative overflow-hidden flex flex-col justify-between shadow-lg hover:shadow-2xl transition-all group cursor-pointer"
-                    style={{
-                      backgroundColor: 'var(--athlon-card)',
-                      borderColor: isLocked ? 'rgba(234, 179, 8, 0.4)' : 'var(--athlon-border)',
-                    }}
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-surface border border-white/10 shadow-inner group-hover:scale-110 transition-transform shrink-0">
-                          <Athlon3DIcon type={(action as any).icon3d || getOrg3DIconType(action.label)} size={36} active={!isLocked} />
-                        </div>
-                        {isLocked && (
-                          <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-[9px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1 border border-amber-300">
-                            <Lock className="w-2.5 h-2.5" />
-                            <span>PRO</span>
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
-                          {action.label}
-                        </h3>
-                        <p className="text-xs text-foreground/50 mt-1 leading-relaxed line-clamp-2">
-                          {action.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-xs font-bold text-primary pt-3 border-t mt-4" style={{ borderColor: 'var(--athlon-border)' }}>
-                      <span>{isLocked ? 'Upgrade to Unlock' : 'Open Tool'}</span>
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* ORGANIZER SPECIFIC TRACK: LIVE REGISTRATION DESK */}
+        {/* Desktop Main Content Modules */}
+        <main className="max-w-7xl mx-auto px-8 lg:px-12 py-10 space-y-12">
+          {/* ORGANIZER SPECIFIC SECTION: LIVE REGISTRATION DESK */}
           {(org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || tournaments.length > 0 || registrations.length > 0) && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Trophy className="w-5 h-5 text-amber-400" />
+            <section className="space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-sm">
+                    <Trophy className="w-5 h-5" />
+                  </div>
                   <div>
-                    <h2 className="text-lg font-black text-foreground">Live Tournament Registrations &amp; Entries</h2>
+                    <h2 className="text-xl font-black text-foreground tracking-tight">Live Tournament Registrations &amp; Entries</h2>
                     <p className="text-xs text-foreground/50">
-                      {registrations.length} total entries received across all tournaments • Approve, collect payment &amp; verify player identity
+                      {registrations.length} total entries received • Approve, collect payment &amp; verify player identity
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   {/* Filter Tabs */}
-                  <div className="flex items-center gap-1.5 p-1 rounded-2xl border bg-surface" style={{ borderColor: 'var(--athlon-border)' }}>
+                  <div className="flex items-center gap-1 p-1 rounded-2xl border bg-surface/50" style={{ borderColor: 'var(--athlon-border)' }}>
                     {(['ALL', 'PENDING', 'APPROVED', 'UNPAID', 'PAID'] as const).map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setSelectedRegFilter(tab)}
-                        className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${selectedRegFilter === tab
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                          selectedRegFilter === tab
                             ? 'bg-primary text-black shadow-sm'
                             : 'text-foreground/60 hover:text-foreground'
-                          }`}
+                        }`}
                       >
                         {tab}
                       </button>
@@ -4098,12 +4111,17 @@ export default function OrganizationDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="p-8 rounded-[24px] border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
-                  <Trophy className="w-10 h-10 text-foreground/30 mx-auto" />
-                  <p className="text-sm font-bold text-foreground/70">No tournament registrations matching selected filter</p>
+                <div className="p-10 rounded-[28px] border text-center space-y-4" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mx-auto shadow-inner">
+                    <Trophy className="w-7 h-7" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-black text-foreground">No tournament registrations matching selected filter</p>
+                    <p className="text-xs text-foreground/50">Change your filter or publish your tournament to start accepting player entries.</p>
+                  </div>
                   <Link
                     href={`/org/${org.id}/tournaments`}
-                    className="px-4 py-2 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5"
+                    className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all"
                   >
                     <span>View Tournaments</span>
                   </Link>
@@ -4112,16 +4130,18 @@ export default function OrganizationDashboard() {
             </section>
           )}
 
-          {/* 2. VENUE / COURT SPECIFIC TRACKS */}
+          {/* 2. VENUE / COURT SPECIFIC SECTIONS */}
           {(org.type === 'COURT' || (org.type as string) === 'VENUE_MANAGER') ? (
             <>
-              {/* Today's Bookings Track */}
-              <section className="space-y-4">
+              {/* Today's Bookings Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <CalendarDays className="w-5 h-5 text-emerald-400" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-sm">
+                      <CalendarDays className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">Recent Slot Reservations &amp; Walk-ins</h2>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">Recent Slot Reservations &amp; Walk-ins</h2>
                       <p className="text-xs text-foreground/50">
                         {loadingMetrics ? 'Loading bookings...' : `${venueBookings.length} total bookings recorded • Real-time slot status`}
                       </p>
@@ -4138,68 +4158,73 @@ export default function OrganizationDashboard() {
                 </div>
 
                 {venueBookings.length > 0 ? (
-                  <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {venueBookings.map((b, idx) => (
-                      <div key={b.bookingUuid || idx} className="snap-start shrink-0 w-[340px]">
-                        <div
-                          className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-emerald-500/40 transition-all group"
-                          style={{
-                            backgroundColor: 'var(--athlon-card)',
-                            borderColor: 'var(--athlon-border)',
-                          }}
-                        >
-                          <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 absolute top-0 left-0 right-0" />
+                      <div
+                        key={b.bookingUuid || idx}
+                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden flex flex-col justify-between shadow-md hover:shadow-xl hover:border-emerald-500/50 transition-all group"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
+                        <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 absolute top-0 left-0 right-0" />
 
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
-                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        <div className="space-y-3.5">
+                          <div className="flex items-center justify-between">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                              b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED'
+                                ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
                                 : b.bookingStatus === 'HELD'
-                                  ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                                  : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                                }`}>
-                                {b.bookingStatus}
-                              </span>
-                              <span className="text-xs font-mono font-black text-foreground">₹{Number(b.totalAmount || 0).toLocaleString()}</span>
-                            </div>
-
-                            <div>
-                              <h3 className="text-base font-black text-foreground truncate group-hover:text-primary transition-colors">
-                                {b.guestName || 'Walk-in Player'}
-                              </h3>
-                              <p className="text-xs text-foreground/50 flex items-center gap-1.5 mt-0.5">
-                                <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                <span>{b.bookingDate} ({b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)})</span>
-                              </p>
-                            </div>
-
-                            <div
-                              className="p-3 rounded-2xl border flex items-center justify-between text-xs"
-                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                            >
-                              <span className="font-bold text-foreground truncate">{b.facilityName || 'Main Facility'}</span>
-                              <span className="font-mono text-emerald-400 font-bold uppercase">{b.paymentStatus}</span>
-                            </div>
+                                  ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                                  : 'bg-rose-500/15 text-rose-500 border-rose-500/30'
+                            }`}>
+                              {b.bookingStatus}
+                            </span>
+                            <span className="text-sm font-mono font-black text-foreground">₹{Number(b.totalAmount || 0).toLocaleString()}</span>
                           </div>
 
-                          <div className="pt-2 border-t flex items-center justify-between text-xs font-black text-primary" style={{ borderColor: 'var(--athlon-border)' }}>
-                            <Link href={`/org/${org.id}/venue/bookings`} className="hover:underline flex items-center gap-1">
-                              <span>Booking Details</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </Link>
-                            <span className="text-[10px] text-foreground/40 uppercase">{b.bookingSource || 'APP'}</span>
+                          <div>
+                            <h3 className="text-base font-black text-foreground truncate group-hover:text-primary transition-colors">
+                              {b.guestName || 'Walk-in Player'}
+                            </h3>
+                            <p className="text-xs text-foreground/50 flex items-center gap-1.5 mt-1 font-medium">
+                              <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span>{b.bookingDate} ({b.startTime?.substring(0, 5)} - {b.endTime?.substring(0, 5)})</span>
+                            </p>
                           </div>
+
+                          <div
+                            className="p-3.5 rounded-2xl border flex items-center justify-between text-xs"
+                            style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                          >
+                            <span className="font-bold text-foreground truncate">{b.facilityName || 'Main Facility'}</span>
+                            <span className="font-mono text-emerald-500 font-bold uppercase">{b.paymentStatus}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t mt-4 flex items-center justify-between text-xs font-black text-primary" style={{ borderColor: 'var(--athlon-border)' }}>
+                          <Link href={`/org/${org.id}/venue/bookings`} className="hover:underline flex items-center gap-1">
+                            <span>Booking Details</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                          <span className="text-[10px] text-foreground/40 uppercase font-mono">{b.bookingSource || 'APP'}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-8 rounded-[24px] border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
-                    <Calendar className="w-10 h-10 text-foreground/30 mx-auto" />
-                    <p className="text-sm font-bold text-foreground/70">No bookings recorded in this venue yet</p>
+                  <div className="p-10 rounded-[28px] border text-center space-y-4" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mx-auto shadow-inner">
+                      <CalendarDays className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground">No bookings recorded yet</h3>
+                      <p className="text-xs text-foreground/50">Open your live court matrix to log walk-in slots or accept online bookings.</p>
+                    </div>
                     <Link
                       href={`/org/${org.id}/venue/calendar`}
-                      className="px-4 py-2 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5"
+                      className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all"
                     >
                       <CalendarDays className="w-4 h-4" />
                       <span>Launch Slot Calendar</span>
@@ -4208,13 +4233,15 @@ export default function OrganizationDashboard() {
                 )}
               </section>
 
-              {/* Facilities Track */}
-              <section className="space-y-4">
+              {/* Facilities Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Building className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-sm">
+                      <Building className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">Configured Facilities &amp; Turfs</h2>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">Configured Facilities &amp; Turfs</h2>
                       <p className="text-xs text-foreground/50">
                         {venueFacilities.length} multi-sport facilities configured for online &amp; counter booking
                       </p>
@@ -4230,38 +4257,40 @@ export default function OrganizationDashboard() {
                   </Link>
                 </div>
 
-                <div className="grid grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {venueFacilities.map((fac) => (
                     <div
                       key={fac.facilityUuid}
-                      className="p-5 rounded-[24px] border bg-card relative overflow-hidden flex flex-col justify-between shadow-lg space-y-3 hover:border-purple-500/40 transition-all group"
+                      className="p-6 rounded-[28px] border bg-card relative overflow-hidden flex flex-col justify-between shadow-md hover:shadow-xl hover:border-purple-500/50 transition-all group"
                       style={{
                         backgroundColor: 'var(--athlon-card)',
                         borderColor: 'var(--athlon-border)',
                       }}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                          {fac.sports?.[0]?.sportName || fac.facilityType}
-                        </span>
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase">● {fac.status || 'Active'}</span>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                            {fac.sports?.[0]?.sportName || fac.facilityType}
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-500 uppercase">● {fac.status || 'Active'}</span>
+                        </div>
+
+                        <div>
+                          <h3 className="text-base font-black text-foreground group-hover:text-primary transition-colors">
+                            {fac.name}
+                          </h3>
+                          <p className="text-xs text-foreground/50 mt-1 font-medium">
+                            {fac.surfaceType || 'Synthetic'} surface • {fac.facilityType}
+                          </p>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl border flex items-center justify-between text-xs" style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}>
+                          <span className="text-foreground/60 font-semibold">Base Slot Rate</span>
+                          <span className="font-mono font-black text-primary text-sm">₹{fac.pricingRules?.[0]?.price ?? 500}/hr</span>
+                        </div>
                       </div>
 
-                      <div>
-                        <h3 className="text-base font-black text-foreground group-hover:text-primary transition-colors">
-                          {fac.name}
-                        </h3>
-                        <p className="text-xs text-foreground/50 mt-0.5">
-                          {fac.surfaceType || 'Synthetic'} surface • {fac.facilityType}
-                        </p>
-                      </div>
-
-                      <div className="p-3 rounded-2xl border flex items-center justify-between text-xs" style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}>
-                        <span className="text-foreground/60 font-semibold">Base Slot Rate</span>
-                        <span className="font-mono font-black text-primary">₹{fac.pricingRules?.[0]?.price ?? 500}/hr</span>
-                      </div>
-
-                      <div className="pt-2 border-t flex items-center justify-between text-xs" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <div className="pt-3 border-t mt-4 flex items-center justify-between text-xs" style={{ borderColor: 'var(--athlon-border)' }}>
                         <Link href={`/org/${org.id}/venue/pricing`} className="text-[11px] font-bold text-foreground/60 hover:text-primary transition-colors">
                           Pricing Rules &rarr;
                         </Link>
@@ -4276,33 +4305,33 @@ export default function OrganizationDashboard() {
             </>
           ) : org.type === 'COMMUNITY' ? (
             <>
-              {/* 1. Upcoming Community Sessions Track */}
-              <section className="space-y-4">
+              {/* Upcoming Community Sessions Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Calendar className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
+                      <Calendar className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">Upcoming Community Sessions</h2>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">Upcoming Community Sessions</h2>
                       <p className="text-xs text-foreground/50">
                         Casual matches, open rosters &amp; weekly club runs for {org.name}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href={`/org/${org.id}/sessions`}
-                      className="px-3.5 py-1.5 rounded-xl bg-primary text-black text-xs font-black hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>+ Host Session</span>
-                    </Link>
-                  </div>
+                  <Link
+                    href={`/org/${org.id}/sessions`}
+                    className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:scale-105 active:scale-95 transition-all flex items-center gap-1 shadow-md"
+                  >
+                    <span>+ Host Session</span>
+                  </Link>
                 </div>
 
                 {loadingCommunityData ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-64 rounded-3xl bg-surface/50 border animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                      <div key={i} className="h-64 rounded-[28px] bg-surface/50 border animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
                     ))}
                   </div>
                 ) : communitySessions.length > 0 ? (
@@ -4319,11 +4348,17 @@ export default function OrganizationDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="p-8 rounded-3xl border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
-                    <p className="text-sm text-foreground/60">No upcoming community sessions scheduled yet.</p>
+                  <div className="p-10 rounded-[28px] border text-center space-y-4" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto shadow-inner">
+                      <Calendar className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground">No upcoming community sessions scheduled</h3>
+                      <p className="text-xs text-foreground/50">Host regular meetups, training sessions, or casual weekend matches for members.</p>
+                    </div>
                     <Link
                       href={`/org/${org.id}/sessions`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all"
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary text-black font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md"
                     >
                       Schedule First Session
                     </Link>
@@ -4331,33 +4366,33 @@ export default function OrganizationDashboard() {
                 )}
               </section>
 
-              {/* 2. Active Member Polls & Votes Track */}
-              <section className="space-y-4">
+              {/* Active Member Polls Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Vote className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
+                      <Vote className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">Active Member Polls &amp; Votes</h2>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">Active Member Polls &amp; Votes</h2>
                       <p className="text-xs text-foreground/50">
                         Live voting, member opinions and club decisions for {org.name}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href={`/org/${org.id}/feed`}
-                      className="px-3.5 py-1.5 rounded-xl bg-primary text-black text-xs font-black hover:bg-primary/90 transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>+ Launch Poll</span>
-                    </Link>
-                  </div>
+                  <Link
+                    href={`/org/${org.id}/feed`}
+                    className="px-4 py-2 rounded-xl bg-primary text-black text-xs font-black hover:scale-105 active:scale-95 transition-all flex items-center gap-1 shadow-md"
+                  >
+                    <span>+ Launch Poll</span>
+                  </Link>
                 </div>
 
                 {loadingCommunityData ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-56 rounded-3xl bg-surface/50 border animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                      <div key={i} className="h-56 rounded-[28px] bg-surface/50 border animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
                     ))}
                   </div>
                 ) : communityPolls.length > 0 ? (
@@ -4373,11 +4408,17 @@ export default function OrganizationDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="p-8 rounded-3xl border text-center space-y-3" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
-                    <p className="text-sm text-foreground/60">No active polls running in this community right now.</p>
+                  <div className="p-10 rounded-[28px] border text-center space-y-4" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto shadow-inner">
+                      <Vote className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground">No active polls running in this community</h3>
+                      <p className="text-xs text-foreground/50">Poll your sports circle for preferred game days, venue choices, or jersey designs.</p>
+                    </div>
                     <Link
                       href={`/org/${org.id}/feed`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all"
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary text-black font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md"
                     >
                       Launch a Poll
                     </Link>
@@ -4387,145 +4428,143 @@ export default function OrganizationDashboard() {
             </>
           ) : org.type === 'ACADEMY' ? (
             <>
-              {/* Today's Training Sessions Track */}
-              <section className="space-y-4">
+              {/* Today's Training Sessions Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Calendar className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
+                      <Calendar className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">Today's Scheduled Coaching Sessions</h2>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">Today's Scheduled Coaching Sessions</h2>
                       <p className="text-xs text-foreground/50">
                         {loadingMetrics ? 'Loading sessions...' : `${academyDashboard?.upcomingBatches?.length ?? 0} ${(academyDashboard?.upcomingBatches?.length ?? 0) === 1 ? 'Batch' : 'Batches'} active today • Real-time student check-in`}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => scrollTrack(sessionsTrackRef, 'left')}
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => scrollTrack(sessionsTrackRef, 'right')}
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <Link
+                    href={`/org/${org.id}/batches`}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    <span>Manage All Batches</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </div>
 
                 {loadingMetrics ? (
-                  <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="snap-start shrink-0 w-[360px] h-[260px] rounded-[28px] border bg-card/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                      <div key={i} className="h-64 rounded-[28px] border bg-card/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
                     ))}
                   </div>
                 ) : (academyDashboard?.upcomingBatches && academyDashboard.upcomingBatches.length > 0) ? (
-                  <div
-                    ref={sessionsTrackRef}
-                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                  >
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {academyDashboard.upcomingBatches.map((batch) => (
-                      <div key={batch.batchUuid} className="snap-start shrink-0 w-[360px]">
-                        <div
-                          className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-primary/40 transition-all group"
-                          style={{
-                            backgroundColor: 'var(--athlon-card)',
-                            borderColor: 'var(--athlon-border)',
-                          }}
-                        >
-                          <div className="h-1 w-full bg-gradient-to-r from-primary via-emerald-400 to-blue-500 absolute top-0 left-0 right-0" />
+                      <div
+                        key={batch.batchUuid}
+                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden flex flex-col justify-between shadow-md hover:shadow-xl hover:border-primary/50 transition-all group"
+                        style={{
+                          backgroundColor: 'var(--athlon-card)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
+                        <div className="h-1 w-full bg-gradient-to-r from-primary via-emerald-400 to-blue-500 absolute top-0 left-0 right-0" />
 
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
-                                {batch.level || 'COACHING'}
-                              </span>
-                              <span className="text-xs text-foreground/50 font-bold">{batch.sportType || 'Badminton'}</span>
-                            </div>
+                        <div className="space-y-3.5">
+                          <div className="flex items-center justify-between">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                              {batch.level || 'COACHING'}
+                            </span>
+                            <span className="text-xs text-foreground/50 font-bold">{batch.sportType || 'Badminton'}</span>
+                          </div>
 
+                          <div>
+                            <h3 className="text-base font-black text-foreground truncate group-hover:text-primary transition-colors">
+                              {batch.batchName}
+                            </h3>
+                            <p className="text-xs text-foreground/50 flex items-center gap-1.5 mt-1 font-medium">
+                              <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span>{batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} {batch.daysOfWeek ? `(${batch.daysOfWeek})` : ''}</span>
+                            </p>
+                          </div>
+
+                          <div
+                            className="grid grid-cols-2 gap-2 p-3.5 rounded-2xl border text-center"
+                            style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                          >
                             <div>
-                              <h3 className="text-base font-black text-foreground truncate group-hover:text-primary transition-colors">
-                                {batch.batchName}
-                              </h3>
-                              <p className="text-xs text-foreground/50 flex items-center gap-1.5 mt-0.5">
-                                <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                                <span>{batch.startTime?.substring(0, 5)} - {batch.endTime?.substring(0, 5)} {batch.daysOfWeek ? `(${batch.daysOfWeek})` : ''}</span>
-                              </p>
+                              <span className="text-[9px] uppercase font-bold text-foreground/40 block">Enrolled</span>
+                              <span className="text-sm font-black text-foreground font-mono">
+                                {batch.enrolledCount ?? 0} / {batch.maxCapacity ?? 0}
+                              </span>
                             </div>
-
-                            <div
-                              className="grid grid-cols-2 gap-2 p-3 rounded-2xl border text-center"
-                              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                            >
-                              <div>
-                                <span className="text-[9px] uppercase font-bold text-foreground/40 block">Enrolled</span>
-                                <span className="text-sm font-black text-foreground font-mono">
-                                  {batch.enrolledCount ?? 0} / {batch.maxCapacity ?? 0}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-[9px] uppercase font-bold text-foreground/40 block">Coach</span>
-                                <span className="text-sm font-black text-primary truncate block">
-                                  {batch.coachName || 'Unassigned'}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 text-xs text-foreground/50">
-                              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span className="truncate">{batch.courtName || 'Court'}</span>
+                            <div>
+                              <span className="text-[9px] uppercase font-bold text-foreground/40 block">Coach</span>
+                              <span className="text-sm font-black text-primary truncate block">
+                                {batch.coachName || 'Unassigned'}
+                              </span>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
-                            <Link
-                              href={`/org/${org.id}/attendance`}
-                              className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-center"
-                            >
-                              <ClipboardList className="w-3.5 h-3.5" />
-                              <span>Roll Call</span>
-                            </Link>
-
-                            <Link
-                              href={`/org/${org.id}/batches`}
-                              className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 transition-all text-center"
-                              style={{ borderColor: 'var(--athlon-border)' }}
-                            >
-                              <span>Batch Info</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </Link>
+                          <div className="flex items-center gap-1.5 text-xs text-foreground/50">
+                            <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span className="truncate">{batch.courtName || 'Main Court'}</span>
                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 pt-3 border-t mt-4" style={{ borderColor: 'var(--athlon-border)' }}>
+                          <Link
+                            href={`/org/${org.id}/attendance`}
+                            className="py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-center"
+                          >
+                            <ClipboardList className="w-3.5 h-3.5" />
+                            <span>Roll Call</span>
+                          </Link>
+
+                          <Link
+                            href={`/org/${org.id}/batches`}
+                            className="py-2.5 rounded-xl bg-surface border text-foreground/80 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1 hover:bg-white/5 transition-all text-center"
+                            style={{ borderColor: 'var(--athlon-border)' }}
+                          >
+                            <span>Batch Info</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div
-                    className="p-8 rounded-[28px] border text-center space-y-2 max-w-xl"
+                    className="p-10 rounded-[28px] border text-center space-y-4"
                     style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <Calendar className="w-8 h-8 text-foreground/30 mx-auto" />
-                    <h3 className="text-sm font-bold text-foreground/80">No coaching sessions scheduled today</h3>
-                    <p className="text-xs text-foreground/50">Configure your batch roster, timings, and court allocations.</p>
-                    <Link href={`/org/${org.id}/batches`} className="text-xs font-bold text-primary hover:underline inline-block pt-1">
-                      Manage Batches &rarr;
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto shadow-inner">
+                      <Calendar className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground">No coaching sessions scheduled today</h3>
+                      <p className="text-xs text-foreground/50">Configure your batch roster, training timings, and court allocations.</p>
+                    </div>
+                    <Link
+                      href={`/org/${org.id}/batches`}
+                      className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <span>Manage Batches</span>
                     </Link>
                   </div>
                 )}
               </section>
 
-              {/* Campus Centres & Arenas Track */}
-              <section className="space-y-4">
+              {/* Campus Centres Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Building className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-sm">
+                      <Building className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">Academy Campuses &amp; Training Arenas</h2>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">Academy Campuses &amp; Training Arenas</h2>
                       <p className="text-xs text-foreground/50">
                         {loadingMetrics ? 'Loading campuses...' : `${academyDashboard?.centres?.length ?? 0} Campus ${(academyDashboard?.centres?.length ?? 0) === 1 ? 'location' : 'locations'} • Multi-court sports infrastructure`}
                       </p>
@@ -4552,7 +4591,7 @@ export default function OrganizationDashboard() {
                     {academyDashboard.centres.map((centre) => (
                       <div
                         key={centre.centreUuid}
-                        className="p-6 rounded-[28px] border bg-card space-y-4 shadow-xl hover:border-purple-500/40 transition-all group"
+                        className="p-6 rounded-[28px] border bg-card space-y-4 shadow-md hover:shadow-xl hover:border-purple-500/50 transition-all group"
                         style={{
                           backgroundColor: 'var(--athlon-card)',
                           borderColor: 'var(--athlon-border)',
@@ -4567,8 +4606,8 @@ export default function OrganizationDashboard() {
                               <h3 className="text-base font-extrabold text-foreground group-hover:text-purple-400 transition-colors">
                                 {centre.name}
                               </h3>
-                              <p className="text-xs text-foreground/50 flex items-center gap-1 mt-1">
-                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <p className="text-xs text-foreground/50 flex items-center gap-1 mt-1 font-medium">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                 <span>{centre.city || 'Campus'}{centre.operatingHours ? ` • ${centre.operatingHours}` : ''}</span>
                               </p>
                             </div>
@@ -4580,7 +4619,7 @@ export default function OrganizationDashboard() {
                         </div>
 
                         <div
-                          className="grid grid-cols-3 gap-2 p-3 rounded-2xl border text-center"
+                          className="grid grid-cols-3 gap-2 p-3.5 rounded-2xl border text-center"
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         >
                           <div>
@@ -4597,7 +4636,7 @@ export default function OrganizationDashboard() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <div className="flex items-center justify-between gap-2 pt-3 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
                           <span className="text-xs text-foreground/50 truncate">
                             Sports: <span className="text-foreground font-semibold">{centre.sportsAvailable || 'Badminton'}</span>
                           </span>
@@ -4606,7 +4645,7 @@ export default function OrganizationDashboard() {
                             href={`/org/${org.id}/facilities?centreUuid=${centre.centreUuid}`}
                             className="text-xs font-bold text-primary hover:underline shrink-0 flex items-center gap-1"
                           >
-                            <span>Courts</span>
+                            <span>View Courts</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
@@ -4615,14 +4654,21 @@ export default function OrganizationDashboard() {
                   </div>
                 ) : (
                   <div
-                    className="p-8 rounded-[28px] border text-center space-y-2 max-w-xl"
+                    className="p-10 rounded-[28px] border text-center space-y-4"
                     style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <Building className="w-8 h-8 text-foreground/30 mx-auto" />
-                    <h3 className="text-sm font-bold text-foreground/80">No campus locations registered</h3>
-                    <p className="text-xs text-foreground/50">Add sports campuses, training arenas, and courts.</p>
-                    <Link href={`/org/${org.id}/centres`} className="text-xs font-bold text-primary hover:underline inline-block pt-1">
-                      Add Campus Centre &rarr;
+                    <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mx-auto shadow-inner">
+                      <Building className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground">No campus locations registered</h3>
+                      <p className="text-xs text-foreground/50">Add sports campuses, training arenas, and courts.</p>
+                    </div>
+                    <Link
+                      href={`/org/${org.id}/centres`}
+                      className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <span>Add Campus Centre</span>
                     </Link>
                   </div>
                 )}
@@ -4633,13 +4679,15 @@ export default function OrganizationDashboard() {
               {/* COACH SPECIFIC DESKTOP SECTIONS */}
               {org.type === 'COACH' && (
                 <>
-                  {/* 1. Today's Coaching Schedule Track */}
-                  <section className="space-y-4">
+                  {/* Today's Coaching Schedule Section */}
+                  <section className="space-y-5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <CalendarDays className="w-5 h-5 text-primary" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
+                          <CalendarDays className="w-5 h-5" />
+                        </div>
                         <div>
-                          <h2 className="text-lg font-black text-foreground">Today's Coaching Schedule &amp; Training Slots</h2>
+                          <h2 className="text-xl font-black text-foreground tracking-tight">Today's Coaching Schedule &amp; Training Slots</h2>
                           <p className="text-xs text-foreground/50">
                             Personal 1-on-1, small squads, and tactical sparring sessions scheduled for today
                           </p>
@@ -4650,13 +4698,13 @@ export default function OrganizationDashboard() {
                         href={`/org/${org.id}/batches`}
                         className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
                       >
-                        <span>View Full Schedule &amp; Calendar</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <span>Full Schedule &amp; Calendar</span>
+                        <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
 
                     {coachSchedules.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {coachSchedules.map((session, sIdx) => (
                           <CoachScheduleCard
                             key={`desk-${session.sessionUuid || (session as any).id || sIdx}`}
@@ -4668,29 +4716,35 @@ export default function OrganizationDashboard() {
                       </div>
                     ) : (
                       <div
-                        className="p-8 rounded-[28px] border text-center space-y-2"
+                        className="p-10 rounded-[28px] border text-center space-y-4"
                         style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                       >
-                        <CalendarDays className="w-8 h-8 text-foreground/30 mx-auto" />
-                        <h3 className="text-sm font-bold text-foreground/80">No coaching slots scheduled for today</h3>
-                        <p className="text-xs text-foreground/50">Add time slots, client focus areas, and court venues.</p>
+                        <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto shadow-inner">
+                          <CalendarDays className="w-7 h-7" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-base font-black text-foreground">No coaching slots scheduled for today</h3>
+                          <p className="text-xs text-foreground/50">Add time slots, client focus areas, and court venues.</p>
+                        </div>
                         <Link
                           href={`/org/${org.id}/batches`}
-                          className="text-xs font-bold text-primary hover:underline inline-block pt-1"
+                          className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all"
                         >
-                          + Create Coaching Slot &rarr;
+                          <span>+ Create Coaching Slot</span>
                         </Link>
                       </div>
                     )}
                   </section>
 
-                  {/* 2. Enrolled Trainees & Active Clients Track */}
-                  <section className="space-y-4">
+                  {/* Enrolled Trainees Section */}
+                  <section className="space-y-5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Users className="w-5 h-5 text-primary" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
+                          <Users className="w-5 h-5" />
+                        </div>
                         <div>
-                          <h2 className="text-lg font-black text-foreground">Enrolled Trainees &amp; Client Roster</h2>
+                          <h2 className="text-xl font-black text-foreground tracking-tight">Enrolled Trainees &amp; Client Roster</h2>
                           <p className="text-xs text-foreground/50">
                             Active personal training clients, package assignments, and fee renewal status
                           </p>
@@ -4702,7 +4756,7 @@ export default function OrganizationDashboard() {
                         className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
                       >
                         <span>Manage Trainees Roster</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
 
@@ -4718,152 +4772,143 @@ export default function OrganizationDashboard() {
                       </div>
                     ) : (
                       <div
-                        className="p-8 rounded-[28px] border text-center space-y-2"
+                        className="p-10 rounded-[28px] border text-center space-y-4"
                         style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                       >
-                        <Users className="w-8 h-8 text-foreground/30 mx-auto" />
-                        <h3 className="text-sm font-bold text-foreground/80">No trainees enrolled yet</h3>
-                        <p className="text-xs text-foreground/50">Enroll personal training students, allocate packages, and track skill levels.</p>
+                        <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 mx-auto shadow-inner">
+                          <Users className="w-7 h-7" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-base font-black text-foreground">No trainees enrolled yet</h3>
+                          <p className="text-xs text-foreground/50">Enroll personal training students, allocate packages, and track skill progression.</p>
+                        </div>
                         <Link
                           href={`/org/${org.id}/students`}
-                          className="text-xs font-bold text-primary hover:underline inline-block pt-1"
+                          className="px-5 py-2.5 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all"
                         >
-                          + Enroll New Trainee &rarr;
+                          <span>+ Enroll New Trainee</span>
                         </Link>
                       </div>
                     )}
                   </section>
 
-                  {/* 3. Coach Credentials & Experience Showcase Card */}
-                  <section className="space-y-4">
+                  {/* Coach Credentials Showcase */}
+                  <section className="space-y-5">
                     <CoachCredentialsCard coachProfile={coachProfile} orgId={org.id} />
                   </section>
                 </>
               )}
 
-              {/* 1. All-Time Leaderboard Track / Podium Section for Club */}
+              {/* CLUB SPECIFIC SECTIONS */}
               {org.type === 'CLUB' && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
-                      <div>
-                        <h2 className="text-lg font-black text-foreground">Club Leaderboard • All-Time Top 3</h2>
-                        <p className="text-xs text-foreground/50">
-                          {loadingMetrics
-                            ? 'Calculating standings...'
-                            : `${allTimeLeaderboard.length} athletes ranked • Computed from official club match records`}
-                        </p>
+                <>
+                  {/* All-Time Leaderboard Track / Podium Section */}
+                  <section className="space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 shadow-sm">
+                          <Trophy className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-black text-foreground tracking-tight">Club Leaderboard • All-Time Top 3</h2>
+                          <p className="text-xs text-foreground/50">
+                            {loadingMetrics
+                              ? 'Calculating standings...'
+                              : `${allTimeLeaderboard.length} athletes ranked • Computed from official club match records`}
+                          </p>
+                        </div>
                       </div>
+
+                      <Link
+                        href={`/org/${org.id}/leaderboard`}
+                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        <span>Full Club Ladder</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
                     </div>
 
-                    <Link
-                      href={`/org/${org.id}/leaderboard`}
-                      className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                    >
-                      <span>Full Club Ladder</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
+                    <ClubLeaderboardPodiumCard
+                      topThree={allTimeTopThree}
+                      orgId={org.id}
+                      loading={loadingMetrics}
+                    />
+                  </section>
 
-                  <ClubLeaderboardPodiumCard
-                    topThree={allTimeTopThree}
-                    orgId={org.id}
-                    loading={loadingMetrics}
-                  />
-                </section>
-              )}
-
-              {/* 2. Low Stock Inventory Track for Club */}
-              {org.type === 'CLUB' && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <AlertTriangle className="w-5 h-5 text-primary" />
-                      <div>
-                        <h2 className="text-lg font-black text-foreground">Low Stock Inventory &amp; Supplies Radar</h2>
-                        <p className="text-xs text-foreground/50">
-                          {loadingMetrics
-                            ? 'Loading supplies...'
-                            : `${lowStockItems.length} ${lowStockItems.length === 1 ? 'item requires' : 'items require'} restock attention • Fast consumption counters`}
-                        </p>
+                  {/* Low Stock Inventory Section */}
+                  <section className="space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-sm">
+                          <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-black text-foreground tracking-tight">Low Stock Inventory &amp; Supplies Radar</h2>
+                          <p className="text-xs text-foreground/50">
+                            {loadingMetrics
+                              ? 'Loading supplies...'
+                              : `${lowStockItems.length} ${lowStockItems.length === 1 ? 'item requires' : 'items require'} restock attention`}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
                       <Link
                         href={`/org/${org.id}/inventory`}
                         className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
                       >
                         <span>Manage All Inventory</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ChevronRight className="w-4 h-4" />
                       </Link>
+                    </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => scrollTrack(inventoryTrackRef, 'left')}
-                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                          title="Scroll Left"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => scrollTrack(inventoryTrackRef, 'right')}
-                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                          title="Scroll Right"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
+                    {loadingMetrics ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="h-44 rounded-2xl border bg-card/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
+                        ))}
                       </div>
-                    </div>
-                  </div>
-
-                  {loadingMetrics ? (
-                    <div className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8">
-                      {[1, 2].map((i) => (
-                        <div key={i} className="snap-start shrink-0 w-[360px] h-[220px] rounded-[28px] border bg-card/50 animate-pulse" style={{ borderColor: 'var(--athlon-border)' }} />
-                      ))}
-                    </div>
-                  ) : lowStockItems.length > 0 ? (
-                    <div
-                      ref={inventoryTrackRef}
-                      className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                    >
-                      {lowStockItems.map((item) => (
-                        <div key={`desk-${item.itemUuid}`} className="snap-start shrink-0 w-[320px]">
-                          <ClubInventoryAlertCard
-                            item={item}
-                            orgId={org.id}
-                          />
+                    ) : lowStockItems.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {lowStockItems.map((item) => (
+                          <div key={`desk-${item.itemUuid}`}>
+                            <ClubInventoryAlertCard
+                              item={item}
+                              orgId={org.id}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div
+                        className="p-10 rounded-[28px] border text-center space-y-4"
+                        style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mx-auto shadow-inner">
+                          <Package className="w-7 h-7" />
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      className="p-8 rounded-[28px] border text-center space-y-2 max-w-xl"
-                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                    >
-                      <Package className="w-8 h-8 text-emerald-500 mx-auto" />
-                      <h3 className="text-sm font-bold text-foreground/80">All supplies adequately stocked</h3>
-                      <p className="text-xs text-foreground/50">Shuttles, tubes, balls, and equipment are ready for club play.</p>
-                      <Link href={`/org/${org.id}/inventory`} className="text-xs font-bold text-primary hover:underline inline-block pt-1">
-                        Manage Supplies Catalog &rarr;
-                      </Link>
-                    </div>
-                  )}
-                </section>
+                        <div className="space-y-1">
+                          <h3 className="text-base font-black text-foreground">All supplies adequately stocked</h3>
+                          <p className="text-xs text-foreground/50">Shuttles, tubes, balls, and equipment are ready for club play.</p>
+                        </div>
+                        <Link href={`/org/${org.id}/inventory`} className="text-xs font-bold text-primary hover:underline inline-block pt-1">
+                          Manage Supplies Catalog &rarr;
+                        </Link>
+                      </div>
+                    )}
+                  </section>
+                </>
               )}
 
-              {/* 2. Active Tournaments & Championships (Horizontal Scroll) */}
-              <section className="space-y-4">
+              {/* Active Tournaments & Championships Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Trophy className="w-5 h-5 text-yellow-400" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 shadow-sm">
+                      <Trophy className="w-5 h-5" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">
-                        {org.type === 'CLUB' ? 'Club Tournaments & Draws' : 'Active Tournaments & Leagues'}
+                      <h2 className="text-xl font-black text-foreground tracking-tight">
+                        {org.type === 'CLUB' ? 'Club Tournaments & Draws' : 'Active Tournaments & Championships'}
                       </h2>
                       <p className="text-xs text-foreground/50">
                         {org.type === 'CLUB'
@@ -4873,53 +4918,44 @@ export default function OrganizationDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => scrollTrack(eventsTrackRef, 'left')}
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                      style={{ borderColor: 'var(--athlon-border)' }}
+                  {isAdmin && (
+                    <Link
+                      href={`/org/${org.id}/tournaments/create`}
+                      className="px-4 py-2 bg-primary text-black font-black text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all shadow-md"
                     >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => scrollTrack(eventsTrackRef, 'right')}
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span>+ Create Tournament</span>
+                    </Link>
+                  )}
                 </div>
 
-                <div
-                  ref={eventsTrackRef}
-                  className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                >
-                  {orgTournaments.map((tournament) => (
-                    <div key={tournament.id} className="snap-start shrink-0 w-[360px]">
+                {displayedTournaments.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {displayedTournaments.map((tournament) => (
                       <div
-                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-yellow-500/40 transition-all group"
+                        key={tournament.id}
+                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden flex flex-col justify-between shadow-md hover:shadow-xl hover:border-yellow-500/50 transition-all group"
                         style={{
                           backgroundColor: 'var(--athlon-card)',
                           borderColor: 'var(--athlon-border)',
                         }}
                       >
-                        <div className="h-1 w-full bg-gradient-to-r from-yellow-500 via-amber-400 to-primary absolute top-0 left-0 right-0" />
+                        <div className="h-1.5 w-full bg-gradient-to-r from-yellow-500 via-amber-400 to-primary absolute top-0 left-0 right-0" />
 
-                        <div className="space-y-3">
+                        <div className="space-y-3.5">
                           <div className="flex items-center justify-between">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-yellow-500/15 text-yellow-500 border border-yellow-500/30">
                               {tournament.type}
                             </span>
                             <span className="text-xs text-foreground/50 font-bold">{tournament.sport}</span>
                           </div>
 
-                          <h3 className="text-base font-black text-foreground truncate group-hover:text-yellow-400 transition-colors">
+                          <h3 className="text-base font-black text-foreground truncate group-hover:text-yellow-500 transition-colors">
                             {tournament.title}
                           </h3>
 
                           <div
-                            className="grid grid-cols-2 gap-2 p-3 rounded-2xl border text-center"
+                            className="grid grid-cols-2 gap-2 p-3.5 rounded-2xl border text-center"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
                             <div>
@@ -4933,96 +4969,117 @@ export default function OrganizationDashboard() {
                           </div>
 
                           <div className="flex items-center gap-1.5 text-xs text-foreground/50">
-                            <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                             <span className="truncate">{tournament.venue}</span>
                           </div>
                         </div>
 
-                        <Link
-                          href={`/org/${org.id}/tournaments`}
-                          className="w-full py-2.5 rounded-xl bg-surface border border-yellow-500/30 text-yellow-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-yellow-500/10 transition-all"
-                        >
-                          <span>Manage Event</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
+                        <div className="pt-4 mt-2 border-t flex items-center gap-2" style={{ borderColor: 'var(--athlon-border)' }}>
+                          <Link
+                            href={`/org/${org.id}/tournaments`}
+                            className="flex-1 py-2.5 rounded-xl bg-surface border border-yellow-500/30 text-yellow-500 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-yellow-500/10 transition-all text-center"
+                          >
+                            <span>Manage Event</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+
+                          <Link
+                            href={`/org/${org.id}/match-setup`}
+                            className="px-3.5 py-2.5 rounded-xl bg-primary text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                            title="Court Desk & Umpires"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-black" />
+                          </Link>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-10 rounded-[28px] border text-center space-y-4" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 mx-auto shadow-inner">
+                      <Trophy className="w-7 h-7" />
                     </div>
-                  ))}
-                </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground">No tournaments hosted yet</h3>
+                      <p className="text-xs text-foreground/50">Create your first tournament championship with knockout brackets, pool draws, and umpire live scoring.</p>
+                    </div>
+                    <Link
+                      href={`/org/${org.id}/tournaments/create`}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <Trophy className="w-4 h-4" />
+                      <span>+ Create First Tournament</span>
+                    </Link>
+                  </div>
+                )}
               </section>
 
-              {/* 3. Courtside Live Scoring & Streams Track (Horizontal Scroll) */}
-              <section className="space-y-4">
+              {/* Courtside Live Scoring & Streams Section */}
+              <section className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Radio className="w-5 h-5 text-red-500 animate-pulse" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 shadow-sm">
+                      <Radio className="w-5 h-5 animate-pulse" />
+                    </div>
                     <div>
-                      <h2 className="text-lg font-black text-foreground">Courtside Live Stream &amp; Scoring Console</h2>
+                      <h2 className="text-xl font-black text-foreground tracking-tight">Courtside Live Stream &amp; Scoring Console</h2>
                       <p className="text-xs text-foreground/50">Real-time point-by-point umpire radar and stream broadcast links</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => scrollTrack(liveTrackRef, 'left')}
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => scrollTrack(liveTrackRef, 'right')}
-                      className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                      style={{ borderColor: 'var(--athlon-border)' }}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <Link
+                    href={`/org/${org.id}/livestream`}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    <span>Broadcast Hub</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </div>
 
-                <div
-                  ref={liveTrackRef}
-                  className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                >
-                  {liveCourts.map((court) => (
-                    <div key={court.id} className="snap-start shrink-0 w-[360px]">
+                {liveMatches.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {liveMatches.map((court, idx) => (
                       <div
-                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-xl space-y-4 hover:border-red-500/40 transition-all group"
+                        key={court.matchId || `match-${idx}`}
+                        className="p-6 rounded-[28px] border bg-card relative overflow-hidden flex flex-col justify-between shadow-md hover:shadow-xl hover:border-red-500/50 transition-all group"
                         style={{
                           backgroundColor: 'var(--athlon-card)',
                           borderColor: 'var(--athlon-border)',
                         }}
                       >
-                        <div className="h-1 w-full bg-red-500 animate-pulse absolute top-0 left-0 right-0" />
+                        <div className="h-1.5 w-full bg-red-500 animate-pulse absolute top-0 left-0 right-0" />
 
-                        <div className="space-y-3">
+                        <div className="space-y-3.5">
                           <div className="flex items-center justify-between">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1">
-                              <Radio className="w-3 h-3 text-red-500 animate-pulse" /> {court.court}
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/15 text-red-500 border border-red-500/30 flex items-center gap-1.5 font-bold">
+                              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                              <span>{(court as any).courtName || `Court ${idx + 1}`}</span>
                             </span>
                             <span className="text-xs text-foreground/50 font-bold">{court.status}</span>
                           </div>
 
                           <div>
                             <span className="text-[10px] uppercase font-bold text-foreground/40 block truncate">
-                              {court.tournament}
+                              {court.sportType || 'Badminton Match'}
                             </span>
-                            <h3 className="text-sm font-black text-foreground truncate mt-0.5">{court.match}</h3>
+                            <h3 className="text-sm font-black text-foreground truncate mt-1">
+                              {court.teamAPlayers || 'Team A'} vs {court.teamBPlayers || 'Team B'}
+                            </h3>
                           </div>
 
                           <div
-                            className="p-3 rounded-2xl border flex items-center justify-between text-center"
+                            className="p-3.5 rounded-2xl border flex items-center justify-between text-center"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                           >
                             <span className="text-[10px] font-extrabold uppercase text-foreground/50">Current Score</span>
-                            <span className="text-base font-black text-red-400 font-mono">{court.score}</span>
+                            <span className="text-base font-black text-red-500 font-mono">{court.score || '0 - 0'}</span>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <div className="grid grid-cols-2 gap-2 pt-3 border-t mt-4" style={{ borderColor: 'var(--athlon-border)' }}>
                           <Link
                             href={`/org/${org.id}/match-setup`}
-                            className="py-2.5 rounded-xl bg-surface border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-red-500/10 transition-all text-center"
+                            className="py-2.5 rounded-xl bg-surface border border-red-500/30 text-red-500 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-red-500/10 transition-all text-center"
                           >
                             <Play className="w-3.5 h-3.5" /> <span>Umpire</span>
                           </Link>
@@ -5035,9 +5092,35 @@ export default function OrganizationDashboard() {
                           </Link>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-10 rounded-[28px] border text-center space-y-4" style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}>
+                    <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mx-auto shadow-inner">
+                      <Radio className="w-7 h-7" />
                     </div>
-                  ))}
-                </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-black text-foreground">No courts live right now</h3>
+                      <p className="text-xs text-foreground/50">When matches are active on courts, point-by-point umpire scores and stream broadcasts will appear here in real time.</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-3">
+                      <Link
+                        href={`/org/${org.id}/match-setup`}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-wider shadow-md transition-all"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-white" />
+                        <span>Launch Umpire Desk</span>
+                      </Link>
+                      <Link
+                        href={`/org/${org.id}/livestream`}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-surface border border-red-500/30 text-red-500 font-black text-xs uppercase tracking-wider hover:bg-red-500/10 transition-all"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        <span>Livestream Hub</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </section>
             </>
           )}

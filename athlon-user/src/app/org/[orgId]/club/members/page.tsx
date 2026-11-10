@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Users, Plus, Search, Filter, X, Camera, Phone, User } from 'lucide-react';
 import Link from 'next/link';
+import { compressImageFile, COMPRESSION_PRESETS } from '@/lib/utils/imageCompression';
 
 export default function ClubMembersPage() {
   const [members, setMembers] = useState([
@@ -15,11 +16,16 @@ export default function ClubMembersPage() {
   const [newMember, setNewMember] = useState({ name: '', phone: '', photo: null as string | null });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setNewMember(prev => ({ ...prev, photo: url }));
+      try {
+        const res = await compressImageFile(file, COMPRESSION_PRESETS.AVATAR);
+        setNewMember(prev => ({ ...prev, photo: res.previewUrl }));
+      } catch {
+        const url = URL.createObjectURL(file);
+        setNewMember(prev => ({ ...prev, photo: url }));
+      }
     }
   };
 

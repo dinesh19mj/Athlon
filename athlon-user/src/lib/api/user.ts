@@ -30,8 +30,12 @@ export interface UserResponse {
   city?: string;
   district?: string;
   state?: string;
+  dob?: string;
+  gender?: string;
   isActive: number;
   sportsProfiles: SportsProfileResponse[];
+  roles?: string[];
+  primaryRole?: string;
 }
 
 export interface ApiResponse<T> {
@@ -58,6 +62,8 @@ export interface UpdateUserRequest {
   city?: string;
   district?: string;
   state?: string;
+  dob?: string;
+  gender?: string;
 }
 
 export const UserService = {

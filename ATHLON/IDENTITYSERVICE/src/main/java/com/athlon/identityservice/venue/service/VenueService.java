@@ -25,6 +25,7 @@ public class VenueService {
     private final VenueImageRepository imageRepository;
     private final VenueFacilityRepository facilityRepository;
     private final com.athlon.identityservice.organization.repository.OrganizationRepository organizationRepository;
+    private final com.athlon.identityservice.subscription.service.SubscriptionEntitlementService entitlementService;
 
     public VenueService(
             VenueRepository venueRepository,
@@ -32,19 +33,31 @@ public class VenueService {
             VenueAmenityRepository amenityRepository,
             VenueImageRepository imageRepository,
             VenueFacilityRepository facilityRepository,
-            com.athlon.identityservice.organization.repository.OrganizationRepository organizationRepository
-    ) {
+            com.athlon.identityservice.organization.repository.OrganizationRepository organizationRepository,
+            com.athlon.identityservice.subscription.service.SubscriptionEntitlementService entitlementService) {
         this.venueRepository = venueRepository;
         this.operatingHourRepository = operatingHourRepository;
         this.amenityRepository = amenityRepository;
         this.imageRepository = imageRepository;
         this.facilityRepository = facilityRepository;
         this.organizationRepository = organizationRepository;
+        this.entitlementService = entitlementService;
     }
 
     @Transactional
     public VenueDto createVenue(VenueCreateRequest request, Long performedByUserId) {
+        if (request.getOrganizationUuid() != null) {
+            List<Venue> existingVenues = venueRepository.findByOrganizationUuid(request.getOrganizationUuid());
+            if (!existingVenues.isEmpty()) {
+                entitlementService.assertFeature(
+                        request.getOrganizationUuid(),
+                        com.athlon.identityservice.subscription.enums.VenueFeatureCode.VENUE_MULTI_BRANCH);
+            }
+            entitlementService.assertQuota(request.getOrganizationUuid(), "MAX_VENUES", 1);
+        }
+
         Venue venue = new Venue();
+        venue.setVenueUuid(UUID.randomUUID());
         venue.setOrganizationId(request.getOrganizationId());
         venue.setOrganizationUuid(request.getOrganizationUuid());
         venue.setName(request.getName());
@@ -74,8 +87,7 @@ public class VenueService {
             for (VenueCreateRequest.OperatingHourInput h : request.getOperatingHours()) {
                 DayOfWeek dow = parseDayOfWeek(h.getDayOfWeek());
                 VenueOperatingHour hour = new VenueOperatingHour(
-                        saved.getVenueId(), dow, h.getOpeningTime(), h.getClosingTime(), h.getIsClosed()
-                );
+                        saved.getVenueId(), dow, h.getOpeningTime(), h.getClosingTime(), h.getIsClosed());
                 operatingHourRepository.save(hour);
             }
         }
@@ -84,8 +96,7 @@ public class VenueService {
         if (request.getAmenities() != null) {
             for (VenueCreateRequest.AmenityInput a : request.getAmenities()) {
                 VenueAmenity amenity = new VenueAmenity(
-                        saved.getVenueId(), a.getAmenityName(), a.getIconName(), a.getDescription()
-                );
+                        saved.getVenueId(), a.getAmenityName(), a.getIconName(), a.getDescription());
                 amenityRepository.save(amenity);
             }
         }
@@ -94,8 +105,8 @@ public class VenueService {
         if (request.getImages() != null) {
             for (VenueCreateRequest.ImageInput img : request.getImages()) {
                 VenueImage image = new VenueImage(
-                        saved.getVenueId(), img.getImageUrl(), img.getCaption(), img.getDisplayOrder(), img.getIsCover()
-                );
+                        saved.getVenueId(), img.getImageUrl(), img.getCaption(), img.getDisplayOrder(),
+                        img.getIsCover());
                 imageRepository.save(image);
             }
         }
@@ -122,8 +133,10 @@ public class VenueService {
         venue.setLongitude(request.getLongitude());
         venue.setContactNumber(request.getContactNumber());
         venue.setEmail(request.getEmail());
-        if (request.getBookingEnabled() != null) venue.setBookingEnabled(request.getBookingEnabled());
-        if (request.getStatus() != null) venue.setStatus(request.getStatus());
+        if (request.getBookingEnabled() != null)
+            venue.setBookingEnabled(request.getBookingEnabled());
+        if (request.getStatus() != null)
+            venue.setStatus(request.getStatus());
         venue.setRulesAndRegulations(request.getRulesAndRegulations());
         venue.setCancellationPolicy(request.getCancellationPolicy());
         venue.setUpdatedBy(performedByUserId);
@@ -136,8 +149,7 @@ public class VenueService {
             for (VenueCreateRequest.OperatingHourInput h : request.getOperatingHours()) {
                 DayOfWeek dow = parseDayOfWeek(h.getDayOfWeek());
                 operatingHourRepository.save(new VenueOperatingHour(
-                        venue.getVenueId(), dow, h.getOpeningTime(), h.getClosingTime(), h.getIsClosed()
-                ));
+                        venue.getVenueId(), dow, h.getOpeningTime(), h.getClosingTime(), h.getIsClosed()));
             }
         }
 
@@ -146,8 +158,7 @@ public class VenueService {
             amenityRepository.deleteByVenueId(venue.getVenueId());
             for (VenueCreateRequest.AmenityInput a : request.getAmenities()) {
                 amenityRepository.save(new VenueAmenity(
-                        venue.getVenueId(), a.getAmenityName(), a.getIconName(), a.getDescription()
-                ));
+                        venue.getVenueId(), a.getAmenityName(), a.getIconName(), a.getDescription()));
             }
         }
 
@@ -156,8 +167,8 @@ public class VenueService {
             imageRepository.deleteByVenueId(venue.getVenueId());
             for (VenueCreateRequest.ImageInput img : request.getImages()) {
                 imageRepository.save(new VenueImage(
-                        venue.getVenueId(), img.getImageUrl(), img.getCaption(), img.getDisplayOrder(), img.getIsCover()
-                ));
+                        venue.getVenueId(), img.getImageUrl(), img.getCaption(), img.getDisplayOrder(),
+                        img.getIsCover()));
             }
         }
 
@@ -184,10 +195,14 @@ public class VenueService {
         if (venues.isEmpty()) {
             organizationRepository.findByOrganizationUuid(orgUuid).ifPresent(org -> {
                 Venue autoVenue = new Venue();
+                UUID newUuid = UUID.randomUUID();
+                autoVenue.setVenueUuid(newUuid);
                 autoVenue.setOrganizationId(org.getOrganizationId());
                 autoVenue.setOrganizationUuid(org.getOrganizationUuid());
-                autoVenue.setName(org.getName() != null && !org.getName().trim().isEmpty() ? org.getName() : "Main Arena");
-                autoVenue.setDescription(org.getDescription() != null ? org.getDescription() : "Sports Complex & Venue");
+                autoVenue.setName(
+                        org.getName() != null && !org.getName().trim().isEmpty() ? org.getName() : "Main Arena");
+                autoVenue
+                        .setDescription(org.getDescription() != null ? org.getDescription() : "Sports Complex & Venue");
                 autoVenue.setVenueType(com.athlon.identityservice.venue.enums.VenueType.MIXED);
                 autoVenue.setBookingEnabled(true);
                 autoVenue.setStatus(VenueStatus.ACTIVE);
@@ -214,7 +229,8 @@ public class VenueService {
     }
 
     private DayOfWeek parseDayOfWeek(String dow) {
-        if (dow == null || dow.trim().isEmpty()) return DayOfWeek.MONDAY;
+        if (dow == null || dow.trim().isEmpty())
+            return DayOfWeek.MONDAY;
         try {
             return DayOfWeek.valueOf(dow.toUpperCase().trim());
         } catch (Exception e) {
@@ -257,20 +273,19 @@ public class VenueService {
         // Operating hours
         List<VenueOperatingHour> hours = operatingHourRepository.findByVenueId(v.getVenueId());
         dto.setOperatingHours(hours.stream().map(h -> new VenueDto.OperatingHourDto(
-                h.getId(), h.getDayOfWeek() != null ? h.getDayOfWeek().name() : "MONDAY", h.getOpeningTime(), h.getClosingTime(), h.getIsClosed()
-        )).collect(Collectors.toList()));
+                h.getId(), h.getDayOfWeek() != null ? h.getDayOfWeek().name() : "MONDAY", h.getOpeningTime(),
+                h.getClosingTime(), h.getIsClosed())).collect(Collectors.toList()));
 
         // Amenities
         List<VenueAmenity> amenities = amenityRepository.findByVenueId(v.getVenueId());
         dto.setAmenities(amenities.stream().map(a -> new VenueDto.AmenityDto(
-                a.getId(), a.getAmenityName(), a.getIconName(), a.getDescription()
-        )).collect(Collectors.toList()));
+                a.getId(), a.getAmenityName(), a.getIconName(), a.getDescription())).collect(Collectors.toList()));
 
         // Images
         List<VenueImage> images = imageRepository.findByVenueIdOrderByDisplayOrderAsc(v.getVenueId());
         dto.setImages(images.stream().map(img -> new VenueDto.ImageDto(
-                img.getId(), img.getImageUrl(), img.getCaption(), img.getDisplayOrder(), img.getIsCover()
-        )).collect(Collectors.toList()));
+                img.getId(), img.getImageUrl(), img.getCaption(), img.getDisplayOrder(), img.getIsCover()))
+                .collect(Collectors.toList()));
 
         return dto;
     }

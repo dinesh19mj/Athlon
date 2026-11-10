@@ -10,6 +10,7 @@ import {
   Trophy,
   Search,
   ArrowRight,
+  ArrowLeft,
   Loader2,
   Phone,
   Tag,
@@ -42,6 +43,7 @@ import { TeamChampionshipService, TeamChampionship } from '@/lib/api/teamChampio
 import { CommunityService, CommunityResponse } from '@/lib/api/community';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useOrganizerEntitlementsStore } from '@/store/useOrganizerEntitlementsStore';
 
 export default function TournamentsPage() {
   const params = useParams();
@@ -53,8 +55,38 @@ export default function TournamentsPage() {
   const isClub = currentOrg?.type === 'CLUB';
   const isCommunity = currentOrg?.type === 'COMMUNITY';
   const isInternalOrg = isAcademy || isClub || isCommunity;
+  const isOrganizerOrg = !isInternalOrg;
   const { canManageModule } = usePermissions(orgId);
   const canManage = canManageModule('tournaments');
+
+  const {
+    walletByOrg,
+    hasFeature,
+    openFeaturePaywall,
+    openCreditPaywall,
+  } = useOrganizerEntitlementsStore();
+  const organizerWallet = isOrganizerOrg ? walletByOrg[orgId] : undefined;
+  const canCreateChampionship = !isOrganizerOrg || hasFeature(orgId, 'TEAM_CHAMPIONSHIP');
+
+  const handleCreateTournamentClick = () => {
+    if (isOrganizerOrg && organizerWallet && organizerWallet.tournamentCreditsAvailable < 1) {
+      openCreditPaywall(orgId, 'TOURNAMENT_CREDIT');
+      return;
+    }
+    router.push(`/org/${orgId}/tournaments/create`);
+  };
+
+  const handleCreateChampionshipClick = () => {
+    if (isOrganizerOrg && !canCreateChampionship) {
+      openFeaturePaywall(orgId, 'TEAM_CHAMPIONSHIP', 'Team Championships & Franchise Leagues');
+      return;
+    }
+    if (isOrganizerOrg && organizerWallet && organizerWallet.tournamentCreditsAvailable < 1) {
+      openCreditPaywall(orgId, 'TOURNAMENT_CREDIT');
+      return;
+    }
+    router.push(`/org/${orgId}/team-championship/create`);
+  };
 
   const [communityPlan, setCommunityPlan] = useState<CommunityResponse | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);
@@ -370,7 +402,7 @@ export default function TournamentsPage() {
               href={`/org/${orgId}/dashboard`}
               className="inline-block text-xs font-bold text-foreground/50 hover:text-foreground transition-colors"
             >
-              &larr; Back to Community Dashboard
+              &larr; Back to Workspace Home
             </Link>
           </div>
         </div>
@@ -385,25 +417,28 @@ export default function TournamentsPage() {
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="block md:hidden">
         {/* Modern Sticky Mobile Header */}
-        <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-foreground/10 px-4 py-3 safe-header">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <button
-              onClick={() => router.push(`/org/${orgId}/dashboard`)}
-              className="p-1.5 -ml-1.5 rounded-xl text-foreground/70 hover:text-foreground hover:bg-foreground/5 transition-colors active:scale-95 shrink-0"
-              title="Back to Dashboard"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                  {orgArenaLabel}
-                </span>
+        <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-border/80 safe-header pb-3 px-3.5">
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => router.push(`/org/${orgId}/dashboard`)}
+                title="Back to Home"
+                className="w-9 h-9 rounded-xl border border-border/80 bg-surface/80 hover:bg-surface text-foreground/80 hover:text-foreground flex items-center justify-center transition-all active:scale-95 shadow-xs shrink-0 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    {orgArenaLabel}
+                  </span>
+                </div>
+                <h1 className="text-base font-black text-foreground tracking-tight truncate mt-0.5">
+                  {orgTournamentsTitle}
+                </h1>
               </div>
-              <h1 className="text-base font-black text-foreground tracking-tight truncate">
-                {orgTournamentsTitle}
-              </h1>
             </div>
           </div>
         </header>
@@ -463,7 +498,7 @@ export default function TournamentsPage() {
           ) : (
             <div className="grid grid-cols-2 gap-2.5">
               <button
-                onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+                onClick={handleCreateTournamentClick}
                 className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
                 style={{
                   backgroundColor: 'var(--athlon-card)',
@@ -483,7 +518,7 @@ export default function TournamentsPage() {
               </button>
 
               <button
-                onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                onClick={handleCreateChampionshipClick}
                 className="p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all active:scale-98 group hover:border-primary/50 shadow-sm relative overflow-hidden"
                 style={{
                   backgroundColor: 'var(--athlon-card)',
@@ -494,7 +529,13 @@ export default function TournamentsPage() {
                   <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                     <Shield className="w-4 h-4" />
                   </div>
-                  <span className="text-xs font-mono font-black text-amber-500">{totalChampionships}</span>
+                  {!canCreateChampionship ? (
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-[8.5px] font-black text-amber-400 flex items-center gap-0.5">
+                      <Lock className="w-2.5 h-2.5" /> PRO
+                    </span>
+                  ) : (
+                    <span className="text-xs font-mono font-black text-amber-500">{totalChampionships}</span>
+                  )}
                 </div>
                 <div>
                   <div className="text-xs font-black text-foreground group-hover:text-amber-500 transition-colors">+ Championship</div>
@@ -823,14 +864,15 @@ export default function TournamentsPage() {
               <div className="flex flex-col gap-2 w-full max-w-xs">
                 {!isInternalOrg && (
                   <button
-                    onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
-                    className="w-full py-2.5 rounded-xl bg-primary text-black font-black text-xs"
+                    onClick={handleCreateChampionshipClick}
+                    className="w-full py-2.5 rounded-xl bg-primary text-black font-black text-xs inline-flex items-center justify-center gap-1.5"
                   >
-                    + Create Team Championship
+                    <span>+ Create Team Championship</span>
+                    {!canCreateChampionship && <Lock className="w-3.5 h-3.5" />}
                   </button>
                 )}
                 <button
-                  onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+                  onClick={handleCreateTournamentClick}
                   className={`w-full py-2.5 rounded-xl font-bold text-xs ${
                     isInternalOrg ? 'bg-primary text-black font-black shadow-lg shadow-primary/20' : 'border text-foreground'
                   }`}
@@ -856,7 +898,7 @@ export default function TournamentsPage() {
           <div className="flex items-center gap-2">
             {!isInternalOrg && (
               <button
-                onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                onClick={handleCreateChampionshipClick}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl border font-black text-xs text-primary shadow-sm active:scale-95 transition-all"
                 style={{
                   backgroundColor: 'var(--athlon-surface)',
@@ -865,11 +907,14 @@ export default function TournamentsPage() {
               >
                 <Shield className="w-4 h-4 text-primary" />
                 <span>+ Championship</span>
+                {!canCreateChampionship && (
+                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-[8.5px] font-black text-amber-400">PRO</span>
+                )}
               </button>
             )}
 
             <button
-              onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+              onClick={handleCreateTournamentClick}
               className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl bg-primary text-black font-black text-xs shadow-xl shadow-primary/25 active:scale-95 transition-all"
             >
               <Trophy className="w-4 h-4 stroke-[2.5]" />
@@ -929,7 +974,7 @@ export default function TournamentsPage() {
               <div className="flex items-center gap-3.5 shrink-0">
                 {!isInternalOrg && (
                   <button
-                    onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                    onClick={handleCreateChampionshipClick}
                     className="flex items-center gap-2.5 px-5 py-3 rounded-2xl text-sm font-black border transition-all hover:scale-105 active:scale-95 shadow-md"
                     style={{
                       backgroundColor: 'var(--athlon-surface)',
@@ -939,11 +984,16 @@ export default function TournamentsPage() {
                   >
                     <Shield className="w-4 h-4 text-primary" />
                     <span>Create Team Championship</span>
+                    {!canCreateChampionship && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] font-black text-amber-400 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" /> PRO
+                      </span>
+                    )}
                   </button>
                 )}
 
                 <button
-                  onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+                  onClick={handleCreateTournamentClick}
                   className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-black bg-primary text-black transition-all hover:scale-105 active:scale-95 shadow-xl"
                   style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
                 >
@@ -1547,16 +1597,17 @@ export default function TournamentsPage() {
                   <>
                     {!isInternalOrg && (
                       <button
-                        onClick={() => router.push(`/org/${orgId}/team-championship/create`)}
+                        onClick={handleCreateChampionshipClick}
                         className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-primary text-black font-black text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
                       >
                         <Shield className="w-4 h-4" />
                         <span>Create Team Championship</span>
+                        {!canCreateChampionship && <Lock className="w-3.5 h-3.5" />}
                       </button>
                     )}
 
                     <button
-                      onClick={() => router.push(`/org/${orgId}/tournaments/create`)}
+                      onClick={handleCreateTournamentClick}
                       className={`flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all ${
                         isInternalOrg
                           ? 'bg-primary text-black font-black shadow-xl shadow-primary/20 hover:scale-105 active:scale-95'

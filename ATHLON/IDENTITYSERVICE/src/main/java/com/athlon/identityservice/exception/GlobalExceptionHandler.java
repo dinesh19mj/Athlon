@@ -41,6 +41,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(errorMessage), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(SubscriptionEntitlementException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSubscriptionEntitlementException(SubscriptionEntitlementException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.CONFLICT);
@@ -49,6 +54,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        return new ResponseEntity<>(ApiResponse.error("Resource not found: " + ex.getResourcePath()), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(Exception.class)

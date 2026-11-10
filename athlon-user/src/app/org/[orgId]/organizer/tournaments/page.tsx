@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Trophy, Calendar, Users, ChevronRight, PlusCircle, Settings, ArrowLeft, X, MapPin, Upload, IndianRupee } from 'lucide-react';
 import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
+import { compressImageFile, COMPRESSION_PRESETS } from '@/lib/utils/imageCompression';
 
 export default function OrganizerTournamentsPage() {
   const [tournaments, setTournaments] = useState([
@@ -25,10 +26,15 @@ export default function OrganizerTournamentsPage() {
   const [lastEntryDate, setLastEntryDate] = useState('');
   const [poster, setPoster] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0]);
-      setPoster(url);
+      try {
+        const res = await compressImageFile(e.target.files[0], COMPRESSION_PRESETS.TOURNAMENT_POSTER);
+        setPoster(res.previewUrl);
+      } catch {
+        const url = URL.createObjectURL(e.target.files[0]);
+        setPoster(url);
+      }
     }
   };
 

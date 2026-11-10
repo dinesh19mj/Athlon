@@ -52,7 +52,7 @@ export function CommunityPollCard({
 
   return (
     <div
-      className={`p-5 rounded-3xl border space-y-4 shadow-xl relative overflow-hidden transition-all duration-300 hover:border-primary/40 flex flex-col justify-between ${className}`}
+      className={`p-3.5 sm:p-4 rounded-2xl border space-y-3 shadow-sm relative overflow-hidden transition-all duration-300 hover:border-primary/40 flex flex-col justify-between ${className}`}
       style={{
         backgroundColor: 'var(--athlon-card)',
         borderColor: 'var(--athlon-border)',
@@ -100,7 +100,7 @@ export function CommunityPollCard({
                 key={opt.optionId}
                 disabled={poll.isClosed || isSubmitting}
                 onClick={() => handleOptionClick(opt.optionId)}
-                className={`w-full relative p-3 rounded-2xl border text-left overflow-hidden group transition-all duration-300 cursor-pointer disabled:cursor-default ${
+                className={`w-full relative p-2.5 rounded-xl border text-left overflow-hidden group transition-all duration-300 cursor-pointer disabled:cursor-default ${
                   hasVotedThis
                     ? 'border-primary shadow-sm shadow-primary/10'
                     : 'hover:border-foreground/30'

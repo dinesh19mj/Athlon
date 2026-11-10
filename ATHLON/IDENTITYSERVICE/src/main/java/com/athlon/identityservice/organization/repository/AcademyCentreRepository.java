@@ -20,6 +20,8 @@ public interface AcademyCentreRepository extends JpaRepository<AcademyCentre, Lo
 
     long countByOrganizationUuid(UUID organizationUuid);
 
+    long countByOrganizationId(Long organizationId);
+
     long countByOrganizationUuidAndStatus(UUID organizationUuid, String status);
 
     void deleteByCentreUuid(UUID centreUuid);

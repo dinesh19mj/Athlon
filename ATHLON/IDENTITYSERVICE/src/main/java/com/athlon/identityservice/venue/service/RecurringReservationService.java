@@ -1,5 +1,7 @@
 package com.athlon.identityservice.venue.service;
 
+import com.athlon.identityservice.subscription.enums.VenueFeatureCode;
+import com.athlon.identityservice.subscription.service.SubscriptionEntitlementService;
 import com.athlon.identityservice.venue.dto.*;
 import com.athlon.identityservice.venue.entity.*;
 import com.athlon.identityservice.venue.enums.ExceptionType;
@@ -25,6 +27,7 @@ public class RecurringReservationService {
     private final FacilityBookingRepository bookingRepository;
     private final FacilityBlockRepository blockRepository;
     private final FacilityMaintenanceRepository maintenanceRepository;
+    private final SubscriptionEntitlementService entitlementService;
 
     public RecurringReservationService(
             RecurringReservationRepository reservationRepository,
@@ -33,7 +36,8 @@ public class RecurringReservationService {
             VenueRepository venueRepository,
             FacilityBookingRepository bookingRepository,
             FacilityBlockRepository blockRepository,
-            FacilityMaintenanceRepository maintenanceRepository
+            FacilityMaintenanceRepository maintenanceRepository,
+            SubscriptionEntitlementService entitlementService
     ) {
         this.reservationRepository = reservationRepository;
         this.exceptionRepository = exceptionRepository;
@@ -42,6 +46,7 @@ public class RecurringReservationService {
         this.bookingRepository = bookingRepository;
         this.blockRepository = blockRepository;
         this.maintenanceRepository = maintenanceRepository;
+        this.entitlementService = entitlementService;
     }
 
     /**
@@ -122,6 +127,11 @@ public class RecurringReservationService {
     public RecurringReservationDto createRecurringReservation(RecurringReservationCreateRequest request, Long performedByUserId) {
         VenueFacility facility = facilityRepository.findById(request.getFacilityId())
                 .orElseThrow(() -> new IllegalArgumentException("Facility not found with ID: " + request.getFacilityId()));
+
+        Venue venue = venueRepository.findById(facility.getVenueId()).orElse(null);
+        if (venue != null && venue.getOrganizationUuid() != null) {
+            entitlementService.assertFeature(venue.getOrganizationUuid(), VenueFeatureCode.VENUE_RECURRING_BOOKINGS);
+        }
 
         RecurringReservation r = new RecurringReservation();
         r.setVenueId(facility.getVenueId());

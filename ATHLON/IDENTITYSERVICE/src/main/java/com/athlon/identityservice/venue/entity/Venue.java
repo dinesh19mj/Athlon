@@ -16,10 +16,10 @@ public class Venue {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "venue_id", updatable = false, nullable = false)
+    @Column(name = "venueid", updatable = false, nullable = false)
     private Long venueId;
 
-    @Column(name = "venue_uuid", updatable = false, nullable = false, unique = true)
+    @Column(name = "venueuuid", updatable = false, nullable = false, unique = true)
     private UUID venueUuid;
 
     @Column(name = "organization_id")

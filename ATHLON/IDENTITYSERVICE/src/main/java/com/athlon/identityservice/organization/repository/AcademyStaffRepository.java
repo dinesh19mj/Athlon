@@ -23,4 +23,8 @@ public interface AcademyStaffRepository extends JpaRepository<AcademyStaff, Long
     Optional<AcademyStaff> findByOrganizationUuidAndUserUuidAndIsActive(UUID organizationUuid, UUID userUuid, Integer isActive);
 
     Optional<AcademyStaff> findByOrganizationUuidAndPhoneAndIsActive(UUID organizationUuid, String phone, Integer isActive);
+
+    long countByOrganizationUuidAndIsActive(UUID organizationUuid, Integer isActive);
+
+    long countByOrganizationIdAndIsActive(Long organizationId, Integer isActive);
 }

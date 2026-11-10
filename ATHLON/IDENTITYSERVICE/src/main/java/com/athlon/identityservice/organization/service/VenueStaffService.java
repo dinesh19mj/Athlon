@@ -32,18 +32,21 @@ public class VenueStaffService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
+    private final com.athlon.identityservice.subscription.service.SubscriptionEntitlementService entitlementService;
 
     public VenueStaffService(
             VenueStaffRepository staffRepository,
             OrganizationRepository organizationRepository,
             OrganizationMemberRepository organizationMemberRepository,
             UserRepository userRepository,
-            UserProfileRepository userProfileRepository) {
+            UserProfileRepository userProfileRepository,
+            com.athlon.identityservice.subscription.service.SubscriptionEntitlementService entitlementService) {
         this.staffRepository = staffRepository;
         this.organizationRepository = organizationRepository;
         this.organizationMemberRepository = organizationMemberRepository;
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
+        this.entitlementService = entitlementService;
     }
 
     @Transactional(readOnly = true)
@@ -99,6 +102,7 @@ public class VenueStaffService {
             if (existing.getIsActive() != null && existing.getIsActive() == 1) {
                 throw new DuplicateResourceException("This Athlon user is already an active staff member with role: " + existing.getRole());
             }
+            entitlementService.assertQuota(organizationUuid, "MAX_STAFF", 1);
             // Reactivate existing record
             existing.setIsActive(1);
             existing.setRole(role);
@@ -108,6 +112,7 @@ public class VenueStaffService {
             existing.setUpdatedBy(currentUserId);
             staff = staffRepository.save(existing);
         } else {
+            entitlementService.assertQuota(organizationUuid, "MAX_STAFF", 1);
             staff = new VenueStaff(
                     organization.getOrganizationId(),
                     organization.getOrganizationUuid(),

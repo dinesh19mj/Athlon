@@ -17,7 +17,6 @@ import {
   DollarSign,
   Share2,
   Sparkles,
-  ArrowLeft,
   Calendar,
   Flame,
   Check,
@@ -260,120 +259,218 @@ export default function CommunitySessionsPage() {
   }, [sessions]);
 
   return (
-    <div className="min-h-screen pb-32 sm:pb-20 text-foreground" style={{ backgroundColor: 'var(--athlon-bg)' }}>
-      {/* ─── Modern Mobile-First Hero Header ─── */}
-      <div
-        className="border-b relative overflow-hidden px-4 py-4 sm:py-6 sm:px-6 lg:px-8"
-        style={{ borderColor: 'var(--athlon-border)' }}
-      >
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+    <div
+      className="min-h-full w-full pb-28 md:pb-16 text-foreground"
+      style={{
+        backgroundColor: 'var(--athlon-bg)',
+        paddingTop: 'max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+      }}
+    >
+      <div className="w-full max-w-lg md:max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 flex flex-col gap-3.5 md:gap-6 pt-1.5">
+        {/* ── HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive) ── */}
+        <section
+          className="relative w-full rounded-[26px] overflow-hidden border p-4 sm:p-5 shadow-xl transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+            boxShadow:
+              '0 12px 32px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.15)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)',
+          }}
+        >
+          {/* Top Edge Neon Energy Rail */}
+          <div
+            className="absolute top-0 inset-x-0 h-[2px] opacity-75 pointer-events-none z-0"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
+            }}
+          />
 
-        <div className="max-w-7xl mx-auto relative z-10 space-y-3.5">
-          {/* Top Breadcrumb & Quick Back Row */}
-          <div className="flex items-center justify-between gap-2">
-            <Link
-              href={`/org/${orgId}/dashboard`}
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-foreground/60 hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Workspace Hub</span>
-            </Link>
+          {/* Stadium Floodlight Spotlights */}
+          <div
+            className="absolute -top-16 -right-16 w-60 h-60 rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-60 animate-pulse duration-1000 z-0"
+            style={{
+              background: 'radial-gradient(circle, var(--athlon-primary) 0%, rgba(52, 211, 153, 0.3) 40%, transparent 75%)',
+            }}
+          />
 
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-[10px] font-black uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-              <span>Live RSVPs Active</span>
+          {/* Specular Sheen Arc */}
+          <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.12] dark:from-white/[0.04] via-transparent to-transparent pointer-events-none z-0" />
+
+          <div className="relative z-10 space-y-3.5">
+            {/* Live Ticker Pill (Inside Hero, matching reference design) */}
+            <div className="flex items-center justify-between gap-2">
+              <div
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md"
+                style={{
+                  backgroundColor: 'var(--athlon-primary-soft)',
+                  borderColor: 'var(--athlon-primary)',
+                }}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span
+                    className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                    style={{ backgroundColor: 'var(--athlon-primary)' }}
+                  />
+                  <span
+                    className="relative inline-flex rounded-full h-2 w-2"
+                    style={{ backgroundColor: 'var(--athlon-primary)' }}
+                  />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary">
+                  Live RSVPs
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Title & Subtitle */}
-          <div className="flex items-center justify-between gap-3">
+            {/* Title & Subtitle */}
             <div className="space-y-1">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl border flex items-center justify-center shadow-inner shrink-0"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <Athlon3DIcon type="schedule" size={28} active={true} />
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight">
-                    &quot;Let&apos;s Play&quot; Sessions
-                  </h1>
-                  <p className="text-[11px] sm:text-xs text-foreground/60 font-medium">
-                    Weekly court games, player RSVPs &amp; roll call
-                  </p>
-                </div>
+              <h1 className="text-[19px] sm:text-[21px] font-black leading-[1.14] tracking-tight uppercase text-foreground">
+                <span>&quot;Let&apos;s Play&quot;</span>{' '}
+                <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">
+                  Sessions
+                </span>
+              </h1>
+              <p className="text-[11px] text-text-secondary leading-relaxed font-medium pt-0.5">
+                Weekly court games, player RSVPs &amp; roll call
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center justify-center gap-1.5 text-[9.5px] font-bold px-3 py-2.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md tracking-wider uppercase cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary-foreground)',
+                  boxShadow: '0 4px 16px var(--athlon-primary-glow)',
+                }}
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                <span>Host Session</span>
+              </button>
+              <button
+                onClick={() => setFilterTab('THIS_WEEK')}
+                className="flex items-center justify-center gap-1.5 border text-[9.5px] font-bold px-3 py-2.5 rounded-xl active:scale-95 transition-all shadow-sm tracking-wider uppercase backdrop-blur-md cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-text)',
+                }}
+              >
+                <Calendar className="w-3.5 h-3.5 text-primary" strokeWidth={2.2} />
+                <span>This Week</span>
+              </button>
+            </div>
+
+            {/* Live Telemetry Strip with Dynamic Counts */}
+            <div
+              className="grid grid-cols-3 divide-x rounded-2xl p-2.5 mt-1 border backdrop-blur-md"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-foreground font-mono leading-none">
+                  {loading ? '...' : sessions.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                  Total Games
+                </span>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-primary font-mono leading-none">
+                  {loading ? '...' : totalGoing}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                  Active RSVPs
+                </span>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-emerald-400 font-mono leading-none">
+                  {loading ? '...' : (members.length || 1)}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
+                  Players
+                </span>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Quick Stats Strip */}
-          <div className="grid grid-cols-3 gap-2 pt-1">
-            <div
-              className="p-2.5 sm:p-3 rounded-2xl border text-center space-y-0.5"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Total Games</div>
-              <div className="text-base sm:text-lg font-black text-foreground">{sessions.length}</div>
-            </div>
-            <div
-              className="p-2.5 sm:p-3 rounded-2xl border text-center space-y-0.5"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Active RSVPs</div>
-              <div className="text-base sm:text-lg font-black text-primary">{totalGoing}</div>
-            </div>
-            <div
-              className="p-2.5 sm:p-3 rounded-2xl border text-center space-y-0.5"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">Circle Players</div>
-              <div className="text-base sm:text-lg font-black text-blue-400">{members.length || 1}</div>
-            </div>
-          </div>
-
-          {/* Filter Tabs Bar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar pt-1">
-            {[
-              { id: 'ALL', label: 'All Sessions' },
-              { id: 'UPCOMING', label: 'Upcoming' },
-              { id: 'THIS_WEEK', label: 'This Week' },
-            ].map((tab) => (
+        {/* ── Filter Tabs Track (Design System Section 4.3) ── */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar -mx-1 px-1">
+          {[
+            { id: 'ALL', label: 'All Sessions' },
+            { id: 'UPCOMING', label: 'Upcoming' },
+            { id: 'THIS_WEEK', label: 'This Week' },
+          ].map((tab) => {
+            const isSelected = filterTab === tab.id;
+            return (
               <button
                 key={tab.id}
                 onClick={() => setFilterTab(tab.id as any)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${filterTab === tab.id
-                  ? 'bg-foreground text-background shadow-sm'
-                  : 'bg-surface hover:bg-card border text-foreground/70'
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer active:scale-95 ${isSelected
+                  ? 'border-primary shadow-[0_2px_12px_var(--athlon-primary-glow)] font-black'
+                  : 'text-foreground/70 border-border bg-card/60 hover:bg-card'
                   }`}
                 style={{
-                  borderColor: filterTab === tab.id ? undefined : 'var(--athlon-border)',
+                  backgroundColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-card)',
+                  borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                  color: isSelected ? 'var(--athlon-primary-foreground)' : undefined,
                 }}
               >
                 {tab.label}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      </div>
 
-      {/* ─── Main Sessions Content ─── */}
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* ── Section Title Row (Design System Section 2) ── */}
+        <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-primary" />
+            <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <span>Sessions List</span>
+              <span className="text-[9.5px] font-mono text-primary font-bold bg-primary/10 px-1.5 py-0.2 rounded-full">
+                ({filteredSessions.length})
+              </span>
+            </h2>
+          </div>
+          {filteredSessions.length > 0 && (
+            <span className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider">
+              {filterTab === 'ALL' ? 'All Matches' : filterTab === 'UPCOMING' ? 'Upcoming' : 'This Week'}
+            </span>
+          )}
+        </div>
+
+        {/* ── Main Sessions Content ── */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-56 rounded-3xl animate-pulse border"
+                className="h-48 rounded-2xl animate-pulse border"
                 style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               />
             ))}
           </div>
         ) : filteredSessions.length === 0 ? (
-          /* ─── Empty State ─── */
+          /* ── Empty State ── */
           <div
-            className="p-6 sm:p-10 rounded-[28px] sm:rounded-[36px] border text-center space-y-6 relative overflow-hidden shadow-xl"
+            className="p-6 sm:p-10 rounded-[26px] border text-center space-y-4 relative overflow-hidden shadow-xl"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
@@ -381,50 +478,54 @@ export default function CommunitySessionsPage() {
           >
             <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-3xl bg-primary/20 blur-xl animate-pulse" />
+            <div className="relative mx-auto w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl animate-pulse" />
               <div
-                className="relative w-full h-full rounded-2xl sm:rounded-3xl border flex items-center justify-center shadow-lg"
+                className="relative w-full h-full rounded-2xl border flex items-center justify-center shadow-lg"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
               >
-                <Athlon3DIcon type="schedule" size={40} active={true} />
+                <Athlon3DIcon type="schedule" size={34} active={true} />
               </div>
             </div>
 
-            <div className="space-y-1.5 max-w-md mx-auto relative z-10">
-              <h3 className="text-lg sm:text-xl font-black text-foreground tracking-tight">
+            <div className="space-y-1 max-w-md mx-auto relative z-10">
+              <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight">
                 No Game Sessions Scheduled Yet
               </h3>
-              <p className="text-xs sm:text-sm text-foreground/60 leading-relaxed">
+              <p className="text-[11px] text-text-secondary leading-relaxed font-medium">
                 Host your circle&apos;s next court sparring or friendly doubles match. Members get instant push alerts &amp; 1-tap RSVPs!
               </p>
             </div>
 
-            <div className="pt-2 relative z-10">
+            <div className="pt-1 relative z-10">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-primary hover:bg-primary/90 text-black font-black text-xs sm:text-sm inline-flex items-center justify-center gap-2 shadow-[0_4px_25px_var(--athlon-primary-glow)] active:scale-95 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-black font-bold text-[9.5px] uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shadow-[0_4px_16px_var(--athlon-primary-glow)] active:scale-95 transition-all cursor-pointer"
               >
-                <Plus className="w-4 h-4" strokeWidth={3} />
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Host First Play Session</span>
               </button>
             </div>
           </div>
         ) : (
-          /* ─── Redesigned Session Cards Grid ─── */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          /* ── Sleek Session Cards Grid ── */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
             {filteredSessions.map((sess) => {
               const isGoing = sess.currentUserRsvp === 'GOING';
               const max = sess.maxPlayers || sess.maxParticipants || 8;
-              const current = sess.goingCount || sess.confirmedPlayersCount || (sess.rsvps ? sess.rsvps.filter((r) => r.status === 'GOING').length : 0);
+              const current =
+                sess.goingCount ||
+                sess.confirmedPlayersCount ||
+                (sess.rsvps ? sess.rsvps.filter((r) => r.status === 'GOING').length : 0);
               const fillPct = Math.min(100, Math.round((current / max) * 100));
               const isFull = max ? current >= max : false;
               const spotsLeft = Math.max(0, max - current);
 
               // Accurately resolve cost from either costPerPlayer or costPerPerson
-              const costRaw = sess.costPerPlayer !== undefined && sess.costPerPlayer !== null
-                ? sess.costPerPlayer
-                : sess.costPerPerson;
+              const costRaw =
+                sess.costPerPlayer !== undefined && sess.costPerPlayer !== null
+                  ? sess.costPerPlayer
+                  : sess.costPerPerson;
               const cost = costRaw !== undefined && costRaw !== null ? Number(costRaw) : 0;
 
               const startTimeFormatted = formatSessionTime(sess.startTime);
@@ -434,61 +535,61 @@ export default function CommunitySessionsPage() {
               return (
                 <div
                   key={sess.sessionUuid}
-                  className="p-4 sm:p-5 rounded-[28px] border shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden group"
+                  className="p-3.5 sm:p-4 rounded-2xl border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-3 relative overflow-hidden group"
                   style={{
                     backgroundColor: 'var(--athlon-card)',
                     borderColor: 'var(--athlon-border)',
                   }}
                 >
                   {/* Card Header & Badges */}
-                  <div className="space-y-3.5">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                        <span className="px-2 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
                           🏸 {sess.sport || 'Badminton'}
                         </span>
 
                         {/* Gender Preference Badge */}
                         {sess.genderCategory === 'MALE' ? (
-                          <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/25">
+                          <span className="px-2 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/25">
                             🚹 Men
                           </span>
                         ) : sess.genderCategory === 'FEMALE' ? (
-                          <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-pink-500/15 text-pink-400 border border-pink-500/25">
+                          <span className="px-2 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider bg-pink-500/15 text-pink-400 border border-pink-500/25">
                             🚺 Women
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/25">
-                            👥 {sess.maxMalePlayers && sess.maxFemalePlayers ? `Mixed (${sess.maxMalePlayers}M + ${sess.maxFemalePlayers}F)` : 'Mixed / Both'}
+                          <span className="px-2 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/25">
+                            👥 {sess.maxMalePlayers && sess.maxFemalePlayers ? `Mixed (${sess.maxMalePlayers}M+${sess.maxFemalePlayers}F)` : 'Mixed / Both'}
                           </span>
                         )}
 
                         {cost > 0 ? (
-                          <span className="px-2.5 py-1 rounded-xl text-[10.5px] font-black bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-sm">
-                            <Coins className="w-3 h-3" />
+                          <span className="px-2 py-0.5 rounded-lg text-[9.5px] font-black bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-sm">
+                            <Coins className="w-2.5 h-2.5" />
                             <span>₹{cost} / player</span>
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                          <span className="px-2 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                             Free Session
                           </span>
                         )}
                       </div>
 
                       {isFull && (
-                        <span className="px-2.5 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border bg-rose-500/15 text-rose-400 border-rose-500/30">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border bg-rose-500/15 text-rose-400 border-rose-500/30">
                           Slots Full
                         </span>
                       )}
                     </div>
 
                     {/* Session Title & Description */}
-                    <div className="space-y-1">
-                      <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight group-hover:text-primary transition-colors">
+                    <div className="space-y-0.5">
+                      <h3 className="text-sm sm:text-base font-black text-foreground tracking-tight group-hover:text-primary transition-colors line-clamp-1">
                         {sess.title}
                       </h3>
                       {sess.description && (
-                        <p className="text-[11.5px] text-foreground/60 line-clamp-2 leading-relaxed">
+                        <p className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed font-medium">
                           {sess.description}
                         </p>
                       )}
@@ -496,28 +597,28 @@ export default function CommunitySessionsPage() {
 
                     {/* Meta Info Box */}
                     <div
-                      className="p-3.5 rounded-2xl border space-y-2.5 text-xs shadow-inner"
+                      className="p-3 rounded-xl border space-y-2 text-xs shadow-inner"
                       style={{
                         backgroundColor: 'var(--athlon-surface)',
                         borderColor: 'var(--athlon-border)',
                       }}
                     >
                       {/* Date & Time */}
-                      <div className="flex items-center justify-between text-[11.5px]">
+                      <div className="flex items-center justify-between text-[11px]">
                         <span className="text-foreground/55 font-semibold flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-primary shrink-0" /> Date &amp; Time
                         </span>
                         <div className="text-right">
-                          <div className="font-bold text-foreground">{dateFormatted}</div>
-                          <div className="text-[10.5px] font-mono text-foreground/60">
+                          <span className="font-bold text-foreground">{dateFormatted}</span>
+                          <span className="text-[10px] font-mono text-foreground/60 ml-1.5">
                             {startTimeFormatted} – {endTimeFormatted}
-                          </div>
+                          </span>
                         </div>
                       </div>
 
                       {/* Venue & Location */}
                       {(sess.venueName || sess.city || sess.state) && (
-                        <div className="flex items-start justify-between text-[11.5px] pt-1 border-t border-border/40 gap-2">
+                        <div className="flex items-start justify-between text-[11px] pt-1.5 border-t border-border/40 gap-2">
                           <span className="text-foreground/55 font-semibold flex items-center gap-1.5 shrink-0 pt-0.5">
                             <MapPin className="w-3.5 h-3.5 text-primary shrink-0" /> Court Venue
                           </span>
@@ -536,11 +637,11 @@ export default function CommunitySessionsPage() {
                                   href={sess.googleMapUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline"
+                                  className="inline-flex items-center gap-1 text-[9.5px] font-bold text-primary hover:underline"
                                 >
                                   <Navigation className="w-2.5 h-2.5" />
                                   <span>View on Maps</span>
-                                  <ExternalLink className="w-2.5 h-2.5" />
+                                  <ExternalLink className="w-2 h-2" />
                                 </a>
                               </div>
                             )}
@@ -550,7 +651,7 @@ export default function CommunitySessionsPage() {
 
                       {/* Capacity Progress Bar */}
                       <div className="pt-1.5 space-y-1 border-t border-border/40">
-                        <div className="flex items-center justify-between text-[10.5px]">
+                        <div className="flex items-center justify-between text-[10px]">
                           <span className="text-foreground/60 font-semibold flex items-center gap-1">
                             <Users className="w-3 h-3 text-primary" /> Roster Capacity
                           </span>
@@ -558,7 +659,7 @@ export default function CommunitySessionsPage() {
                             {current} / {max} slots ({spotsLeft > 0 ? `${spotsLeft} open` : 'Full'})
                           </span>
                         </div>
-                        <div className="w-full h-2 rounded-full bg-foreground/10 overflow-hidden p-[1px]">
+                        <div className="w-full h-1.5 rounded-full bg-foreground/10 overflow-hidden p-[1px]">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${fillPct >= 100
                               ? 'bg-rose-500'
@@ -573,8 +674,8 @@ export default function CommunitySessionsPage() {
                     </div>
 
                     {/* Attending Player Avatars */}
-                    <div className="space-y-1.5 pt-0.5">
-                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-foreground/50">
+                    <div className="space-y-1 pt-0.5">
+                      <div className="flex items-center justify-between text-[9.5px] font-bold uppercase tracking-wider text-foreground/50">
                         <span>Confirmed Squad ({current})</span>
                         {spotsLeft > 0 && (
                           <span className="text-primary font-bold lowercase">
@@ -592,7 +693,7 @@ export default function CommunitySessionsPage() {
                               <div
                                 key={(r as any).rsvpId || (r as any).userUuid}
                                 title={r.fullName || (r as any).userName}
-                                className="w-7 h-7 rounded-full border text-[10px] font-black flex items-center justify-center text-primary shadow-sm"
+                                className="w-6 h-6 rounded-full border text-[9px] font-black flex items-center justify-center text-primary shadow-sm"
                                 style={{
                                   backgroundColor: 'var(--athlon-surface)',
                                   borderColor: 'var(--athlon-border)',
@@ -610,13 +711,13 @@ export default function CommunitySessionsPage() {
                               </div>
                             ))}
                           {sess.rsvps.filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING').length > 8 && (
-                            <span className="text-[10px] font-bold text-foreground/50">
+                            <span className="text-[9.5px] font-bold text-foreground/50">
                               +{sess.rsvps.filter((r) => r.status === 'GOING' || (r as any).rsvpStatus === 'GOING').length - 8} more
                             </span>
                           )}
                         </div>
                       ) : (
-                        <div className="text-[11px] text-foreground/45 italic py-0.5">
+                        <div className="text-[10px] text-foreground/45 italic py-0.5">
                           Be the first to confirm your spot!
                         </div>
                       )}
@@ -625,13 +726,13 @@ export default function CommunitySessionsPage() {
 
                   {/* Actions Bar */}
                   <div
-                    className="pt-3 border-t flex items-center justify-between gap-2"
+                    className="pt-2.5 border-t flex items-center justify-between gap-2"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <button
                       onClick={() => handleRsvp(sess.sessionUuid, isGoing ? 'NOT_GOING' : 'GOING')}
                       disabled={!isGoing && isFull}
-                      className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${isGoing
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-[9.5px] font-bold tracking-wider uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${isGoing
                         ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
                         : isFull
                           ? 'bg-surface text-foreground/40 cursor-not-allowed border'
@@ -643,19 +744,19 @@ export default function CommunitySessionsPage() {
                     >
                       {isGoing ? (
                         <>
-                          <Check className="w-4 h-4 stroke-[3]" />
-                          <span>I&apos;m Playing (Confirmed)</span>
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <span>Playing</span>
                         </>
                       ) : isFull ? (
                         <span>Session Full</span>
                       ) : cost > 0 ? (
                         <>
-                          <Zap className="w-3.5 h-3.5 fill-black" />
+                          <Zap className="w-3 h-3 fill-black" />
                           <span>RSVP &amp; Join (₹{cost})</span>
                         </>
                       ) : (
                         <>
-                          <Zap className="w-3.5 h-3.5 fill-black" />
+                          <Zap className="w-3 h-3 fill-black" />
                           <span>1-Tap RSVP</span>
                         </>
                       )}
@@ -663,28 +764,28 @@ export default function CommunitySessionsPage() {
 
                     <button
                       onClick={() => setSelectedSessionForAttendance(sess)}
-                      className="px-3.5 py-3 rounded-2xl border text-foreground font-bold text-xs flex items-center gap-1.5 hover:bg-surface transition-colors cursor-pointer shrink-0"
+                      className="px-3 py-2.5 rounded-xl border text-foreground font-bold text-[9.5px] tracking-wider uppercase flex items-center gap-1 hover:bg-surface transition-colors cursor-pointer shrink-0"
                       style={{
                         backgroundColor: 'var(--athlon-surface)',
                         borderColor: 'var(--athlon-border)',
                       }}
                       title="Roll Call & Attendance"
                     >
-                      <UserCheck className="w-4 h-4 text-primary" />
-                      <span className="hidden xs:inline">Roll Call</span>
+                      <UserCheck className="w-3.5 h-3.5 text-primary" />
+                      <span>Roll Call</span>
                     </button>
 
                     {(isAdmin || canManage) && (
                       <button
                         onClick={() => setSessionToDelete(sess)}
-                        className="px-3 py-3 rounded-2xl border text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                        className="p-2.5 rounded-xl border text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                         style={{
                           backgroundColor: 'var(--athlon-surface)',
                           borderColor: 'var(--athlon-border)',
                         }}
                         title="Delete Session"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -1254,6 +1355,7 @@ export default function CommunitySessionsPage() {
         label="Host Session"
         title="Host Game Session"
         ariaLabel="Host Game Session"
+        className="fixed bottom-22 right-4 md:bottom-8 md:right-8 z-40"
       />
 
       {/* Floating Toast Notification */}

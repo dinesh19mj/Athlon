@@ -5,7 +5,11 @@ export const THEME_STORAGE_KEY = 'athlon-theme';
 export const DEFAULT_THEME_KEY: ThemeKey = 'algae';
 
 export const THEME_MODE_STORAGE_KEY = 'athlon-theme-mode';
+export const THEME_MODE_MOBILE_STORAGE_KEY = 'athlon-theme-mode-mobile';
+export const THEME_MODE_DESKTOP_STORAGE_KEY = 'athlon-theme-mode-desktop';
+
 export const DEFAULT_THEME_MODE: ThemeMode = 'dark';
+export const DEFAULT_MOBILE_THEME_MODE: ThemeMode = 'light';
 
 // ─── Semantic Colors (invariant across all themes) ────────────────────────
 export const SEMANTIC_COLORS = {

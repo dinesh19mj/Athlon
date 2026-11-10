@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { 
   Users, 
   DollarSign,
@@ -10,7 +11,8 @@ import {
   Package,
   Activity,
   Trophy,
-  Swords
+  Swords,
+  Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 
@@ -25,12 +27,15 @@ const quickActions: { id: string; label: string; icon3d: any }[] = [
   { id: '/club/members', label: 'Members', icon3d: 'members' },
   { id: '/club/attendance', label: 'Attendance', icon3d: 'attendance' },
   { id: '/club/finances', label: 'Finances', icon3d: 'finances' },
+  { id: '/club/subscription', label: 'Subscription', icon3d: 'finances' },
   { id: '/club/inventory', label: 'Inventory', icon3d: 'inventory' },
   { id: '/club/progress', label: 'Progress', icon3d: 'performance' },
   { id: '/club/matches', label: 'Matches', icon3d: 'matches' },
 ];
 
 export default function ClubDashboardPage() {
+  const params = useParams();
+  const orgId = (params?.orgId as string) || '';
   const { userEmail } = useAuthStore();
   const displayName = userEmail ? userEmail.split('@')[0] : 'Club Admin';
   
@@ -73,9 +78,18 @@ export default function ClubDashboardPage() {
 
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#06B6D4]/10 rounded-full blur-[100px] pointer-events-none z-0" />
           
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/10 border border-foreground/20 backdrop-blur-md mb-4 relative z-10">
-            <span className="w-2 h-2 rounded-full bg-[#06B6D4] animate-pulse" />
-            <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Club Management</span>
+          <div className="flex flex-wrap items-center gap-2 mb-4 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/10 border border-foreground/20 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-[#06B6D4] animate-pulse" />
+              <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Club Management</span>
+            </div>
+            <Link
+              href={`/org/${orgId}/club/subscription`}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/30 transition-all backdrop-blur-md"
+            >
+              <Sparkles className="w-3 h-3 text-emerald-400" />
+              <span>30-Day Free Trial • Manage Pass</span>
+            </Link>
           </div>
 
           <h1 className="text-3xl font-extrabold mb-1 text-foreground tracking-tight flex items-center gap-2 relative z-10">
@@ -105,12 +119,14 @@ export default function ClubDashboardPage() {
         <div className="p-6 overflow-hidden">
           <h2 className="text-[10px] font-black text-foreground/40 uppercase tracking-widest mb-4 pl-1">Club Operations</h2>
           <section className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory hide-scrollbar">
-            {quickActions.map((action) => (
-              <Link
-                href={action.id}
-                key={action.id}
-                className="flex flex-col items-center gap-1.5 shrink-0 snap-start w-[calc((100%-36px)/4)] group"
-              >
+            {quickActions.map((action) => {
+              const targetHref = orgId ? `/org/${orgId}${action.id}` : action.id;
+              return (
+                <Link
+                  href={targetHref}
+                  key={action.id}
+                  className="flex flex-col items-center gap-1.5 shrink-0 snap-start w-[calc((100%-36px)/4)] group"
+                >
                 <div
                   className="w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] max-w-full rounded-[18px] flex flex-col items-center justify-center transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95 border"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
@@ -124,7 +140,8 @@ export default function ClubDashboardPage() {
                   {action.label}
                 </span>
               </Link>
-            ))}
+            );
+          })}
           </section>
         </div>
 

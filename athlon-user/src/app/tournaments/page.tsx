@@ -21,6 +21,7 @@ import {
   Tv,
   Building2,
   Building,
+  GraduationCap,
   X,
   Plus,
   Home,
@@ -934,20 +935,28 @@ export default function TournamentsPage() {
               </Link>
 
               <Link
-                href="/tournaments"
-                onClick={() => setDesktopFilter('all')}
-                className="px-4 py-2 rounded-xl text-sm font-black bg-primary text-black transition-all flex items-center gap-2 shadow-sm"
+                href="/venues"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
               >
-                <Trophy className="w-4 h-4 text-black" />
-                <span>Tournaments</span>
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                <span>Venues &amp; Turfs</span>
               </Link>
 
               <Link
                 href="/academies"
                 className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
               >
-                <Building2 className="w-4 h-4 text-emerald-400" />
+                <GraduationCap className="w-4 h-4 text-emerald-400" />
                 <span>Academies</span>
+              </Link>
+
+              <Link
+                href="/tournaments"
+                onClick={() => setDesktopFilter('all')}
+                className="px-4 py-2 rounded-xl text-sm font-black bg-primary text-black transition-all flex items-center gap-2 shadow-sm"
+              >
+                <Trophy className="w-4 h-4 text-black" />
+                <span>Tournaments</span>
               </Link>
 
               <Link
@@ -963,44 +972,33 @@ export default function TournamentsPage() {
             </nav>
 
             {/* Right Action CTAs */}
-            <div className="flex items-center gap-3">
-              {isUserLoggedIn && (
-                <Link
-                  href="/tournaments/announce"
-                  className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-500 text-sm font-black px-4 py-2.5 rounded-2xl hover:bg-amber-500/25 transition-all shadow-sm"
-                >
-                  <Megaphone className="w-4 h-4" />
-                  <span>Announce Tournament</span>
-                </Link>
-              )}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <Link
+                href="/tournaments/announce"
+                className="flex items-center gap-1.5 bg-primary/10 border border-primary/25 text-primary text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl hover:bg-primary/15 transition-all shadow-xs whitespace-nowrap shrink-0"
+              >
+                <Trophy className="w-4 h-4 shrink-0" />
+                <span>Host Tournament</span>
+              </Link>
 
               {isUserLoggedIn ? (
                 <Link
                   href="/home"
-                  className="flex items-center gap-2 bg-primary text-black text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                  style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
+                  className="flex items-center gap-1.5 bg-primary text-black text-xs sm:text-sm font-black px-4 py-2 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md whitespace-nowrap shrink-0"
+                  style={{ boxShadow: '0 4px 16px var(--athlon-primary-glow)' }}
                 >
                   <span>Go to App</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 shrink-0" />
                 </Link>
               ) : (
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/login"
-                    className="text-sm font-bold px-4 py-2 rounded-xl text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all"
-                  >
-                    Log In
-                  </Link>
-
-                  <Link
-                    href="/login"
-                    className="flex items-center gap-1.5 bg-primary text-black text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                    style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
-                  >
-                    <span>Get Started</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 bg-primary text-black text-xs sm:text-sm font-black px-4 py-2 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md whitespace-nowrap shrink-0"
+                  style={{ boxShadow: '0 4px 16px var(--athlon-primary-glow)' }}
+                >
+                  <span>Get Started</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
+                </Link>
               )}
             </div>
           </div>

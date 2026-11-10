@@ -10,14 +10,14 @@ interface AntdProviderProps {
 }
 
 export function AntdProvider({ children }: AntdProviderProps) {
-  const { theme, semantic } = useAthlonTheme();
+  const { theme, semantic, mode } = useAthlonTheme();
   const c = theme.colors;
 
   return (
     <StyleProvider hashPriority="high">
       <ConfigProvider
         theme={{
-          algorithm: antdTheme.darkAlgorithm,
+          algorithm: mode === 'light' ? antdTheme.defaultAlgorithm : antdTheme.darkAlgorithm,
           token: {
             colorPrimary: c.primary,
             colorSuccess: semantic.success,

@@ -49,9 +49,8 @@ export const useAuthStore = create<AuthState>()(
     if (lowerEmail.includes('coach') || lowerEmail.includes('trainer')) subs.push('COACH');
     if (lowerEmail.includes('court') || lowerEmail.includes('venue')) subs.push('COURT');
     
-    // Determine effective role
-    const isSuperAdminEmail = lowerEmail === 'athlon1@athlon.com' || lowerEmail === 'dinesh19sep@gmail.com';
-    const effectiveRole = role || (isSuperAdminEmail ? 'PLATFORM_SUPER_ADMIN' : 'USER');
+    // Determine effective role dynamically from backend
+    const effectiveRole = role || 'USER';
     const effectivePlatformRoles = platformRoles && platformRoles.length > 0 
       ? platformRoles 
       : (effectiveRole === 'PLATFORM_SUPER_ADMIN' ? ['PLATFORM_SUPER_ADMIN'] : []);
@@ -124,10 +123,6 @@ export const useAuthStore = create<AuthState>()(
     }),
   isSuperAdmin: () => {
     const state = get();
-    const email = (state.userEmail || '').toLowerCase();
-    if (email === 'athlon1@athlon.com' || email === 'dinesh19sep@gmail.com') {
-      return true;
-    }
     if (state.role === 'PLATFORM_SUPER_ADMIN') {
       return true;
     }
@@ -141,8 +136,6 @@ export const useAuthStore = create<AuthState>()(
           const payload = JSON.parse(atob(payloadBase64));
           if (payload.role === 'PLATFORM_SUPER_ADMIN') return true;
           if (Array.isArray(payload.platformRoles) && payload.platformRoles.includes('PLATFORM_SUPER_ADMIN')) return true;
-          const sub = (payload.sub || '').toLowerCase();
-          if (sub === 'athlon1@athlon.com' || sub === 'dinesh19sep@gmail.com') return true;
         }
       } catch {}
     }

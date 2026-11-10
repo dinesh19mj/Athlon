@@ -31,7 +31,7 @@ export default function ContextSwitcher() {
     }
 
     if (id === 'PERSONAL') {
-      router.push('/profile');
+      router.push('/home');
     } else {
       router.push(`/org/${id}/dashboard`);
     }
@@ -125,7 +125,7 @@ export default function ContextSwitcher() {
             <button
               onClick={() => {
                 setIsOpen(false);
-                router.push('/subscription');
+                router.push('/home/subscription');
               }}
               className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
             >

@@ -70,6 +70,7 @@ import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 import { getThemeVideo } from '@/config/theme';
 
 import HomeRoleHeader from '@/components/home/HomeRoleHeader';
+import HomeIntroHero from '@/components/home/HomeIntroHero';
 import { AppModeSwitcher } from '@/components/navigation/AppModeSwitcher';
 import HomeSearchFilterBar from '@/components/home/HomeSearchFilterBar';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
@@ -87,7 +88,7 @@ import {
 
 const quickActions: { id: string; label: string; icon: any; icon3d: 'tournaments' | 'academies' | 'rankings' | 'matches' | 'registered' | 'facilities' | 'bookings'; desc: string }[] = [
   { id: '/home/tournaments', label: 'Tournaments', icon: Trophy, icon3d: 'tournaments', desc: 'Events & Brackets' },
-  { id: '/venues', label: 'Bookings', icon: TicketCheck, icon3d: 'bookings', desc: 'Venues, Turfs & Academies' },
+  { id: '/home/venues', label: 'Bookings', icon: TicketCheck, icon3d: 'bookings', desc: 'Venues, Turfs & Academies' },
   { id: '/home/matches', label: 'Matches', icon: Activity, icon3d: 'matches', desc: 'Schedule & Scores' },
   { id: '/home/registered', label: 'Registered', icon: ClipboardList, icon3d: 'registered', desc: 'My Entries' },
 ];
@@ -107,7 +108,7 @@ function orgIcon(type: string, cls = 'w-7 h-7') {
 export default function PersonalHomePage() {
   const router = useRouter();
   const { userEmail, userId, userUuid, token, isAuthenticated } = useAuthStore();
-  const { personalProfile, organizations, setActiveWorkspace, setOrganizations } = useWorkspaceStore();
+  const { personalProfile, organizations, setActiveWorkspace, setOrganizations, activeWorkspaceId } = useWorkspaceStore();
   const { themeKey } = useAthlonTheme();
   const backgroundVideo = getThemeVideo(themeKey);
 
@@ -124,6 +125,17 @@ export default function PersonalHomePage() {
   }, [mounted, isAuthenticated, router]);
 
   const [activeRole, setActiveRole] = useState<'PLAYER' | string>('PLAYER');
+
+  // Ensure that on Personal Home Page, the active role and workspace are personal
+  useEffect(() => {
+    setActiveRole('PLAYER');
+    if (activeWorkspaceId && activeWorkspaceId !== 'PERSONAL') {
+      setActiveWorkspace('PERSONAL');
+    }
+  }, [activeWorkspaceId, setActiveWorkspace]);
+
+  // Session-scoped video completion state to prevent rerender replays
+  const [videoCompleted, setVideoCompleted] = useState(false);
 
   const [publicTournaments, setPublicTournaments] = useState<Tournament[]>([]);
   const [publicAnnouncements, setPublicAnnouncements] = useState<TournamentAnnouncement[]>([]);
@@ -673,15 +685,63 @@ export default function PersonalHomePage() {
 
   /* ── handlers ── */
   function selectRole(role: string) {
-    if (role === 'PLAYER') {
+    if (role === 'PLAYER' || role === 'PERSONAL') {
       setActiveWorkspace('PERSONAL');
       setActiveRole('PLAYER');
-      router.push('/home');
     } else {
       setActiveWorkspace(role);
       router.push(`/org/${role}/dashboard`);
     }
   }
+
+  const activeOrg = useMemo(() => {
+    if (activeRole === 'PLAYER' || activeRole === 'PERSONAL') return undefined;
+    return organizations.find((o) => o.id === activeRole);
+  }, [organizations, activeRole]);
+
+  const activeOrgTournaments = useMemo(() => {
+    if (!activeOrg) return [];
+    return publicTournaments.filter(
+      (t) => t.organizerUuid === activeOrg.id || String(t.organizerId) === activeOrg.id
+    );
+  }, [publicTournaments, activeOrg]);
+
+  const organizerHeroStats = useMemo(() => {
+    if (!activeOrg) {
+      return { activeTournaments: 0, registeredPlayers: 0, upcomingMatches: 0 };
+    }
+    const activeTours = activeOrgTournaments.filter(
+      (t) => t.isActive || t.status === 'ACTIVE' || t.status === 'PUBLISHED' || t.status === 'ONGOING'
+    );
+    const registered = activeOrgTournaments.reduce(
+      (sum, t) => sum + (t.playersCount || t.teamCount || 0),
+      0
+    );
+    const tourUuids = new Set(activeOrgTournaments.map((t) => t.tournamentUuid));
+    const upcoming = rawUserMatches.filter(
+      (m) =>
+        (tourUuids.has(m.tournamentUuid) || tourUuids.has(String(m.tournamentId))) &&
+        (m.status === 'SCHEDULED' || m.status === 'WAITING_FOR_LINEUPS')
+    );
+    return {
+      activeTournaments: activeTours.length || activeOrgTournaments.length,
+      registeredPlayers: registered,
+      upcomingMatches: upcoming.length,
+    };
+  }, [activeOrg, activeOrgTournaments, rawUserMatches]);
+
+  const playerTournamentCount = useMemo(() => {
+    if (!rawUserMatches || rawUserMatches.length === 0) return 0;
+    const tourIds = new Set(rawUserMatches.map((m) => m.tournamentId).filter(Boolean));
+    return tourIds.size;
+  }, [rawUserMatches]);
+
+  const playerUpcomingMatchesCount = useMemo(() => {
+    if (!rawUserMatches || rawUserMatches.length === 0) return 0;
+    return rawUserMatches.filter(
+      (m) => m.status === 'SCHEDULED' || m.status === 'WAITING_FOR_LINEUPS'
+    ).length;
+  }, [rawUserMatches]);
 
   const pendingLineups = rawUserMatches.filter((m) => m.status === 'WAITING_FOR_LINEUPS');
   const liveAuctionChampionships = publicChampionships.filter(
@@ -898,26 +958,19 @@ export default function PersonalHomePage() {
           <AppModeSwitcher />
         </div>
 
-        {/* HERO VIDEO CARD */}
+        {/* HERO BANNER AREA (One-time video -> dynamic workspace hero card) */}
         <div className="px-4 relative z-10 mt-1.5 mb-3">
-          <div
-            className="relative w-full h-[175px] sm:h-[200px] rounded-[20px] overflow-hidden border shadow-md flex items-center justify-center"
-            style={{
-              backgroundColor: 'var(--athlon-card)',
-              borderColor: 'var(--athlon-border)',
-            }}
-          >
-            <video
-              key={backgroundVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover rounded-[20px]"
-            >
-              <source src={backgroundVideo} type="video/mp4" />
-            </video>
-          </div>
+          <HomeIntroHero
+            backgroundVideo={backgroundVideo}
+            activeRole={activeRole}
+            activeOrg={activeOrg}
+            playerStats={playerStats}
+            playerTournamentCount={playerTournamentCount}
+            playerUpcomingMatchesCount={playerUpcomingMatchesCount}
+            organizerStats={organizerHeroStats}
+            videoCompleted={videoCompleted}
+            onVideoComplete={() => setVideoCompleted(true)}
+          />
         </div>
 
         {/* ROLE SWITCHER HEADER ─────────────────────── */}
@@ -928,12 +981,12 @@ export default function PersonalHomePage() {
             organizations={organizations}
             showSearch={false}
             onAddClick={() => {
-              window.location.href = '/subscription';
+              window.location.href = '/home/subscription';
             }}
           />
         </div>
 
-        {/* ── PLAYER CONTENT ────────────────────────────────────────────── */}
+        {/* ── PLAYER & HOME CONTENT ────────────────────────────────────── */}
         {activeRole === 'PLAYER' && (
           <>
             {/* Profile Stats Card */}
@@ -1263,7 +1316,7 @@ export default function PersonalHomePage() {
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                     <h2 className="text-[10.5px] font-black text-foreground/80 uppercase tracking-wider">Live Now</h2>
                   </div>
-                  <Link href="/live-score" className="text-[9.5px] font-bold text-red-500 hover:underline uppercase tracking-wider">
+                  <Link href="/home/live-score" className="text-[9.5px] font-bold text-red-500 hover:underline uppercase tracking-wider">
                     See All ({filteredLiveScores.length})
                   </Link>
                 </div>
@@ -1443,7 +1496,7 @@ export default function PersonalHomePage() {
                       Book Courts &amp; Turfs ({filteredVenues.length})
                     </h2>
                   </div>
-                  <Link href="/venues" className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
+                  <Link href="/home/venues" className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-0.5">
                     <span>Explore</span>
                     <ChevronRight className="w-3 h-3" />
                   </Link>
@@ -1543,9 +1596,6 @@ export default function PersonalHomePage() {
                   borderColor: 'var(--athlon-border)',
                 }}
               >
-                {/* Top Subtle Brand Gradient Line */}
-                <div className="h-1 w-full bg-gradient-to-r from-primary/70 via-primary to-primary/20 absolute top-0 left-0 right-0" />
-
                 {/* Ambient Decorative Glow */}
                 <div className="absolute -top-10 -right-10 w-36 h-36 bg-primary/15 dark:bg-primary/25 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/30 transition-all duration-500" />
 
@@ -1640,7 +1690,7 @@ export default function PersonalHomePage() {
                     </h2>
                   </div>
                   <Link
-                    href="/live-score"
+                    href="/home/live-score"
                     className="text-[9.5px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center"
                   >
                     View All ({filteredFinishedScores.length}) <ChevronRight className="w-3 h-3 ml-0.5" />
@@ -1674,7 +1724,6 @@ export default function PersonalHomePage() {
                           }}
                         >
                           <SportCardSkeletonBackground sport={config.sport || config.category || (score as any).sport || 'Badminton'} />
-                          <div className="h-[2px] w-full bg-primary shadow-[0_0_6px_var(--athlon-primary)] relative z-10" />
                           <div className="p-3.5 space-y-2.5 flex flex-col justify-between h-full relative z-10">
                             <div className="flex items-center justify-between">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
@@ -2311,100 +2360,286 @@ export default function PersonalHomePage() {
              - ULTRA STYLISH HORIZONTAL SCROLLING RAILS WITH SMOOTH NAV CONTROLS
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="hidden md:block min-h-screen bg-background pb-20 w-full max-w-full overflow-x-hidden">
-        {/* Desktop Ambient Hero Banner with Video & Profile Telemetry */}
-        <section className="relative w-full border-b overflow-hidden bg-gradient-to-b from-card/60 via-card/30 to-background" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        {/* Desktop Ambient Hero Banner - Redesigned (No Video, No Sticky Navbar) */}
+        <section
+          className="relative w-full border-b overflow-hidden"
+          style={{
+            backgroundColor: 'var(--athlon-surface)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Subtle Background Glows */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 max-w-7xl mx-auto px-8 py-8">
-            {/* Top-Level App Mode Switcher (ATHLON ↔ MARKET) */}
-            <div className="mb-6 flex items-center justify-between">
+          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-8 space-y-6">
+            {/* Top Row: App Mode Switcher (ATHLON ↔ MARKET) */}
+            <div className="flex items-center justify-between">
               <div className="w-80">
                 <AppModeSwitcher showNotifications={false} />
               </div>
             </div>
-
-            <div className="flex items-center justify-between gap-6 flex-wrap">
-              {/* Profile Card Block */}
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div
-                    className="w-16 h-16 rounded-2xl bg-surface border-2 overflow-hidden flex items-center justify-center shadow-md"
-                    style={{ borderColor: 'var(--athlon-primary)' }}
-                  >
-                    <img src={personalProfile?.avatar || '/placeholder.png'} alt="Profile" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-background animate-pulse" />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2.5">
-                    <h1 className="text-2xl font-black tracking-tight text-foreground">{displayName}</h1>
-                    <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-primary/15 text-primary border border-primary/30">
-                      {athlonId}
-                    </span>
-                  </div>
-                  <p className="text-xs text-foreground/60 flex items-center gap-2">
-                    <span>Personal Athlete Workspace</span>
-                    <span>•</span>
-                    <span className="text-emerald-400 font-semibold">Active &amp; Ready</span>
-                  </p>
-                </div>
+            {/* 1. ATHLETE PERFORMANCE PASSPORT & TELEMETRY HUD */}
+            <div
+              className="rounded-[24px] border shadow-xl relative overflow-hidden backdrop-blur-xl transition-all"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+                boxShadow: '0 12px 36px -8px var(--athlon-shadow, rgba(0, 0, 0, 0.12))',
+              }}
+            >
+              {/* Subtle Ambient Background Mesh & Lighting */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute -top-16 -left-16 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+                <div className="absolute -bottom-16 right-1/4 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
+                <div
+                  className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
+                    backgroundSize: '24px 24px',
+                  }}
+                />
               </div>
 
-              {/* 3 Telemetry Metrics: Matches, Wins, Win Rate */}
-              <div className="flex items-center gap-3">
-                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                    <Activity className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-black uppercase text-foreground/50">Matches</div>
-                    <div className="text-lg font-black text-foreground font-mono">{playerStats?.totalMatches ?? 0}</div>
-                  </div>
-                </div>
+              {/* Top Accent Energy Rail */}
+              <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-primary via-emerald-400 to-amber-400 z-10" />
 
-                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-black uppercase text-foreground/50">Wins</div>
-                    <div className="text-lg font-black text-amber-400 font-mono">{playerStats?.matchesWon ?? 0}</div>
-                  </div>
-                </div>
+              <div className="relative z-10 p-6 lg:p-7">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+                  {/* Left: Athlete Identity & Credentials */}
+                  <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                    {/* Athlete Avatar with Hex/Ring Styling */}
+                    <div className="relative shrink-0">
+                      <div
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl p-1 border-2 overflow-hidden flex items-center justify-center shadow-lg transition-transform group-hover:scale-105"
+                        style={{
+                          backgroundColor: 'var(--athlon-surface)',
+                          borderColor: 'var(--athlon-primary)',
+                          boxShadow: '0 0 20px var(--athlon-primary-soft)',
+                        }}
+                      >
+                        <img
+                          src={personalProfile?.avatar || '/placeholder.png'}
+                          alt={displayName}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      </div>
+                      <div
+                        className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 shadow-sm animate-pulse"
+                        style={{ borderColor: 'var(--athlon-card)' }}
+                        title="Active & Ready"
+                      />
+                    </div>
 
-                <div className="p-3 px-4 rounded-2xl border bg-surface/70 backdrop-blur-md flex items-center gap-3 shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                    <TrendingUp className="w-5 h-5" />
+                    {/* Athlete Details */}
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Status Badge */}
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 border border-primary/25 text-primary">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                          Athlete Pass
+                        </span>
+
+                        {/* Athlon ID Chip */}
+                        <div
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border text-[11px] font-mono font-bold shadow-2xs"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border)',
+                            color: 'var(--athlon-text-primary)',
+                          }}
+                        >
+                          <ShieldCheck className="w-3 h-3 text-primary" />
+                          <span>{athlonId}</span>
+                        </div>
+                      </div>
+
+                      {/* Display Name */}
+                      <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight uppercase line-clamp-1">
+                        {displayName}
+                      </h1>
+
+                      {/* Sub-text */}
+                      <p className="text-xs text-foreground/60 flex items-center gap-2 font-medium">
+                        <span>Personal Athlete Workspace</span>
+                        <span>•</span>
+                        <span className="text-emerald-400 font-bold flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          Active &amp; Ready
+                        </span>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] font-black uppercase text-foreground/50">Win Rate</div>
-                    <div className="text-lg font-black text-primary font-mono">
-                      {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
+
+                  {/* Right: 4 High-Precision Telemetry HUD Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 xl:gap-3.5 shrink-0">
+                    {/* Matches */}
+                    <div
+                      className="p-3.5 px-4 rounded-2xl border transition-all hover:scale-[1.02] shadow-xs flex flex-col justify-between min-w-[125px] xl:min-w-[135px]"
+                      style={{
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">
+                          Matches
+                        </span>
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                          <Activity className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-1">
+                        <span className="text-2xl font-black text-foreground font-mono leading-none">
+                          {playerStats?.totalMatches ?? 0}
+                        </span>
+                        <span className="text-[9px] font-bold text-foreground/40 uppercase">Played</span>
+                      </div>
+                    </div>
+
+                    {/* Wins */}
+                    <div
+                      className="p-3.5 px-4 rounded-2xl border transition-all hover:scale-[1.02] shadow-xs flex flex-col justify-between min-w-[125px] xl:min-w-[135px]"
+                      style={{
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-500/80">
+                          Wins
+                        </span>
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                          <Trophy className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-1">
+                        <span className="text-2xl font-black text-amber-400 font-mono leading-none">
+                          {playerStats?.matchesWon ?? 0}
+                        </span>
+                        <span className="text-[9px] font-bold text-amber-500/50 uppercase">Won</span>
+                      </div>
+                    </div>
+
+                    {/* Win Rate */}
+                    <div
+                      className="p-3.5 px-4 rounded-2xl border transition-all hover:scale-[1.02] shadow-xs flex flex-col justify-between min-w-[125px] xl:min-w-[135px]"
+                      style={{
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500/80">
+                          Win Rate
+                        </span>
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                          <TrendingUp className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-1">
+                        <span className="text-2xl font-black text-emerald-400 font-mono leading-none">
+                          {playerStats?.winRate ? `${Math.round(playerStats.winRate)}%` : '0%'}
+                        </span>
+                        <span className="text-[9px] font-bold text-emerald-500/50 uppercase">Ratio</span>
+                      </div>
+                    </div>
+
+                    {/* Upcoming / Events */}
+                    <div
+                      className="p-3.5 px-4 rounded-2xl border transition-all hover:scale-[1.02] shadow-xs flex flex-col justify-between min-w-[125px] xl:min-w-[135px]"
+                      style={{
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-500/80">
+                          Upcoming
+                        </span>
+                        <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                          <CalendarDays className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-1">
+                        <span className="text-2xl font-black text-foreground font-mono leading-none">
+                          {playerUpcomingMatchesCount}
+                        </span>
+                        <span className="text-[9px] font-bold text-blue-500/50 uppercase">Fixtures</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Optional Workspaces Switcher Row (only if organizations exist) */}
+                {organizations && organizations.length > 0 && (
+                  <div
+                    className="pt-4 mt-5 border-t flex items-center gap-2 flex-wrap"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <span className="text-[11px] font-bold text-foreground/50 uppercase tracking-wider mr-1">
+                      Workspaces:
+                    </span>
+                    <button
+                      onClick={() => selectRole('PLAYER')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border flex items-center gap-1.5 cursor-pointer ${
+                        activeRole === 'PLAYER'
+                          ? 'bg-primary text-black border-primary shadow-xs'
+                          : 'bg-surface hover:bg-surface/80 text-foreground/70 border-foreground/10'
+                      }`}
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Personal (Athlete)</span>
+                    </button>
+                    {organizations.map((org) => (
+                      <button
+                        key={org.id}
+                        onClick={() => selectRole(org.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border flex items-center gap-1.5 cursor-pointer ${
+                          activeRole === org.id
+                            ? 'bg-primary text-black border-primary shadow-xs'
+                            : 'bg-surface hover:bg-surface/80 text-foreground/70 border-foreground/10'
+                        }`}
+                      >
+                        {orgIcon(org.type, 'w-3.5 h-3.5')}
+                        <span className="truncate max-w-[140px]">{org.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Quick Action Navigation Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6 pt-6 border-t" style={{ borderColor: 'var(--athlon-border)' }}>
+            {/* 2. Quick Action Command Dock (4 Equal Columns) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {quickActions.map((action) => (
                 <Link
                   key={action.id}
                   href={action.id}
-                  className="p-3.5 rounded-2xl border flex items-center gap-3.5 bg-surface/50 hover:bg-surface hover:border-primary/40 transition-all group shadow-sm"
-                  style={{ borderColor: 'var(--athlon-border)' }}
+                  className="p-4 rounded-2xl border flex items-center gap-4 transition-all group shadow-sm hover:scale-[1.02] hover:border-primary/40 active:scale-98"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-surface border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0 shadow-inner">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 shadow-inner border"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
                     <Athlon3DIcon type={action.icon3d} size={32} active={true} />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-black text-foreground group-hover:text-primary transition-colors">{action.label}</div>
-                    <div className="text-[10px] text-foreground/50 truncate">{action.desc}</div>
+                    <div className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
+                      {action.label}
+                    </div>
+                    <div className="text-[11px] text-foreground/50 truncate">
+                      {action.desc}
+                    </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-foreground/30 ml-auto group-hover:translate-x-1 group-hover:text-primary transition-all" />
+                  <ChevronRight className="w-4 h-4 text-foreground/30 ml-auto group-hover:translate-x-1 group-hover:text-primary transition-all shrink-0" />
                 </Link>
               ))}
             </div>
@@ -2575,7 +2810,7 @@ export default function PersonalHomePage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Link href="/live-score" className="text-xs font-bold text-red-500 hover:underline uppercase tracking-wider mr-2">
+                  <Link href="/home/live-score" className="text-xs font-bold text-red-500 hover:underline uppercase tracking-wider mr-2">
                     Live Scoreboard →
                   </Link>
                   <button
@@ -2956,7 +3191,7 @@ export default function PersonalHomePage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Link href="/venues" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                  <Link href="/home/venues" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
                     Explore All Venues ({filteredVenues.length}) →
                   </Link>
                   <button
@@ -3164,7 +3399,6 @@ export default function PersonalHomePage() {
                       className="p-5 rounded-[24px] border space-y-3.5 bg-card relative overflow-hidden h-full flex flex-col justify-between shadow-lg"
                       style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                     >
-                      <div className="h-1 w-full bg-gradient-to-r from-primary to-emerald-400 absolute top-0 left-0 right-0" />
                       <div className="flex items-center justify-between text-xs pt-1">
                         <span className="font-bold text-primary truncate max-w-[200px]">{match.tournament}</span>
                         <span className="font-mono text-[11px] text-foreground/60">{match.court}</span>
@@ -3205,7 +3439,7 @@ export default function PersonalHomePage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Link href="/live-score" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
+                  <Link href="/home/live-score" className="text-xs font-bold text-primary hover:underline uppercase tracking-wider mr-2">
                     All Results →
                   </Link>
                   <button
@@ -3291,7 +3525,7 @@ export default function PersonalHomePage() {
                   <Building className="w-5 h-5 text-primary" />
                   <h2 className="text-base font-black text-foreground">Managed Clubs, Academies &amp; Workspaces</h2>
                 </div>
-                <Link href="/subscription" className="text-xs font-bold text-primary hover:underline">
+                <Link href="/home/subscription" className="text-xs font-bold text-primary hover:underline">
                   + Add Workspace
                 </Link>
               </div>

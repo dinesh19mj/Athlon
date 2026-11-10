@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   ArrowLeft,
   Search,
@@ -27,6 +27,7 @@ import {
   GalleryHorizontal,
   Megaphone,
   Plus,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { TournamentService, Tournament } from '@/lib/api/tournaments';
@@ -48,6 +49,7 @@ export default function TournamentsPage() {
   const [championships, setChampionships] = useState<TeamChampionship[]>([]);
   const [announcements, setAnnouncements] = useState<TournamentAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const champsScrollRef = useRef<HTMLDivElement>(null);
@@ -61,58 +63,65 @@ export default function TournamentsPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        const [res, champRes, annRes, userOrgsRes] = await Promise.allSettled([
-          TournamentService.getAll(),
-          TeamChampionshipService.getAllPublic(),
-          TournamentAnnouncementService.getAll(),
-          userUuid ? OrganizationService.getByUserUuid(userUuid) : Promise.resolve(null as any),
-        ]);
-        if (res.status === 'fulfilled' && res.value?.data) {
-          const activePublic = (res.value.data || []).filter((t: Tournament) => t.visibility === 'PUBLIC');
-          setTournaments(activePublic);
-        }
-        if (champRes.status === 'fulfilled' && champRes.value) {
-          const val = champRes.value as any;
-          const list = Array.isArray(val) ? val : Array.isArray(val?.data) ? val.data : [];
-          setChampionships(list);
-        }
-        if (annRes.status === 'fulfilled' && annRes.value?.data) {
-          const list = Array.isArray(annRes.value.data) ? annRes.value.data : [];
-          setAnnouncements(list);
-        }
-        if (userOrgsRes.status === 'fulfilled' && userOrgsRes.value) {
-          const orgVal = userOrgsRes.value as any;
-          const orgList = Array.isArray(orgVal) ? orgVal : Array.isArray(orgVal?.data) ? orgVal.data : [];
-          const academyOrgs = orgList.filter((o: any) => o.type === 'ACADEMY' || !o.type);
-          if (academyOrgs.length > 0) {
-            const orgTournsResults = await Promise.allSettled(
-              academyOrgs.map((o: any) => TournamentService.getByOrg(o.uuid || o.organizationUuid))
-            );
-            const internalTourns: Tournament[] = [];
-            orgTournsResults.forEach((r) => {
-              if (r.status === 'fulfilled' && r.value?.data) {
-                const list = r.value.data as Tournament[];
-                list.forEach((t) => {
-                  if (t.visibility === 'PRIVATE' && !internalTourns.some((it) => it.tournamentUuid === t.tournamentUuid)) {
-                    internalTourns.push(t);
-                  }
-                });
-              }
-            });
-            setAcademyTournaments(internalTourns);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load tournaments and championships', err);
-      } finally {
-        setLoading(false);
+  const fetchTournaments = useCallback(async (isManual = false) => {
+    if (isManual) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    try {
+      const [res, champRes, annRes, userOrgsRes] = await Promise.allSettled([
+        TournamentService.getAll(),
+        TeamChampionshipService.getAllPublic(),
+        TournamentAnnouncementService.getAll(),
+        userUuid ? OrganizationService.getByUserUuid(userUuid) : Promise.resolve(null as any),
+      ]);
+      if (res.status === 'fulfilled' && res.value?.data) {
+        const activePublic = (res.value.data || []).filter((t: Tournament) => t.visibility === 'PUBLIC');
+        setTournaments(activePublic);
       }
-    };
-    fetchTournaments();
+      if (champRes.status === 'fulfilled' && champRes.value) {
+        const val = champRes.value as any;
+        const list = Array.isArray(val) ? val : Array.isArray(val?.data) ? val.data : [];
+        setChampionships(list);
+      }
+      if (annRes.status === 'fulfilled' && annRes.value?.data) {
+        const list = Array.isArray(annRes.value.data) ? annRes.value.data : [];
+        setAnnouncements(list);
+      }
+      if (userOrgsRes.status === 'fulfilled' && userOrgsRes.value) {
+        const orgVal = userOrgsRes.value as any;
+        const orgList = Array.isArray(orgVal) ? orgVal : Array.isArray(orgVal?.data) ? orgVal.data : [];
+        const academyOrgs = orgList.filter((o: any) => o.type === 'ACADEMY' || !o.type);
+        if (academyOrgs.length > 0) {
+          const orgTournsResults = await Promise.allSettled(
+            academyOrgs.map((o: any) => TournamentService.getByOrg(o.uuid || o.organizationUuid))
+          );
+          const internalTourns: Tournament[] = [];
+          orgTournsResults.forEach((r) => {
+            if (r.status === 'fulfilled' && r.value?.data) {
+              const list = r.value.data as Tournament[];
+              list.forEach((t) => {
+                if (t.visibility === 'PRIVATE' && !internalTourns.some((it) => it.tournamentUuid === t.tournamentUuid)) {
+                  internalTourns.push(t);
+                }
+              });
+            }
+          });
+          setAcademyTournaments(internalTourns);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load tournaments and championships', err);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
   }, [userUuid]);
+
+  useEffect(() => {
+    fetchTournaments();
+  }, [fetchTournaments]);
 
   const tabs = [
     { id: 'all', label: 'All Events', count: tournaments.length + championships.length + academyTournaments.length + announcements.length },
@@ -373,17 +382,10 @@ export default function TournamentsPage() {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            <Link
-              href="/tournaments/announce"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-amber-500/15 border border-amber-500/30 text-amber-500 hover:bg-amber-500/25 transition-all shadow-sm active:scale-95"
-            >
-              <Megaphone className="w-3 h-3" />
-              <span>Announce</span>
-            </Link>
             {liveCount > 0 && (
               <Link
-                href="/live-score"
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse"
+                href="/home/live-score"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-red-500/15 border border-red-500/30 text-red-400 animate-pulse"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                 <span>{liveCount} Live</span>
@@ -904,294 +906,340 @@ export default function TournamentsPage() {
 
       {/* ══════════════════════════════════════════════════════════════════════
           2. DESKTOP VIEW ONLY (hidden on mobile, visible on md and above)
-             - HORIZONTAL SCROLLING CARD TRACKS FOR CHAMPIONSHIPS & TOURNAMENTS
+             - PRO SPORTS CIRCUIT HUD & RESPONSIVE 3-COLUMN GRID
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="hidden md:block min-h-screen pb-20 bg-background">
-        {/* Desktop Header Banner */}
-        <div
-          className="border-b px-8 py-8 bg-gradient-to-b from-card/70 via-card/30 to-background"
-          style={{ borderColor: 'var(--athlon-border)' }}
-        >
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between gap-6 flex-wrap">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shadow-lg shadow-primary/10">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-black tracking-tight text-foreground">
-                      Tournaments &amp; Championships
-                    </h1>
-                    <p className="text-xs text-foreground/50">
-                      Discover open competitions, franchise team championships, and live matches
-                    </p>
-                  </div>
+      <div className="hidden md:block min-h-screen pb-24 bg-gradient-to-b from-background via-surface/10 to-background">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-8 space-y-8">
+          {/* Hero Header Card */}
+          <div
+            className="rounded-[32px] border p-8 bg-card relative overflow-hidden shadow-sm"
+            style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+          >
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-3 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-wider text-primary">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                  <span>ATHLETE TOURNAMENT CIRCUIT &amp; BRACKETS</span>
                 </div>
+                <h1 className="text-3xl font-black tracking-tight text-foreground">
+                  Tournaments &amp; Championships
+                </h1>
+                <p className="text-sm text-foreground/60 leading-relaxed">
+                  Compete in sanctioned knockout draws, enter multi-category team franchise championships, and follow real-time match brackets across premier sporting disciplines.
+                </p>
               </div>
 
-              {/* Quick Search & Announce CTA */}
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <div className="relative min-w-[320px]">
+              {/* Desktop Quick Search Input */}
+              <div className="w-full lg:w-80 shrink-0">
+                <div className="relative">
                   <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search tournaments, location, sport..."
-                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl border bg-surface text-xs font-medium outline-none focus:border-primary transition-all"
+                    placeholder="Search tournaments, sports, cities..."
+                    className="w-full pl-10 pr-9 py-2.5 rounded-2xl border bg-surface/70 text-xs font-medium outline-none focus:border-primary transition-all text-foreground placeholder:text-foreground/40"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-
-                <Link
-                  href="/tournaments/announce"
-                  className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-500 text-xs font-black px-4 py-2.5 rounded-2xl hover:bg-amber-500/25 transition-all shadow-sm shrink-0 active:scale-95"
-                >
-                  <Megaphone className="w-4 h-4" />
-                  <span>Announce Tournament</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Sport Filter Chips & Telemetry Bar */}
-            <div className="flex items-center justify-between pt-2 border-t flex-wrap gap-4" style={{ borderColor: 'var(--athlon-border)' }}>
-              {/* Category Segmented Tabs */}
-              <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${isActive
-                        ? 'bg-primary text-black shadow-md shadow-primary/25 scale-105'
-                        : 'bg-surface/60 border text-foreground/60 hover:text-foreground hover:bg-surface'
-                        }`}
-                      style={{ borderColor: isActive ? 'transparent' : 'var(--athlon-border)' }}
-                    >
-                      <span>{tab.label}</span>
-                      {tab.count !== undefined && (
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${isActive ? 'bg-black/20 text-black font-black' : 'bg-foreground/10 text-foreground/70'
-                            }`}
-                        >
-                          {tab.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Sport Pills */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-foreground/40 font-bold mr-1">Sport:</span>
-                {sports.map((sport) => {
-                  const isSelected = selectedSport === sport;
-                  return (
-                    <button
-                      key={sport}
-                      onClick={() => setSelectedSport(sport)}
-                      className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${isSelected
-                        ? 'bg-primary/20 text-primary border border-primary/40'
-                        : 'text-foreground/60 hover:text-foreground hover:bg-white/5'
-                        }`}
-                    >
-                      {sport}
-                    </button>
-                  );
-                })}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Desktop Event Cards Tracks (Horizontal Scrolling) */}
-        <main className="max-w-7xl mx-auto px-8 py-8 space-y-12">
-          {loading ? (
-            <div className="text-center py-20 space-y-3">
-              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <div className="text-sm font-black uppercase tracking-widest text-foreground/50">
-                Loading events catalog...
-              </div>
-            </div>
-          ) : filteredTournaments.length === 0 && filteredChampionships.length === 0 && desktopAnnouncements.length === 0 ? (
+          {/* Telemetry HUD (4 Stat Cards) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div
-              className="text-center py-24 rounded-[32px] border p-8 space-y-4 max-w-xl mx-auto bg-card"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              className="rounded-2xl border p-4.5 bg-card/60 backdrop-blur-sm flex items-center justify-between"
+              style={{ borderColor: 'var(--athlon-border)' }}
             >
-              <div className="w-16 h-16 rounded-2xl bg-foreground/5 border flex items-center justify-center mx-auto text-foreground/40" style={{ borderColor: 'var(--athlon-border)' }}>
-                <Trophy className="w-8 h-8" />
+              <div className="space-y-1">
+                <div className="text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                  Total Competitions
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {totalCount}
+                </div>
+                <div className="text-[11px] font-medium text-foreground/50">
+                  Across all active formats
+                </div>
               </div>
-              <h3 className="text-lg font-black text-foreground">No Events Match Your Filters</h3>
-              <p className="text-xs text-foreground/50">
-                Try selecting a different sport, resetting your search criteria, or exploring all tournaments.
-              </p>
-              <button
-                onClick={() => {
-                  setActiveTab('all');
-                  setSelectedSport('ALL');
-                  setSearchQuery('');
-                }}
-                className="px-5 py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider"
+              <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Trophy className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl border p-4.5 bg-card/60 backdrop-blur-sm flex items-center justify-between"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="space-y-1">
+                <div className="text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                  Open Tournaments
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {tournaments.length + academyTournaments.length}
+                </div>
+                <div className="text-[11px] font-medium text-foreground/50">
+                  Singles &amp; Doubles Draws
+                </div>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <Zap className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl border p-4.5 bg-card/60 backdrop-blur-sm flex items-center justify-between"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="space-y-1">
+                <div className="text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                  Team Championships
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {championships.length}
+                </div>
+                <div className="text-[11px] font-medium text-foreground/50">
+                  Franchise &amp; Leagues
+                </div>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                <Shield className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl border p-4.5 bg-card/60 backdrop-blur-sm flex items-center justify-between"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              <div className="space-y-1">
+                <div className="text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                  Live &amp; Upcoming
+                </div>
+                <div className="text-2xl font-black text-foreground flex items-center gap-2">
+                  <span>{liveCount}</span>
+                  <span className="text-xs text-foreground/40 font-normal">/</span>
+                  <span className="text-emerald-500">{upcomingCount}</span>
+                </div>
+                <div className="text-[11px] font-medium text-foreground/50">
+                  {liveCount > 0 ? `${liveCount} in action right now` : 'Circuit active'}
+                </div>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <Radio className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Controls: Category Segmented Tabs & Sport Filter Chips */}
+          <div
+            className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-2 rounded-2xl border bg-card/40 backdrop-blur-sm"
+            style={{ borderColor: 'var(--athlon-border)' }}
+          >
+            {/* Category Segmented Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar p-1">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                      isActive
+                        ? 'bg-primary text-black font-black shadow-sm'
+                        : 'text-foreground/60 hover:text-foreground hover:bg-surface'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    {tab.count !== undefined && (
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                          isActive
+                            ? 'bg-black/20 text-black font-black'
+                            : 'bg-foreground/10 text-foreground/70'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sport Filter Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar px-2 py-1">
+              <span className="text-xs font-bold text-foreground/40 mr-1 shrink-0">Sport:</span>
+              {sports.map((sport) => {
+                const isSelected = selectedSport.toLowerCase() === sport.toLowerCase();
+                return (
+                  <button
+                    key={sport}
+                    onClick={() => setSelectedSport(sport)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                      isSelected
+                        ? 'bg-foreground text-background font-black shadow-sm'
+                        : 'text-foreground/60 hover:text-foreground hover:bg-surface'
+                    }`}
+                  >
+                    {sport}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Main Competitions Grid Section */}
+          <main className="space-y-10">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="h-72 rounded-[28px] border animate-pulse bg-card/40 p-6 flex flex-col justify-between"
+                    style={{ borderColor: 'var(--athlon-border)' }}
+                  >
+                    <div className="space-y-3">
+                      <div className="h-5 w-24 bg-foreground/10 rounded-full" />
+                      <div className="h-6 w-3/4 bg-foreground/10 rounded-lg" />
+                      <div className="h-4 w-1/2 bg-foreground/10 rounded-lg" />
+                    </div>
+                    <div className="h-10 w-full bg-foreground/10 rounded-xl" />
+                  </div>
+                ))}
+              </div>
+            ) : filteredTournaments.length === 0 && filteredChampionships.length === 0 && desktopAnnouncements.length === 0 ? (
+              <div
+                className="text-center py-20 rounded-[32px] border p-8 space-y-4 max-w-xl mx-auto bg-card"
+                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               >
-                Reset All Filters
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-12">
-              {/* 0. Community Tournament Flyers Section (Horizontal Scroll) */}
-              {desktopAnnouncements.length > 0 && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <Megaphone className="w-5 h-5 text-amber-500" />
-                      <div>
-                        <h2 className="text-lg font-black text-foreground">
-                          Community Tournament Flyers ({desktopAnnouncements.length})
-                        </h2>
-                        <p className="text-xs text-foreground/50">
-                          Direct entry &amp; organizer contact announcements
-                        </p>
+                <div
+                  className="w-16 h-16 rounded-2xl bg-foreground/5 border flex items-center justify-center mx-auto text-foreground/40"
+                  style={{ borderColor: 'var(--athlon-border)' }}
+                >
+                  <Trophy className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-black text-foreground">No Events Match Your Criteria</h3>
+                <p className="text-xs text-foreground/50">
+                  Try selecting a different sport filter, clearing your search query, or switching categories.
+                </p>
+                <button
+                  onClick={() => {
+                    setActiveTab('all');
+                    setSelectedSport('ALL');
+                    setSearchQuery('');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-primary text-black font-black text-xs uppercase tracking-wider hover:opacity-95 active:scale-95 transition-all"
+                >
+                  Reset All Filters
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-12">
+                {/* 1. Team Championships Group */}
+                {(activeTab === 'all' || activeTab === 'championships' || activeTab === 'live' || activeTab === 'upcoming' || activeTab === 'completed') &&
+                  filteredChampionships.length > 0 && (
+                    <section className="space-y-5">
+                      <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                            <Shield className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-black text-foreground">
+                              Team Championships ({filteredChampionships.length})
+                            </h2>
+                            <p className="text-xs text-foreground/50">
+                              Multi-category franchise leagues, live auctions, and player draft events
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                      <Link
-                        href="/tournaments/announce"
-                        className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Announce Yours
-                      </Link>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => scrollContainer(announcementsScrollRef, 'left')}
-                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => scrollContainer(announcementsScrollRef, 'right')}
-                          className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                          style={{ borderColor: 'var(--athlon-border)' }}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredChampionships.map((c) => (
+                          <div key={c.championshipId || c.championshipUuid} className="h-full">
+                            <PublicTeamChampionshipCard championship={c} />
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  </div>
+                    </section>
+                  )}
 
-                  <div
-                    ref={announcementsScrollRef}
-                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                  >
-                    {desktopAnnouncements.map((a) => (
-                      <div key={a.uuid} className="snap-start shrink-0 w-[360px]">
-                        <PublicAnnouncementCard announcement={a} />
+                {/* 2. Open Tournaments Group */}
+                {(activeTab === 'all' || activeTab === 'tournaments' || activeTab === 'academy' || activeTab === 'live' || activeTab === 'upcoming' || activeTab === 'completed') &&
+                  filteredTournaments.length > 0 && (
+                    <section className="space-y-5">
+                      <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                            <Trophy className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-black text-foreground">
+                              {activeTab === 'academy' ? 'Academy Competitions' : 'Open Tournaments'} ({filteredTournaments.length})
+                            </h2>
+                            <p className="text-xs text-foreground/50">
+                              Knockout draws &amp; league championships open for athlete registration
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
 
-              {/* 1. Team Championships Section (Horizontal Scroll) */}
-              {filteredChampionships.length > 0 && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <Shield className="w-5 h-5 text-primary" />
-                      <div>
-                        <h2 className="text-lg font-black text-foreground">
-                          Team Championships ({filteredChampionships.length})
-                        </h2>
-                        <p className="text-xs text-foreground/50">
-                          Multi-category franchise leagues, live auctions, and player draft events
-                        </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredTournaments.map((t) => (
+                          <div key={t.tournamentId || t.tournamentUuid} className="h-full">
+                            <PublicTournamentCard
+                              tournament={t}
+                              hrefPrefix="/home/tournaments"
+                            />
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    </section>
+                  )}
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => scrollContainer(champsScrollRef, 'left')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => scrollContainer(champsScrollRef, 'right')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div
-                    ref={champsScrollRef}
-                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                  >
-                    {filteredChampionships.map((c) => (
-                      <div key={c.championshipId || c.championshipUuid} className="snap-start shrink-0 w-[360px]">
-                        <PublicTeamChampionshipCard championship={c} />
+                {/* 3. Community Flyers Group */}
+                {(activeTab === 'all' || activeTab === 'announcements') &&
+                  desktopAnnouncements.length > 0 && (
+                    <section className="space-y-5">
+                      <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
+                            <Megaphone className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-black text-foreground">
+                              Community Tournament Flyers ({desktopAnnouncements.length})
+                            </h2>
+                            <p className="text-xs text-foreground/50">
+                              Direct entry and contact announcements from registered regional organizers
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
 
-              {/* 2. Individual Tournaments Section (Horizontal Scroll) */}
-              {filteredTournaments.length > 0 && (
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <Trophy className="w-5 h-5 text-amber-400" />
-                      <div>
-                        <h2 className="text-lg font-black text-foreground">
-                          Open Tournaments ({filteredTournaments.length})
-                        </h2>
-                        <p className="text-xs text-foreground/50">
-                          Knockout &amp; league championships open for registration
-                        </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {desktopAnnouncements.map((a) => (
+                          <div key={a.uuid} className="h-full">
+                            <PublicAnnouncementCard announcement={a} />
+                          </div>
+                        ))}
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => scrollContainer(tournsScrollRef, 'left')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => scrollContainer(tournsScrollRef, 'right')}
-                        className="w-8 h-8 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div
-                    ref={tournsScrollRef}
-                    className="flex items-stretch gap-5 overflow-x-auto pb-4 pt-1 snap-x scroll-px-8 hide-scrollbar -mx-8 px-8"
-                  >
-                    {filteredTournaments.map((t) => (
-                      <div key={t.tournamentId || t.tournamentUuid} className="snap-start shrink-0 w-[360px]">
-                        <PublicTournamentCard tournament={t} />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-          )}
-        </main>
+                    </section>
+                  )}
+              </div>
+            )}
+          </main>
+        </div>
       </div>
 
       <style

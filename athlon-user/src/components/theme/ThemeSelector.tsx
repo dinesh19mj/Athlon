@@ -29,12 +29,26 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
   const { theme: currentTheme, themeKey, mode, setMode, setTheme, availableThemes, iconStyle, setIconStyle } = useAthlonTheme();
   const c = currentTheme.colors;
 
-  const handleResetDefault = () => {
-    setTheme('algae', 'dark');
+  const handleResetDefaultMobile = () => {
+    setTheme('algae', 'light');
     setIconStyle('2d');
+    try {
+      localStorage.removeItem('athlon-theme-mode-mobile');
+    } catch {}
   };
 
-  const isDefault = themeKey === 'algae' && mode === 'dark' && iconStyle === '2d';
+  const isDefaultMobile = themeKey === 'algae' && mode === 'light' && iconStyle === '2d';
+
+  const handleResetDefaultDesktop = () => {
+    setTheme('algae', 'dark');
+    setIconStyle('2d');
+    try {
+      localStorage.removeItem('athlon-theme-mode-desktop');
+      localStorage.removeItem('athlon-theme-mode');
+    } catch {}
+  };
+
+  const isDefaultDesktop = themeKey === 'algae' && mode === 'dark' && iconStyle === '2d';
 
   return (
     <div className={`space-y-4 sm:space-y-5 select-none ${className}`}>
@@ -75,10 +89,10 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {!isDefault && (
+            {!isDefaultMobile && (
               <button
                 type="button"
-                onClick={handleResetDefault}
+                onClick={handleResetDefaultMobile}
                 className="px-2 py-1 rounded-lg border text-[9.5px] font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
                 style={{
                   backgroundColor: c.card,
@@ -784,10 +798,10 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
           </p>
         </div>
 
-        {!isDefault && (
+        {!isDefaultDesktop && (
           <button
             type="button"
-            onClick={handleResetDefault}
+            onClick={handleResetDefaultDesktop}
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border transition-all duration-200 active:scale-95 shrink-0 self-start sm:self-center shadow-xs cursor-pointer group"
             style={{
               backgroundColor: c.surface,

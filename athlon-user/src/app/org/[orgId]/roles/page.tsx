@@ -10,8 +10,9 @@ import ClubPermissionMatrixView from '@/components/club/ClubPermissionMatrixView
 export default function OrgRolesPage() {
   const params = useParams();
   const orgIdParam = (params?.orgId as string) || '';
-  const { getActiveOrganization } = useWorkspaceStore();
-  const org = getActiveOrganization();
+  const { getActiveOrganization, organizations } = useWorkspaceStore();
+  const activeOrg = getActiveOrganization();
+  const org = activeOrg || organizations?.find((o) => o.id === orgIdParam);
   const orgUuid = org?.id || orgIdParam;
   const orgName = org?.name || 'Workspace';
 

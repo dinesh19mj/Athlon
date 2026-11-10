@@ -377,7 +377,7 @@ export default function PublicTournamentDetailsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (< md) - REDESIGNED LUXURY TOURNAMENT DETAILS
          ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden pb-32 animate-in fade-in duration-300">
+      <div className="block md:hidden pb-36 animate-in fade-in duration-300">
         {/* Sleek Floating Glass Header */}
         <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/90 backdrop-blur-md border-b border-foreground/5 safe-header">
           <div className="flex items-center gap-2 min-w-0">
@@ -1257,55 +1257,53 @@ export default function PublicTournamentDetailsPage() {
           )}
         </main>
 
-        {/* ── 8. LUXURY FLOATING STICKY REGISTRATION DOCK ───────────────────── */}
+        {/* ── 8. LUXURY FLOATING REGISTRATION DOCK ───────────────────── */}
         <div
-          className="fixed bottom-0 inset-x-0 z-50 backdrop-blur-2xl border-t shadow-[0_-8px_30px_rgba(0,0,0,0.3)] px-3.5 py-2.5"
+          className="fixed inset-x-3.5 z-40 px-4 py-2.5 bg-card/95 backdrop-blur-xl border border-border/90 rounded-2xl shadow-2xl flex items-center justify-between gap-3 max-w-lg mx-auto"
           style={{
-            backgroundColor: 'var(--athlon-navigation, rgba(10, 15, 29, 0.9))',
-            borderColor: 'var(--athlon-border)',
-            paddingBottom: 'max(0.6rem, env(safe-area-inset-bottom, 8px))',
+            bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.875rem))',
+            transform: 'translate3d(0, 0, 0)',
+            WebkitTransform: 'translate3d(0, 0, 0)',
           }}
         >
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-            <div className="flex flex-col min-w-0">
-              <span className="text-[8.5px] font-black text-foreground/50 uppercase tracking-widest leading-none">
-                Entry Fee
+          <div className="flex flex-col min-w-0">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+              Entry Fee
+            </span>
+            <div className="flex items-baseline gap-1 mt-1 whitespace-nowrap">
+              <span className="text-base sm:text-lg font-black text-primary font-mono leading-none tracking-tight">
+                {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
               </span>
-              <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-base font-black text-primary font-mono leading-none">
-                  {tournament.registrationFees ? `₹${tournament.registrationFees}` : 'FREE'}
-                </span>
-                <span className="text-[9.5px] text-foreground/40 font-semibold">/ team</span>
-              </div>
+              <span className="text-[10px] text-muted-foreground font-semibold leading-none">/ team</span>
             </div>
-
-            {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
-              <div className="px-4 py-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
-                <Trophy className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Finished</span>
-              </div>
-            ) : isRegistrationClosed ? (
-              <div className="px-4 py-2 bg-red-500/15 border border-red-500/30 text-red-400 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none">
-                <Lock className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                <span>Closed</span>
-              </div>
-            ) : (
-              <button
-                onClick={() => router.push(registerHref)}
-                className="px-4 py-2 bg-primary text-black font-black text-[11px] uppercase tracking-wider rounded-xl shadow-md shadow-primary/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Ticket className="w-3.5 h-3.5 fill-black shrink-0" />
-                <span>
-                  {isAuthenticated
-                    ? isTeamEvent
-                      ? 'Register Team'
-                      : 'Register Now'
-                    : 'Login to Register'}
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
-              </button>
-            )}
           </div>
+
+          {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
+            <div className="px-4 py-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none shrink-0 whitespace-nowrap">
+              <Trophy className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>Finished</span>
+            </div>
+          ) : isRegistrationClosed ? (
+            <div className="px-4 py-2.5 bg-red-500/15 border border-red-500/30 text-red-400 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-1.5 select-none shrink-0 whitespace-nowrap">
+              <Lock className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <span>Closed</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => router.push(registerHref)}
+              className="px-4 py-2.5 bg-primary text-black font-black text-[11px] sm:text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap"
+            >
+              <Ticket className="w-3.5 h-3.5 fill-black shrink-0" />
+              <span>
+                {isAuthenticated
+                  ? isTeamEvent
+                    ? 'Register Team'
+                    : 'Register Now'
+                  : 'Login to Register'}
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+          )}
         </div>
       </div>
 

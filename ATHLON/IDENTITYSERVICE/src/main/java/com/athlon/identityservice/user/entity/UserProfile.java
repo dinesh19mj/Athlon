@@ -1,5 +1,6 @@
 package com.athlon.identityservice.user.entity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -53,6 +54,12 @@ public class UserProfile {
 
     @Column(name = "state")
     private String state;
+
+    @Column(name = "dob")
+    private LocalDate dob;
+
+    @Column(name = "gender", length = 20)
+    private String gender;
 
     @Column(name = "isactive")
     private Integer isActive = 1;
@@ -189,6 +196,22 @@ public class UserProfile {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public LocalDate getDob() {
+        return dob;
+    }
+
+    public void setDob(LocalDate dob) {
+        this.dob = dob;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public Integer getIsActive() {

@@ -505,13 +505,18 @@ export function MarketingPageClient() {
       {/* ══════════════════════════════════════════════════════════════════════
           1. MOBILE VIEW ONLY (hidden on md and above)
           ══════════════════════════════════════════════════════════════════════ */}
-      <div className="block md:hidden h-full overflow-y-auto overscroll-none touch-pan-y max-w-full pb-28 pt-2.5">
+      <div
+        className="block md:hidden h-full overflow-y-auto overscroll-none touch-pan-y max-w-full pb-28 safe-area-top"
+        style={{
+          paddingTop: 'max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+        }}
+      >
         {/* ─── Top-Level App Mode Switcher (ATHLON ↔ MARKET) ─── */}
-        <div className="w-full max-w-lg mx-auto px-4 pt-1 pb-1 flex justify-center">
+        <div className="w-full max-w-lg mx-auto px-3.5 sm:px-4 flex justify-center">
           <AppModeSwitcher />
         </div>
 
-        <main className="w-full max-w-lg mx-auto px-4 flex flex-col gap-4 mt-1.5">
+        <main className="w-full max-w-lg mx-auto px-3.5 sm:px-4 flex flex-col gap-3.5 pt-1.5">
 
           {/* ═══════════════════════════════════════════════════════════════════
               HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive)
@@ -1566,9 +1571,8 @@ export function MarketingPageClient() {
           style={{ borderColor: 'var(--athlon-border)' }}
         >
           <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-            {/* Brand Logo & App Mode Switcher */}
-            <div className="flex items-center gap-5">
-              <Link href="/" className="flex items-center gap-3 group">
+            {/* Brand Logo */}
+            <Link href="/" className="flex items-center gap-3 group shrink-0">
               <div
                 className="w-11 h-11 rounded-2xl flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-lg"
                 style={{
@@ -1591,11 +1595,6 @@ export function MarketingPageClient() {
                 </span>
               </div>
             </Link>
-
-            <div className="hidden lg:block w-72">
-              <AppModeSwitcher showNotifications={false} />
-            </div>
-          </div>
 
             {/* Center Navigation Links */}
             <nav className="flex items-center gap-1 bg-surface/40 p-1.5 rounded-2xl border border-foreground/5 backdrop-blur-md">
@@ -1667,17 +1666,6 @@ export function MarketingPageClient() {
                   <button
                     type="button"
                     onClick={() => {
-                      setAuthModalMode('login');
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="text-sm font-bold px-4 py-2 rounded-xl text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all cursor-pointer"
-                  >
-                    Log In
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
                       setAuthModalMode('signup');
                       setIsAuthModalOpen(true);
                     }}
@@ -1718,13 +1706,8 @@ export function MarketingPageClient() {
             />
           </div>
 
-          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24 grid grid-cols-12 gap-10 items-center">
+          <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-14 lg:py-20 grid grid-cols-12 gap-10 items-center">
             <div className="col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-primary/10 border border-primary/25 text-primary">
-                <Sparkles className="w-4 h-4" />
-                <span>Next-Gen Sports Marketplace &amp; Tournament Platform</span>
-              </div>
-
               <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.1] tracking-tight uppercase text-foreground">
                 Compete Today. <br />
                 <span className="bg-gradient-to-r from-primary via-emerald-400 to-amber-300 bg-clip-text text-transparent">
@@ -1783,8 +1766,15 @@ export function MarketingPageClient() {
 
             {/* Right 5 Columns */}
             <div className="col-span-5 space-y-4">
+              {/* App Mode Switcher directly above discovery card */}
+              <div className="w-full flex justify-end pb-1">
+                <div className="w-full max-w-[380px]">
+                  <AppModeSwitcher />
+                </div>
+              </div>
+
               <div
-                className="rounded-[32px] border p-8 shadow-2xl backdrop-blur-2xl space-y-5"
+                className="w-full rounded-[32px] border p-8 shadow-2xl backdrop-blur-2xl space-y-5"
                 style={{
                   backgroundColor: 'var(--athlon-surface)',
                   borderColor: 'var(--athlon-border)',

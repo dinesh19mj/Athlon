@@ -1,17 +1,30 @@
 import type { AthlonTheme, ThemeKey, ThemeMode } from './theme-types';
 import { ATHLON_THEMES, ATHLON_LIGHT_THEMES, THEME_ORDER, getAthlonTheme } from './athlon-themes';
-import { DEFAULT_THEME_KEY, DEFAULT_THEME_MODE, THEME_STORAGE_KEY, THEME_MODE_STORAGE_KEY } from './theme-constants';
+import {
+  DEFAULT_THEME_KEY,
+  DEFAULT_THEME_MODE,
+  DEFAULT_MOBILE_THEME_MODE,
+  THEME_STORAGE_KEY,
+  THEME_MODE_STORAGE_KEY,
+  THEME_MODE_MOBILE_STORAGE_KEY,
+  THEME_MODE_DESKTOP_STORAGE_KEY,
+} from './theme-constants';
 
 type ThemeListener = (theme: AthlonTheme, mode: ThemeMode) => void;
 
 class ThemeController {
   private static instance: ThemeController;
   private currentTheme: AthlonTheme;
-  private currentMode: ThemeMode = DEFAULT_THEME_MODE;
+  private currentMode: ThemeMode;
   private listeners: Set<ThemeListener> = new Set();
+  private mediaQueryList: MediaQueryList | null = null;
+  private mediaQueryListener: ((e: MediaQueryListEvent | MediaQueryList) => void) | null = null;
 
   private constructor() {
-    this.currentTheme = ATHLON_THEMES[DEFAULT_THEME_KEY];
+    // Always initialize with DEFAULT_THEME_MODE so SSR and initial client hydration match;
+    // initializeTheme() (called in useEffect after hydration) applies viewport/saved mode.
+    this.currentMode = DEFAULT_THEME_MODE;
+    this.currentTheme = getAthlonTheme(DEFAULT_THEME_KEY, this.currentMode);
   }
 
   static getInstance(): ThemeController {
@@ -40,8 +53,14 @@ class ThemeController {
     this.currentTheme = theme;
     this.applyThemeCSSVariables(theme, mode);
     if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768;
       localStorage.setItem(THEME_STORAGE_KEY, key);
-      localStorage.setItem(THEME_MODE_STORAGE_KEY, mode);
+      if (isMobile) {
+        localStorage.setItem(THEME_MODE_MOBILE_STORAGE_KEY, mode);
+      } else {
+        localStorage.setItem(THEME_MODE_STORAGE_KEY, mode);
+        localStorage.setItem(THEME_MODE_DESKTOP_STORAGE_KEY, mode);
+      }
     }
     this.listeners.forEach((fn) => fn(theme, mode));
   }
@@ -182,13 +201,66 @@ class ThemeController {
 
   initializeTheme(): void {
     if (typeof window === 'undefined') return;
+    const isMobile = window.innerWidth < 768;
     const saved = localStorage.getItem(THEME_STORAGE_KEY) as ThemeKey | null;
-    const savedMode = localStorage.getItem(THEME_MODE_STORAGE_KEY) as ThemeMode | null;
+
+    let mode: ThemeMode;
+    if (isMobile) {
+      const savedMobileMode = localStorage.getItem(THEME_MODE_MOBILE_STORAGE_KEY) as ThemeMode | null;
+      if (savedMobileMode === 'light' || savedMobileMode === 'dark') {
+        mode = savedMobileMode;
+      } else {
+        // Mobile view default: light mode with algae green
+        mode = DEFAULT_MOBILE_THEME_MODE;
+      }
+    } else {
+      const savedDesktopMode = (localStorage.getItem(THEME_MODE_DESKTOP_STORAGE_KEY) || localStorage.getItem(THEME_MODE_STORAGE_KEY)) as ThemeMode | null;
+      if (savedDesktopMode === 'light' || savedDesktopMode === 'dark') {
+        mode = savedDesktopMode;
+      } else {
+        // Desktop view default: dark mode with algae green
+        mode = DEFAULT_THEME_MODE;
+      }
+    }
+
     const key = saved && ATHLON_THEMES[saved] ? saved : DEFAULT_THEME_KEY;
-    const mode = savedMode === 'light' ? 'light' : 'dark';
     this.currentMode = mode;
     this.currentTheme = getAthlonTheme(key, mode);
     this.applyThemeCSSVariables(this.currentTheme, mode);
+    this.setupResizeListener();
+  }
+
+  private setupResizeListener(): void {
+    if (typeof window === 'undefined' || this.mediaQueryList) return;
+    try {
+      this.mediaQueryList = window.matchMedia('(max-width: 767px)');
+      this.mediaQueryListener = (e: MediaQueryListEvent | MediaQueryList) => {
+        const isMobile = 'matches' in e ? e.matches : window.innerWidth < 768;
+        let targetMode: ThemeMode;
+        if (isMobile) {
+          const savedMobile = localStorage.getItem(THEME_MODE_MOBILE_STORAGE_KEY) as ThemeMode | null;
+          targetMode = (savedMobile === 'light' || savedMobile === 'dark') ? savedMobile : DEFAULT_MOBILE_THEME_MODE;
+        } else {
+          const savedDesktop = (localStorage.getItem(THEME_MODE_DESKTOP_STORAGE_KEY) || localStorage.getItem(THEME_MODE_STORAGE_KEY)) as ThemeMode | null;
+          targetMode = (savedDesktop === 'light' || savedDesktop === 'dark') ? savedDesktop : DEFAULT_THEME_MODE;
+        }
+
+        if (targetMode !== this.currentMode) {
+          this.currentMode = targetMode;
+          this.currentTheme = getAthlonTheme(this.currentTheme.key, targetMode);
+          this.applyThemeCSSVariables(this.currentTheme, targetMode);
+          this.listeners.forEach((fn) => fn(this.currentTheme, targetMode));
+        }
+      };
+
+      if (this.mediaQueryList.addEventListener) {
+        this.mediaQueryList.addEventListener('change', this.mediaQueryListener);
+      } else {
+        (this.mediaQueryList as unknown as { addListener: (cb: (e: MediaQueryListEvent | MediaQueryList) => void) => void }).addListener(this.mediaQueryListener);
+      }
+    } catch {
+      // ignore
+    }
   }
 
   subscribe(fn: ThemeListener): () => void {

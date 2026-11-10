@@ -230,7 +230,7 @@ export default function HomeRoleHeader({
         {/* ➕ ADD NEW HUB BUTTON (Stable / Fixed position matching size) */}
         <div className="shrink-0 pb-1">
           <button
-            onClick={onAddClick || (() => { router.push('/subscription'); })}
+            onClick={onAddClick || (() => { router.push('/home/subscription'); })}
             className="flex items-center justify-center w-[42px] h-[42px] rounded-full border border-dashed border-border hover:border-primary/50 text-foreground/80 hover:text-primary hover:bg-primary/5 bg-card transition-all duration-200 active:scale-95 text-xs font-bold cursor-pointer shrink-0 shadow-sm"
             style={{
               backgroundColor: 'var(--athlon-card)',

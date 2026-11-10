@@ -14,7 +14,10 @@ export {
   THEME_STORAGE_KEY,
   SEMANTIC_COLORS,
   DEFAULT_THEME_MODE,
+  DEFAULT_MOBILE_THEME_MODE,
   THEME_MODE_STORAGE_KEY,
+  THEME_MODE_MOBILE_STORAGE_KEY,
+  THEME_MODE_DESKTOP_STORAGE_KEY,
   LIGHT_THEME_TOKENS,
 } from './theme-constants';
 export { themeController } from './theme-controller';

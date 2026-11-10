@@ -9,7 +9,10 @@ import {
   DEFAULT_THEME_KEY,
   THEME_STORAGE_KEY,
   DEFAULT_THEME_MODE,
+  DEFAULT_MOBILE_THEME_MODE,
   THEME_MODE_STORAGE_KEY,
+  THEME_MODE_MOBILE_STORAGE_KEY,
+  THEME_MODE_DESKTOP_STORAGE_KEY,
   SEMANTIC_COLORS,
 } from "@/config/theme";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
@@ -66,17 +69,25 @@ export const viewport: Viewport = {
 const themeInitScript = `
 (function() {
   try {
+    var isMobile = window.innerWidth < 768;
     var storageKey = '${THEME_STORAGE_KEY}';
     var defaultKey = '${DEFAULT_THEME_KEY}';
-    var modeStorageKey = '${THEME_MODE_STORAGE_KEY}';
-    var defaultMode = '${DEFAULT_THEME_MODE}';
+    var mobileModeKey = '${THEME_MODE_MOBILE_STORAGE_KEY}';
+    var desktopModeKey = '${THEME_MODE_STORAGE_KEY}';
+    var desktopAltModeKey = '${THEME_MODE_DESKTOP_STORAGE_KEY}';
+    var defaultMode = isMobile ? '${DEFAULT_MOBILE_THEME_MODE}' : '${DEFAULT_THEME_MODE}';
     var darkThemes = ${JSON.stringify(ATHLON_THEMES)};
     var lightThemes = ${JSON.stringify(ATHLON_LIGHT_THEMES)};
     var semantic = ${JSON.stringify(SEMANTIC_COLORS)};
 
     var savedKey = localStorage.getItem(storageKey);
-    var savedMode = localStorage.getItem(modeStorageKey);
-    var mode = (savedMode === 'light') ? 'light' : 'dark';
+    var savedMode = null;
+    if (isMobile) {
+      savedMode = localStorage.getItem(mobileModeKey);
+    } else {
+      savedMode = localStorage.getItem(desktopAltModeKey) || localStorage.getItem(desktopModeKey);
+    }
+    var mode = (savedMode === 'light' || savedMode === 'dark') ? savedMode : defaultMode;
     var activeDict = mode === 'light' ? lightThemes : darkThemes;
     var t = (savedKey && activeDict[savedKey]) ? activeDict[savedKey] : activeDict[defaultKey];
     var c = t.colors;

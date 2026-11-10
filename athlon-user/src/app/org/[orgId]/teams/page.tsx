@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
 import {
@@ -33,6 +34,9 @@ import {
   User,
   Loader2,
   Star,
+  ArrowLeft,
+  RefreshCw,
+  Share2,
 } from 'lucide-react';
 import {
   CommunityService,
@@ -44,6 +48,7 @@ import {
 } from '@/lib/api/community';
 import { UserService } from '@/lib/api/user';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import { useOrgRole } from '@/hooks/use-org-role';
 
 // Helper to get local date formatted as YYYY-MM-DD
@@ -452,6 +457,24 @@ export default function CommunityTeamsPage() {
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await fetchTeamsAndMatches();
+      triggerToast('Match center data refreshed', 'success');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      triggerToast('Link copied to clipboard!', 'success');
+    }
+  };
 
   // Form Team Modal
   const [showTeamModal, setShowTeamModal] = useState(false);
@@ -900,7 +923,13 @@ export default function CommunityTeamsPage() {
   const topThree = useMemo(() => (activeLeaderboardParticipants.length > 0 ? activeLeaderboardParticipants : sortedLeaderboard).slice(0, 3), [activeLeaderboardParticipants, sortedLeaderboard]);
 
   return (
-    <div className="min-h-screen text-foreground relative pb-28">
+    <div
+      className="min-h-full w-full pb-28 md:pb-16 text-foreground relative"
+      style={{
+        backgroundColor: 'var(--athlon-bg)',
+        paddingTop: 'max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+      }}
+    >
       {/* Ambient background glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div
@@ -913,7 +942,7 @@ export default function CommunityTeamsPage() {
         />
       </div>
 
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
+      <div className="relative z-10 w-full max-w-lg md:max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 flex flex-col gap-3.5 md:gap-6 pt-1.5">
         {/* ─── TOAST NOTIFICATION ─── */}
         {toastMessage && (
           <div
@@ -927,212 +956,303 @@ export default function CommunityTeamsPage() {
           </div>
         )}
 
-        {/* ─── 1. HERO MATCH CENTER BANNER ─── */}
-        <div
-          className="rounded-3xl border p-5 sm:p-7 relative overflow-hidden shadow-2xl backdrop-blur-xl transition-all"
+        {/* ─── HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive) ─── */}
+        <section
+          className="relative w-full rounded-[26px] overflow-hidden border p-4 sm:p-5 shadow-xl transition-all"
           style={{
             backgroundColor: 'var(--athlon-card)',
             borderColor: 'var(--athlon-border)',
-            backgroundImage: 'radial-gradient(ellipse at 85% 15%, var(--athlon-primary-glow) 0%, transparent 60%)',
+            boxShadow:
+              '0 12px 32px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.15)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)',
           }}
         >
-          {/* Subtle grid pattern overlay */}
+          {/* Top Edge Neon Energy Rail */}
           <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            className="absolute top-0 inset-x-0 h-[2px] opacity-75 pointer-events-none z-0"
             style={{
-              backgroundImage: 'radial-gradient(circle at 1px 1px, #FFF 1px, transparent 0)',
-              backgroundSize: '24px 24px',
+              background: 'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
             }}
           />
 
-          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2.5 max-w-xl">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-[11px] font-black text-primary tracking-wider uppercase">
-                <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
-                <span className="flex items-center gap-1">
-                  <Swords className="w-3.5 h-3.5" />
-                  Community Match Center
-                </span>
+          {/* Stadium Floodlight Spotlights */}
+          <div
+            className="absolute -top-16 -right-16 w-60 h-60 rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-60 animate-pulse duration-1000 z-0"
+            style={{
+              background: 'radial-gradient(circle, var(--athlon-primary) 0%, rgba(52, 211, 153, 0.3) 40%, transparent 75%)',
+            }}
+          />
+
+          {/* Specular Sheen Arc */}
+          <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.12] dark:from-white/[0.04] via-transparent to-transparent pointer-events-none z-0" />
+
+          <div className="relative z-10 space-y-3.5">
+            {/* Top Control Bar inside Hero */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Link
+                  href={`/org/${orgId}/dashboard`}
+                  className="w-7 h-7 rounded-lg border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 transition-all shrink-0 shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Back to Hub"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+                </Link>
+
+                <div
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary-soft)',
+                    borderColor: 'var(--athlon-primary)',
+                  }}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span
+                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                    <span
+                      className="relative inline-flex rounded-full h-2 w-2"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary truncate flex items-center gap-1">
+                    <Swords className="w-3 h-3" />
+                    Community Match Center
+                  </span>
+                </div>
               </div>
 
-              {/* Title */}
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight flex items-center gap-2.5">
-                  <span>Matches &amp; Squads</span>
-                  <Flame className="w-6 h-6 text-amber-400 shrink-0 inline hidden sm:inline" />
-                </h1>
-                <p className="text-xs sm:text-sm text-foreground/70 font-medium mt-1 leading-relaxed">
-                  Log scrimmage results, track club squads, and follow head-to-head derbies for {org?.name || 'the community'}.
-                </p>
+              {/* Action Buttons: Refresh & Share */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="w-7 h-7 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 cursor-pointer shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Refresh matches"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="w-7 h-7 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 cursor-pointer shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Share match center"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                </button>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+            {/* Title & Subtitle */}
+            <div className="space-y-1">
+              <h1 className="text-[19px] sm:text-[21px] font-black leading-[1.14] tracking-tight uppercase text-foreground">
+                <span>Matches &amp;</span>{' '}
+                <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">
+                  Squads
+                </span>{' '}
+                🔥
+              </h1>
+              <p className="text-[11px] text-text-secondary leading-relaxed font-medium pt-0.5">
+                Log scrimmage results, track club squads, and follow head-to-head derbies for {org?.name || 'the community'}.
+              </p>
+            </div>
+
+            {/* Hero Action Buttons */}
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
               <button
                 type="button"
                 onClick={() => setShowTeamModal(true)}
-                className="flex-1 sm:flex-none px-4 py-3 rounded-2xl bg-surface hover:bg-surface-hover border text-foreground font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md cursor-pointer group"
-                style={{ borderColor: 'var(--athlon-border)' }}
+                className="flex items-center justify-center gap-1.5 border text-[9.5px] font-bold px-3 py-2.5 rounded-xl active:scale-95 transition-all shadow-sm tracking-wider uppercase backdrop-blur-md cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-text)',
+                }}
               >
-                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-colors">
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                </div>
+                <Plus className="w-3.5 h-3.5 stroke-[2.5] text-primary" />
                 <span>Form Squad</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowMatchModal(true)}
-                className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-primary text-black font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/25 cursor-pointer relative overflow-hidden group"
+                className="flex items-center justify-center gap-1.5 text-[9.5px] font-bold px-3 py-2.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md tracking-wider uppercase cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary-foreground)',
+                  boxShadow: '0 4px 16px var(--athlon-primary-glow)',
+                }}
               >
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 pointer-events-none" />
-                <Zap className="w-4 h-4 fill-current stroke-[2.5]" />
+                <Zap className="w-3.5 h-3.5 fill-current stroke-[2.5]" />
                 <span>Matches</span>
               </button>
             </div>
-          </div>
 
-          {/* Quick Metrics Strip */}
-          <div
-            className="mt-6 pt-5 border-t grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"
-            style={{ borderColor: 'var(--athlon-border)' }}
-          >
-            <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-surface/50 border border-foreground/5">
-              <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4" />
+            {/* Live Telemetry Strip with 4 Metrics */}
+            <div
+              className="grid grid-cols-4 divide-x rounded-2xl p-2.5 mt-1 border backdrop-blur-md"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div
+                onClick={() => setActiveTab('SQUADS')}
+                className="flex flex-col items-center justify-center text-center px-1 cursor-pointer transition-opacity active:opacity-70"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-foreground font-mono leading-none">
+                  {loading ? '...' : teams.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Squads
+                </span>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider block">Squads</span>
-                <span className="text-base font-black text-foreground">{teams.length}</span>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-surface/50 border border-foreground/5">
-              <div className="w-8 h-8 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0">
-                <Swords className="w-4 h-4" />
+              <div
+                onClick={() => setActiveTab('MATCHES')}
+                className="flex flex-col items-center justify-center text-center px-1 cursor-pointer transition-opacity active:opacity-70"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-primary font-mono leading-none">
+                  {loading ? '...' : matches.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Scrimmages
+                </span>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider block">Scrimmages</span>
-                <span className="text-base font-black text-foreground">{matches.length}</span>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-surface/50 border border-foreground/5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-400/10 text-emerald-400 flex items-center justify-center shrink-0">
-                <Trophy className="w-4 h-4" />
-              </div>
-              <div className="truncate">
-                <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider block">Top Squad</span>
-                <span className="text-xs font-black text-foreground truncate block">
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-emerald-400 font-mono leading-none truncate max-w-full">
                   {topSquad ? topSquad.name : '—'}
                 </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Top Squad
+                </span>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-surface/50 border border-foreground/5">
-              <div className="w-8 h-8 rounded-xl bg-purple-400/10 text-purple-400 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider block">Active Sports</span>
-                <span className="text-base font-black text-foreground">
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-purple-400 font-mono leading-none">
                   {availableSports.length > 0 ? availableSports.length : '1'}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Sports
                 </span>
               </div>
             </div>
           </div>
+        </section>
+
+        {/* ── Segmented Navigation Tabs (Design System Section 4.3) ── */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar -mx-1 px-1">
+          {[
+            { id: 'ALL', label: 'Overview', count: teams.length + matches.length, icon: Sparkles },
+            { id: 'SQUADS', label: 'Squads', count: teams.length, icon: Users },
+            { id: 'MATCHES', label: 'Matches', count: matches.length, icon: Swords },
+            { id: 'LEADERBOARD', label: 'Leaderboard', count: athleteLeaderboard.length, icon: Medal },
+          ].map((tab) => {
+            const isSelected = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as ViewTab)}
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer active:scale-95 flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'border-primary shadow-[0_2px_12px_var(--athlon-primary-glow)] font-black'
+                    : 'text-foreground/70 border-border bg-card/60 hover:bg-card'
+                }`}
+                style={{
+                  backgroundColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-card)',
+                  borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                  color: isSelected ? 'var(--athlon-primary-foreground)' : undefined,
+                }}
+              >
+                <Icon className="w-3 h-3" />
+                <span>{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[9.5px] font-mono font-bold ${
+                      isSelected ? 'bg-black/20 text-black' : 'bg-surface text-foreground/50'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* ─── 2. CONTROLS, SEARCH & TABS ─── */}
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Navigation Tabs */}
-            <div
-              className="flex items-center p-1 rounded-2xl border bg-surface/80 max-w-full overflow-x-auto hide-scrollbar"
-              style={{ borderColor: 'var(--athlon-border)' }}
-            >
-              {[
-                { id: 'ALL', label: 'Overview', icon: Sparkles },
-                { id: 'SQUADS', label: `Squads (${teams.length})`, icon: Users },
-                { id: 'MATCHES', label: `Matches (${matches.length})`, icon: Swords },
-                { id: 'LEADERBOARD', label: 'Leaderboard', icon: Medal },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as ViewTab)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${isActive
-                      ? 'bg-primary text-black shadow-md'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-surface-hover'
-                      }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Search Box */}
-            <div className="relative min-w-[220px]">
-              <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search squads, players, court..."
-                className="w-full pl-9 pr-8 py-2 rounded-xl bg-surface border text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary transition-all"
-                style={{ borderColor: 'var(--athlon-border)' }}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-0.5"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Sport Filter Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+        {/* Search Bar */}
+        <div className="relative w-full">
+          <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search squads, players, court..."
+            className="w-full pl-9 pr-8 py-2 rounded-xl bg-card/70 border text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary transition-all shadow-sm"
+            style={{ borderColor: 'var(--athlon-border)' }}
+          />
+          {searchQuery && (
             <button
-              onClick={() => setSelectedSport('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all border cursor-pointer ${selectedSport === 'ALL'
-                ? 'bg-foreground text-background border-foreground shadow-sm'
-                : 'bg-surface text-foreground/70 hover:text-foreground'
-                }`}
-              style={{ borderColor: selectedSport === 'ALL' ? undefined : 'var(--athlon-border)' }}
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-0.5 cursor-pointer"
             >
-              All Sports
+              <X className="w-3.5 h-3.5" />
             </button>
-            {ALL_SPORTS.map((sport) => {
-              const meta = SPORT_CONFIGS[sport] || DEFAULT_SPORT;
-              const isSelected = selectedSport.toLowerCase() === sport.toLowerCase();
-              return (
-                <button
-                  key={sport}
-                  onClick={() => setSelectedSport(isSelected ? 'ALL' : sport)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer ${isSelected
-                    ? 'shadow-sm text-foreground'
-                    : 'bg-surface text-foreground/70 hover:text-foreground'
-                    }`}
-                  style={{
-                    backgroundColor: isSelected ? meta.bg : undefined,
-                    borderColor: isSelected ? meta.border : 'var(--athlon-border)',
-                  }}
-                >
-                  <span>{meta.icon}</span>
-                  <span>{sport}</span>
-                </button>
-              );
-            })}
-          </div>
+          )}
+        </div>
+
+        {/* Sport Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar -mx-1 px-1">
+          <button
+            type="button"
+            onClick={() => setSelectedSport('ALL')}
+            className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border cursor-pointer active:scale-95 ${
+              selectedSport === 'ALL'
+                ? 'bg-foreground text-background border-foreground font-black shadow-sm'
+                : 'text-foreground/70 border-border bg-card/60 hover:bg-card'
+            }`}
+            style={{ borderColor: selectedSport === 'ALL' ? undefined : 'var(--athlon-border)' }}
+          >
+            All Sports
+          </button>
+          {ALL_SPORTS.map((sport) => {
+            const meta = SPORT_CONFIGS[sport] || DEFAULT_SPORT;
+            const isSelected = selectedSport.toLowerCase() === sport.toLowerCase();
+            return (
+              <button
+                key={sport}
+                type="button"
+                onClick={() => setSelectedSport(isSelected ? 'ALL' : sport)}
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                  isSelected
+                    ? 'shadow-sm text-foreground font-black'
+                    : 'text-foreground/70 border-border bg-card/60 hover:bg-card'
+                }`}
+                style={{
+                  backgroundColor: isSelected ? meta.bg : undefined,
+                  borderColor: isSelected ? meta.border : 'var(--athlon-border)',
+                }}
+              >
+                <span>{meta.icon}</span>
+                <span>{sport}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* ─── 3. CONTENT SECTIONS ─── */}
@@ -1179,22 +1299,22 @@ export default function CommunityTeamsPage() {
                 {filteredTeams.length === 0 ? (
                   /* ─── ULTRA-STYLISH EMPTY SQUAD STATE ─── */
                   <div
-                    className="rounded-3xl border p-8 sm:p-10 text-center relative overflow-hidden shadow-lg backdrop-blur-md"
+                    className="rounded-2xl border p-6 sm:p-8 text-center relative overflow-hidden shadow-sm backdrop-blur-md"
                     style={{
                       backgroundColor: 'var(--athlon-card)',
                       borderColor: 'var(--athlon-border)',
                       backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(84, 172, 104, 0.08) 0%, transparent 70%)',
                     }}
                   >
-                    <div className="max-w-md mx-auto space-y-4">
+                    <div className="max-w-md mx-auto space-y-3.5">
                       {/* Glowing Badge Container */}
-                      <div className="w-20 h-20 mx-auto rounded-3xl bg-primary/10 border border-primary/30 flex items-center justify-center shadow-xl shadow-primary/10 relative group">
-                        <div className="absolute inset-0 rounded-3xl bg-primary/20 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
-                        <Athlon3DIcon type="tournaments" size={48} />
+                      <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/10 relative group">
+                        <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                        <Athlon3DIcon type="tournaments" size={40} />
                       </div>
 
-                      <div className="space-y-1.5">
-                        <h3 className="text-lg font-black text-foreground tracking-tight">
+                      <div className="space-y-1">
+                        <h3 className="text-base font-black text-foreground tracking-tight">
                           {teams.length === 0 ? 'No Squads Assembled Yet' : 'No Squads Match Your Filter'}
                         </h3>
                         <p className="text-xs text-foreground/60 leading-relaxed">
@@ -1205,26 +1325,26 @@ export default function CommunityTeamsPage() {
                       </div>
 
                       {/* Feature Highlights Pills */}
-                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] text-foreground/70">
-                        <span className="px-2.5 py-1 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
-                          🛡️ Custom Squad Badges
+                      <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5 text-[10.5px] text-foreground/70">
+                        <span className="px-2 py-0.5 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
+                          🛡️ Squad Badges
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <span className="px-2 py-0.5 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
                           📊 Win/Loss Stats
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <span className="px-2 py-0.5 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
                           ⚔️ Derby Records
                         </span>
                       </div>
 
                       {/* Direct CTA */}
-                      <div className="pt-2">
+                      <div className="pt-1">
                         <button
                           type="button"
                           onClick={() => setShowTeamModal(true)}
-                          className="px-6 py-2.5 rounded-2xl bg-primary text-black font-black text-xs inline-flex items-center gap-2 hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20 cursor-pointer"
+                          className="px-5 py-2 rounded-xl bg-primary text-black font-black text-xs inline-flex items-center gap-1.5 hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-md shadow-primary/20 cursor-pointer"
                         >
-                          <Plus className="w-4 h-4 stroke-[3]" />
+                          <Plus className="w-3.5 h-3.5 stroke-[3]" />
                           <span>Form Your First Squad</span>
                         </button>
                       </div>
@@ -1232,14 +1352,14 @@ export default function CommunityTeamsPage() {
                   </div>
                 ) : (
                   /* Squads Grid */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                     {filteredTeams.map((t) => {
                       const meta = SPORT_CONFIGS[t.sport] || DEFAULT_SPORT;
                       const winRate = t.totalMatches > 0 ? Math.round((t.matchesWon / t.totalMatches) * 100) : 0;
                       return (
                         <div
                           key={t.teamId}
-                          className="p-5 rounded-3xl border space-y-4 shadow-sm hover:shadow-xl hover:border-primary/40 transition-all group relative overflow-hidden"
+                          className="p-3.5 sm:p-4 rounded-2xl border space-y-3 shadow-sm hover:shadow-md hover:border-primary/40 transition-all group relative overflow-hidden"
                           style={{
                             backgroundColor: 'var(--athlon-card)',
                             borderColor: 'var(--athlon-border)',
@@ -1371,22 +1491,22 @@ export default function CommunityTeamsPage() {
                 {filteredMatches.length === 0 ? (
                   /* ─── ULTRA-STYLISH EMPTY MATCHES STATE ─── */
                   <div
-                    className="rounded-3xl border p-8 sm:p-10 text-center relative overflow-hidden shadow-lg backdrop-blur-md"
+                    className="rounded-2xl border p-6 sm:p-8 text-center relative overflow-hidden shadow-sm backdrop-blur-md"
                     style={{
                       backgroundColor: 'var(--athlon-card)',
                       borderColor: 'var(--athlon-border)',
                       backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(245, 158, 11, 0.08) 0%, transparent 70%)',
                     }}
                   >
-                    <div className="max-w-md mx-auto space-y-4">
+                    <div className="max-w-md mx-auto space-y-3.5">
                       {/* Glowing Badge Container */}
-                      <div className="w-20 h-20 mx-auto rounded-3xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shadow-xl shadow-amber-400/10 relative group">
-                        <div className="absolute inset-0 rounded-3xl bg-amber-400/20 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
-                        <Athlon3DIcon type="matches" size={48} />
+                      <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shadow-lg shadow-amber-400/10 relative group">
+                        <div className="absolute inset-0 rounded-2xl bg-amber-400/20 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
+                        <Athlon3DIcon type="matches" size={40} />
                       </div>
 
-                      <div className="space-y-1.5">
-                        <h3 className="text-lg font-black text-foreground tracking-tight">
+                      <div className="space-y-1">
+                        <h3 className="text-base font-black text-foreground tracking-tight">
                           {matches.length === 0 ? 'No Scrimmages Recorded Yet' : 'No Matches Match Your Filter'}
                         </h3>
                         <p className="text-xs text-foreground/60 leading-relaxed">
@@ -1397,26 +1517,26 @@ export default function CommunityTeamsPage() {
                       </div>
 
                       {/* Example score pills */}
-                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] font-mono text-foreground/60">
-                        <span className="px-2.5 py-1 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
+                      <div className="flex flex-wrap items-center justify-center gap-1.5 pt-0.5 text-[10.5px] font-mono text-foreground/60">
+                        <span className="px-2 py-0.5 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
                           🏸 21-19, 21-17
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <span className="px-2 py-0.5 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
                           ⚽ 3 — 2
                         </span>
-                        <span className="px-2.5 py-1 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
+                        <span className="px-2 py-0.5 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
                           🎾 6-4, 7-5
                         </span>
                       </div>
 
                       {/* Direct CTA */}
-                      <div className="pt-2">
+                      <div className="pt-1">
                         <button
                           type="button"
                           onClick={() => setShowMatchModal(true)}
-                          className="px-6 py-2.5 rounded-2xl bg-amber-400 text-black font-black text-xs inline-flex items-center gap-2 hover:bg-amber-300 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-400/20 cursor-pointer"
+                          className="px-5 py-2 rounded-xl bg-amber-400 text-black font-black text-xs inline-flex items-center gap-1.5 hover:bg-amber-300 transition-all hover:scale-105 active:scale-95 shadow-md shadow-amber-400/20 cursor-pointer"
                         >
-                          <Zap className="w-4 h-4 fill-current stroke-[2.5]" />
+                          <Zap className="w-3.5 h-3.5 fill-current stroke-[2.5]" />
                           <span>Log Your First Match</span>
                         </button>
                       </div>
@@ -1424,14 +1544,14 @@ export default function CommunityTeamsPage() {
                   </div>
                 ) : (
                   /* Matches Cards (ESPN / Sofascore Style Duels) */
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {filteredMatches.map((m) => {
                       const meta = SPORT_CONFIGS[m.sport] || DEFAULT_SPORT;
                       const hasScore = Boolean(m.scoreA || m.scoreB);
                       return (
                         <div
                           key={m.matchId}
-                          className="p-5 rounded-3xl border space-y-4 shadow-sm hover:shadow-xl hover:border-amber-400/30 transition-all group relative overflow-hidden"
+                          className="p-3.5 sm:p-4 rounded-2xl border space-y-3 shadow-sm hover:shadow-md hover:border-amber-400/30 transition-all group relative overflow-hidden"
                           style={{
                             backgroundColor: 'var(--athlon-card)',
                             borderColor: 'var(--athlon-border)',
@@ -1544,39 +1664,37 @@ export default function CommunityTeamsPage() {
             {/* ─── 4. COMMUNITY LEADERBOARD (MATCHES CLUB WORKSPACE) ─── */}
             {activeTab === 'LEADERBOARD' && (
               <div className="space-y-6">
-                {/* ── LEADERBOARD TOP BANNER & TOGGLE ── */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/25 text-xs font-black uppercase tracking-widest mb-2">
-                      <Star className="w-3.5 h-3.5 fill-primary" /> Official Community Leaderboard
+                {/* ── LEADERBOARD TOP HEADER & TOGGLE ── */}
+                <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                      <Medal className="w-3.5 h-3.5" />
                     </div>
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
-                        Community Leaderboard
-                      </h2>
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center gap-1">
-                        <span>{selectedSport === 'ALL' ? '🏅' : (SPORT_CONFIGS[selectedSport] || DEFAULT_SPORT).icon}</span>
-                        <span>{selectedSport === 'ALL' ? 'All Sports' : selectedSport}</span>
+                    <h2 className="text-sm font-black text-foreground uppercase tracking-wider">
+                      Leaderboard
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/15 text-primary border border-primary/25">
+                      {leaderboardType === 'ATHLETES' ? athleteLeaderboard.length : squadLeaderboard.length}
+                    </span>
+                    {selectedSport !== 'ALL' && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center gap-1">
+                        <span>{(SPORT_CONFIGS[selectedSport] || DEFAULT_SPORT).icon}</span>
+                        <span>{selectedSport}</span>
                       </span>
-                    </div>
-                    <p className="text-xs text-foreground/50 font-medium mt-0.5">
-                      {isAllTime
-                        ? `All-time community standings calculated from official scrimmage match results.`
-                        : `Daily leaderboard for ${new Date(`${leaderboardDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}.`}
-                    </p>
+                    )}
                   </div>
 
-                  {/* Leaderboard Category Switcher: Athletes vs Squads */}
+                  {/* Category Switcher: Athletes vs Squads */}
                   <div
-                    className="flex items-center p-1 rounded-2xl border bg-surface self-start sm:self-auto shrink-0 shadow-sm"
+                    className="inline-flex items-center p-0.5 rounded-xl border bg-surface shrink-0 shadow-sm"
                     style={{ borderColor: 'var(--athlon-border)' }}
                   >
                     <button
                       type="button"
                       onClick={() => setLeaderboardType('ATHLETES')}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-black transition-all cursor-pointer active:scale-95 ${
                         leaderboardType === 'ATHLETES'
-                          ? 'bg-primary text-black shadow-md'
+                          ? 'bg-primary text-black shadow-sm'
                           : 'text-foreground/60 hover:text-foreground'
                       }`}
                     >
@@ -1585,9 +1703,9 @@ export default function CommunityTeamsPage() {
                     <button
                       type="button"
                       onClick={() => setLeaderboardType('SQUADS')}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-black transition-all cursor-pointer active:scale-95 ${
                         leaderboardType === 'SQUADS'
-                          ? 'bg-primary text-black shadow-md'
+                          ? 'bg-primary text-black shadow-sm'
                           : 'text-foreground/60 hover:text-foreground'
                       }`}
                     >
@@ -1730,79 +1848,88 @@ export default function CommunityTeamsPage() {
                   </div>
                 ) : (
                   <div
-                    className="p-6 text-center rounded-3xl border text-xs text-foreground/60 space-y-1.5"
+                    className="p-4 sm:p-5 text-center rounded-2xl border text-xs text-foreground/60 space-y-2 shadow-sm"
                     style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                   >
-                    <Trophy className="w-7 h-7 text-foreground/30 mx-auto mb-2" />
-                    <p className="font-bold text-foreground">No matches recorded for this date timeframe.</p>
-                    <p className="text-foreground/40">Switch to <strong>All Time</strong> or log scrimmage results to activate the live podium!</p>
+                    <div className="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+                      <Trophy className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="font-black text-xs sm:text-sm text-foreground">No matches recorded for this date</p>
+                      <p className="text-[11px] text-foreground/50">
+                        Switch to <strong>All Time</strong> or log scrimmage results to activate the live podium!
+                      </p>
+                    </div>
+                    {!isAllTime && (
+                      <div className="pt-0.5">
+                        <button
+                          type="button"
+                          onClick={handleSetAllTime}
+                          className="px-3 py-1.5 rounded-xl bg-primary text-black font-black text-[11px] inline-flex items-center gap-1.5 shadow-md shadow-primary/20 cursor-pointer active:scale-95"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>View All-Time Standings</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* ── DATE NAVIGATION & CALENDAR BAR (MATCHES CLUB WORKSPACE) ── */}
                 <div
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl p-3 sm:p-4 border shadow-sm"
+                  className="flex items-center justify-between gap-1.5 rounded-2xl p-2 sm:p-2.5 border shadow-sm"
                   style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                 >
-                  {/* Left Side: Day Steppers & Date Picker */}
-                  <div className="flex items-center justify-between sm:justify-start gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleShiftLeaderboardDate(-1)}
-                        className="p-2 rounded-xl bg-background border hover:bg-surface text-foreground/70 hover:text-foreground transition-colors active:scale-90 cursor-pointer"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                        title="Previous Day"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
+                  {/* Left Side: Stepper & Date Picker */}
+                  <div className="flex items-center gap-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => handleShiftLeaderboardDate(-1)}
+                      className="w-7 h-7 rounded-lg bg-surface border hover:bg-surface-hover text-foreground/70 flex items-center justify-center transition-colors active:scale-95 cursor-pointer shrink-0"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                      title="Previous Day"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
 
-                      {/* Calendar Date Input Picker */}
-                      <div
-                        className="relative flex items-center bg-background border rounded-xl px-3 py-1.5 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                      >
-                        <Calendar className="w-3.5 h-3.5 text-primary shrink-0 mr-1.5" />
-                        <input
-                          type="date"
-                          value={leaderboardDate}
-                          onChange={(e) => {
-                            setIsAllTime(false);
-                            setLeaderboardDate(e.target.value);
-                          }}
-                          className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleShiftLeaderboardDate(1)}
-                        className="p-2 rounded-xl bg-background border hover:bg-surface text-foreground/70 hover:text-foreground transition-colors active:scale-90 cursor-pointer"
-                        style={{ borderColor: 'var(--athlon-border)' }}
-                        title="Next Day"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
+                    <div
+                      className="relative flex items-center bg-surface border rounded-lg px-2 py-1 text-xs font-bold text-foreground hover:border-primary/40 transition-colors shadow-inner"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                    >
+                      <Calendar className="w-3 h-3 text-primary shrink-0 mr-1" />
+                      <input
+                        type="date"
+                        value={leaderboardDate}
+                        onChange={(e) => {
+                          setIsAllTime(false);
+                          setLeaderboardDate(e.target.value);
+                        }}
+                        className="bg-transparent text-[11px] font-bold text-foreground focus:outline-none cursor-pointer max-w-[105px]"
+                      />
                     </div>
 
-                    {!isAllTime && leaderboardDate && (
-                      <span className="text-[11px] font-bold text-foreground/60 hidden sm:inline">
-                        {new Date(`${leaderboardDate}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleShiftLeaderboardDate(1)}
+                      className="w-7 h-7 rounded-lg bg-surface border hover:bg-surface-hover text-foreground/70 flex items-center justify-center transition-colors active:scale-95 cursor-pointer shrink-0"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                      title="Next Day"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
                   {/* Right Side: Quick Selectors (Today, All Time) */}
-                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={handleSetToday}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer active:scale-95 border ${
                         !isAllTime && leaderboardDate === getLocalDateString()
-                          ? 'bg-primary text-black shadow-md shadow-primary/20'
-                          : 'bg-background/80 text-foreground/70 hover:text-foreground border'
+                          ? 'bg-primary text-black font-black border-primary shadow-sm'
+                          : 'bg-surface text-foreground/70 border-border hover:text-foreground'
                       }`}
-                      style={{ borderColor: !isAllTime && leaderboardDate === getLocalDateString() ? undefined : 'var(--athlon-border)' }}
+                      style={!isAllTime && leaderboardDate === getLocalDateString() ? undefined : { borderColor: 'var(--athlon-border)' }}
                     >
                       Today
                     </button>
@@ -1810,12 +1937,12 @@ export default function CommunityTeamsPage() {
                     <button
                       type="button"
                       onClick={handleSetAllTime}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer active:scale-95 border ${
                         isAllTime
-                          ? 'bg-primary text-black shadow-md shadow-primary/20'
-                          : 'bg-background/80 text-foreground/70 hover:text-foreground border'
+                          ? 'bg-primary text-black font-black border-primary shadow-sm'
+                          : 'bg-surface text-foreground/70 border-border hover:text-foreground'
                       }`}
-                      style={{ borderColor: isAllTime ? undefined : 'var(--athlon-border)' }}
+                      style={isAllTime ? undefined : { borderColor: 'var(--athlon-border)' }}
                     >
                       All Time
                     </button>
@@ -1823,50 +1950,44 @@ export default function CommunityTeamsPage() {
                 </div>
 
                 {/* ── FILTER & SORT BAR (MATCHES CLUB WORKSPACE) ── */}
-                <div
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl p-3 sm:p-4 border shadow-sm"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-                >
+                <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                   {/* Search Box */}
-                  <div className="relative flex-grow max-w-md">
-                    <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" />
+                  <div className="relative flex-1 min-w-[180px]">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" />
                     <input
                       type="text"
-                      placeholder={`Search ${leaderboardType === 'ATHLETES' ? 'athlete' : 'squad'} by name...`}
+                      placeholder={`Search ${leaderboardType === 'ATHLETES' ? 'athlete' : 'squad'}...`}
                       value={leaderboardSearch}
                       onChange={(e) => setLeaderboardSearch(e.target.value)}
-                      className="w-full bg-background border rounded-xl pl-9 pr-8 py-2 text-xs font-bold text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary transition-all shadow-inner"
+                      className="w-full bg-card/70 border rounded-xl pl-8 pr-7 py-1.5 text-xs font-bold text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary transition-all shadow-sm"
                       style={{ borderColor: 'var(--athlon-border)' }}
                     />
                     {leaderboardSearch && (
                       <button
                         type="button"
                         onClick={() => setLeaderboardSearch('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground cursor-pointer"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground cursor-pointer"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3 h-3" />
                       </button>
                     )}
                   </div>
 
                   {/* Sort Chips */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40 mr-0.5 shrink-0 hidden sm:inline">
-                      Sort:
-                    </span>
+                  <div className="flex items-center gap-1 overflow-x-auto pb-0.5 hide-scrollbar shrink-0">
                     {[
-                      { id: 'POINTS', label: 'Points (PTS)' },
-                      { id: 'WIN_RATE', label: 'Win Rate (%)' },
-                      { id: 'WINS', label: 'Total Wins' },
+                      { id: 'POINTS', label: 'PTS' },
+                      { id: 'WIN_RATE', label: 'Win %' },
+                      { id: 'WINS', label: 'Wins' },
                     ].map((s) => (
                       <button
                         key={s.id}
                         type="button"
                         onClick={() => setLeaderboardSortBy(s.id as any)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 active:scale-95 cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 active:scale-95 cursor-pointer border ${
                           leaderboardSortBy === s.id
-                            ? 'bg-primary text-black shadow-md shadow-primary/20'
-                            : 'bg-background/80 text-foreground/60 hover:text-foreground border'
+                            ? 'bg-primary text-black font-black border-primary shadow-sm'
+                            : 'bg-card/70 text-foreground/60 hover:text-foreground border-border'
                         }`}
                         style={{ borderColor: leaderboardSortBy === s.id ? undefined : 'var(--athlon-border)' }}
                       >
@@ -2647,6 +2768,14 @@ export default function CommunityTeamsPage() {
           </div>,
           document.body
         )}
+
+        {/* ─── Athlon 3D Floating Action Button ─── */}
+        <Athlon3DFAB
+          onClick={() => setShowMatchModal(true)}
+          label="Log Match"
+          title="Log Match"
+          className="fixed bottom-22 right-4 md:bottom-8 md:right-8 z-40"
+        />
       </div>
     </div>
   );

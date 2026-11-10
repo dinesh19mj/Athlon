@@ -15,6 +15,9 @@ import com.athlon.identityservice.user.repository.UserRepository;
 import com.athlon.identityservice.util.FileStorageUtil;
 import com.athlon.identityservice.user.entity.SportsProfile;
 import com.athlon.identityservice.user.dto.response.SportsProfileResponse;
+import com.athlon.identityservice.security.entity.UserRole;
+import com.athlon.identityservice.security.repository.RoleRepository;
+import com.athlon.identityservice.security.repository.UserRoleRepository;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,8 @@ public class UserService {
     private final UserProfileRepository userProfileRepository;
     private final SportsProfileRepository sportsProfileRepository;
     private final FileStorageUtil fileStorageUtil;
+    private final UserRoleRepository userRoleRepository;
+    private final RoleRepository roleRepository;
     private final WebClient webClient;
 
     @Value("${service.internal.key:athlon-internal-secure-key-2026}")
@@ -50,11 +55,15 @@ public class UserService {
             UserRepository userRepository,
             UserProfileRepository userProfileRepository,
             SportsProfileRepository sportsProfileRepository,
-            FileStorageUtil fileStorageUtil) {
+            FileStorageUtil fileStorageUtil,
+            UserRoleRepository userRoleRepository,
+            RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
         this.sportsProfileRepository = sportsProfileRepository;
         this.fileStorageUtil = fileStorageUtil;
+        this.userRoleRepository = userRoleRepository;
+        this.roleRepository = roleRepository;
         this.webClient = WebClient.create();
     }
 
@@ -126,6 +135,12 @@ public class UserService {
         }
         if (request.getState() != null) {
             profile.setState(request.getState());
+        }
+        if (request.getDob() != null) {
+            profile.setDob(request.getDob());
+        }
+        if (request.getGender() != null) {
+            profile.setGender(request.getGender().isBlank() ? null : request.getGender().trim().toUpperCase());
         }
         if (request.getPhoto() != null) {
             profile.setPhoto(request.getPhoto());
@@ -285,6 +300,32 @@ public class UserService {
             response.setCity(profile.getCity());
             response.setDistrict(profile.getDistrict());
             response.setState(profile.getState());
+            response.setDob(profile.getDob());
+            response.setGender(profile.getGender());
+        }
+
+        if (userRoleRepository != null && user.getUserId() != null) {
+            List<String> roleNames = null;
+            try {
+                roleNames = userRoleRepository.findActiveRoleNamesByUserId(user.getUserId());
+            } catch (Exception e) {
+                // Fallback in case of database or query issues
+            }
+            if (roleNames == null) {
+                roleNames = new java.util.ArrayList<>();
+            }
+            response.setRoles(roleNames);
+            if (!roleNames.isEmpty()) {
+                if (roleNames.contains("PLATFORM_SUPER_ADMIN")) {
+                    response.setPrimaryRole("PLATFORM_SUPER_ADMIN");
+                } else if (roleNames.contains("PLATFORM_ADMIN")) {
+                    response.setPrimaryRole("PLATFORM_ADMIN");
+                } else {
+                    response.setPrimaryRole(roleNames.get(0));
+                }
+            } else {
+                response.setPrimaryRole("USER");
+            }
         }
 
         if (sportsProfiles != null) {

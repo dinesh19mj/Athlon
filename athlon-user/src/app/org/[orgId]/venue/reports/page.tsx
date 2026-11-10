@@ -23,10 +23,15 @@ import {
   VenueDto,
   VenueReportSummaryDto
 } from '@/lib/api/venue';
+import { Crown } from 'lucide-react';
+import { useVenueEntitlementsStore } from '@/store/useVenueEntitlementsStore';
 
 export default function VenueReportsPage() {
   const params = useParams();
   const orgId = params?.orgId as string;
+
+  const { loadEntitlements, hasFeature, openFeaturePaywall } = useVenueEntitlementsStore();
+  const hasAdvancedAnalytics = orgId ? hasFeature(orgId, 'VENUE_ADVANCED_ANALYTICS') : true;
 
   const [venue, setVenue] = useState<VenueDto | null>(null);
   const [report, setReport] = useState<VenueReportSummaryDto | null>(null);
@@ -56,8 +61,9 @@ export default function VenueReportsPage() {
     }
     if (orgId) {
       loadData();
+      loadEntitlements(orgId);
     }
-  }, [orgId, startDate, endDate]);
+  }, [orgId, startDate, endDate, loadEntitlements]);
 
   const loadReport = async (venueId: number, start: string, end: string) => {
     const res = await venueApi.getVenueReport(venueId, start, end);
@@ -74,8 +80,13 @@ export default function VenueReportsPage() {
           <div className="flex items-center gap-2 text-xs font-bold text-primary tracking-widest uppercase">
             <TrendingUp className="w-4 h-4" /> Venue Insights & Reports
           </div>
-          <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground">
-            Revenue & Utilization Analytics
+          <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground flex items-center gap-2.5">
+            <span>Revenue & Utilization Analytics</span>
+            {!hasAdvancedAnalytics && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                <Crown className="w-3 h-3" /> Pro
+              </span>
+            )}
           </h1>
           <p className="text-xs text-muted-foreground">
             Track court occupancy %, sport distribution, and treasury performance.
@@ -100,6 +111,35 @@ export default function VenueReportsPage() {
           />
         </div>
       </div>
+
+      {!hasAdvancedAnalytics && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-card to-card border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Crown className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-foreground">Unlock Advanced Revenue & Court Utilization Analytics</h3>
+              <p className="text-xs text-muted-foreground">
+                Upgrade to Venue Pro to unlock granular court utilization heatmaps, sport channel attribution, and financial exports.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() =>
+              openFeaturePaywall(
+                orgId,
+                'VENUE_ADVANCED_ANALYTICS',
+                'Advanced Revenue & Utilization Analytics',
+                'Track court occupancy percentages, sport revenue attribution, and treasury ledger exports.'
+              )
+            }
+            className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs hover:brightness-110 transition shrink-0"
+          >
+            Upgrade Plan
+          </button>
+        </div>
+      )}
 
       {/* Summary Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -35,7 +35,12 @@ import {
   Calendar as CalendarIcon,
   Zap,
   ArrowRight,
-  UserCheck
+  UserCheck,
+  SlidersHorizontal,
+  Flame,
+  List,
+  Eye,
+  Settings
 } from 'lucide-react';
 import {
   venueApi,
@@ -62,6 +67,12 @@ export default function VenueCalendarPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFacilityId, setSelectedFacilityId] = useState<number | 'ALL'>('ALL');
   const [timeFilter, setTimeFilter] = useState<'ALL' | 'MORNING' | 'AFTERNOON' | 'EVENING'>('ALL');
+
+  // Desktop View Controls State
+  const [desktopSearchQuery, setDesktopSearchQuery] = useState('');
+  const [desktopTimeFilter, setDesktopTimeFilter] = useState<'ALL' | 'MORNING' | 'AFTERNOON' | 'EVENING'>('ALL');
+  const [desktopViewMode, setDesktopViewMode] = useState<'GRID' | 'TIMELINE'>('GRID');
+  const [desktopDensity, setDesktopDensity] = useState<'COMFORTABLE' | 'COMPACT'>('COMFORTABLE');
 
   // Modals state
   const [activeSlotModal, setActiveSlotModal] = useState<{
@@ -320,6 +331,80 @@ export default function VenueCalendarPage() {
     }
   }, [selectedDate]);
 
+  // 14-day date strip for desktop panoramic view (-3 to +10 days)
+  const desktopDateStrip = useMemo(() => {
+    const base = new Date(selectedDate);
+    const days = [];
+    for (let i = -3; i <= 10; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const dayNum = d.getDate();
+      const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+      const isToday = dateStr === new Date().toISOString().split('T')[0];
+      const isSelected = dateStr === selectedDate;
+      days.push({ dateStr, dayName, dayNum, monthName, isToday, isSelected });
+    }
+    return days;
+  }, [selectedDate]);
+
+  // Filtered time slots for desktop based on desktopTimeFilter
+  const desktopFilteredTimeSlots = useMemo(() => {
+    let slots = allTimeSlots;
+    if (desktopTimeFilter !== 'ALL') {
+      slots = slots.filter((timeWindow) => {
+        const [startTimeStr] = timeWindow.split(' - ');
+        const h = parseInt(startTimeStr.split(':')[0], 10);
+        if (desktopTimeFilter === 'MORNING') return h < 12;
+        if (desktopTimeFilter === 'AFTERNOON') return h >= 12 && h < 17;
+        if (desktopTimeFilter === 'EVENING') return h >= 17;
+        return true;
+      });
+    }
+    return slots;
+  }, [allTimeSlots, desktopTimeFilter]);
+
+  const isCurrentDate = useMemo(() => {
+    return selectedDate === new Date().toISOString().split('T')[0];
+  }, [selectedDate]);
+
+  const currentHour = useMemo(() => {
+    return new Date().getHours();
+  }, []);
+
+  const getSportEmoji = (sportName?: string, facilityName?: string) => {
+    const text = `${sportName || ''} ${facilityName || ''}`.toLowerCase();
+    if (text.includes('badminton')) return '🏸';
+    if (text.includes('tennis')) return '🎾';
+    if (text.includes('football') || text.includes('turf') || text.includes('soccer')) return '⚽';
+    if (text.includes('cricket') || text.includes('box')) return '🏏';
+    if (text.includes('basketball')) return '🏀';
+    if (text.includes('squash') || text.includes('pickleball')) return '🏓';
+    if (text.includes('swimming') || text.includes('pool')) return '🏊';
+    if (text.includes('volleyball')) return '🏐';
+    return '🏟️';
+  };
+
+  const getPlayerInitials = (name?: string) => {
+    if (!name) return 'PL';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const isSlotSearchMatch = (slot: SlotDto) => {
+    if (!desktopSearchQuery.trim()) return true;
+    const q = desktopSearchQuery.toLowerCase().trim();
+    const name = (slot.customerName || '').toLowerCase();
+    const num = (slot.bookingNumber || '').toLowerCase();
+    const sport = (slot.sportName || '').toLowerCase();
+    const reason = (slot.reason || '').toLowerCase();
+    return name.includes(q) || num.includes(q) || sport.includes(q) || reason.includes(q);
+  };
+
   return (
     <div className="min-h-screen space-y-4 md:space-y-6 pb-28 md:pb-16">
       {/* ─────────────────────────────────────────────────────────────
@@ -457,172 +542,304 @@ export default function VenueCalendarPage() {
         </div>
       </div>
 
-      {/* DESKTOP HERO HEADER (md+) */}
-      <div className="hidden md:block p-6 rounded-3xl border bg-card/60 backdrop-blur-md relative overflow-hidden shadow-xl" style={{ borderColor: 'var(--athlon-border)' }}>
-        <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      {/* ═════════════════════════════════════════════════════════════
+          1. DESKTOP OPERATIONS HERO COCKPIT (md+)
+      ══════════════════════════════════════════════════════════════ */}
+      <div
+        className="hidden md:block p-6 rounded-3xl border bg-gradient-to-r from-card via-card/90 to-card/70 backdrop-blur-xl relative overflow-hidden shadow-2xl"
+        style={{ borderColor: 'var(--athlon-border)' }}
+      >
+        {/* Ambient Athletic Lighting */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-24 -mt-24" />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -mb-32" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          {/* Left Title & Status */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2.5 w-2.5 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          {/* Left: Venue Identity & Live Telemetry */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-wider shadow-sm shadow-emerald-500/10">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span>Live Arena Operations</span>
               </span>
-              <span className="text-[11px] font-black uppercase tracking-widest text-primary">
-                Live Operations Matrix
+              <span className="text-xs text-foreground/30">•</span>
+              <span className="text-xs font-black text-foreground/70 px-2.5 py-0.5 rounded-lg bg-surface border border-border">
+                {metrics.occupancyPct}% Occupancy
               </span>
-              <span className="text-xs text-foreground/40">•</span>
-              <span className="text-xs font-bold text-foreground/60">{metrics.occupancyPct}% Occupancy</span>
+              <span className="text-xs font-black text-primary px-2.5 py-0.5 rounded-lg bg-primary/10 border border-primary/20">
+                {dailyData?.facilities.length || 0} Facilities Active
+              </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
-              <span>{venue?.name || 'Playzone Arena'}</span>
-              <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/20 hidden sm:inline-block">
-                {dailyData?.facilities.length || 0} Facilities
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+                <span>{venue?.name || 'Playzone Sports Arena'}</span>
+              </h1>
+              <span className="text-xs px-2.5 py-1 rounded-xl bg-surface border border-border text-foreground/60 font-bold">
+                {venue?.city || 'Sports Hub'}
               </span>
-            </h1>
+            </div>
 
-            <p className="text-xs text-foreground/60 max-w-xl font-medium">
-              Real-time multi-court schedule, live walk-in reservations, and recurring batch management for {formattedDateTitle}.
+            <p className="text-xs font-medium text-foreground/60 max-w-2xl flex items-center gap-2">
+              <CalendarIcon className="w-3.5 h-3.5 text-primary" />
+              <span>{formattedDateTitle}</span>
+              <span className="text-foreground/30">•</span>
+              <span>Real-time multi-court dispatch, instant walk-ins, and club batch reservations.</span>
             </p>
           </div>
 
-          {/* Right Date Navigator Controls */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-2xl border bg-background shadow-inner" style={{ borderColor: 'var(--athlon-border)' }}>
+          {/* Right: Date Stepper & Direct Action Hub */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Stepper with Native Date Picker */}
+            <div
+              className="flex items-center p-1.5 rounded-2xl border bg-background/90 shadow-inner backdrop-blur-md"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
               <button
                 onClick={() => handleDateChange(-1)}
-                className="p-2 rounded-xl hover:bg-white/5 text-foreground transition-all active:scale-95"
+                className="p-2 rounded-xl hover:bg-white/5 text-foreground/80 hover:text-foreground active:scale-95 transition-all"
                 title="Previous Day"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <div className="relative flex items-center">
+              <button
+                onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border mx-1 ${
+                  selectedDate === new Date().toISOString().split('T')[0]
+                    ? 'bg-primary text-black border-primary shadow-md shadow-primary/25'
+                    : 'bg-surface border-border text-foreground/80 hover:text-foreground hover:bg-white/5'
+                }`}
+              >
+                Today
+              </button>
+
+              <div className="relative flex items-center px-1">
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="bg-transparent text-xs sm:text-sm font-black text-foreground px-2 py-1 outline-none cursor-pointer"
+                  className="bg-transparent text-xs font-black text-foreground px-2 py-1 outline-none cursor-pointer"
                 />
               </div>
 
               <button
                 onClick={() => handleDateChange(1)}
-                className="p-2 rounded-xl hover:bg-white/5 text-foreground transition-all active:scale-95"
+                className="p-2 rounded-xl hover:bg-white/5 text-foreground/80 hover:text-foreground active:scale-95 transition-all"
                 title="Next Day"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 
-            <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all border ${
-                selectedDate === new Date().toISOString().split('T')[0]
-                  ? 'bg-primary text-black border-primary shadow-lg shadow-primary/20'
-                  : 'bg-surface border-border text-foreground hover:bg-white/5'
-              }`}
-            >
-              Today
-            </button>
-
+            {/* Refresh Live Matrix */}
             <button
               onClick={() => venue && fetchAvailability(venue.venueId, selectedDate)}
-              className={`p-2.5 rounded-2xl border bg-surface text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all ${
-                refreshing ? 'animate-spin text-primary border-primary/40' : 'border-border'
+              className={`p-3 rounded-2xl border bg-surface/90 text-foreground/80 hover:text-foreground active:scale-95 transition-all ${
+                refreshing ? 'animate-spin text-primary border-primary/50' : 'border-border hover:border-primary/40'
               }`}
-              title="Refresh Live Availability"
+              title="Refresh Matrix"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
+
+            {/* Quick Route Shortcuts to Modules */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+              <Link
+                href={`/org/${orgId}/venue/bookings`}
+                className="px-3 py-2.5 rounded-2xl border border-border bg-surface text-foreground/80 hover:text-foreground hover:border-primary/40 text-xs font-black flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <CalendarDays className="w-3.5 h-3.5 text-primary" />
+                <span>Bookings</span>
+              </Link>
+
+              <Link
+                href={`/org/${orgId}/venue/blocks`}
+                className="px-3 py-2.5 rounded-2xl border border-border bg-surface text-foreground/80 hover:text-foreground hover:border-primary/40 text-xs font-black flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <Lock className="w-3.5 h-3.5 text-red-400" />
+                <span>Holds</span>
+              </Link>
+
+              <Link
+                href={`/org/${orgId}/venue/facilities`}
+                className="px-3.5 py-2.5 rounded-2xl bg-primary text-black font-black text-xs hover:brightness-110 shadow-lg shadow-primary/20 flex items-center gap-1.5 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Add Facility</span>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* 7-Day Quick Strip (Horizontal Carousel) */}
-        <div className="mt-5 pt-4 border-t flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar" style={{ borderColor: 'var(--athlon-border)' }}>
-          {dateStrip.map((item) => (
+        {/* 14-DAY EXECUTIVE HORIZONTAL STRIP */}
+        <div
+          className="mt-6 pt-5 border-t flex items-center gap-2.5 overflow-x-auto pb-1 hide-scrollbar"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
+          {desktopDateStrip.map((item) => (
             <button
               key={item.dateStr}
               onClick={() => setSelectedDate(item.dateStr)}
-              className={`shrink-0 px-3.5 py-2 rounded-2xl text-center transition-all flex flex-col items-center min-w-[72px] border ${
+              className={`shrink-0 py-3 px-4 rounded-2xl text-center transition-all duration-200 flex flex-col items-center min-w-[76px] relative border ${
                 item.isSelected
-                  ? 'bg-primary text-black border-primary font-black shadow-md scale-105'
-                  : 'bg-background/80 text-foreground/70 border-border hover:border-primary/40 hover:text-foreground'
+                  ? 'bg-gradient-to-b from-primary via-primary/95 to-primary/90 text-black border-primary font-black shadow-xl shadow-primary/25 scale-105 ring-2 ring-primary/40'
+                  : 'bg-background/80 text-foreground/70 border-border hover:border-primary/40 hover:text-foreground hover:bg-surface/60'
               }`}
             >
-              <span className={`text-[10px] uppercase tracking-wider font-bold ${item.isSelected ? 'text-black/70' : 'text-foreground/50'}`}>
+              <span
+                className={`text-[10px] uppercase tracking-wider font-extrabold leading-none ${
+                  item.isSelected ? 'text-black/80 font-black' : 'text-foreground/50'
+                }`}
+              >
                 {item.dayName}
               </span>
-              <span className="text-base font-black leading-tight">
+              <span className="text-lg font-black leading-tight my-1">
                 {item.dayNum}
               </span>
-              {item.isToday && (
-                <span className={`text-[8px] font-black px-1.5 py-0.2 rounded-full mt-0.5 ${item.isSelected ? 'bg-black/20 text-black' : 'bg-primary/20 text-primary'}`}>
-                  Today
+              <div className="flex items-center gap-1">
+                <span
+                  className={`text-[9px] font-bold ${
+                    item.isSelected ? 'text-black/70' : 'text-foreground/40'
+                  }`}
+                >
+                  {item.monthName}
                 </span>
-              )}
+                {item.isToday && (
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      item.isSelected ? 'bg-black' : 'bg-primary shadow-sm shadow-primary/80'
+                    }`}
+                  />
+                )}
+              </div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* DESKTOP KPI STATS BAR (md+) */}
-      <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Available */}
-        <div className="p-4 rounded-2xl border bg-card/60 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Available Slots</span>
-            <div className="text-2xl font-black text-foreground">{metrics.availableCount}</div>
-            <span className="text-[10px] text-foreground/50">Ready for booking</span>
+      {/* 2. EXECUTIVE BENTO KPI ANALYTICS BAR (md+) */}
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Live Occupancy & Utilization */}
+        <div
+          className="p-5 rounded-3xl border bg-gradient-to-br from-card via-card/90 to-card/60 backdrop-blur-xl relative overflow-hidden shadow-lg group hover:border-emerald-500/40 transition-all"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>Court Occupancy</span>
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
+              <Activity className="w-5 h-5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <div className="text-3xl font-black text-foreground tracking-tight">{metrics.occupancyPct}%</div>
+            <span className="text-xs font-bold text-foreground/50">Capacity booked</span>
           </div>
-        </div>
-
-        {/* Booked */}
-        <div className="p-4 rounded-2xl border bg-card/60 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-black text-primary uppercase tracking-wider">Confirmed Bookings</span>
-            <div className="text-2xl font-black text-foreground">{metrics.bookedCount}</div>
-            <span className="text-[10px] text-foreground/50">Player walk-ins & app</span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
-            <CalendarDays className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Recurring Series */}
-        <div className="p-4 rounded-2xl border bg-card/60 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-black text-purple-400 uppercase tracking-wider">Recurring Batches</span>
-            <div className="text-2xl font-black text-foreground">{metrics.recurringCount}</div>
-            <span className="text-[10px] text-foreground/50">Academies & Clubs</span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
-            <Layers className="w-5 h-5" />
+          <div className="mt-3.5 space-y-1.5">
+            <div className="w-full h-2 rounded-full bg-surface border border-white/5 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-500"
+                style={{ width: `${Math.min(100, metrics.occupancyPct)}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-foreground/50 font-bold">
+              <span>{metrics.bookedCount + metrics.recurringCount} Slots Utilized</span>
+              <span>{metrics.totalSlots} Total</span>
+            </div>
           </div>
         </div>
 
-        {/* Projected Revenue */}
-        <div className="p-4 rounded-2xl border bg-card/60 flex items-center justify-between shadow-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider">Daily Projected</span>
-            <div className="text-2xl font-black text-foreground">₹{metrics.estRevenue.toLocaleString()}</div>
-            <span className="text-[10px] text-foreground/50">{metrics.occupancyPct}% occupancy rate</span>
+        {/* Card 2: Confirmed Bookings */}
+        <div
+          className="p-5 rounded-3xl border bg-gradient-to-br from-card via-card/90 to-card/60 backdrop-blur-xl relative overflow-hidden shadow-lg group hover:border-primary/40 transition-all"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <span>Confirmed Bookings</span>
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shadow-inner">
+              <CalendarDays className="w-5 h-5" />
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
-            <TrendingUp className="w-5 h-5" />
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <div className="text-3xl font-black text-foreground tracking-tight">{metrics.bookedCount}</div>
+            <span className="text-xs font-bold text-primary">Player reservations</span>
+          </div>
+          <div className="mt-3.5 flex items-center gap-2 pt-2 border-t border-white/5 text-[11px] text-foreground/60 font-medium">
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>{metrics.availableCount} open slots still ready for dispatch</span>
+          </div>
+        </div>
+
+        {/* Card 3: Recurring Academy Batches & Holds */}
+        <div
+          className="p-5 rounded-3xl border bg-gradient-to-br from-card via-card/90 to-card/60 backdrop-blur-xl relative overflow-hidden shadow-lg group hover:border-purple-500/40 transition-all"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-purple-400" />
+              <span>Club & Batch Holds</span>
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shadow-inner">
+              <Layers className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <div className="text-3xl font-black text-foreground tracking-tight">
+              {metrics.recurringCount}
+              <span className="text-lg font-bold text-foreground/40 font-mono ml-1">/ {metrics.blockedCount} blk</span>
+            </div>
+            <span className="text-xs font-bold text-purple-300">Academy series</span>
+          </div>
+          <div className="mt-3.5 flex items-center gap-2 pt-2 border-t border-white/5 text-[11px] text-foreground/60 font-medium">
+            <Shield className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <span>Coaching sessions & administrative blocks</span>
+          </div>
+        </div>
+
+        {/* Card 4: Daily Projected Revenue */}
+        <div
+          className="p-5 rounded-3xl border bg-gradient-to-br from-card via-card/90 to-card/60 backdrop-blur-xl relative overflow-hidden shadow-lg group hover:border-cyan-500/40 transition-all"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+              <span>Daily Projected Yield</span>
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shadow-inner">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <div className="text-3xl font-black text-foreground tracking-tight">
+              ₹{metrics.estRevenue.toLocaleString()}
+            </div>
+            <span className="text-xs font-bold text-cyan-400">Total estimated</span>
+          </div>
+          <div className="mt-3.5 flex items-center gap-2 pt-2 border-t border-white/5 text-[11px] text-foreground/60 font-medium">
+            <IndianRupee className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>
+              {dailyData?.facilities.length
+                ? `₹${Math.round(metrics.estRevenue / (dailyData.facilities.length || 1)).toLocaleString()} / facility avg`
+                : 'Based on locked slots'}
+            </span>
           </div>
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. FILTERS & FACILITY SELECTOR
+          MOBILE ONLY: FILTERS & FACILITY SELECTOR (< md)
       ────────────────────────────────────────────────────────────── */}
-      <div className="p-2.5 md:p-4 rounded-2xl border bg-card/40 flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4" style={{ borderColor: 'var(--athlon-border)' }}>
+      <div className="block md:hidden p-2.5 rounded-2xl border bg-card/40 flex flex-col gap-2.5" style={{ borderColor: 'var(--athlon-border)' }}>
         {/* Facility Filter Pills */}
         <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto pb-0.5 md:pb-0 hide-scrollbar -mx-1 px-1">
           <button
@@ -702,134 +919,524 @@ export default function VenueCalendarPage() {
       ) : (
         <>
           {/* ═════════════════════════════════════════════════════════
-              A. DESKTOP VIEW: HIGH-TECH MULTI-COURT SPREADSHEET MATRIX (md+)
+              A. DESKTOP VIEW: HIGH-TECH ARENA COMMAND CENTER & DISPATCH MATRIX (md+)
           ══════════════════════════════════════════════════════════ */}
-          <div className="hidden md:block bg-card rounded-3xl border overflow-hidden shadow-xl" style={{ borderColor: 'var(--athlon-border)' }}>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr className="border-b bg-surface/80 backdrop-blur-sm" style={{ borderColor: 'var(--athlon-border)' }}>
-                    <th className="p-4 text-xs font-black uppercase tracking-wider text-muted-foreground w-44 shrink-0 border-r" style={{ borderColor: 'var(--athlon-border)' }}>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span>Time Window</span>
-                      </div>
-                    </th>
-                    {filteredFacilities.map((fac) => (
-                      <th key={fac.facilityId} className="p-4 text-xs font-black text-foreground min-w-[220px] border-r last:border-r-0" style={{ borderColor: 'var(--athlon-border)' }}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm font-black text-foreground">{fac.facilityName}</div>
-                            <div className="text-[10px] text-foreground/50 font-medium">Standard Slot</div>
-                          </div>
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                            {fac.slotDurationMinutes}m
-                          </span>
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allTimeSlots.map((timeWindow) => {
-                    const [startTimeStr] = timeWindow.split(' - ');
-                    const hourNum = parseInt(startTimeStr.split(':')[0], 10);
-                    const periodIcon = hourNum < 12 ? <Sunrise className="w-3 h-3 text-amber-400" /> : hourNum < 17 ? <Sun className="w-3 h-3 text-yellow-400" /> : <Moon className="w-3 h-3 text-indigo-400" />;
+          <div className="hidden md:block space-y-6">
+            {/* 1. COMMAND & CONTROL TOOLBAR */}
+            <div
+              className="p-4 rounded-3xl border bg-card/60 backdrop-blur-xl space-y-4 shadow-md"
+              style={{ borderColor: 'var(--athlon-border)' }}
+            >
+              {/* Top Row: Facility Selector Pills & Search Bar */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                {/* Facility Pills */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                  <button
+                    onClick={() => setSelectedFacilityId('ALL')}
+                    className={`px-4 py-2 rounded-2xl text-xs font-black transition-all shrink-0 border flex items-center gap-2 ${
+                      selectedFacilityId === 'ALL'
+                        ? 'bg-primary text-black border-primary shadow-md shadow-primary/20 scale-[1.02]'
+                        : 'bg-surface border-border text-foreground/70 hover:text-foreground hover:border-primary/40'
+                    }`}
+                  >
+                    <span>🏟️ All Facilities</span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-lg ${
+                        selectedFacilityId === 'ALL' ? 'bg-black/20 text-black' : 'bg-background text-foreground/50'
+                      }`}
+                    >
+                      {dailyData?.facilities.length || 0}
+                    </span>
+                  </button>
+
+                  {dailyData?.facilities.map((fac) => {
+                    const freeCount = fac.slots.filter((s) => s.status === 'AVAILABLE').length;
+                    const isSelected = selectedFacilityId === fac.facilityId;
+                    const emoji = getSportEmoji(undefined, fac.facilityName);
 
                     return (
-                      <tr key={timeWindow} className="border-b hover:bg-white/[0.02] transition-colors group" style={{ borderColor: 'var(--athlon-border)' }}>
-                        {/* Sticky Time Header */}
-                        <td className="p-3.5 text-xs font-black text-foreground/80 shrink-0 border-r bg-background/40" style={{ borderColor: 'var(--athlon-border)' }}>
-                          <div className="flex items-center gap-2">
-                            {periodIcon}
-                            <span>{timeWindow}</span>
+                      <button
+                        key={fac.facilityId}
+                        onClick={() => setSelectedFacilityId(fac.facilityId)}
+                        className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 border flex items-center gap-2 ${
+                          isSelected
+                            ? 'bg-primary text-black border-primary font-black shadow-md shadow-primary/20 scale-[1.02]'
+                            : 'bg-surface border-border text-foreground/70 hover:text-foreground hover:border-primary/40'
+                        }`}
+                      >
+                        <span>{emoji} {fac.facilityName}</span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-lg font-black ${
+                            isSelected ? 'bg-black/20 text-black' : 'bg-background text-emerald-400 border border-emerald-500/20'
+                          }`}
+                        >
+                          {freeCount} free
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Live Search Bar */}
+                <div className="relative min-w-[280px]">
+                  <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Find player, booking # or sport..."
+                    value={desktopSearchQuery}
+                    onChange={(e) => setDesktopSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 rounded-2xl bg-background/80 border border-border text-xs font-bold text-foreground placeholder:text-foreground/40 outline-none focus:border-primary transition-all shadow-inner"
+                  />
+                  {desktopSearchQuery && (
+                    <button
+                      onClick={() => setDesktopSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground text-xs font-black"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Row: Time Period Filter, Density & View Mode Controls, Legend */}
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pt-3 border-t border-white/5">
+                {/* Time Period Filter Pills */}
+                <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-background border border-border shrink-0">
+                  {(
+                    [
+                      { id: 'ALL', label: 'All Day (24h)', icon: Sparkles },
+                      { id: 'MORNING', label: 'Morning (06-12)', icon: Sunrise },
+                      { id: 'AFTERNOON', label: 'Afternoon (12-17)', icon: Sun },
+                      { id: 'EVENING', label: 'Prime Evening (17-23)', icon: Moon },
+                    ] as const
+                  ).map((t) => {
+                    const Icon = t.icon;
+                    const isActive = desktopTimeFilter === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setDesktopTimeFilter(t.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                          isActive
+                            ? 'bg-primary text-black shadow-md shadow-primary/20 scale-[1.02]'
+                            : 'text-foreground/60 hover:text-foreground hover:bg-white/5'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{t.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* View Mode & Density Toggles + Legend */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Density Toggle */}
+                  <div className="flex items-center gap-1 p-1 rounded-2xl bg-background border border-border">
+                    <button
+                      onClick={() => setDesktopDensity('COMFORTABLE')}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                        desktopDensity === 'COMFORTABLE' ? 'bg-surface text-foreground font-black shadow-sm' : 'text-foreground/50'
+                      }`}
+                      title="Comfortable card height"
+                    >
+                      Comfortable
+                    </button>
+                    <button
+                      onClick={() => setDesktopDensity('COMPACT')}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                        desktopDensity === 'COMPACT' ? 'bg-surface text-foreground font-black shadow-sm' : 'text-foreground/50'
+                      }`}
+                      title="Compact dense view"
+                    >
+                      Compact
+                    </button>
+                  </div>
+
+                  {/* View Mode Toggle: Grid vs Timeline */}
+                  <div className="flex items-center gap-1 p-1 rounded-2xl bg-background border border-border">
+                    <button
+                      onClick={() => setDesktopViewMode('GRID')}
+                      className={`px-3 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                        desktopViewMode === 'GRID' ? 'bg-primary text-black shadow-md' : 'text-foreground/60 hover:text-foreground'
+                      }`}
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span>Matrix</span>
+                    </button>
+                    <button
+                      onClick={() => setDesktopViewMode('TIMELINE')}
+                      className={`px-3 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                        desktopViewMode === 'TIMELINE' ? 'bg-primary text-black shadow-md' : 'text-foreground/60 hover:text-foreground'
+                      }`}
+                    >
+                      <List className="w-3.5 h-3.5" />
+                      <span>Courts Feed</span>
+                    </button>
+                  </div>
+
+                  {/* Status Legend */}
+                  <div className="hidden 2xl:flex items-center gap-3 pl-3 border-l border-white/10 text-xs font-bold">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
+                      <span className="text-foreground/70">Available</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary shadow-sm shadow-primary/50" />
+                      <span className="text-foreground/70">Booked</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-sm shadow-purple-400/50" />
+                      <span className="text-foreground/70">Series</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-400 shadow-sm shadow-red-400/50" />
+                      <span className="text-foreground/70">Hold / Block</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. MAIN SCHEDULER VIEW */}
+            {desktopViewMode === 'GRID' ? (
+              /* ──────── GRID MATRIX SCHEDULER TABLE ──────── */
+              <div
+                className="bg-card rounded-3xl border overflow-hidden shadow-2xl transition-all"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left">
+                    <thead>
+                      <tr className="border-b bg-surface/90 backdrop-blur-md sticky top-0 z-20" style={{ borderColor: 'var(--athlon-border)' }}>
+                        {/* Time Window Column Header */}
+                        <th
+                          className="p-4 text-xs font-black uppercase tracking-wider text-muted-foreground w-48 shrink-0 border-r bg-surface"
+                          style={{ borderColor: 'var(--athlon-border)' }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-primary" />
+                              <span>Time Slot</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-foreground/40 font-mono">
+                              {desktopFilteredTimeSlots.length} rows
+                            </span>
                           </div>
-                        </td>
+                        </th>
 
-                        {/* Facility Slots */}
+                        {/* Facility Court Columns Headers */}
                         {filteredFacilities.map((fac) => {
-                          const slot = fac.slots.find((s) => s.startTime.slice(0, 5) === startTimeStr);
-
-                          if (!slot) {
-                            return (
-                              <td key={fac.facilityId} className="p-2 border-r last:border-r-0 text-center text-xs text-foreground/20 font-mono" style={{ borderColor: 'var(--athlon-border)' }}>
-                                —
-                              </td>
-                            );
-                          }
-
-                          const isAvail = slot.status === 'AVAILABLE';
-                          const isBooked = slot.status === 'BOOKED';
-                          const isHeld = slot.status === 'HELD';
-                          const isBlocked = slot.status === 'BLOCKED';
-                          const isMaint = slot.status === 'MAINTENANCE';
-                          const isReserved = slot.status === 'RESERVED';
+                          const freeCount = fac.slots.filter((s) => s.status === 'AVAILABLE').length;
+                          const bookedCount = fac.slots.filter((s) => s.status === 'BOOKED' || s.status === 'RESERVED').length;
+                          const occupancy = fac.slots.length > 0 ? Math.round((bookedCount / fac.slots.length) * 100) : 0;
+                          const emoji = getSportEmoji(undefined, fac.facilityName);
 
                           return (
-                            <td key={fac.facilityId} className="p-2 border-r last:border-r-0" style={{ borderColor: 'var(--athlon-border)' }}>
-                              <button
-                                onClick={() => handleSlotClick(fac, slot)}
-                                className={`w-full p-3 rounded-2xl border text-left transition-all duration-200 active:scale-[0.98] flex flex-col justify-between min-h-[72px] shadow-sm relative overflow-hidden group/slot ${
-                                  isAvail
-                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:border-emerald-500 hover:bg-emerald-500/20 hover:shadow-emerald-500/10 hover:shadow-lg'
-                                    : isBooked
-                                    ? 'bg-primary/10 border-primary/40 text-foreground hover:border-primary hover:bg-primary/15'
-                                    : isReserved
-                                    ? 'bg-purple-500/10 border-purple-500/40 text-purple-300 hover:border-purple-400 hover:bg-purple-500/15'
-                                    : isBlocked
-                                    ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/15'
-                                    : isMaint
-                                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/15'
-                                    : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className="text-xs font-black truncate">
-                                    {isAvail && `₹${slot.price}`}
-                                    {isBooked && (slot.customerName || 'Confirmed Booked')}
-                                    {isReserved && (slot.reason || 'Recurring Batch')}
-                                    {isBlocked && (slot.reason || 'Admin Hold')}
-                                    {isHeld && 'Held for Checkout'}
-                                    {isMaint && (slot.reason || 'Maintenance')}
+                            <th
+                              key={fac.facilityId}
+                              className="p-4 text-xs font-black text-foreground min-w-[240px] border-r last:border-r-0"
+                              style={{ borderColor: 'var(--athlon-border)' }}
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-base">{emoji}</span>
+                                    <div>
+                                      <div className="text-sm font-black text-foreground tracking-tight">{fac.facilityName}</div>
+                                      <div className="text-[10px] text-foreground/50 font-bold">Standard Arena Court</div>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                                    {fac.slotDurationMinutes}m
                                   </span>
-
-                                  {isAvail ? (
-                                    <span className="text-[9px] font-black text-emerald-400/90 px-1.5 py-0.5 rounded bg-emerald-500/20 uppercase tracking-wider">
-                                      {slot.pricingType}
-                                    </span>
-                                  ) : isBooked ? (
-                                    <span className="text-[9px] font-black text-primary px-1.5 py-0.5 rounded bg-primary/20">
-                                      PAID
-                                    </span>
-                                  ) : isReserved ? (
-                                    <span className="text-[9px] font-black text-purple-400 px-1.5 py-0.5 rounded bg-purple-500/20">
-                                      SERIES
-                                    </span>
-                                  ) : (
-                                    <Lock className="w-3 h-3 opacity-60" />
-                                  )}
                                 </div>
 
-                                <div className="text-[10px] text-foreground/50 flex items-center justify-between pt-1 border-t border-white/5 mt-1">
-                                  <span className="truncate">
-                                    {isAvail ? '+ Click to Book' : slot.sportName || slot.status}
-                                  </span>
-                                  {slot.bookingNumber && (
-                                    <span className="font-mono text-[9px] text-primary font-bold">
-                                      #{slot.bookingNumber.slice(-4)}
-                                    </span>
-                                  )}
+                                {/* Mini Court Occupancy Meter */}
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between text-[10px] font-bold text-foreground/50">
+                                    <span className="text-emerald-400 font-extrabold">{freeCount} Available</span>
+                                    <span>{occupancy}% Booked</span>
+                                  </div>
+                                  <div className="w-full h-1.5 rounded-full bg-background border border-white/5 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-primary to-purple-500"
+                                      style={{ width: `${occupancy}%` }}
+                                    />
+                                  </div>
                                 </div>
-                              </button>
-                            </td>
+                              </div>
+                            </th>
                           );
                         })}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+
+                    <tbody>
+                      {desktopFilteredTimeSlots.map((timeWindow) => {
+                        const [startTimeStr] = timeWindow.split(' - ');
+                        const hourNum = parseInt(startTimeStr.split(':')[0], 10);
+                        const isPeakHour = hourNum >= 18 && hourNum <= 22;
+                        const isNowHour = isCurrentDate && hourNum === currentHour;
+                        const periodIcon =
+                          hourNum < 12 ? (
+                            <Sunrise className="w-3.5 h-3.5 text-amber-400" />
+                          ) : hourNum < 17 ? (
+                            <Sun className="w-3.5 h-3.5 text-yellow-400" />
+                          ) : (
+                            <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                          );
+
+                        return (
+                          <tr
+                            key={timeWindow}
+                            className={`border-b transition-colors group ${
+                              isNowHour ? 'bg-primary/[0.03]' : 'hover:bg-white/[0.02]'
+                            }`}
+                            style={{ borderColor: 'var(--athlon-border)' }}
+                          >
+                            {/* Sticky Time Header Column */}
+                            <td
+                              className="p-3.5 text-xs font-black text-foreground shrink-0 border-r bg-background/50 relative"
+                              style={{ borderColor: 'var(--athlon-border)' }}
+                            >
+                              {isNowHour && (
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-sm shadow-primary animate-pulse" />
+                              )}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  {periodIcon}
+                                  <span className="font-mono text-xs">{timeWindow}</span>
+                                </div>
+                                {isPeakHour && (
+                                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
+                                    <Flame className="w-2.5 h-2.5" />
+                                    <span>PEAK</span>
+                                  </span>
+                                )}
+                              </div>
+                              {isNowHour && (
+                                <div className="text-[9px] font-black text-primary uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                                  <span>Current Window</span>
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Court Slots for this Time Window */}
+                            {filteredFacilities.map((fac) => {
+                              const slot = fac.slots.find((s) => s.startTime.slice(0, 5) === startTimeStr);
+
+                              if (!slot) {
+                                return (
+                                  <td
+                                    key={fac.facilityId}
+                                    className="p-2 border-r last:border-r-0 text-center text-xs text-foreground/20 font-mono"
+                                    style={{ borderColor: 'var(--athlon-border)' }}
+                                  >
+                                    —
+                                  </td>
+                                );
+                              }
+
+                              const isAvail = slot.status === 'AVAILABLE';
+                              const isBooked = slot.status === 'BOOKED';
+                              const isHeld = slot.status === 'HELD';
+                              const isBlocked = slot.status === 'BLOCKED';
+                              const isMaint = slot.status === 'MAINTENANCE';
+                              const isReserved = slot.status === 'RESERVED';
+                              const matchesSearch = isSlotSearchMatch(slot);
+                              const isDimmed = desktopSearchQuery.trim() !== '' && !matchesSearch;
+
+                              const heightClass = desktopDensity === 'COMPACT' ? 'min-h-[58px] p-2.5' : 'min-h-[76px] p-3';
+
+                              return (
+                                <td
+                                  key={fac.facilityId}
+                                  className={`p-2 border-r last:border-r-0 transition-opacity ${
+                                    isDimmed ? 'opacity-25 hover:opacity-100' : 'opacity-100'
+                                  }`}
+                                  style={{ borderColor: 'var(--athlon-border)' }}
+                                >
+                                  <button
+                                    onClick={() => handleSlotClick(fac, slot)}
+                                    className={`w-full rounded-2xl border text-left transition-all duration-200 active:scale-[0.98] flex flex-col justify-between ${heightClass} shadow-sm relative overflow-hidden group/slot ${
+                                      isAvail
+                                        ? 'bg-emerald-500/[0.06] border-emerald-500/25 text-emerald-400 hover:border-emerald-400 hover:bg-emerald-500/15 hover:shadow-lg hover:shadow-emerald-500/10'
+                                        : isBooked
+                                        ? 'bg-primary/[0.08] border-primary/35 text-foreground hover:border-primary hover:bg-primary/[0.14] hover:shadow-md hover:shadow-primary/10'
+                                        : isReserved
+                                        ? 'bg-purple-500/[0.08] border-purple-500/35 text-purple-300 hover:border-purple-400 hover:bg-purple-500/[0.14]'
+                                        : isBlocked
+                                        ? 'bg-red-500/[0.07] border-red-500/30 text-red-400 hover:bg-red-500/[0.12]'
+                                        : isMaint
+                                        ? 'bg-amber-500/[0.07] border-amber-500/30 text-amber-400 hover:bg-amber-500/[0.12]'
+                                        : 'bg-amber-500/[0.07] border-amber-500/30 text-amber-300'
+                                    } ${
+                                      desktopSearchQuery.trim() !== '' && matchesSearch
+                                        ? 'ring-2 ring-primary scale-[1.01] shadow-lg shadow-primary/20'
+                                        : ''
+                                    }`}
+                                  >
+                                    {/* Slot Top Bar */}
+                                    <div className="flex items-center justify-between gap-1 w-full">
+                                      {isAvail ? (
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-sm font-black text-emerald-400 tracking-tight">
+                                            ₹{slot.price}
+                                          </span>
+                                          <span className="text-[9px] font-black text-emerald-400/80 px-1.5 py-0.2 rounded bg-emerald-500/20 uppercase tracking-wider">
+                                            {slot.pricingType}
+                                          </span>
+                                        </div>
+                                      ) : isBooked ? (
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <div className="w-5 h-5 rounded-md bg-primary text-black font-black text-[10px] flex items-center justify-center shrink-0">
+                                            {getPlayerInitials(slot.customerName)}
+                                          </div>
+                                          <span className="text-xs font-black text-foreground truncate">
+                                            {slot.customerName || 'Confirmed Player'}
+                                          </span>
+                                        </div>
+                                      ) : isReserved ? (
+                                        <div className="flex items-center gap-1 min-w-0">
+                                          <span className="text-xs">🔁</span>
+                                          <span className="text-xs font-black text-purple-300 truncate">
+                                            {slot.reason || 'Recurring Series'}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1.5 min-w-0 text-red-400">
+                                          <Lock className="w-3.5 h-3.5 shrink-0" />
+                                          <span className="text-xs font-black truncate">
+                                            {slot.reason || (isMaint ? 'Maintenance' : 'Admin Hold')}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {/* Right Badge */}
+                                      <div>
+                                        {isAvail ? (
+                                          <span className="opacity-0 group-hover/slot:opacity-100 transition-opacity text-[10px] font-black text-emerald-400 flex items-center gap-0.5">
+                                            <span>+ Book</span>
+                                          </span>
+                                        ) : isBooked ? (
+                                          <span className="text-[9px] font-black text-primary px-1.5 py-0.5 rounded bg-primary/20 border border-primary/30">
+                                            PAID
+                                          </span>
+                                        ) : isReserved ? (
+                                          <span className="text-[9px] font-black text-purple-400 px-1.5 py-0.5 rounded bg-purple-500/20 border border-purple-500/30">
+                                            SERIES
+                                          </span>
+                                        ) : isHeld ? (
+                                          <span className="text-[9px] font-black text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/20">
+                                            HELD
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    </div>
+
+                                    {/* Slot Bottom Meta Line */}
+                                    <div className="text-[10px] text-foreground/50 flex items-center justify-between pt-1 border-t border-white/5 mt-1 w-full font-medium">
+                                      <span className="truncate flex items-center gap-1">
+                                        {isAvail ? (
+                                          <span className="text-emerald-400/70 font-bold group-hover/slot:text-emerald-400">
+                                            Instant Walk-In
+                                          </span>
+                                        ) : (
+                                          <span>{slot.sportName || 'Court Booked'}</span>
+                                        )}
+                                      </span>
+                                      {slot.bookingNumber && (
+                                        <span className="font-mono text-[9px] text-primary/80 font-bold group-hover/slot:text-primary">
+                                          #{slot.bookingNumber.slice(-4)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </button>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              /* ──────── TIMELINE STREAM VIEW (Court by Court) ──────── */
+              <div className="space-y-4">
+                {filteredFacilities.map((fac) => {
+                  const freeCount = fac.slots.filter((s) => s.status === 'AVAILABLE').length;
+                  const emoji = getSportEmoji(undefined, fac.facilityName);
+
+                  return (
+                    <div
+                      key={fac.facilityId}
+                      className="p-5 rounded-3xl border bg-card/80 backdrop-blur-xl space-y-4 shadow-xl"
+                      style={{ borderColor: 'var(--athlon-border)' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center text-lg">
+                            {emoji}
+                          </div>
+                          <div>
+                            <h3 className="text-base font-black text-foreground">{fac.facilityName}</h3>
+                            <p className="text-xs text-foreground/50 font-bold">
+                              {freeCount} of {fac.slots.length} slots free today • {fac.slotDurationMinutes} min blocks
+                            </p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 rounded-xl bg-surface border border-border text-xs font-black text-foreground/80">
+                          Standard Arena Court
+                        </span>
+                      </div>
+
+                      {/* Horizontal Slots Ribbon */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                        {fac.slots.map((slot, sIdx) => {
+                          const isAvail = slot.status === 'AVAILABLE';
+                          const isBooked = slot.status === 'BOOKED';
+                          const isReserved = slot.status === 'RESERVED';
+
+                          return (
+                            <div
+                              key={sIdx}
+                              onClick={() => handleSlotClick(fac, slot)}
+                              className={`p-3 rounded-2xl border cursor-pointer transition-all active:scale-95 space-y-1.5 ${
+                                isAvail
+                                  ? 'bg-emerald-500/[0.08] border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/15'
+                                  : isBooked
+                                  ? 'bg-primary/[0.08] border-primary/30 hover:border-primary'
+                                  : isReserved
+                                  ? 'bg-purple-500/[0.08] border-purple-500/30 hover:border-purple-400'
+                                  : 'bg-red-500/[0.08] border-red-500/30'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs font-mono font-black text-foreground">
+                                <span>{slot.startTime.slice(0, 5)}</span>
+                                {isAvail ? (
+                                  <span className="text-emerald-400 font-sans">₹{slot.price}</span>
+                                ) : (
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-primary/20 text-primary font-sans">
+                                    {slot.status}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] font-bold text-foreground/70 truncate">
+                                {isAvail ? '+ Book' : slot.customerName || slot.reason || 'Booked'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ═════════════════════════════════════════════════════════

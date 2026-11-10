@@ -29,4 +29,10 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
     Optional<OrganizationMember> findByOrganizationUuidAndUserUuid(UUID organizationUuid, UUID userUuid);
 
     Optional<OrganizationMember> findByOrganizationUuidAndUserId(UUID organizationUuid, Long userId);
+
+    long countByOrganizationId(Long organizationId);
+
+    long countByOrganizationIdAndIsActive(Long organizationId, Integer isActive);
+
+    long countByOrganizationUuid(UUID organizationUuid);
 }

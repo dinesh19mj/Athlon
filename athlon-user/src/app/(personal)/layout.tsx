@@ -77,7 +77,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
       items: [
         { name: 'Dashboard', href: '/home', icon: Home, badge: null },
         { name: 'My Events', href: '/home/tournaments', icon: Trophy, badge: null },
-        { name: 'Live Scores', href: '/live-score', icon: Radio, badge: 'Live', isLive: true },
+        { name: 'Live Scores', href: '/home/live-score', icon: Radio, badge: 'Live', isLive: true },
       ],
     },
     {
@@ -110,6 +110,7 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
   const hideBottomNav =
     (pathname.startsWith('/home/tournaments/') && pathname !== '/home/tournaments') ||
     (pathname.startsWith('/home/team-championship/') && pathname !== '/home/team-championship') ||
+    (pathname.startsWith('/home/live-score/') && pathname !== '/home/live-score') ||
     (pathname.startsWith('/live-score/') && pathname !== '/live-score') ||
     pathname.startsWith('/setup-workspace');
 
@@ -376,15 +377,30 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
         </div>
 
         <Link
-          href="/live-score"
+          href={isAuth ? '/home/live-score' : '/live-score'}
           className={`flex flex-col items-center justify-center gap-0.5 w-14 group transition-opacity ${
-            pathname.startsWith('/live-score') ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+            pathname.startsWith('/live-score') || pathname.startsWith('/home/live-score')
+              ? 'opacity-100'
+              : 'opacity-70 hover:opacity-100'
           }`}
         >
-          <Athlon3DIcon type="live-score" size={26} active={pathname.startsWith('/live-score')} />
+          <Athlon3DIcon
+            type="live-score"
+            size={26}
+            active={pathname.startsWith('/live-score') || pathname.startsWith('/home/live-score')}
+          />
           <span
-            className={`text-[10px] font-bold leading-tight tracking-tight ${pathname.startsWith('/live-score') ? 'text-red-400 font-black' : ''}`}
-            style={{ color: pathname.startsWith('/live-score') ? undefined : 'var(--athlon-text-muted)' }}
+            className={`text-[10px] font-bold leading-tight tracking-tight ${
+              pathname.startsWith('/live-score') || pathname.startsWith('/home/live-score')
+                ? 'text-red-400 font-black'
+                : ''
+            }`}
+            style={{
+              color:
+                pathname.startsWith('/live-score') || pathname.startsWith('/home/live-score')
+                  ? undefined
+                  : 'var(--athlon-text-muted)',
+            }}
           >
             Live
           </span>

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { TournamentAnnouncement, getAnnouncementPosterUrl } from '@/lib/api/tournamentAnnouncement';
 import { SportCardSkeletonBackground } from '@/components/common/SportCardSkeletonBackground';
+import { AthlonImage } from '@/components/common/AthlonImage';
 
 interface PublicAnnouncementCardProps {
   announcement: TournamentAnnouncement;
@@ -154,14 +155,14 @@ export function PublicAnnouncementCard({ announcement }: PublicAnnouncementCardP
           {/* Optional Poster Thumbnail Preview Banner if poster exists */}
           {posterSrc && (
             <div className="relative w-full h-28 rounded-xl overflow-hidden bg-muted/40 border border-foreground/5 shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <AthlonImage
                 src={posterSrc}
                 alt={announcement.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 pointer-events-none" />
               {announcement.prizePool && (
                 <div className="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-md bg-primary/90 backdrop-blur-sm text-[9.5px] font-black text-white shadow">
                   🏆 {announcement.prizePool}

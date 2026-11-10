@@ -295,6 +295,14 @@ export default function CoachesPage() {
 
           <div className="flex items-center gap-1.5 shrink-0">
             <Link
+              href={`/org/${orgUuid}/coach/subscription`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold text-amber-500 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 transition active:scale-95"
+              title="Coach Subscription & Trainee Quotas"
+            >
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>Pass & Quotas</span>
+            </Link>
+            <Link
               href={`/org/${orgUuid}/batches`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold text-foreground/70 hover:text-foreground transition active:scale-95"
               style={{ borderColor: 'var(--athlon-border)' }}

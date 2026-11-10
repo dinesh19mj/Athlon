@@ -784,9 +784,9 @@ export default function AdminSportsPage() {
           MOBILE VIEW (max-width: md) — WORKSPACE DESIGN LANGUAGE
           Compact, stylish, touch-first with high visual appeal
           ───────────────────────────────────────────────────────────── */}
-      <div className="block md:hidden space-y-3.5 pb-24">
+      <div className="block md:hidden space-y-4 pb-24">
         {/* 1. Mobile Compact Header Bar */}
-        <div className="flex items-center justify-between px-0.5 pt-0.5">
+        <div className="flex items-center justify-between px-0.5 pb-1">
           <div className="flex items-center gap-2 min-w-0">
             <Link
               href="/admin"

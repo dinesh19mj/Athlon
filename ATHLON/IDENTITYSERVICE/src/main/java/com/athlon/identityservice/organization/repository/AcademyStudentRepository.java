@@ -26,6 +26,10 @@ public interface AcademyStudentRepository extends JpaRepository<AcademyStudent, 
 
     long countByOrganizationUuidAndStatus(UUID organizationUuid, String status);
 
+    long countByOrganizationUuid(UUID organizationUuid);
+
+    long countByOrganizationId(Long organizationId);
+
     long countByOrganizationUuidAndFeeStatus(UUID organizationUuid, String feeStatus);
 
     void deleteByStudentUuid(UUID studentUuid);

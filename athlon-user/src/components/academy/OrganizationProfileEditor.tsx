@@ -38,6 +38,7 @@ import {
   FALLBACK_STATE_DISTRICTS,
 } from '@/lib/api/location';
 import { SportMetadataService } from '@/lib/api/tournaments';
+import { compressImageFile, COMPRESSION_PRESETS } from '@/lib/utils/imageCompression';
 
 export const POPULAR_SPORTS = [
   { name: 'Badminton', icon: '🏸' },
@@ -104,6 +105,8 @@ export function OrganizationProfileEditor({
 
   // Branding States
   const [logoUrl, setLogoUrl] = useState(activeOrg?.logo || '');
+  const [coverError, setCoverError] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const [coverUrl, setCoverUrl] = useState(
     'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80'
   );
@@ -428,21 +431,35 @@ export function OrganizationProfileEditor({
     setCoachingSpecializations(coachingSpecializations.filter((s) => s !== spec));
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setLogoFile(file);
-      const url = URL.createObjectURL(file);
-      setLogoUrl(url);
+      try {
+        const res = await compressImageFile(file, COMPRESSION_PRESETS.AVATAR);
+        setLogoFile(res.file);
+        setLogoError(false);
+        setLogoUrl(res.previewUrl);
+      } catch {
+        setLogoFile(file);
+        setLogoError(false);
+        setLogoUrl(URL.createObjectURL(file));
+      }
     }
   };
 
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setCoverFile(file);
-      const url = URL.createObjectURL(file);
-      setCoverUrl(url);
+      try {
+        const res = await compressImageFile(file, COMPRESSION_PRESETS.BANNER);
+        setCoverFile(res.file);
+        setCoverError(false);
+        setCoverUrl(res.previewUrl);
+      } catch {
+        setCoverFile(file);
+        setCoverError(false);
+        setCoverUrl(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -605,7 +622,7 @@ export function OrganizationProfileEditor({
     <div className={`space-y-6 w-full max-w-full overflow-x-hidden ${isModal ? '' : 'pb-28 sm:pb-8'}`}>
       {/* ── Banner & Identity Pod Preview ── */}
       <div
-        className="relative rounded-3xl overflow-hidden border shadow-xl w-full max-w-full transition-colors"
+        className="relative rounded-xl sm:rounded-3xl overflow-hidden border shadow-2xs sm:shadow-xl w-full max-w-full transition-colors"
         style={{
           backgroundColor: 'var(--athlon-card)',
           borderColor: 'var(--athlon-border)',
@@ -615,12 +632,13 @@ export function OrganizationProfileEditor({
       >
         {/* Cover Photo Backdrop */}
         <div
-          className="relative w-full h-40 sm:h-52 group overflow-hidden"
+          className="relative w-full h-28 sm:h-52 group overflow-hidden"
           style={{ backgroundColor: 'var(--athlon-card)' }}
         >
           <img
-            src={coverUrl}
-            alt="Academy Banner"
+            src={coverError ? 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1600&q=80' : coverUrl}
+            alt=""
+            onError={() => setCoverError(true)}
             className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
           />
           {/* Smooth adaptive gradient veil */}
@@ -630,7 +648,7 @@ export function OrganizationProfileEditor({
           <button
             type="button"
             onClick={() => coverInputRef.current?.click()}
-            className="absolute top-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 text-white text-xs font-bold backdrop-blur-md border border-white/20 transition-all shadow-md active:scale-95"
+            className="absolute top-2.5 right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/75 hover:bg-black/90 text-white text-[10.5px] font-bold backdrop-blur-md border border-white/25 transition-all shadow-2xs active:scale-95"
           >
             <Camera className="w-3.5 h-3.5 text-primary" />
             <span>Change Cover</span>
@@ -644,7 +662,7 @@ export function OrganizationProfileEditor({
           />
 
           <div className="absolute top-3 left-3 flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 text-primary border border-white/20 backdrop-blur-md shadow-md">
+            <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-black/75 text-white border border-white/25 backdrop-blur-md shadow-2xs">
               {type}
             </span>
           </div>
@@ -652,11 +670,11 @@ export function OrganizationProfileEditor({
 
         {/* Identity & Avatar */}
         <div className="relative px-3.5 sm:px-6 pb-5 pt-0 w-full max-w-full">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 -mt-10 sm:-mt-12 relative z-10 w-full">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 -mt-8 sm:-mt-12 relative z-10 w-full">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-3 text-center sm:text-left min-w-0 max-w-full">
               <div className="relative group/avatar shrink-0">
                 <div
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-4 p-0.5 overflow-hidden shadow-2xl flex items-center justify-center transition-all"
+                  className="w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl border-2 sm:border-4 p-0.5 overflow-hidden shadow-2xs sm:shadow-2xl flex items-center justify-center transition-all"
                   style={{
                     backgroundColor: 'var(--athlon-card)',
                     borderColor: 'var(--athlon-card)',
@@ -664,10 +682,17 @@ export function OrganizationProfileEditor({
                       '0 10px 25px -5px var(--athlon-shadow, rgba(0,0,0,0.2)), 0 0 0 2px var(--athlon-primary)',
                   }}
                 >
-                  {logoUrl ? (
-                    <img src={logoUrl} alt="Logo" className="w-full h-full object-cover rounded-xl" />
+                  {logoUrl && !logoError ? (
+                    <img
+                      src={logoUrl}
+                      alt=""
+                      onError={() => setLogoError(true)}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
                   ) : (
-                    <Building2 className="w-8 h-8 text-primary" />
+                    <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-black text-xl rounded-xl">
+                      {name ? name.substring(0, 2).toUpperCase() : 'AT'}
+                    </div>
                   )}
                 </div>
                 <button
@@ -689,10 +714,10 @@ export function OrganizationProfileEditor({
               </div>
 
               <div className="min-w-0 max-w-full">
-                <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight truncate">
+                <h3 className="text-sm sm:text-2xl font-bold text-foreground tracking-tight truncate">
                   {name || 'Organization Name'}
                 </h3>
-                <p className="text-xs text-foreground/70 dark:text-foreground/60 line-clamp-1 max-w-md font-medium mt-0.5">
+                <p className="text-[10px] sm:text-xs text-foreground/60 line-clamp-1 max-w-md font-medium mt-0.5">
                   {bio || 'Set tagline, coaching ethos, and public information.'}
                 </p>
               </div>
@@ -791,11 +816,11 @@ export function OrganizationProfileEditor({
       )}
 
       {/* ── Segmented Navigation Tabs ── */}
-      <div className="flex p-1 rounded-2xl bg-card border border-border gap-1 shadow-inner overflow-x-auto hide-scrollbar w-full max-w-full">
+      <div className="flex p-1 rounded-xl bg-card border border-border gap-1 shadow-2xs overflow-x-auto hide-scrollbar w-full max-w-full">
         <button
           type="button"
           onClick={() => setActiveTab('general')}
-          className={`flex-1 min-w-[70px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'general'
+          className={`flex-1 min-w-[70px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-lg text-[10.5px] sm:text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'general'
             ? 'bg-primary text-primary-foreground shadow-sm'
             : 'text-foreground/70 hover:text-foreground hover:bg-surface'
             }`}
@@ -808,7 +833,7 @@ export function OrganizationProfileEditor({
           <button
             type="button"
             onClick={() => setActiveTab('credentials')}
-            className={`flex-1 min-w-[85px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'credentials'
+            className={`flex-1 min-w-[85px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-lg text-[10.5px] sm:text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'credentials'
               ? 'bg-primary text-primary-foreground shadow-sm'
               : 'text-foreground/70 hover:text-foreground hover:bg-surface'
               }`}
@@ -821,7 +846,7 @@ export function OrganizationProfileEditor({
         <button
           type="button"
           onClick={() => setActiveTab('location')}
-          className={`flex-1 min-w-[70px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'location'
+          className={`flex-1 min-w-[70px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-lg text-[10.5px] sm:text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'location'
             ? 'bg-primary text-primary-foreground shadow-sm'
             : 'text-foreground/70 hover:text-foreground hover:bg-surface'
             }`}
@@ -833,7 +858,7 @@ export function OrganizationProfileEditor({
         <button
           type="button"
           onClick={() => setActiveTab('sports')}
-          className={`flex-1 min-w-[70px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'sports'
+          className={`flex-1 min-w-[70px] sm:min-w-0 shrink-0 sm:shrink flex items-center justify-center gap-1.5 py-1.5 px-2.5 sm:px-3 rounded-lg text-[10.5px] sm:text-xs font-bold transition-all whitespace-nowrap ${activeTab === 'sports'
             ? 'bg-primary text-primary-foreground shadow-sm'
             : 'text-foreground/70 hover:text-foreground hover:bg-surface'
             }`}
@@ -847,7 +872,7 @@ export function OrganizationProfileEditor({
       <div className="space-y-6">
         {/* TAB 1: General */}
         {activeTab === 'general' && (
-          <div className="bg-card p-5 sm:p-6 rounded-3xl border border-border space-y-5 shadow-sm animate-in fade-in">
+          <div className="bg-card p-3.5 sm:p-6 rounded-xl sm:rounded-3xl border border-border space-y-3.5 sm:space-y-5 shadow-2xs animate-in fade-in">
             <div className="border-b border-border pb-3">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Award className="w-4 h-4 text-primary" /> {isOrganizer ? 'Organizer Identity & Profile' : isAssociation ? 'Association Identity & Profile' : isCoach ? 'Coach Identity & Profile' : 'Organization Identity & Profile'}
@@ -1009,7 +1034,7 @@ export function OrganizationProfileEditor({
 
         {/* TAB: Coach Credentials & Experience (COACH only) */}
         {activeTab === 'credentials' && (
-          <div className="bg-card p-5 sm:p-6 rounded-3xl border border-border space-y-5 shadow-sm animate-in fade-in">
+          <div className="bg-card p-3.5 sm:p-6 rounded-xl sm:rounded-3xl border border-border space-y-3.5 sm:space-y-5 shadow-2xs animate-in fade-in">
             <div className="border-b border-border pb-3">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Award className="w-4 h-4 text-primary" /> Professional Coach Credentials & Experience
@@ -1178,7 +1203,7 @@ export function OrganizationProfileEditor({
 
         {/* TAB 2: Location */}
         {activeTab === 'location' && (
-          <div className="bg-card p-5 sm:p-6 rounded-3xl border border-border space-y-5 shadow-sm animate-in fade-in">
+          <div className="bg-card p-3.5 sm:p-6 rounded-xl sm:rounded-3xl border border-border space-y-3.5 sm:space-y-5 shadow-2xs animate-in fade-in">
             <div className="border-b border-border pb-3">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" /> {isOrganizer ? 'Headquarters Location & Direct Contacts' : isAssociation ? 'Secretariat Location & Direct Contacts' : isCoach ? 'Training Base & Direct Contacts' : 'Campus Location & Direct Contacts'}
@@ -1388,7 +1413,7 @@ export function OrganizationProfileEditor({
 
         {/* TAB 3: Sports */}
         {activeTab === 'sports' && (
-          <div className="bg-card p-5 sm:p-6 rounded-3xl border border-border space-y-5 shadow-sm animate-in fade-in">
+          <div className="bg-card p-3.5 sm:p-6 rounded-xl sm:rounded-3xl border border-border space-y-3.5 sm:space-y-5 shadow-2xs animate-in fade-in">
             <div className="border-b border-border pb-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">

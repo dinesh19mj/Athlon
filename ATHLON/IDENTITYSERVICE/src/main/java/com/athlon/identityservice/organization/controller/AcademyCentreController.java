@@ -25,9 +25,13 @@ import jakarta.validation.Valid;
 public class AcademyCentreController {
 
     private final AcademyCentreService centreService;
+    private final com.athlon.identityservice.subscription.service.AcademyEntitlementService entitlementService;
 
-    public AcademyCentreController(AcademyCentreService centreService) {
+    public AcademyCentreController(
+            AcademyCentreService centreService,
+            com.athlon.identityservice.subscription.service.AcademyEntitlementService entitlementService) {
         this.centreService = centreService;
+        this.entitlementService = entitlementService;
     }
 
     @GetMapping("/org/{organizationUuid}")
@@ -50,6 +54,10 @@ public class AcademyCentreController {
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<AcademyCentreResponse>> createCentre(
             @Valid @RequestBody CreateCentreRequest request) {
+
+        if (request.getOrganizationUuid() != null) {
+            entitlementService.validateCentreCapacity(request.getOrganizationUuid());
+        }
 
         AcademyCentreResponse centre = centreService.createCentre(request);
         return ResponseEntity.ok(ApiResponse.success("Academy centre created successfully", centre));

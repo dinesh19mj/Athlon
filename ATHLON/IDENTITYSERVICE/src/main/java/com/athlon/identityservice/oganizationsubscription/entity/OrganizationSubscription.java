@@ -38,6 +38,12 @@ public class OrganizationSubscription {
     @Column(name = "paymentreference", length = 255)
     private String paymentReference;
 
+    @Column(name = "version_id")
+    private Long versionId;
+
+    @Column(name = "billing_cycle", length = 20)
+    private String billingCycle = "MONTHLY";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -136,6 +142,22 @@ public class OrganizationSubscription {
 
     public void setPaymentReference(String paymentReference) {
         this.paymentReference = paymentReference;
+    }
+
+    public Long getVersionId() {
+        return versionId;
+    }
+
+    public void setVersionId(Long versionId) {
+        this.versionId = versionId;
+    }
+
+    public String getBillingCycle() {
+        return billingCycle;
+    }
+
+    public void setBillingCycle(String billingCycle) {
+        this.billingCycle = billingCycle;
     }
 
     public LocalDateTime getCreatedAt() {

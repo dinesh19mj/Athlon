@@ -50,6 +50,7 @@ import {
 } from '@/lib/api/organizerInventory';
 import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useOrganizerEntitlementsStore } from '@/store/useOrganizerEntitlementsStore';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
 import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 
@@ -74,6 +75,22 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
   const { role, isAdmin } = useOrgRole(orgUuid);
   const { canManageModule } = usePermissions(orgUuid);
   const canManage = canManageModule('inventory') || isAdmin;
+
+  const {
+    walletByOrg,
+    loadEntitlements,
+    hasFeature,
+    openFeaturePaywall,
+  } = useOrganizerEntitlementsStore();
+  const organizerWallet = walletByOrg[orgUuid];
+  const hasInventoryFeature = hasFeature(orgUuid, 'TOURNAMENT_INVENTORY');
+  const hasStockMovementFeature = hasFeature(orgUuid, 'INVENTORY_STOCK_MOVEMENT');
+
+  useEffect(() => {
+    if (orgUuid) {
+      loadEntitlements(orgUuid);
+    }
+  }, [orgUuid, loadEntitlements]);
 
   const [items, setItems] = useState<OrganizerInventoryItem[]>([]);
   const [summary, setSummary] = useState<OrganizerInventorySummary | null>(null);
@@ -153,6 +170,10 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
   };
 
   const openAddModal = () => {
+    if (!hasInventoryFeature) {
+      openFeaturePaywall(orgUuid, 'TOURNAMENT_INVENTORY', 'Tournament Inventory & Equipment Tracking');
+      return;
+    }
     setEditingItem(null);
     setFormName('');
     setFormCategory('MATCH_GEAR');
@@ -169,6 +190,10 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
   };
 
   const openEditModal = (item: OrganizerInventoryItem) => {
+    if (!hasInventoryFeature) {
+      openFeaturePaywall(orgUuid, 'TOURNAMENT_INVENTORY', 'Tournament Inventory & Equipment Tracking');
+      return;
+    }
     setEditingItem(item);
     setFormName(item.itemName);
     setFormCategory(item.category);
@@ -185,6 +210,10 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
   };
 
   const openAdjustModal = (item: OrganizerInventoryItem) => {
+    if (!hasInventoryFeature) {
+      openFeaturePaywall(orgUuid, 'TOURNAMENT_INVENTORY', 'Tournament Inventory & Equipment Tracking');
+      return;
+    }
     setSelectedItemForAdjust(item);
     setAdjustChangeType('ALLOCATED_TO_COURT');
     setAdjustAmount('1');
@@ -260,6 +289,11 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
   const handleStockAdjustment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItemForAdjust) return;
+
+    if (adjustChangeType === 'DISTRIBUTED_TO_TEAM' && !hasStockMovementFeature) {
+      openFeaturePaywall(orgUuid, 'INVENTORY_STOCK_MOVEMENT', 'Advanced Stock Movement & Kit Distribution');
+      return;
+    }
 
     const qty = parseInt(adjustAmount, 10);
     if (isNaN(qty) || qty <= 0) return;
@@ -354,57 +388,57 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
       {/* ========================================================================= */}
       {/* 📱 MOBILE VIEW (STYLISH, THEME-ALIGNED MOBILE FIRST INTERFACE)            */}
       {/* ========================================================================= */}
-      <div className="block md:hidden px-3.5 pb-3.5 space-y-4 animate-in fade-in duration-300 safe-header">
+      <div className="block md:hidden px-3.5 pb-3.5 space-y-4 animate-in fade-in duration-300">
         
-        {/* 1. Mobile Header App Bar */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md shrink-0 border"
-              style={{
-                backgroundColor: 'var(--athlon-surface)',
-                borderColor: 'var(--athlon-border)',
-                boxShadow: '0 4px 20px var(--athlon-glow, rgba(0,0,0,0.1))',
-              }}
-            >
-              <Athlon3DIcon type="inventory" size={34} active={true} />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1
-                  className="text-base font-black tracking-tight truncate"
-                  style={{ color: 'var(--athlon-text)' }}
-                >
-                  Tournament Vault
-                </h1>
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
-              </div>
-              <p
-                className="text-[11px] font-semibold truncate"
-                style={{ color: 'var(--athlon-text-muted)' }}
+        {/* 1. Mobile Header App Bar matching Venues sample page */}
+        <header className="sticky top-0 z-30 bg-surface/90 backdrop-blur-xl border-b border-border/80 safe-header pb-3 px-3.5 -mx-3.5 shadow-xs">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-xs shrink-0 border"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
               >
-                {orgName} • {items.length} gear types
-              </p>
+                <Athlon3DIcon type="inventory" size={26} active={true} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h1
+                    className="text-base font-black tracking-tight truncate"
+                    style={{ color: 'var(--athlon-text)' }}
+                  >
+                    Tournament Vault
+                  </h1>
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                </div>
+                <p
+                  className="text-[10px] font-semibold truncate text-foreground/50 mt-0.5"
+                >
+                  {orgName} • {items.length} gear types
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Action Icons */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="w-9 h-9 rounded-xl border active:scale-95 transition-all disabled:opacity-50 hover:opacity-80 cursor-pointer shadow-xs flex items-center justify-center"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-text)',
+                }}
+                title="Refresh"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+              </button>
             </div>
           </div>
-
-          {/* Quick Action Icons */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2.5 rounded-xl border active:scale-95 transition-all disabled:opacity-50 hover:opacity-80 cursor-pointer shadow-xs"
-              style={{
-                backgroundColor: 'var(--athlon-surface)',
-                borderColor: 'var(--athlon-border)',
-                color: 'var(--athlon-text)',
-              }}
-              title="Refresh"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-            </button>
-          </div>
-        </div>
+        </header>
 
         {/* 2. Mobile Tactical Hero HUD Card */}
         <div
@@ -753,224 +787,406 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
       </div>
 
       {/* ========================================================================= */}
-      {/* 🖥️ DESKTOP VIEW (EXPANSIVE HIGH-DENSITY DASHBOARD)                         */}
+      {/* 🖥️ DESKTOP VIEW (LUXURY SPORTS-TECH COMMAND CONSOLE)                       */}
       {/* ========================================================================= */}
-      <div className="hidden md:block">
-        {/* Top Hero Header & Metrics */}
-        <div className="relative border-b overflow-hidden" style={{ borderColor: 'var(--athlon-border)' }}>
-          <div className="absolute top-0 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
-          <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none translate-y-1/2" />
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-24 space-y-8 animate-in fade-in duration-300">
+        {/* Executive Command Banner */}
+        <div
+          className="relative rounded-3xl border p-6 lg:p-8 overflow-hidden shadow-sm"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-6 pb-6 relative z-10 space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner shrink-0 border"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    borderColor: 'var(--athlon-border)',
-                  }}
-                >
-                  <Athlon3DIcon type="inventory" size={40} active={true} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-black tracking-tight text-foreground">
-                      Tournament Inventory &amp; Logistics
-                    </h1>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/25">
-                      Organizer Vault
-                    </span>
-                  </div>
-                  <p className="text-xs text-foreground/60 mt-0.5">
-                    Manage match balls, shuttles, trophies, player kits, court tablets &amp; arena assets.
-                  </p>
-                </div>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              {/* Badge & Breadcrumb */}
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-primary">
+                  Tournament Operations Suite
+                </span>
+                <span className="text-foreground/30">•</span>
+                <span className="text-xs font-semibold text-foreground/50">
+                  Equipment, Hardware &amp; Logistics Vault
+                </span>
               </div>
 
-              <div className="flex items-center gap-2.5 shrink-0">
-                <button
-                  onClick={() => openLogDrawer()}
-                  className="px-3.5 py-2 rounded-xl border text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all flex items-center gap-1.5"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <History className="w-4 h-4 text-primary" />
-                  <span>Audit Trail</span>
-                </button>
-
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="p-2 rounded-xl border text-foreground/70 hover:text-foreground hover:bg-white/5 active:scale-95 transition-all"
-                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-                >
-                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-                </button>
-
-                {canManage && (
-                  <button
-                    onClick={openAddModal}
-                    className="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider text-black bg-primary hover:opacity-90 active:scale-95 shadow-lg shadow-primary/20 transition-all flex items-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4 stroke-[3]" />
-                    <span>Add Asset</span>
-                  </button>
-                )}
-              </div>
+              <h1 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+                Tournament Inventory &amp; Vault
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {items.length} Asset {items.length === 1 ? 'Type' : 'Types'}
+                </span>
+              </h1>
+              <p className="text-sm text-foreground/60 mt-1.5 max-w-2xl">
+                Oversee match shuttles, balls, championship trophies, court scoring tablets, medical kits, and arena hardware with real-time stock allocation and audit tracking.
+              </p>
             </div>
 
-            {/* Desktop Metrics Cards */}
-            <div className="grid grid-cols-4 gap-4">
-              <div
-                className="p-4 rounded-2xl border flex flex-col justify-between"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+            {/* Quick Actions */}
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => openLogDrawer()}
+                className="px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 shadow-xs"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-text)',
+                }}
+                title="View stock movement audit logs"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">Total Assets</span>
-                  <Boxes className="w-4 h-4 text-primary" />
-                </div>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-foreground">{totalQuantityDisplay}</span>
-                  <span className="text-xs text-foreground/40 font-bold">across {items.length} types</span>
-                </div>
-              </div>
+                <History className="w-4 h-4 text-primary" />
+                <span>Audit Trail</span>
+              </button>
 
-              <div
-                className="p-4 rounded-2xl border flex flex-col justify-between"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2.5 rounded-xl border text-foreground/70 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+                title="Refresh inventory data"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400">In Stock Ready</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-emerald-400">{inStockCount}</span>
-                  <span className="text-xs text-emerald-400/60 font-bold">categories</span>
-                </div>
-              </div>
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+              </button>
 
-              <div
-                className="p-4 rounded-2xl border flex flex-col justify-between"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-400">Low Stock Alarms</span>
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
-                </div>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-amber-400">{lowStockCount}</span>
-                  <span className="text-xs text-amber-400/60 font-bold">need restock</span>
-                </div>
-              </div>
-
-              <div
-                className="p-4 rounded-2xl border flex flex-col justify-between"
-                style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">Asset Valuation</span>
-                  <IndianRupee className="w-4 h-4 text-primary" />
-                </div>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-foreground">
-                    ₹{Number(estimatedValueDisplay).toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-xs text-foreground/40 font-bold">Est. Value</span>
-                </div>
-              </div>
+              {canManage && (
+                <button
+                  onClick={openAddModal}
+                  className="px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider bg-primary text-primary-foreground shadow-md hover:opacity-95 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4 stroke-[3]" />
+                  <span>+ Register Asset</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Desktop Body Filters & Grid */}
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-6 space-y-6">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar">
-            <button
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-all border ${
-                selectedCategory === 'ALL'
-                  ? 'bg-primary text-black border-primary shadow-md shadow-primary/20'
-                  : 'bg-surface text-foreground/70 border-white/5 hover:border-white/20'
-              }`}
-            >
-              All Assets ({items.length})
-            </button>
+        {/* ─── 4-Metric Executive Telemetry HUD ────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Total Assets */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-primary/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Total Available Units
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Boxes className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground mt-2 font-mono">
+              {totalQuantityDisplay}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <Layers className="w-3.5 h-3.5 text-primary" />
+              <span>Across {Object.keys(categoryCounts).length} active gear categories</span>
+            </div>
+          </div>
 
-            {CATEGORIES.map((cat) => {
-              const count = categoryCounts[cat.id] || 0;
-              const isSelected = selectedCategory === cat.id;
+          {/* 2. In Stock Ready */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-emerald-500/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Match-Ready Stock
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 font-mono">
+              {inStockCount}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Sufficient reserve for active court play</span>
+            </div>
+          </div>
+
+          {/* 3. Low Stock / Reorder Alarm */}
+          <div
+            className={`rounded-2xl border p-5 relative overflow-hidden shadow-xs transition-all group ${
+              lowStockCount > 0
+                ? 'border-amber-500/40 bg-amber-500/[0.03]'
+                : 'hover:border-primary/40'
+            }`}
+            style={{
+              backgroundColor: lowStockCount > 0 ? undefined : 'var(--athlon-card)',
+              borderColor: lowStockCount > 0 ? 'rgba(245, 158, 11, 0.35)' : 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Low Stock Alarms
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2 font-mono flex items-center gap-2">
+              {lowStockCount}
+              {lowStockCount > 0 && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 animate-pulse uppercase tracking-wider font-sans">
+                  Restock
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <span>{lowStockCount > 0 ? 'Below minimum safety reserve' : 'All equipment reserves safe'}</span>
+            </div>
+          </div>
+
+          {/* 4. Equipment Valuation */}
+          <div
+            className="rounded-2xl border p-5 relative overflow-hidden shadow-xs hover:border-primary/40 transition-all group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground/50">
+                Asset Valuation
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <IndianRupee className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-foreground mt-2 font-mono">
+              ₹{Number(estimatedValueDisplay).toLocaleString('en-IN')}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-foreground/50">
+              <TrendingUp className="w-3.5 h-3.5 text-primary" />
+              <span>Estimated active gear replacement value</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Search & Status Command Bar ─────────────────────────────── */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-4 rounded-2xl border shadow-xs"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search gear, shuttles, trophies, court tablets, location..."
+              className="w-full pl-10 pr-9 py-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/40 shadow-2xs"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border-subtle)',
+                color: 'var(--athlon-text)',
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1 text-xs"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter Pills */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {[
+              { id: 'ALL', label: `All (${items.length})` },
+              { id: 'IN_STOCK', label: `Ready (${inStockCount})` },
+              { id: 'LOW_STOCK', label: `Low Stock (${lowStockCount})`, alert: lowStockCount > 0 },
+              { id: 'OUT_OF_STOCK', label: `Out of Stock (${outOfStockCount})`, danger: outOfStockCount > 0 },
+            ].map((st) => {
+              const isSelected = selectedStatus === st.id;
               return (
                 <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all border flex items-center gap-1.5 ${
+                  key={st.id}
+                  onClick={() => setSelectedStatus(st.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
                     isSelected
-                      ? 'bg-primary text-black border-primary shadow-md shadow-primary/20 font-black'
-                      : 'bg-surface text-foreground/70 border-white/5 hover:border-white/20'
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                      : 'text-foreground/60 hover:text-foreground border-transparent hover:border-black/10 dark:hover:border-white/10'
                   }`}
+                  style={!isSelected ? { backgroundColor: 'var(--athlon-surface)' } : {}}
                 >
-                  <span>{cat.icon}</span>
-                  <span>{cat.label}</span>
-                  {count > 0 && (
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${isSelected ? 'bg-black/20 text-black' : 'bg-white/10 text-foreground/60'}`}>
-                      {count}
-                    </span>
-                  )}
+                  <span>{st.label}</span>
                 </button>
               );
             })}
           </div>
+        </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search gear, trophies, bibs, location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border text-xs text-foreground bg-surface border-white/10 focus:outline-none focus:border-primary"
-              />
-            </div>
+        {/* ─── Category Filter Carousel ────────────────────────────────── */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+          <button
+            onClick={() => setSelectedCategory('ALL')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider shrink-0 transition-all border ${
+              selectedCategory === 'ALL'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                : 'text-foreground/60 hover:text-foreground border-transparent hover:border-black/10 dark:hover:border-white/10'
+            }`}
+            style={selectedCategory !== 'ALL' ? { backgroundColor: 'var(--athlon-surface)' } : {}}
+          >
+            All Categories ({items.length})
+          </button>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-foreground/50 font-bold shrink-0">Status:</span>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border text-xs font-bold text-foreground bg-surface border-white/10 focus:outline-none focus:border-primary"
+          {CATEGORIES.map((cat) => {
+            const count = categoryCounts[cat.id] || 0;
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all border flex items-center gap-2 ${
+                  isSelected
+                    ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                    : 'text-foreground/60 hover:text-foreground border-transparent hover:border-black/10 dark:hover:border-white/10'
+                }`}
+                style={!isSelected ? { backgroundColor: 'var(--athlon-surface)' } : {}}
               >
-                <option value="ALL">All Statuses</option>
-                <option value="IN_STOCK">In Stock</option>
-                <option value="LOW_STOCK">Low Stock</option>
-                <option value="OUT_OF_STOCK">Out of Stock</option>
-              </select>
-            </div>
-          </div>
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+                {count > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      isSelected
+                        ? 'bg-black/25 text-primary-foreground'
+                        : 'bg-black/5 dark:bg-white/10 text-foreground/50'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Desktop Cards Grid */}
-          <div className="grid grid-cols-3 gap-4">
+        {/* ─── Desktop Cards Grid ──────────────────────────────────────── */}
+        {loading ? (
+          <div className="py-24 text-center space-y-3">
+            <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto" />
+            <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">
+              Loading Tournament Equipment Vault...
+            </p>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div
+            className="py-20 text-center rounded-3xl border border-dashed flex flex-col items-center justify-center p-8 shadow-xs"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-3">
+              <Package className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-black text-foreground mb-1">No Assets Found</h3>
+            <p className="text-xs text-foreground/50 max-w-sm mb-4">
+              {searchTerm || selectedCategory !== 'ALL' || selectedStatus !== 'ALL'
+                ? 'No tournament equipment matches your active search query or filter selection.'
+                : 'Register your first match shuttles, balls, trophies, court scoring tablets, or tournament gear.'}
+            </p>
+            {searchTerm || selectedCategory !== 'ALL' || selectedStatus !== 'ALL' ? (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('ALL');
+                  setSelectedStatus('ALL');
+                }}
+                className="px-4 py-2 border text-foreground text-xs font-bold rounded-xl transition-colors hover:border-primary"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                Reset All Filters
+              </button>
+            ) : canManage ? (
+              <button
+                onClick={openAddModal}
+                className="px-5 py-2.5 bg-primary text-primary-foreground text-xs font-black uppercase tracking-wider rounded-xl shadow-md flex items-center gap-2 hover:opacity-95 transition-opacity"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>+ Register First Asset</span>
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map((item) => {
-              const catObj = CATEGORIES.find((c) => c.id === item.category) || CATEGORIES[CATEGORIES.length - 1];
+              const catObj =
+                CATEGORIES.find((c) => c.id === item.category) || CATEGORIES[CATEGORIES.length - 1];
               const isLowStock = item.status === 'LOW_STOCK';
               const isOutOfStock = item.status === 'OUT_OF_STOCK' || item.quantity <= 0;
+              const fillPct = Math.min(
+                100,
+                Math.max(
+                  8,
+                  Math.round((item.quantity / Math.max(item.minThreshold * 2, 10)) * 100)
+                )
+              );
 
               return (
                 <div
                   key={item.itemUuid}
-                  className="rounded-2xl border p-5 flex flex-col justify-between group hover:border-primary/40 shadow-lg relative overflow-hidden transition-all"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  className="rounded-2xl border p-5 flex flex-col justify-between group hover:-translate-y-1 hover:shadow-xl relative overflow-hidden transition-all duration-300"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: isOutOfStock
+                      ? 'rgba(239, 68, 68, 0.4)'
+                      : isLowStock
+                      ? 'rgba(245, 158, 11, 0.4)'
+                      : 'var(--athlon-border)',
+                  }}
                 >
+                  {/* Subtle top indicator bar */}
                   <div
                     className={`h-1 w-full absolute top-0 left-0 right-0 ${
-                      isOutOfStock ? 'bg-red-500' : isLowStock ? 'bg-amber-500' : 'bg-emerald-500'
+                      isOutOfStock ? 'bg-rose-500' : isLowStock ? 'bg-amber-500' : 'bg-primary'
                     }`}
                   />
 
-                  <div className="space-y-3 pt-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xl shrink-0">{catObj.icon}</span>
+                  <div>
+                    {/* Header: Category Badge, Condition & Status Pill */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border"
+                          style={{
+                            backgroundColor: 'var(--athlon-surface)',
+                            borderColor: 'var(--athlon-border)',
+                          }}
+                        >
+                          {catObj.icon}
+                        </div>
                         <div className="min-w-0">
                           <h3 className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">
                             {item.itemName}
@@ -981,40 +1197,50 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
                         </div>
                       </div>
 
+                      {/* Dual Status Badges */}
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         {isOutOfStock ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-red-500/15 text-red-400 border border-red-500/30">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
                             Out of Stock
                           </span>
                         ) : isLowStock ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 animate-pulse">
                             Low Stock
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                             In Stock
                           </span>
                         )}
+
                         {item.isRental && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                            Rental
+                          <span className="px-2 py-0.2 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+                            Rental Asset
                           </span>
                         )}
                       </div>
                     </div>
 
+                    {/* Stock Quantity Capsule */}
                     <div
-                      className="p-3 rounded-xl border flex items-center justify-between"
-                      style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+                      className="mt-4 p-3.5 rounded-xl border space-y-2"
+                      style={{
+                        backgroundColor: 'var(--athlon-surface)',
+                        borderColor: 'var(--athlon-border-subtle)',
+                      }}
                     >
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">
                           Available Count
                         </span>
-                        <div className="flex items-baseline gap-1 mt-0.5">
+                        <div className="flex items-baseline gap-1 font-mono">
                           <span
-                            className={`text-2xl font-black font-mono ${
-                              isOutOfStock ? 'text-red-400' : isLowStock ? 'text-amber-400' : 'text-foreground'
+                            className={`text-2xl font-black ${
+                              isOutOfStock
+                                ? 'text-rose-500'
+                                : isLowStock
+                                ? 'text-amber-500'
+                                : 'text-primary'
                             }`}
                           >
                             {item.quantity}
@@ -1023,15 +1249,28 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
-                          Threshold
-                        </span>
-                        <span className="text-xs font-bold text-foreground/60">Min {item.minThreshold} {item.unit}</span>
+                      {/* Reserve Capacity Meter */}
+                      <div className="w-full h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isOutOfStock
+                              ? 'bg-rose-500 w-0'
+                              : isLowStock
+                              ? 'bg-amber-500'
+                              : 'bg-primary'
+                          }`}
+                          style={{ width: `${fillPct}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-foreground/50 font-medium">
+                        <span>Min Safety Reserve: {item.minThreshold} {item.unit}</span>
+                        {item.unitCost && <span>₹{item.unitCost.toLocaleString('en-IN')} / unit</span>}
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-foreground/70 pt-1">
+                    {/* Meta info: Location & Valuation */}
+                    <div className="mt-3 space-y-1.5 text-xs text-foreground/60">
                       {item.location && (
                         <div className="flex items-center gap-1.5 truncate">
                           <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -1039,41 +1278,58 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
                         </div>
                       )}
 
-                      {item.unitCost && (
-                        <div className="flex items-center justify-between text-[11px] text-foreground/50">
-                          <span>Unit Cost: ₹{item.unitCost.toLocaleString('en-IN')}</span>
-                          <span className="font-bold text-foreground/70">
-                            Total: ₹{(item.unitCost * item.quantity).toLocaleString('en-IN')}
+                      {item.unitCost ? (
+                        <div className="flex items-center justify-between text-[11px] text-foreground/50 pt-0.5">
+                          <span>Total Valuation:</span>
+                          <span className="font-black text-foreground font-mono">
+                            ₹{(item.unitCost * item.quantity).toLocaleString('en-IN')}
                           </span>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t flex items-center justify-between gap-2" style={{ borderColor: 'var(--athlon-border)' }}>
+                  {/* Card Bottom: Audit Logs + Edit + Adjust Button */}
+                  <div
+                    className="mt-4 pt-3 border-t flex items-center justify-between gap-2"
+                    style={{ borderColor: 'var(--athlon-border-subtle)' }}
+                  >
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => openLogDrawer(item.itemUuid)}
-                        className="p-1.5 rounded-lg text-foreground/50 hover:text-foreground hover:bg-white/5"
-                        title="View history logs"
+                        className="p-1.5 rounded-lg border text-foreground/60 hover:text-primary hover:border-primary transition-colors shadow-2xs"
+                        style={{
+                          backgroundColor: 'var(--athlon-surface)',
+                          borderColor: 'var(--athlon-border-subtle)',
+                        }}
+                        title="View stock movement logs"
                       >
-                        <History className="w-4 h-4 text-primary" />
+                        <History className="w-3.5 h-3.5" />
                       </button>
+
                       {canManage && (
                         <>
                           <button
                             onClick={() => openEditModal(item)}
-                            className="p-1.5 rounded-lg text-foreground/50 hover:text-foreground hover:bg-white/5"
-                            title="Edit Item"
+                            className="p-1.5 rounded-lg border text-foreground/60 hover:text-foreground hover:border-primary transition-colors shadow-2xs"
+                            style={{
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border-subtle)',
+                            }}
+                            title="Edit details"
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteItem(item.itemUuid)}
-                            className="p-1.5 rounded-lg text-foreground/50 hover:text-red-400 hover:bg-white/5"
-                            title="Delete Item"
+                            className="p-1.5 rounded-lg border text-foreground/60 hover:text-rose-500 hover:border-rose-500 transition-colors shadow-2xs"
+                            style={{
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border-subtle)',
+                            }}
+                            title="Delete item"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </>
                       )}
@@ -1082,7 +1338,7 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
                     {canManage && (
                       <button
                         onClick={() => openAdjustModal(item)}
-                        className="px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-surface border border-primary/40 text-primary hover:bg-primary hover:text-black active:scale-95 transition-all flex items-center gap-1"
+                        className="px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-primary/10 hover:bg-primary hover:text-primary-foreground text-primary border border-primary/30 active:scale-95 transition-all flex items-center gap-1.5 shadow-2xs"
                       >
                         <SlidersHorizontal className="w-3 h-3" />
                         <span>Allocate / Adjust</span>
@@ -1093,7 +1349,7 @@ export default function OrganizerInventoryView({ orgUuid, orgName }: OrganizerIn
               );
             })}
           </div>
-        </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════

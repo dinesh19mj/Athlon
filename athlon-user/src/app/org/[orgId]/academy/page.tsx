@@ -15,7 +15,8 @@ import {
   TrendingDown,
   Building2,
   Calendar,
-  Sparkles
+  Sparkles,
+  GraduationCap
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { AcademyService, AcademyDashboardSummary } from '@/lib/api/academy';
@@ -69,6 +70,7 @@ export default function AcademyDashboardPage() {
     { id: `/org/${orgId}/performance`, label: 'Progress', icon3d: 'performance' },
     { id: `/org/${orgId}/coaches`, label: 'Coaches', icon3d: 'coaches' },
     { id: `/org/${orgId}/centres`, label: 'Centres', icon3d: 'facilities' },
+    { id: `/org/${orgId}/academy/subscription`, label: 'Capacity & Billing', icon3d: 'finances' },
   ];
 
   return (
@@ -101,9 +103,18 @@ export default function AcademyDashboardPage() {
 
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#F97316]/10 rounded-full blur-[100px] pointer-events-none z-0" />
           
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/10 border border-foreground/20 backdrop-blur-md mb-4 relative z-10">
-            <span className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse" />
-            <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Academy Management</span>
+          <div className="flex items-center justify-between mb-4 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/10 border border-foreground/20 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse" />
+              <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Academy Management</span>
+            </div>
+            <Link
+              href={`/org/${orgId}/academy/subscription`}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-bold hover:bg-blue-500/25 transition"
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>Capacity & Billing</span>
+            </Link>
           </div>
 
           <h1 className="text-3xl font-extrabold mb-1 text-foreground tracking-tight flex items-center gap-2 relative z-10">

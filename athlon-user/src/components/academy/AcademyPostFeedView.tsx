@@ -54,6 +54,7 @@ import { useOrgRole } from '@/hooks/use-org-role';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { compressImageFile, COMPRESSION_PRESETS } from '@/lib/utils/imageCompression';
 
 interface AcademyPostFeedViewProps {
   orgUuid: string;
@@ -217,12 +218,18 @@ export default function AcademyPostFeedView({ orgUuid, orgName, orgType = 'ACADE
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleCoverFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setCoverFile(file);
-      const url = URL.createObjectURL(file);
-      setCoverPreview(url);
+      try {
+        const res = await compressImageFile(file, COMPRESSION_PRESETS.BANNER);
+        setCoverFile(res.file);
+        setCoverPreview(res.previewUrl);
+      } catch {
+        setCoverFile(file);
+        const url = URL.createObjectURL(file);
+        setCoverPreview(url);
+      }
     }
   };
 
@@ -237,12 +244,21 @@ export default function AcademyPostFeedView({ orgUuid, orgName, orgType = 'ACADE
     if (mobileCoverFileInputRef.current) mobileCoverFileInputRef.current.value = '';
   };
 
-  const handleGalleryFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
     if (files.length > 0) {
-      setGalleryFiles((prev) => [...prev, ...files]);
-      const newUrls = files.map((f) => URL.createObjectURL(f));
-      setGalleryPreviews((prev) => [...prev, ...newUrls]);
+      const compressedList = await Promise.all(
+        files.map(async (f) => {
+          try {
+            const res = await compressImageFile(f, COMPRESSION_PRESETS.GENERAL);
+            return { file: res.file, url: res.previewUrl };
+          } catch {
+            return { file: f, url: URL.createObjectURL(f) };
+          }
+        })
+      );
+      setGalleryFiles((prev) => [...prev, ...compressedList.map((c) => c.file)]);
+      setGalleryPreviews((prev) => [...prev, ...compressedList.map((c) => c.url)]);
     }
   };
 

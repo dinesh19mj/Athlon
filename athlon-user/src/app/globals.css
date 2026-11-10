@@ -763,3 +763,41 @@ html.dark .fixed-bottom-nav a[href="/practice"] > div:first-child {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ─── App Mode Switcher (Dual Brand Toggle Pill) ─────────────────────────── */
+.app-mode-active-pill {
+  background: linear-gradient(135deg, var(--athlon-primary, #54AC68) 0%, var(--athlon-primary-dark, #32673E) 100%);
+  border: 1.5px solid var(--athlon-primary-dark, #32673E);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--athlon-primary, #54AC68) 45%, transparent),
+              0 0 10px color-mix(in srgb, var(--athlon-primary, #54AC68) 30%, transparent),
+              inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+html.dark .app-mode-active-pill,
+:root.dark .app-mode-active-pill {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--athlon-primary, #54AC68) 36%, var(--athlon-gradient-middle, #141C30)) 0%,
+    var(--athlon-gradient-middle, #141C30) 52%,
+    var(--athlon-gradient-start, #0A0F1D) 100%
+  );
+  border: 1.5px solid var(--athlon-primary, #54AC68);
+  box-shadow: 0 0 20px -2px color-mix(in srgb, var(--athlon-primary, #54AC68) 65%, transparent),
+              0 4px 14px rgba(0, 0, 0, 0.45),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.35);
+}
+
+.app-mode-inactive-pill {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  opacity: 0.75;
+}
+
+html.dark .app-mode-inactive-pill,
+:root.dark .app-mode-inactive-pill {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  opacity: 0.75;
+}

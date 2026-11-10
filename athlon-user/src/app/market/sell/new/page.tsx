@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { MarketplaceApi, ProductCondition, ProductType } from '@/lib/api/marketplace';
 import { useAuthStore } from '@/lib/store/useAuthStore';
+import { compressImageFile, COMPRESSION_PRESETS } from '@/lib/utils/imageCompression';
 
 function CreateListingContent() {
   const router = useRouter();
@@ -66,7 +67,14 @@ function CreateListingContent() {
     try {
       for (let i = 0; i < files.length; i++) {
         if (images.length < 5) {
-          const url = await MarketplaceApi.uploadMedia(files[i], 'products');
+          let fileToUpload = files[i];
+          try {
+            const compressed = await compressImageFile(fileToUpload, COMPRESSION_PRESETS.GENERAL);
+            fileToUpload = compressed.file;
+          } catch {
+            // fallback to original
+          }
+          const url = await MarketplaceApi.uploadMedia(fileToUpload, 'products');
           setImages((prev) => [...prev, url]);
         }
       }

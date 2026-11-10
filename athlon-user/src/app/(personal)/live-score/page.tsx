@@ -17,6 +17,7 @@ import {
   Calendar,
   Sparkles,
   Building2,
+  GraduationCap,
   Home,
   ArrowRight,
   X,
@@ -130,118 +131,11 @@ export default function LiveScorePage() {
 
   const parsedLiveMatches = useMemo(() => liveScores.map(parseMatchCard), [liveScores]);
 
-  const fallbackFinishedMatches = useMemo(
-    () => [
-      {
-        id: 101,
-        matchUuid: 'demo-finished-1',
-        tournament: 'Bangalore Open Badminton Championship 2026',
-        category: "Men's Singles • Quarter Final",
-        court: 'Court 1 (Main Arena)',
-        sport: 'Badminton',
-        player1: { name: 'Arun Kumar', currentScore: 21, gamesWon: 2, avatar: 'A', isWinner: true },
-        player2: { name: 'Rohan Sharma', currentScore: 18, gamesWon: 1, avatar: 'R', isWinner: false },
-        status: 'Final Result',
-        isFinished: true,
-        matchWinner: 'Arun Kumar',
-        gamesList: [{ scoreA: 21, scoreB: 18 }, { scoreA: 19, scoreB: 21 }, { scoreA: 21, scoreB: 16 }],
-      },
-      {
-        id: 102,
-        matchUuid: 'demo-finished-2',
-        tournament: 'Bangalore Open Badminton Championship 2026',
-        category: "Women's Singles • Semi Final",
-        court: 'Court 2',
-        sport: 'Badminton',
-        player1: { name: 'Pooja Verma', currentScore: 21, gamesWon: 2, avatar: 'P', isWinner: true },
-        player2: { name: 'Neha Reddy', currentScore: 14, gamesWon: 0, avatar: 'N', isWinner: false },
-        status: 'Final Result',
-        isFinished: true,
-        matchWinner: 'Pooja Verma',
-        gamesList: [{ scoreA: 21, scoreB: 14 }, { scoreA: 21, scoreB: 17 }],
-      },
-      {
-        id: 103,
-        matchUuid: 'demo-finished-3',
-        tournament: 'Bangalore Open Badminton Championship 2026',
-        category: "Men's Doubles • Round of 16",
-        court: 'Court 3',
-        sport: 'Badminton',
-        player1: { name: 'Karthik & Vignesh', currentScore: 22, gamesWon: 2, avatar: 'K', isWinner: true },
-        player2: { name: 'Deepak & Sanjay', currentScore: 20, gamesWon: 1, avatar: 'D', isWinner: false },
-        status: 'Final Result',
-        isFinished: true,
-        matchWinner: 'Karthik & Vignesh',
-        gamesList: [{ scoreA: 21, scoreB: 19 }, { scoreA: 18, scoreB: 21 }, { scoreA: 22, scoreB: 20 }],
-      },
-      {
-        id: 104,
-        matchUuid: 'demo-finished-4',
-        tournament: 'State Corporate Shuttle League',
-        category: 'Corporate Doubles • Final',
-        court: 'Centre Court',
-        sport: 'Badminton',
-        player1: { name: 'Infosys Smashers', currentScore: 21, gamesWon: 2, avatar: 'I', isWinner: true },
-        player2: { name: 'Wipro Titans', currentScore: 16, gamesWon: 0, avatar: 'W', isWinner: false },
-        status: 'Final Result',
-        isFinished: true,
-        matchWinner: 'Infosys Smashers',
-        gamesList: [{ scoreA: 21, scoreB: 16 }, { scoreA: 21, scoreB: 15 }],
-      },
-      {
-        id: 105,
-        matchUuid: 'demo-finished-5',
-        tournament: 'State Corporate Shuttle League',
-        category: 'Corporate Mixed Doubles',
-        court: 'Court 4',
-        sport: 'Badminton',
-        player1: { name: 'TCS Thunder', currentScore: 21, gamesWon: 2, avatar: 'T', isWinner: true },
-        player2: { name: 'Accenture Aces', currentScore: 19, gamesWon: 1, avatar: 'A', isWinner: false },
-        status: 'Final Result',
-        isFinished: true,
-        matchWinner: 'TCS Thunder',
-        gamesList: [{ scoreA: 17, scoreB: 21 }, { scoreA: 21, scoreB: 19 }, { scoreA: 21, scoreB: 18 }],
-      },
-      {
-        id: 106,
-        matchUuid: 'demo-finished-6',
-        tournament: 'All-India Junior Super Series',
-        category: 'Under-17 Boys Singles',
-        court: 'Court 1',
-        sport: 'Badminton',
-        player1: { name: 'Siddharth M', currentScore: 21, gamesWon: 2, avatar: 'S', isWinner: true },
-        player2: { name: 'Vikram Patel', currentScore: 12, gamesWon: 0, avatar: 'V', isWinner: false },
-        status: 'Final Result',
-        isFinished: true,
-        matchWinner: 'Siddharth M',
-        gamesList: [{ scoreA: 21, scoreB: 12 }, { scoreA: 21, scoreB: 13 }],
-      },
-      {
-        id: 107,
-        matchUuid: 'demo-finished-7',
-        tournament: 'All-India Junior Super Series',
-        category: 'Under-17 Girls Doubles',
-        court: 'Court 2',
-        sport: 'Badminton',
-        player1: { name: 'Ananya & Shreya', currentScore: 21, gamesWon: 2, avatar: 'A', isWinner: true },
-        player2: { name: 'Tanvi & Ritu', currentScore: 19, gamesWon: 1, avatar: 'T', isWinner: false },
-        status: 'Final Result',
-        isFinished: true,
-        matchWinner: 'Ananya & Shreya',
-        gamesList: [{ scoreA: 21, scoreB: 15 }, { scoreA: 19, scoreB: 21 }, { scoreA: 21, scoreB: 19 }],
-      },
-    ],
-    []
-  );
-
   const parsedFinishedMatches = useMemo(() => {
-    const fromApi = allScores
+    return allScores
       .map(parseMatchCard)
       .filter((m) => m.isFinished || !liveScores.some((l) => l.matchUuid === m.matchUuid));
-
-    if (fromApi.length > 0) return fromApi;
-    return fallbackFinishedMatches;
-  }, [allScores, liveScores, fallbackFinishedMatches]);
+  }, [allScores, liveScores]);
 
   // Search filter
   const filterBySearch = (matches: ReturnType<typeof parseMatchCard>[]) => {
@@ -343,10 +237,10 @@ export default function LiveScorePage() {
             <button
               onClick={() => setActiveTab('live')}
               className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 ${activeTab === 'live'
-                  ? parsedLiveMatches.length > 0
-                    ? 'bg-red-500 text-white shadow-sm shadow-red-500/20'
-                    : 'bg-surface text-foreground border shadow-xs'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
+                ? parsedLiveMatches.length > 0
+                  ? 'bg-red-500 text-white shadow-sm shadow-red-500/20'
+                  : 'bg-surface text-foreground border shadow-xs'
+                : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
                 }`}
               style={{
                 borderColor: activeTab === 'live' && parsedLiveMatches.length === 0 ? 'var(--athlon-border)' : undefined,
@@ -362,8 +256,8 @@ export default function LiveScorePage() {
             <button
               onClick={() => setActiveTab('finished')}
               className={`py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 ${activeTab === 'finished'
-                  ? 'bg-primary text-black shadow-sm shadow-primary/20'
-                  : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
+                ? 'bg-primary text-black shadow-sm shadow-primary/20'
+                : 'text-foreground/50 hover:text-foreground hover:bg-white/5'
                 }`}
             >
               <Trophy className="w-3.5 h-3.5" />
@@ -702,109 +596,117 @@ export default function LiveScorePage() {
           2. DESKTOP VIEW ONLY (hidden on mobile, visible on md and above)
          ══════════════════════════════════════════════════════════════════════ */}
       <div className="hidden md:block">
-        {/* Desktop Top Navbar (Only shown for unauthenticated landing visitors) */}
-        {!isAuthenticated && (
-          <header
-            className="sticky top-0 z-50 w-full border-b backdrop-blur-xl bg-background/85 transition-all duration-300"
-            style={{ borderColor: 'var(--athlon-border)' }}
-          >
-            <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
-              {/* Brand Logo */}
-              <Link href="/" className="flex items-center gap-3 group">
-                <div
-                  className="w-11 h-11 rounded-2xl flex items-center justify-center text-red-400 group-hover:scale-105 transition-transform shadow-lg"
-                  style={{
-                    backgroundColor: 'var(--athlon-surface)',
-                    border: '1px solid var(--athlon-border)',
-                    boxShadow: '0 0 20px rgba(239, 68, 68, 0.2)',
-                  }}
+        {/* Desktop Top Navbar (Full Width) */}
+        <header
+          className="sticky top-0 z-50 w-full border-b backdrop-blur-xl bg-background/85 transition-all duration-300"
+          style={{ borderColor: 'var(--athlon-border)' }}
+        >
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
+            {/* Brand Logo */}
+            <Link href="/" className="flex items-center gap-3 group">
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-lg"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  border: '1px solid var(--athlon-border)',
+                  boxShadow: '0 0 20px rgba(239, 68, 68, 0.2)',
+                }}
+              >
+                <Radio className="w-5 h-5 text-red-500 animate-pulse" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-black tracking-tight text-foreground leading-none">
+                  ATHLON
+                </span>
+                <span
+                  className="text-[10px] font-mono font-bold tracking-widest uppercase leading-tight mt-0.5"
+                  style={{ color: 'var(--athlon-primary)' }}
                 >
-                  <Radio className="w-5 h-5 text-red-500 animate-pulse" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-black tracking-tight text-foreground leading-none">
-                    ATHLON
-                  </span>
-                  <span
-                    className="text-[10px] font-mono font-bold tracking-widest uppercase leading-tight mt-0.5"
-                    style={{ color: 'var(--athlon-primary)' }}
-                  >
-                    Sports Platform
-                  </span>
-                </div>
+                  Sports Platform
+                </span>
+              </div>
+            </Link>
+
+            {/* Center Navigation Links */}
+            <nav className="flex items-center gap-1 bg-surface/40 p-1.5 rounded-2xl border border-foreground/5 backdrop-blur-md">
+              <Link
+                href="/"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
+              >
+                <Home className="w-4 h-4 text-primary" />
+                <span>Home</span>
               </Link>
 
-              {/* Center Navigation Links */}
-              <nav className="flex items-center gap-1 bg-surface/40 p-1.5 rounded-2xl border border-foreground/5 backdrop-blur-md">
+              <Link
+                href="/venues"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
+              >
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                <span>Venues &amp; Turfs</span>
+              </Link>
+
+              <Link
+                href="/academies"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
+              >
+                <GraduationCap className="w-4 h-4 text-emerald-400" />
+                <span>Academies</span>
+              </Link>
+
+              <Link
+                href="/tournaments"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
+              >
+                <Trophy className="w-4 h-4 text-primary" />
+                <span>Tournaments</span>
+              </Link>
+
+              <Link
+                href="/live-score"
+                className="px-4 py-2 rounded-xl text-sm font-black bg-primary text-black transition-all flex items-center gap-2 shadow-sm"
+              >
+                <Radio className="w-4 h-4 text-black animate-pulse" />
+                <span>Live Arena</span>
+                {parsedLiveMatches.length > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                )}
+              </Link>
+            </nav>
+
+            {/* Right Action CTAs */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                onClick={fetchScores}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border text-foreground/70 hover:text-foreground hover:bg-white/5 transition-all whitespace-nowrap shrink-0"
+                style={{ borderColor: 'var(--athlon-border)' }}
+                title="Refresh scores"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-primary" />
+                <span>Sync</span>
+              </button>
+
+              {isAuthenticated ? (
                 <Link
-                  href="/"
-                  className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
+                  href="/home"
+                  className="flex items-center gap-1.5 bg-primary text-black text-xs sm:text-sm font-black px-4 py-2 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md whitespace-nowrap shrink-0"
+                  style={{ boxShadow: '0 4px 16px var(--athlon-primary-glow)' }}
                 >
-                  <Home className="w-4 h-4 text-primary" />
-                  <span>Home</span>
+                  <span>Go to App</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
                 </Link>
-
+              ) : (
                 <Link
-                  href="/tournaments"
-                  className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
+                  href="/login"
+                  className="flex items-center gap-1.5 bg-primary text-black text-xs sm:text-sm font-black px-4 py-2 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md whitespace-nowrap shrink-0"
+                  style={{ boxShadow: '0 4px 16px var(--athlon-primary-glow)' }}
                 >
-                  <Trophy className="w-4 h-4 text-primary" />
-                  <span>Tournaments</span>
+                  <span>Get Started</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
                 </Link>
-
-                <Link
-                  href="/academies"
-                  className="px-4 py-2 rounded-xl text-sm font-bold text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all flex items-center gap-2"
-                >
-                  <Building2 className="w-4 h-4 text-emerald-400" />
-                  <span>Academies</span>
-                </Link>
-
-                <Link
-                  href="/live-score"
-                  className="px-4 py-2 rounded-xl text-sm font-black bg-red-500 text-white transition-all flex items-center gap-2 shadow-lg shadow-red-500/25"
-                >
-                  <Radio className="w-4 h-4 text-white animate-pulse" />
-                  <span>Live Arena</span>
-                  {parsedLiveMatches.length > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-                  )}
-                </Link>
-              </nav>
-
-              {/* Right Action CTAs */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={fetchScores}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border text-foreground/70 hover:text-foreground hover:bg-white/5 transition-all"
-                  style={{ borderColor: 'var(--athlon-border)' }}
-                  title="Refresh scores"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-primary" />
-                  <span>Sync</span>
-                </button>
-
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/login"
-                    className="text-sm font-bold px-4 py-2 rounded-xl text-foreground/80 hover:text-foreground hover:bg-foreground/5 transition-all"
-                  >
-                    Log In
-                  </Link>
-
-                  <Link
-                    href="/login"
-                    className="flex items-center gap-1.5 bg-primary text-black text-sm font-black px-5 py-2.5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                    style={{ boxShadow: '0 4px 20px var(--athlon-primary-glow)' }}
-                  >
-                    <span>Get Started</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
+              )}
             </div>
-          </header>
-        )}
+          </div>
+        </header>
 
         {/* Full-Width Live Match Arena Hero Banner */}
         <section
@@ -832,7 +734,7 @@ export default function LiveScorePage() {
               <div className="space-y-3 max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-red-500/10 border border-red-500/25 text-red-400">
                   <Radio className="w-4 h-4 text-red-500 animate-pulse" />
-                  <span>Real-Time Courtside Radar • 5s Auto-Sync</span>
+                  <span>Real-Time Courtside Radar</span>
                 </div>
 
                 <h1 className="text-3xl lg:text-5xl font-black text-foreground tracking-tight leading-tight uppercase">
@@ -1150,8 +1052,16 @@ export default function LiveScorePage() {
                 <Trophy className="w-12 h-12 text-foreground/30 mb-4" />
                 <h3 className="text-xl font-black text-foreground mb-2">No Finished Matches Yet</h3>
                 <p className="text-xs text-foreground/60 max-w-md mb-6 leading-relaxed">
-                  Completed match summaries, final scores, and podium recaps will appear here.
+                  {searchQuery
+                    ? `No finished matches matched "${searchQuery}". Try clearing your search.`
+                    : 'Completed match summaries, final scores, and podium recaps will appear here.'}
                 </p>
+                <button
+                  onClick={() => setActiveTab('live')}
+                  className="px-5 py-2.5 rounded-2xl bg-primary text-black font-black text-xs shadow-md"
+                >
+                  Check Live Matches
+                </button>
               </div>
             ) : (
               <div className="space-y-10">

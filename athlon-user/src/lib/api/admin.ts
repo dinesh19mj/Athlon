@@ -220,6 +220,7 @@ export const AdminService = {
 
 export interface SubscriptionPackageItem {
   uuid: string;
+  packageId?: number;
   name: string;
   description?: string;
   price: number;

@@ -36,7 +36,8 @@ import {
   X,
   XCircle,
   Eye,
-  ZoomIn
+  ZoomIn,
+  Coins
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
@@ -327,6 +328,13 @@ export default function OrganizerDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <Link
+            href={`/org/${orgId}/organizer/subscription`}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-surface border border-border hover:border-primary/50 text-foreground transition-all"
+          >
+            <Coins className="w-4 h-4 text-primary" />
+            <span>Credits & Plans</span>
+          </Link>
           <Link
             href={`/org/${orgId}/tournaments/create`}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_var(--athlon-glow)]"

@@ -29,6 +29,8 @@ import {
   MapPin,
   History,
   Dumbbell,
+  Globe,
+  SearchCheck,
 } from 'lucide-react';
 import { useAthlonTheme } from '@/hooks/use-athlon-theme';
 
@@ -64,7 +66,8 @@ export type Athlon3DIconType =
   | 'posts'
   | 'gallery'
   | 'audit-logs'
-  | 'audit';
+  | 'audit'
+  | 'seo';
 
 export interface Athlon3DIconProps {
   type: Athlon3DIconType;
@@ -149,6 +152,8 @@ function render2DIcon(type: Athlon3DIconType, active: boolean, size: number) {
       return <Newspaper style={style} strokeWidth={strokeWidth} />;
     case 'gallery':
       return <ImageIcon style={style} strokeWidth={strokeWidth} />;
+    case 'seo':
+      return <Globe style={style} strokeWidth={strokeWidth} />;
     default:
       return <Shield style={style} strokeWidth={strokeWidth} />;
   }
@@ -1667,6 +1672,37 @@ export function Athlon3DIcon({ type, className = '', size = 38, active = true, f
             <rect x="18" y="20" width="12" height="10" rx="2.5" fill="#FFFFFF" opacity="0.95" />
             <path d="M21 20V17C21 15.3 22.3 14 24 14C25.7 14 27 15.3 27 17V20" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
             <circle cx="24" cy="25" r="1.5" fill="#F43F5E" />
+          </svg>
+        </div>
+      );
+
+    case 'seo':
+      return (
+        <div
+          className={`relative flex items-center justify-center transition-all ${
+            active ? 'filter drop-shadow-[0_4px_10px_rgba(16,185,129,0.45)]' : ''
+          } ${activeClass} ${className}`}
+          style={{ width: size, height: size }}
+        >
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full overflow-visible transition-transform duration-300 group-hover:scale-110">
+            <defs>
+              <linearGradient id="seoGlobeGrad" x1="10" y1="8" x2="38" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#34D399" />
+                <stop offset="45%" stopColor="#10B981" />
+                <stop offset="100%" stopColor="#064E3B" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="24" cy="43" rx="14" ry="2.5" fill="rgba(0,0,0,0.4)" />
+            {/* 3D Globe Sphere */}
+            <circle cx="24" cy="24" r="16" fill="url(#seoGlobeGrad)" stroke="#FFFFFF" strokeWidth="1" />
+            {/* Latitude / Longitude lines */}
+            <ellipse cx="24" cy="24" rx="8" ry="16" stroke="#FFFFFF" strokeWidth="1" strokeDasharray="3 1" fill="none" opacity="0.8" />
+            <line x1="8" y1="24" x2="40" y2="24" stroke="#FFFFFF" strokeWidth="1" opacity="0.8" />
+            <path d="M 12 16 Q 24 20 36 16" stroke="#FFFFFF" strokeWidth="0.8" fill="none" opacity="0.7" />
+            <path d="M 12 32 Q 24 28 36 32" stroke="#FFFFFF" strokeWidth="0.8" fill="none" opacity="0.7" />
+            {/* Search Check magnifier badge */}
+            <circle cx="34" cy="34" r="6" fill="#047857" stroke="#FFFFFF" strokeWidth="1.2" />
+            <path d="M 32 34 L 33.5 35.5 L 36.5 32.5" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       );

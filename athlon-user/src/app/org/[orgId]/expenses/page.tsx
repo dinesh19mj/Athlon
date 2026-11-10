@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   CreditCard,
@@ -28,6 +29,8 @@ import {
   Flame,
   Check,
   Building,
+  ArrowLeft,
+  Share2,
 } from 'lucide-react';
 import {
   CommunityService,
@@ -38,6 +41,7 @@ import {
 } from '@/lib/api/community';
 import { UserService } from '@/lib/api/user';
 import { Athlon3DIcon } from '@/components/common/Athlon3DIcon';
+import { Athlon3DFAB } from '@/components/common/Athlon3DFAB';
 import { useOrgRole } from '@/hooks/use-org-role';
 
 const EXPENSE_CATEGORIES_CONFIG: Record<
@@ -201,6 +205,13 @@ export default function CommunityExpensesPage() {
     fetchExpensesAndMembers();
   };
 
+  const handleCopyLink = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      triggerToast('🔗 Ledger link copied to clipboard!');
+    }
+  };
+
   const handleCreateExpense = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.description.trim() || formData.amount <= 0) {
@@ -294,7 +305,13 @@ export default function CommunityExpensesPage() {
   }, [expenses, selectedCategory, searchQuery, sortBy]);
 
   return (
-    <div className="min-h-screen text-foreground relative pb-32 sm:pb-28">
+    <div
+      className="min-h-full w-full pb-28 md:pb-16 text-foreground relative"
+      style={{
+        backgroundColor: 'var(--athlon-bg)',
+        paddingTop: 'max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+      }}
+    >
       {/* Ambient background glow accents */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div
@@ -307,7 +324,7 @@ export default function CommunityExpensesPage() {
         />
       </div>
 
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto">
+      <div className="relative z-10 w-full max-w-lg md:max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 flex flex-col gap-3.5 md:gap-6 pt-1.5">
         {/* Toast Feedback */}
         {toastMessage && (
           <div
@@ -326,200 +343,233 @@ export default function CommunityExpensesPage() {
           </div>
         )}
 
-        {/* ─── 1. HERO FINANCIAL PULSE BANNER ─── */}
-        <div
-          className="rounded-3xl border p-5 sm:p-7 relative overflow-hidden shadow-2xl backdrop-blur-xl transition-all"
+        {/* ─── 1. HYPER-STYLISH ATHLETIC ARENA HERO (Design Standard) ─── */}
+        <section
+          className="relative w-full rounded-[26px] overflow-hidden border p-4 sm:p-5 shadow-xl transition-all"
           style={{
             backgroundColor: 'var(--athlon-card)',
             borderColor: 'var(--athlon-border)',
-            backgroundImage:
-              'radial-gradient(ellipse at 85% 15%, rgba(16, 185, 129, 0.15) 0%, transparent 60%)',
+            boxShadow:
+              '0 12px 32px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.15)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)',
           }}
         >
-          {/* Subtle grid pattern overlay */}
+          {/* Top Edge Neon Energy Rail */}
           <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            className="absolute top-0 inset-x-0 h-[2px] opacity-75 pointer-events-none z-0"
             style={{
-              backgroundImage: 'radial-gradient(circle at 1px 1px, #FFF 1px, transparent 0)',
-              backgroundSize: '24px 24px',
+              background: 'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
             }}
           />
 
-          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2.5 max-w-xl">
-              {/* Live Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[11px] font-black text-emerald-400 tracking-wider uppercase">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="flex items-center gap-1.5">
-                  <Wallet className="w-3.5 h-3.5" />
-                  Community Financial Ledger
-                </span>
+          {/* Stadium Floodlight Spotlights */}
+          <div
+            className="absolute -top-16 -right-16 w-60 h-60 rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-60 animate-pulse duration-1000 z-0"
+            style={{
+              background: 'radial-gradient(circle, var(--athlon-primary) 0%, rgba(16, 185, 129, 0.3) 40%, transparent 75%)',
+            }}
+          />
+
+          {/* Specular Sheen Arc */}
+          <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.12] dark:from-white/[0.04] via-transparent to-transparent pointer-events-none z-0" />
+
+          <div className="relative z-10 space-y-3.5">
+            {/* Top Control Bar inside Hero */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Link
+                  href={`/org/${orgId}/dashboard`}
+                  className="w-7 h-7 rounded-lg border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 transition-all shrink-0 shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Back to Hub"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+                </Link>
+
+                <div
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary-soft)',
+                    borderColor: 'var(--athlon-primary)',
+                  }}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span
+                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                    <span
+                      className="relative inline-flex rounded-full h-2 w-2"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary truncate flex items-center gap-1">
+                    <Wallet className="w-3 h-3" />
+                    Community Financial Ledger
+                  </span>
+                </div>
               </div>
 
-              {/* Title */}
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight flex items-center gap-2.5">
-                  <span>Expenses &amp; Kitty Ledger</span>
-                  <Coins className="w-6 h-6 text-amber-400 shrink-0 inline hidden sm:inline" />
-                </h1>
-                <p className="text-xs sm:text-sm text-foreground/70 font-medium mt-1 leading-relaxed">
-                  100% transparent community kitty, shuttle tube orders, court bookings, and member expense breakdown for {org?.name || 'the community'}.
-                </p>
+              {/* Action Buttons: Refresh & Share */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="w-7 h-7 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 cursor-pointer shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Refresh Ledger"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="w-7 h-7 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 cursor-pointer shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Share Ledger Link"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                </button>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="p-3 rounded-2xl bg-surface hover:bg-surface-hover border text-foreground/70 hover:text-foreground transition-all cursor-pointer shadow-sm active:scale-90"
-                style={{ borderColor: 'var(--athlon-border)' }}
-                title="Refresh Ledger"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-              </button>
+            {/* Title & Subtitle */}
+            <div className="space-y-1">
+              <h1 className="text-[19px] sm:text-[21px] font-black leading-[1.14] tracking-tight uppercase text-foreground">
+                <span>Expenses &amp;</span>{' '}
+                <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">
+                  Kitty Ledger
+                </span>{' '}
+                🪙
+              </h1>
+              <p className="text-[11px] text-text-secondary leading-relaxed font-medium pt-0.5">
+                100% transparent community kitty, shuttle tube orders, court bookings, and member expense breakdown for {org?.name || 'the community'}.
+              </p>
+            </div>
 
+            {/* Hero Action Button: Log Expense */}
+            <div className="pt-0.5">
               <button
                 type="button"
                 onClick={() => setShowExpenseModal(true)}
-                className="px-5 py-3 rounded-2xl bg-primary text-black font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/25 cursor-pointer group"
+                className="w-full flex items-center justify-center gap-1.5 text-[9.5px] font-bold px-3 py-2.5 rounded-xl hover:scale-[1.01] active:scale-95 transition-all shadow-md tracking-wider uppercase cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary-foreground)',
+                  boxShadow: '0 4px 16px var(--athlon-primary-glow)',
+                }}
               >
-                <div className="w-5 h-5 rounded-lg bg-black/10 flex items-center justify-center text-black group-hover:scale-110 transition-transform">
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                </div>
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
                 <span>Log Expense</span>
               </button>
             </div>
+
+            {/* Live Telemetry Strip with 4 Metrics */}
+            <div
+              className="grid grid-cols-4 divide-x rounded-2xl p-2.5 mt-1 border backdrop-blur-md"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-primary font-mono leading-none truncate max-w-full">
+                  ₹{totalSpent.toLocaleString('en-IN')}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Total Spent
+                </span>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-emerald-400 font-mono leading-none truncate max-w-full">
+                  ₹{shuttlesAndCourtSpent.toLocaleString('en-IN')}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Shuttles/Courts
+                </span>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-foreground font-mono leading-none">
+                  {expenses.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Logs
+                </span>
+              </div>
+
+              <div
+                className="flex flex-col items-center justify-center text-center px-1"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-purple-400 font-mono leading-none truncate max-w-full">
+                  ₹{avgExpense.toLocaleString('en-IN')}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1 truncate max-w-full">
+                  Avg / Log
+                </span>
+              </div>
+            </div>
+
+            {/* Visual Spending Distribution Bar */}
+            {categoryBreakdown.length > 0 && (
+              <div className="pt-2 border-t border-foreground/5 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold">
+                  <span className="text-foreground/60 uppercase tracking-wider text-[10px] font-black flex items-center gap-1.5">
+                    <PieChart className="w-3.5 h-3.5 text-primary" /> Kitty Category Breakdown
+                  </span>
+                  <span className="text-foreground/40 font-mono text-[10px]">{categoryBreakdown.length} active categories</span>
+                </div>
+
+                {/* Multi-Segment Color Bar */}
+                <div className="w-full h-2.5 rounded-full bg-surface overflow-hidden flex shadow-inner border border-foreground/5">
+                  {categoryBreakdown.map((item) => (
+                    <div
+                      key={item.category}
+                      className="h-full transition-all hover:opacity-80"
+                      style={{
+                        width: `${item.percentage}%`,
+                        backgroundColor: item.config.color,
+                      }}
+                      title={`${item.config.label}: ₹${item.spent.toLocaleString('en-IN')} (${item.percentage}%)`}
+                    />
+                  ))}
+                </div>
+
+                {/* Category Mini-Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar pt-0.5">
+                  {categoryBreakdown.map((item) => (
+                    <div
+                      key={item.category}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9.5px] font-black shrink-0 border transition-all"
+                      style={{
+                        backgroundColor: item.config.bg,
+                        borderColor: item.config.border,
+                        color: item.config.color,
+                      }}
+                    >
+                      <span>{item.config.icon}</span>
+                      <span>{item.config.label}</span>
+                      <span className="font-mono opacity-80">₹{item.spent.toLocaleString('en-IN')}</span>
+                      <span className="opacity-60 font-mono">({item.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* ─── LIVE FINANCIAL METRICS CARDS (FINTECH ATHLETIC DESIGN) ─── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-5 border-t border-foreground/5">
-            {/* 1. Total Kitty Spent */}
-            <div
-              className="p-3.5 sm:p-4 rounded-2xl border bg-surface/60 transition-all hover:border-primary/40 space-y-1 relative overflow-hidden"
-              style={{ borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">Total Kitty Spent</span>
-                <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs">
-                  ₹
-                </span>
-              </div>
-              <p className="text-xl sm:text-2xl font-black font-mono text-primary tracking-tight">
-                ₹{totalSpent.toLocaleString('en-IN')}
-              </p>
-              <div className="flex items-center gap-1 text-[10px] text-foreground/50 font-medium">
-                <span className="text-emerald-400 font-bold">100% Verified</span>
-                <span>• All Time</span>
-              </div>
-            </div>
-
-            {/* 2. Shuttles & Court Share */}
-            <div
-              className="p-3.5 sm:p-4 rounded-2xl border bg-surface/60 transition-all hover:border-emerald-500/40 space-y-1 relative overflow-hidden"
-              style={{ borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">Shuttles &amp; Courts</span>
-                <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs">
-                  🏸
-                </span>
-              </div>
-              <p className="text-xl sm:text-2xl font-black font-mono text-emerald-400 tracking-tight">
-                ₹{shuttlesAndCourtSpent.toLocaleString('en-IN')}
-              </p>
-              <div className="flex items-center gap-1 text-[10px] text-foreground/50 font-medium">
-                <span>{totalSpent > 0 ? Math.round((shuttlesAndCourtSpent / totalSpent) * 100) : 0}% of Total Kitty</span>
-              </div>
-            </div>
-
-            {/* 3. Total Expense Logs */}
-            <div
-              className="p-3.5 sm:p-4 rounded-2xl border bg-surface/60 transition-all hover:border-blue-500/40 space-y-1 relative overflow-hidden"
-              style={{ borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">Expense Logs</span>
-                <span className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs">
-                  🧾
-                </span>
-              </div>
-              <p className="text-xl sm:text-2xl font-black font-mono text-foreground tracking-tight">
-                {expenses.length}
-              </p>
-              <div className="flex items-center gap-1 text-[10px] text-foreground/50 font-medium">
-                <span>Total records in ledger</span>
-              </div>
-            </div>
-
-            {/* 4. Average Per Log */}
-            <div
-              className="p-3.5 sm:p-4 rounded-2xl border bg-surface/60 transition-all hover:border-purple-500/40 space-y-1 relative overflow-hidden"
-              style={{ borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-foreground/50">Avg / Entry</span>
-                <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs">
-                  📊
-                </span>
-              </div>
-              <p className="text-xl sm:text-2xl font-black font-mono text-purple-400 tracking-tight">
-                ₹{avgExpense.toLocaleString('en-IN')}
-              </p>
-              <div className="flex items-center gap-1 text-[10px] text-foreground/50 font-medium">
-                <span>Burn rate average</span>
-              </div>
-            </div>
-          </div>
-
-          {/* ─── VISUAL SPENDING DISTRIBUTION BAR ─── */}
-          {categoryBreakdown.length > 0 && (
-            <div className="mt-5 pt-4 border-t border-foreground/5 space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-bold">
-                <span className="text-foreground/60 uppercase tracking-wider text-[10px] font-black flex items-center gap-1.5">
-                  <PieChart className="w-3.5 h-3.5 text-primary" /> Kitty Category Breakdown
-                </span>
-                <span className="text-foreground/40 font-mono">{categoryBreakdown.length} active categories</span>
-              </div>
-
-              {/* Multi-Segment Color Bar */}
-              <div className="w-full h-3 rounded-full bg-surface overflow-hidden flex shadow-inner border border-foreground/5">
-                {categoryBreakdown.map((item) => (
-                  <div
-                    key={item.category}
-                    className="h-full transition-all hover:opacity-80"
-                    style={{
-                      width: `${item.percentage}%`,
-                      backgroundColor: item.config.color,
-                    }}
-                    title={`${item.config.label}: ₹${item.spent.toLocaleString('en-IN')} (${item.percentage}%)`}
-                  />
-                ))}
-              </div>
-
-              {/* Category Mini-Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar pt-1">
-                {categoryBreakdown.map((item) => (
-                  <div
-                    key={item.category}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black shrink-0 border transition-all"
-                    style={{
-                      backgroundColor: item.config.bg,
-                      borderColor: item.config.border,
-                      color: item.config.color,
-                    }}
-                  >
-                    <span>{item.config.icon}</span>
-                    <span>{item.config.label}</span>
-                    <span className="font-mono opacity-80">₹{item.spent.toLocaleString('en-IN')}</span>
-                    <span className="opacity-60 font-mono">({item.percentage}%)</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        </section>
 
         {/* ─── 2. CONTROLS, SEARCH & CATEGORY FILTERS ─── */}
         <div className="space-y-3">
@@ -655,7 +705,7 @@ export default function CommunityExpensesPage() {
           ) : filteredExpenses.length === 0 ? (
             /* ─── HIGH-IMPACT GLOWING EMPTY STATE ─── */
             <div
-              className="p-8 sm:p-12 text-center rounded-3xl border shadow-xl relative overflow-hidden backdrop-blur-md"
+              className="p-6 sm:p-10 text-center rounded-2xl border shadow-sm relative overflow-hidden backdrop-blur-md"
               style={{
                 backgroundColor: 'var(--athlon-card)',
                 borderColor: 'var(--athlon-border)',
@@ -663,12 +713,12 @@ export default function CommunityExpensesPage() {
                   'radial-gradient(ellipse at 50% 30%, rgba(16, 185, 129, 0.12) 0%, transparent 60%)',
               }}
             >
-              <div className="max-w-md mx-auto space-y-4">
-                <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
-                  <CreditCard className="w-8 h-8" />
+              <div className="max-w-md mx-auto space-y-3.5">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mx-auto flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/10">
+                  <CreditCard className="w-7 h-7" />
                 </div>
-                <div className="space-y-1.5">
-                  <h4 className="text-base sm:text-lg font-black text-foreground">
+                <div className="space-y-1">
+                  <h4 className="text-sm sm:text-base font-black text-foreground">
                     {searchQuery || selectedCategory !== 'ALL'
                       ? 'No Matching Expenses Found'
                       : 'No Expenses Logged Yet'}
@@ -682,7 +732,7 @@ export default function CommunityExpensesPage() {
 
                 {/* Example Quick Tags */}
                 {!searchQuery && selectedCategory === 'ALL' && (
-                  <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-[11px] font-bold text-foreground/50">
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-[10px] font-bold text-foreground/50">
                     <span className="px-2.5 py-1 rounded-xl bg-surface border" style={{ borderColor: 'var(--athlon-border)' }}>
                       🏸 10 Tubes Yonex AS-2
                     </span>
@@ -706,9 +756,9 @@ export default function CommunityExpensesPage() {
                         setShowExpenseModal(true);
                       }
                     }}
-                    className="px-6 py-2.5 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/25 cursor-pointer inline-flex items-center gap-1.5"
+                    className="px-5 py-2.5 rounded-xl bg-primary text-black font-black text-xs hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-md shadow-primary/25 cursor-pointer inline-flex items-center gap-1.5"
                   >
-                    <Plus className="w-4 h-4" strokeWidth={3} />
+                    <Plus className="w-4 h-4 stroke-[3]" />
                     <span>{searchQuery || selectedCategory !== 'ALL' ? 'Clear Filters' : 'Log First Expense'}</span>
                   </button>
                 </div>
@@ -716,22 +766,22 @@ export default function CommunityExpensesPage() {
             </div>
           ) : (
             /* ─── TRANSACTION CARDS (FINTECH ATHLETIC DESIGN) ─── */
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-2.5">
               {filteredExpenses.map((exp) => {
                 const meta = EXPENSE_CATEGORIES_CONFIG[exp.category] || EXPENSE_CATEGORIES_CONFIG.OTHER;
                 return (
                   <div
                     key={exp.expenseId}
-                    className="p-4 sm:p-5 rounded-2xl border transition-all hover:border-primary/40 hover:shadow-lg flex items-center justify-between gap-4 group"
+                    className="p-3.5 sm:p-4 rounded-2xl border transition-all hover:border-primary/40 hover:shadow-sm flex items-center justify-between gap-3 group"
                     style={{
                       backgroundColor: 'var(--athlon-card)',
                       borderColor: 'var(--athlon-border)',
                     }}
                   >
                     {/* Left: Category Icon + Description + Metadata */}
-                    <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 border shadow-inner transition-transform group-hover:scale-105"
+                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-lg sm:text-xl shrink-0 border shadow-inner transition-transform group-hover:scale-105"
                         style={{
                           backgroundColor: meta.bg,
                           borderColor: meta.border,
@@ -741,8 +791,8 @@ export default function CommunityExpensesPage() {
                         {meta.icon}
                       </div>
 
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="font-black text-xs sm:text-sm text-foreground truncate group-hover:text-primary transition-colors">
                             {exp.description}
                           </h4>
@@ -758,7 +808,7 @@ export default function CommunityExpensesPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-[11px] text-foreground/50 flex-wrap">
+                        <div className="flex items-center gap-2 text-[10.5px] text-foreground/50 flex-wrap">
                           <span className="flex items-center gap-1 font-mono font-bold">
                             <Calendar className="w-3 h-3 text-foreground/40" />
                             {formatExpenseDate(exp.expenseDate)}
@@ -767,8 +817,8 @@ export default function CommunityExpensesPage() {
                           {exp.paidByUserName && (
                             <>
                               <span>•</span>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border text-foreground/70 font-semibold" style={{ borderColor: 'var(--athlon-border)' }}>
-                                <User className="w-3 h-3 text-primary" />
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface border text-foreground/70 font-semibold text-[10px]" style={{ borderColor: 'var(--athlon-border)' }}>
+                                <User className="w-2.5 h-2.5 text-primary" />
                                 <span>Paid by {exp.paidByUserName}</span>
                               </span>
                             </>
@@ -780,10 +830,10 @@ export default function CommunityExpensesPage() {
                     {/* Right: Amount Capsule */}
                     <div className="text-right shrink-0">
                       <div
-                        className="px-3.5 py-1.5 rounded-xl bg-surface border font-mono font-black text-sm sm:text-base text-primary shadow-inner inline-flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl bg-surface border font-mono font-black text-xs sm:text-sm text-primary shadow-inner inline-flex items-center gap-0.5"
                         style={{ borderColor: 'var(--athlon-border)' }}
                       >
-                        <span className="text-xs opacity-70">₹</span>
+                        <span className="text-[11px] opacity-70">₹</span>
                         <span>{Number(exp.amount).toLocaleString('en-IN')}</span>
                       </div>
                     </div>
@@ -794,11 +844,21 @@ export default function CommunityExpensesPage() {
           )}
         </div>
 
+        {/* ── Floating Action Button (FAB) ── */}
+        <div className="fixed bottom-22 right-4 md:bottom-8 md:right-8 z-40">
+          <Athlon3DFAB
+            icon={<Plus className="w-6 h-6 text-black stroke-[3]" />}
+            label="Log Expense"
+            onClick={() => setShowExpenseModal(true)}
+            className="fixed bottom-22 right-4 md:bottom-8 md:right-8 z-40"
+          />
+        </div>
+
         {/* ─── 4. REDESIGNED LOG EXPENSE MODAL (PORTALED TO DOCUMENT.BODY) ─── */}
         {showExpenseModal && mounted && typeof document !== 'undefined' && createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 pb-20 sm:pb-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
             <div
-              className="w-full max-w-lg rounded-3xl border shadow-2xl relative max-h-[82vh] sm:max-h-[88vh] flex flex-col my-auto overflow-hidden"
+              className="w-full max-w-lg rounded-2xl border shadow-2xl relative max-h-[82vh] sm:max-h-[88vh] flex flex-col my-auto overflow-hidden"
               style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
             >
               {/* Modal Header */}

@@ -47,6 +47,7 @@ import {
 } from '@/lib/api/organizerPermissions';
 import { UserResponse } from '@/lib/api/user';
 import { useOrgRole } from '@/hooks/use-org-role';
+import { useOrganizerEntitlementsStore } from '@/store/useOrganizerEntitlementsStore';
 
 interface OrganizerRolesPermissionsViewProps {
   orgUuid: string;
@@ -56,6 +57,18 @@ interface OrganizerRolesPermissionsViewProps {
 export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: OrganizerRolesPermissionsViewProps) {
   const { role, isAdmin } = useOrgRole(orgUuid);
   const canManage = isAdmin || role === 'ADMIN' || role === 'OWNER';
+
+  const {
+    walletByOrg,
+    loadEntitlements,
+    hasFeature,
+    getLimit,
+    openFeaturePaywall,
+    openQuotaPaywall,
+  } = useOrganizerEntitlementsStore();
+  const organizerWallet = walletByOrg[orgUuid];
+  const maxOfficialsLimit = getLimit(orgUuid, 'MAX_OFFICIALS', 2);
+  const hasAdvancedPermissions = hasFeature(orgUuid, 'ADVANCED_PERMISSIONS');
 
   // Navigation Sub-tab
   const [activeTab, setActiveTab] = useState<'OFFICIALS' | 'PERMISSIONS'>('OFFICIALS');
@@ -102,10 +115,11 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
   // Initial Data Fetch
   useEffect(() => {
     if (orgUuid) {
+      loadEntitlements(orgUuid);
       loadOfficials();
       loadPermissions();
     }
-  }, [orgUuid]);
+  }, [orgUuid, loadEntitlements]);
 
   const loadOfficials = async () => {
     try {
@@ -185,6 +199,10 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
   };
 
   const handleOpenAddModal = () => {
+    if (officials.length >= maxOfficialsLimit) {
+      openQuotaPaywall(orgUuid, 'MAX_OFFICIALS', officials.length, 'Max Tournament Officials & Referees');
+      return;
+    }
     setPhoneInput('');
     setVerifiedUser(null);
     setVerifyError(null);
@@ -196,6 +214,11 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
 
   const handleAddOfficial = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (officials.length >= maxOfficialsLimit) {
+      setIsAddModalOpen(false);
+      openQuotaPaywall(orgUuid, 'MAX_OFFICIALS', officials.length, 'Max Tournament Officials & Referees');
+      return;
+    }
     if (!phoneInput || phoneInput.trim().length < 10) {
       showToast('Please enter a valid 10-digit phone number', 'error');
       return;
@@ -261,6 +284,10 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
 
   // Matrix changes
   const handleToggleMatrixAccess = (moduleId: string, level: OrganizerAccessLevel) => {
+    if (!hasAdvancedPermissions) {
+      openFeaturePaywall(orgUuid, 'ADVANCED_PERMISSIONS', 'Custom RBAC Role Permissions Matrix');
+      return;
+    }
     setPermissionsMatrix((prev) => ({
       ...prev,
       [selectedMatrixRole]: {
@@ -271,6 +298,10 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
   };
 
   const handleSavePermissions = async () => {
+    if (!hasAdvancedPermissions) {
+      openFeaturePaywall(orgUuid, 'ADVANCED_PERMISSIONS', 'Custom RBAC Role Permissions Matrix');
+      return;
+    }
     try {
       setSavingPermissions(true);
       const items: { role: string; moduleId: string; accessLevel: OrganizerAccessLevel }[] = [];
@@ -337,8 +368,10 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
         </div>
       )}
 
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto p-2.5 sm:p-4 md:p-6 space-y-3 sm:space-y-5 animate-in fade-in duration-300">
+      {/* ========================================================================= */}
+      {/* 📱 1. MOBILE VIEW (100% UNTOUCHED ORIGINAL LAYOUT FOR MOBILE SCREENS)     */}
+      {/* ========================================================================= */}
+      <div className="block md:hidden max-w-7xl mx-auto p-2.5 sm:p-4 space-y-3 sm:space-y-5 animate-in fade-in duration-300">
         {/* Top Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-foreground/5">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -921,6 +954,880 @@ export default function OrganizerRolesPermissionsView({ orgUuid, orgName }: Orga
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+      </div>
+      {/* ========================================================================= */}
+      {/* 🖥️ 2. DESKTOP VIEW ONLY (ATHLON 2.0 COMMAND CENTER ARCHITECTURE)           */}
+      {/* ========================================================================= */}
+      <div className="hidden md:block max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-24 space-y-8 animate-in fade-in duration-300">
+        {/* Executive Command Banner */}
+        <div
+          className="relative rounded-3xl border p-6 lg:p-8 overflow-hidden shadow-sm"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+          }}
+        >
+          {/* Ambient Lighting Glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              {/* Badge & Breadcrumb */}
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-500">
+                  Tournament Operations Suite
+                </span>
+                <span className="text-foreground/30">•</span>
+                <span className="text-xs font-semibold text-foreground/50">
+                  Officials &amp; Governance Matrix
+                </span>
+              </div>
+
+              <h1 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+                Roles &amp; Permissions Command
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {officials.length} {officials.length === 1 ? 'Official' : 'Officials'} Appointed
+                </span>
+              </h1>
+              <p className="text-sm text-foreground/60 mt-1.5 max-w-2xl">
+                Appoint tournament directors, chief umpires, desk scorers, and finance controllers. Fine-tune granular read/write module clearances across the organization.
+              </p>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-2.5 rounded-xl border text-foreground/70 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+                title="Refresh Official Records"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+              </button>
+
+              {canManage && activeTab === 'OFFICIALS' && (
+                <button
+                  onClick={handleOpenAddModal}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-primary/20 active:scale-95 transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary)',
+                    color: '#000000',
+                  }}
+                >
+                  <UserPlus className="w-4 h-4 stroke-[3]" />
+                  <span>+ Appoint Official</span>
+                </button>
+              )}
+
+              {canManage && activeTab === 'PERMISSIONS' && (
+                <>
+                  <button
+                    onClick={handleResetPermissions}
+                    disabled={resettingPermissions}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all shadow-xs active:scale-95 hover:bg-black/[0.04] dark:hover:bg-white/10"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                      color: 'var(--athlon-text-muted)',
+                    }}
+                  >
+                    {resettingPermissions ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset Defaults'}
+                  </button>
+
+                  <button
+                    onClick={handleSavePermissions}
+                    disabled={savingPermissions}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                    style={{
+                      backgroundColor: 'var(--athlon-primary)',
+                      color: '#000000',
+                    }}
+                  >
+                    {savingPermissions ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Save Clearance Matrix</span>
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 4-Metric Executive Telemetry HUD */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Total Appointed Officials */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-primary/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Appointed Roster
+              </span>
+              <div
+                className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <Users className="w-4 h-4 text-primary" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl lg:text-3xl font-black font-mono text-foreground tracking-tight">
+                {officials.length}
+              </span>
+              <span className="text-xs font-bold text-foreground/40 font-mono">Members</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                Active Staff
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">Verified phone lookup</span>
+            </div>
+          </div>
+
+          {/* Card 2: Tournament Leadership */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-amber-500/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Event Directors
+              </span>
+              <div className="w-9 h-9 rounded-xl border border-amber-500/20 bg-amber-500/10 flex items-center justify-center shrink-0">
+                <Trophy className="w-4 h-4 text-amber-500" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl lg:text-3xl font-black font-mono text-amber-500 tracking-tight">
+                {officials.filter((o) => o.role === 'TOURNAMENT_DIRECTOR' || o.role === 'ADMIN').length}
+              </span>
+              <span className="text-xs font-bold text-amber-500/60 font-mono">Leaders</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                Executive
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">Directors &amp; owners</span>
+            </div>
+          </div>
+
+          {/* Card 3: Referees & Scorers */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-purple-500/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Umpires &amp; Scorers
+              </span>
+              <div className="w-9 h-9 rounded-xl border border-purple-500/20 bg-purple-500/10 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4 text-purple-400" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl lg:text-3xl font-black font-mono text-purple-400 tracking-tight">
+                {officials.filter((o) => o.role === 'CHIEF_UMPIRE' || o.role === 'DESK_OFFICIAL').length}
+              </span>
+              <span className="text-xs font-bold text-purple-400/60 font-mono">Officials</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                Court Operations
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">Match arbiters</span>
+            </div>
+          </div>
+
+          {/* Card 4: Governance Compliance */}
+          <div
+            className="p-5 rounded-2xl border relative overflow-hidden transition-all shadow-xs hover:border-emerald-500/40 group"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                Governance Health
+              </span>
+              <div className="w-9 h-9 rounded-xl border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <Lock className="w-4 h-4 text-emerald-500" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl lg:text-3xl font-black font-mono text-emerald-500 tracking-tight">
+                100%
+              </span>
+              <span className="text-xs font-bold text-emerald-500/60 font-mono">RBAC</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                Enforced
+              </span>
+              <span className="text-[11px] text-foreground/40 font-medium">9 modules secured</span>
+            </div>
+          </div>
+        </div>
+
+        {/* View Switcher Capsule Bar */}
+        <div className="flex items-center justify-between gap-4 border-b pb-4" style={{ borderColor: 'var(--athlon-border)' }}>
+          <div className="flex items-center gap-2 p-1 rounded-2xl border bg-surface/50" style={{ borderColor: 'var(--athlon-border)' }}>
+            <button
+              onClick={() => setActiveTab('OFFICIALS')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${
+                activeTab === 'OFFICIALS'
+                  ? 'bg-primary text-black shadow-md shadow-primary/20 scale-[1.02]'
+                  : 'text-foreground/60 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/5'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Appointed Officials ({officials.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('PERMISSIONS')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all ${
+                activeTab === 'PERMISSIONS'
+                  ? 'bg-primary text-black shadow-md shadow-primary/20 scale-[1.02]'
+                  : 'text-foreground/60 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/5'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Granular Permissions Matrix</span>
+            </button>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-2 text-xs text-foreground/40 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Athlon Multi-Role Access Control</span>
+          </div>
+        </div>
+
+        {/* ===================================================================== */}
+        {/* TAB 1 DESKTOP: OFFICIALS DIRECTORY                                    */}
+        {/* ===================================================================== */}
+        {activeTab === 'OFFICIALS' && (
+          <div className="space-y-6">
+            {/* Filter & Search Deck */}
+            <div
+              className="p-4 rounded-2xl border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-xs"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              {/* Search Box */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" />
+                <input
+                  type="text"
+                  placeholder="Search by official name, phone number, role, or title..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2 rounded-xl text-xs font-medium border outline-none transition-all placeholder:text-foreground/40 focus:border-primary"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                    color: 'var(--athlon-text)',
+                  }}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Role Filter Chips */}
+              <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
+                <button
+                  onClick={() => setSelectedRoleFilter('ALL')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                    selectedRoleFilter === 'ALL'
+                      ? 'bg-primary text-black border-primary shadow-xs'
+                      : 'border-transparent text-foreground/60 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/5'
+                  }`}
+                >
+                  All Roles ({officials.length})
+                </button>
+                {ORGANIZER_ROLES_CONFIG.map((r) => {
+                  const isSelected = selectedRoleFilter === r.id;
+                  const count = officials.filter((o) => o.role === r.id).length;
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setSelectedRoleFilter(isSelected ? 'ALL' : r.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border ${
+                        isSelected
+                          ? 'bg-primary text-black border-primary shadow-xs'
+                          : 'border-transparent text-foreground/60 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <span>{r.icon}</span>
+                      <span>{r.label}</span>
+                      {count > 0 && (
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                          isSelected ? 'bg-black/20 text-black' : 'bg-foreground/5 text-foreground/50'
+                        }`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop Officials Table */}
+            <div
+              className="rounded-3xl border overflow-hidden shadow-xs"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              {loadingOfficials ? (
+                <div className="p-16 text-center text-foreground/50 font-bold text-xs space-y-2">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+                  <p>Loading appointed tournament officials...</p>
+                </div>
+              ) : filteredOfficials.length === 0 ? (
+                <div className="p-16 text-center space-y-4">
+                  <div
+                    className="w-16 h-16 mx-auto rounded-3xl border flex items-center justify-center text-3xl shadow-inner"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    🛡️
+                  </div>
+                  <div className="max-w-md mx-auto space-y-1">
+                    <h3 className="text-base font-black text-foreground">No officials match your filters</h3>
+                    <p className="text-xs text-foreground/50">
+                      {searchTerm || selectedRoleFilter !== 'ALL'
+                        ? 'Try clearing search terms or selecting a different role filter.'
+                        : 'No tournament officials have been appointed to this workspace yet.'}
+                    </p>
+                  </div>
+                  {canManage && (
+                    <div className="pt-2">
+                      <button
+                        onClick={handleOpenAddModal}
+                        className="px-5 py-2.5 rounded-xl text-xs font-black bg-primary text-black shadow-md hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-2"
+                      >
+                        <UserPlus className="w-4 h-4 stroke-[3]" />
+                        <span>+ Appoint First Official</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr
+                        className="border-b text-[10px] font-black uppercase tracking-wider text-foreground/40"
+                        style={{
+                          backgroundColor: 'var(--athlon-surface)',
+                          borderColor: 'var(--athlon-border)',
+                        }}
+                      >
+                        <th className="py-3.5 px-6">Official &amp; Identity</th>
+                        <th className="py-3.5 px-6">Assigned Role</th>
+                        <th className="py-3.5 px-6">Direct Contact</th>
+                        <th className="py-3.5 px-6">Administrative Memo</th>
+                        <th className="py-3.5 px-6">Status</th>
+                        <th className="py-3.5 px-6 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {filteredOfficials.map((official) => {
+                        const roleConfig = ORGANIZER_ROLES_CONFIG.find((r) => r.id === official.role) || {
+                          id: official.role,
+                          label: official.role,
+                          icon: '👤',
+                          badgeClass: 'bg-foreground/10 text-foreground border-foreground/20',
+                          description: '',
+                        };
+
+                        return (
+                          <tr
+                            key={official.officialUuid}
+                            className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group"
+                          >
+                            {/* Official & Identity */}
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3.5">
+                                {official.photo ? (
+                                  <img
+                                    src={official.photo}
+                                    alt={official.fullName}
+                                    className="w-11 h-11 rounded-2xl object-cover border border-foreground/10 shrink-0 group-hover:scale-105 transition-transform"
+                                  />
+                                ) : (
+                                  <div
+                                    className="w-11 h-11 rounded-2xl border flex items-center justify-center text-sm font-black text-primary shrink-0 shadow-inner group-hover:scale-105 transition-transform"
+                                    style={{
+                                      backgroundColor: 'var(--athlon-primary-soft)',
+                                      borderColor: 'var(--athlon-primary)',
+                                    }}
+                                  >
+                                    {official.fullName?.charAt(0) || 'O'}
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                                      {official.fullName}
+                                    </p>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Verified User" />
+                                  </div>
+                                  <p className="text-xs font-medium text-foreground/50 mt-0.5 truncate">
+                                    {official.designation || 'Tournament Official'}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Assigned Role */}
+                            <td className="py-4 px-6">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border shadow-2xs ${roleConfig.badgeClass}`}
+                              >
+                                <span>{roleConfig.icon}</span>
+                                <span>{roleConfig.label}</span>
+                              </span>
+                            </td>
+
+                            {/* Direct Contact */}
+                            <td className="py-4 px-6">
+                              <div className="space-y-1">
+                                {official.phone && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono font-bold text-foreground">
+                                      {official.phone}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <a
+                                        href={`tel:${official.phone}`}
+                                        className="p-1 rounded-lg text-foreground/40 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 transition-colors"
+                                        title="Call"
+                                      >
+                                        <Phone className="w-3.5 h-3.5" />
+                                      </a>
+                                      <a
+                                        href={`https://wa.me/91${official.phone.replace(/[^0-9]/g, '')}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="p-1 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+                                        title="WhatsApp"
+                                      >
+                                        <MessageCircle className="w-3.5 h-3.5" />
+                                      </a>
+                                    </div>
+                                  </div>
+                                )}
+                                {official.email && (
+                                  <p className="text-[11px] text-foreground/40 truncate max-w-xs">
+                                    {official.email}
+                                  </p>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Administrative Memo */}
+                            <td className="py-4 px-6">
+                              {official.notes ? (
+                                <p className="text-xs text-foreground/60 italic max-w-xs truncate" title={official.notes}>
+                                  &quot;{official.notes}&quot;
+                                </p>
+                              ) : (
+                                <span className="text-xs text-foreground/30 italic">—</span>
+                              )}
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-4 px-6">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Active Staff
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-4 px-6 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {canManage && (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setEditingOfficial(official);
+                                        setFormRole(official.role);
+                                        setFormDesignation(official.designation || '');
+                                        setFormNotes(official.notes || '');
+                                      }}
+                                      className="p-2 rounded-xl text-foreground/50 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 transition-colors"
+                                      title="Edit Role & Details"
+                                    >
+                                      <Edit3 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleRevokeOfficial(official.officialUuid, official.fullName)}
+                                      className="p-2 rounded-xl text-foreground/30 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                                      title="Revoke Official Access"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================================== */}
+        {/* TAB 2 DESKTOP: PERMISSIONS MATRIX                                     */}
+        {/* ===================================================================== */}
+        {activeTab === 'PERMISSIONS' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Role Capsule Selector Grid */}
+            <div
+              className="p-5 rounded-3xl border shadow-sm space-y-4"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                    Select Role to Configure
+                  </h3>
+                  <p className="text-xs text-foreground/50 mt-0.5">
+                    Click any role below to view and modify its operational clearance levels.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground/50">
+                    Active: <span className="text-primary font-black">{ORGANIZER_ROLES_CONFIG.find((r) => r.id === selectedMatrixRole)?.label}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                {ORGANIZER_ROLES_CONFIG.map((r) => {
+                  const isSelected = selectedMatrixRole === r.id;
+                  const roleMatrix = permissionsMatrix[r.id] || {};
+                  const mCount = Object.values(roleMatrix).filter((v) => v === 'MANAGE').length;
+
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setSelectedMatrixRole(r.id)}
+                      className={`p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden group shadow-xs ${
+                        isSelected
+                          ? 'border-primary ring-2 ring-primary/20 scale-[1.02]'
+                          : 'border-border/70 hover:border-foreground/30 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                      }`}
+                      style={{
+                        backgroundColor: isSelected ? 'var(--athlon-surface)' : 'var(--athlon-card)',
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xl group-hover:scale-110 transition-transform">{r.icon}</span>
+                        <span
+                          className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-md ${
+                            isSelected
+                              ? 'bg-primary text-black font-black'
+                              : 'bg-foreground/5 text-foreground/50'
+                          }`}
+                        >
+                          {mCount}M
+                        </span>
+                      </div>
+                      <p className={`text-xs font-bold truncate ${isSelected ? 'text-primary font-black' : 'text-foreground'}`}>
+                        {r.label}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selected Role Executive Dossier */}
+            {(() => {
+              const currentRoleObj = ORGANIZER_ROLES_CONFIG.find((r) => r.id === selectedMatrixRole);
+              const roleMatrix = permissionsMatrix[selectedMatrixRole] || {};
+              const manageCount = Object.values(roleMatrix).filter((v) => v === 'MANAGE').length;
+              const viewCount = Object.values(roleMatrix).filter((v) => v === 'VIEW').length;
+              const noneCount = Object.values(roleMatrix).filter((v) => v === 'NONE').length;
+
+              return (
+                <div
+                  className="relative overflow-hidden p-6 rounded-3xl border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  style={{
+                    backgroundColor: 'var(--athlon-card)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div
+                      className="w-14 h-14 rounded-2xl border flex items-center justify-center text-3xl shrink-0 shadow-md"
+                      style={{
+                        backgroundColor: 'var(--athlon-primary-soft)',
+                        borderColor: 'var(--athlon-primary)',
+                      }}
+                    >
+                      {currentRoleObj?.icon || '🛡️'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-black text-xl text-foreground tracking-tight leading-none">
+                          {currentRoleObj?.label}
+                        </h4>
+                        <span
+                          className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border"
+                          style={{
+                            backgroundColor: 'var(--athlon-primary-soft)',
+                            borderColor: 'var(--athlon-primary)',
+                            color: 'var(--athlon-primary)',
+                          }}
+                        >
+                          Role Scope
+                        </span>
+                      </div>
+                      <p className="text-foreground/70 text-xs font-medium mt-1 leading-snug max-w-2xl">
+                        {currentRoleObj?.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Clearance Count Badges */}
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-xs font-black shadow-xs">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>{manageCount} Manage</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25 text-xs font-black shadow-xs">
+                      <Eye className="w-4 h-4" />
+                      <span>{viewCount} View Only</span>
+                    </span>
+                    {noneCount > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 text-xs font-black shadow-xs">
+                        <EyeOff className="w-4 h-4" />
+                        <span>{noneCount} Locked</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Permissions Matrix Desktop Table */}
+            <div
+              className="rounded-3xl border overflow-hidden shadow-xs"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+              }}
+            >
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr
+                    className="border-b text-[10px] font-black uppercase tracking-wider text-foreground/40"
+                    style={{
+                      backgroundColor: 'var(--athlon-surface)',
+                      borderColor: 'var(--athlon-border)',
+                    }}
+                  >
+                    <th className="py-4 px-6 w-1/3">Module &amp; Scope</th>
+                    <th className="py-4 px-6 w-1/3">Description &amp; Operational Clearance</th>
+                    <th className="py-4 px-6 text-right w-1/3">Access Level Assignment</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {ORGANIZER_MODULES_CONFIG.map((module) => {
+                    const currentLevel = permissionsMatrix[selectedMatrixRole]?.[module.id] || 'VIEW';
+                    const isAdminRole = selectedMatrixRole === 'ADMIN';
+
+                    return (
+                      <tr key={module.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                        {/* Module & Scope */}
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3.5">
+                            <div
+                              className="w-11 h-11 rounded-2xl border flex items-center justify-center text-xl shrink-0 shadow-xs"
+                              style={{
+                                backgroundColor: 'var(--athlon-primary-soft)',
+                                borderColor: 'var(--athlon-primary)',
+                              }}
+                            >
+                              {module.icon}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-sm text-foreground truncate">
+                                {module.label}
+                              </h4>
+                              <span className="text-[10px] font-mono font-bold text-foreground/40 uppercase">
+                                Module ID: #{module.id}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Description */}
+                        <td className="py-4 px-6">
+                          <p className="text-xs text-foreground/60 leading-relaxed">
+                            {module.desc}
+                          </p>
+                        </td>
+
+                        {/* Tri-State Control Buttons */}
+                        <td className="py-4 px-6 text-right">
+                          <div
+                            className="inline-flex items-center p-1 rounded-2xl gap-1 shadow-inner border"
+                            style={{
+                              backgroundColor: 'var(--athlon-surface)',
+                              borderColor: 'var(--athlon-border)',
+                            }}
+                          >
+                            <button
+                              type="button"
+                              disabled={!canManage || isAdminRole}
+                              onClick={() => handleToggleMatrixAccess(module.id, 'MANAGE')}
+                              className={`py-1.5 px-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 ${
+                                currentLevel === 'MANAGE'
+                                  ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/25 border border-emerald-400 scale-[1.02]'
+                                  : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
+                              }`}
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>MANAGE</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={!canManage || isAdminRole}
+                              onClick={() => handleToggleMatrixAccess(module.id, 'VIEW')}
+                              className={`py-1.5 px-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 ${
+                                currentLevel === 'VIEW'
+                                  ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25 border border-sky-400 scale-[1.02]'
+                                  : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
+                              }`}
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>VIEW ONLY</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={!canManage || isAdminRole}
+                              onClick={() => handleToggleMatrixAccess(module.id, 'NONE')}
+                              className={`py-1.5 px-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 ${
+                                currentLevel === 'NONE'
+                                  ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40 scale-[1.02]'
+                                  : 'text-foreground/60 hover:text-foreground hover:bg-foreground/5'
+                              }`}
+                            >
+                              <EyeOff className="w-3.5 h-3.5" />
+                              <span>NO ACCESS</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* Bottom Sticky Action Bar */}
+              {canManage && (
+                <div
+                  className="p-4 border-t flex items-center justify-between"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <div className="flex items-center gap-2 text-xs text-foreground/50">
+                    <Info className="w-4 h-4 text-primary" />
+                    <span>Remember to click &quot;Save Clearance Matrix&quot; after making permission changes.</span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleResetPermissions}
+                      disabled={resettingPermissions}
+                      className="px-4 py-2 rounded-xl border text-xs font-bold text-foreground/70 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/10 transition-all active:scale-95 disabled:opacity-50"
+                      style={{
+                        backgroundColor: 'var(--athlon-card)',
+                        borderColor: 'var(--athlon-border)',
+                      }}
+                    >
+                      {resettingPermissions ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset Defaults'}
+                    </button>
+                    <button
+                      onClick={handleSavePermissions}
+                      disabled={savingPermissions}
+                      className="px-6 py-2 rounded-xl text-xs font-black shadow-lg shadow-primary/25 active:scale-95 transition-all flex items-center gap-2 hover:brightness-110 disabled:opacity-50"
+                      style={{
+                        backgroundColor: 'var(--athlon-primary)',
+                        color: '#000000',
+                      }}
+                    >
+                      {savingPermissions ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 stroke-[3]" />
+                          <span>Save Clearance Matrix</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

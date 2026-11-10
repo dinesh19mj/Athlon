@@ -21,8 +21,12 @@ import {
   Video,
   Play,
   ExternalLink,
+  Lock,
 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { TournamentService, StreamConfigService, CourtConfig } from '@/lib/api/tournaments';
+import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { useOrganizerEntitlementsStore } from '@/store/useOrganizerEntitlementsStore';
 
 interface LiveStreamSettingsProps {
   tournamentId: string;
@@ -30,6 +34,29 @@ interface LiveStreamSettingsProps {
 }
 
 export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamSettingsProps) {
+  const params = useParams();
+  const orgId = (params?.orgId as string) || '';
+  const { organizations, getActiveOrganization } = useWorkspaceStore();
+  const currentOrg = organizations.find((o) => o.id === orgId) || getActiveOrganization();
+  const isOrganizerOrg = !currentOrg?.type || currentOrg?.type === 'ORGANIZER';
+
+  const {
+    loadEntitlements,
+    hasFeature,
+    getLimit,
+    openFeaturePaywall,
+    openQuotaPaywall,
+  } = useOrganizerEntitlementsStore();
+
+  const maxCourtsLimit = isOrganizerOrg ? getLimit(orgId, 'MAX_COURTS', 2) : 9999;
+  const hasObsStreamFeature = !isOrganizerOrg || hasFeature(orgId, 'BASIC_OBS_OVERLAYS');
+
+  useEffect(() => {
+    if (orgId && isOrganizerOrg) {
+      loadEntitlements(orgId);
+    }
+  }, [orgId, isOrganizerOrg, loadEntitlements]);
+
   const [courts, setCourts] = useState<CourtConfig[]>([]);
   const [editingCourts, setEditingCourts] = useState<Set<number>>(new Set());
   const [showKeys, setShowKeys] = useState<{ [key: number]: boolean }>({});
@@ -62,10 +89,18 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
   }, [tournamentId]);
 
   const handleUpdateCourt = (id: number, field: keyof CourtConfig, value: any) => {
+    if (field === 'enableStream' && value === true && isOrganizerOrg && !hasObsStreamFeature) {
+      openFeaturePaywall(orgId, 'BASIC_OBS_OVERLAYS', 'YouTube Livestream & OBS Scoreboard Overlays');
+      return;
+    }
     setCourts((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
   };
 
   const handleAddCourt = () => {
+    if (isOrganizerOrg && courts.length >= maxCourtsLimit) {
+      openQuotaPaywall(orgId, 'MAX_COURTS', courts.length, 'Max Active Courts');
+      return;
+    }
     const newId = Date.now();
     setCourts((prev) => [
       ...prev,
@@ -304,7 +339,7 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
                       ) : (
                         <>
                           <Activity className="w-3 h-3" />
-                          <span>Score Only</span>
+                          <span>Live Score</span>
                         </>
                       )}
                     </span>
@@ -347,7 +382,7 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
                             !court.enableStream ? 'text-foreground' : 'text-foreground/70'
                           }`}
                         >
-                          Score Only
+                          Live Score
                         </span>
                         <span className="text-[10px] text-foreground/40 mt-1 block">Live digital scoreboard overlay</span>
                       </div>
@@ -525,20 +560,20 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
       {/* ════════════════════════════════════════════════════════════════════ */}
       {/* ── MOBILE REDESIGNED VIEW (block lg:hidden) ───────────────────── */}
       {/* ════════════════════════════════════════════════════════════════════ */}
-      <div className="block lg:hidden space-y-3.5">
+      <div className="block lg:hidden space-y-3">
         {/* Mobile Compact Header Bar */}
         <div
-          className="p-4 rounded-2xl border shadow-md space-y-3 relative overflow-hidden"
+          className="p-3 rounded-xl border space-y-2.5 relative overflow-hidden shadow-2xs backdrop-blur-xs"
           style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
         >
           {/* Header Row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
-                <Radio className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                <Radio className="w-3.5 h-3.5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-sm font-black text-foreground truncate">Live Stream & Courts</h3>
+                <h3 className="text-xs font-bold text-foreground truncate">Live Stream & Courts</h3>
                 <span className="text-[10px] text-foreground/50 font-medium block">
                   Broadcast & score setup
                 </span>
@@ -548,19 +583,19 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={handleAddCourt}
-                className="px-2.5 py-1.5 rounded-xl border text-[11px] font-bold text-foreground hover:bg-white/5 flex items-center gap-1 shadow-sm active:scale-95"
+                className="h-7 px-2.5 rounded-lg border text-[10.5px] font-bold text-foreground hover:bg-white/5 flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
                 style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
               >
-                <Plus className="w-3.5 h-3.5 text-primary" />
+                <Plus className="w-3 h-3 text-primary" />
                 <span>Add</span>
               </button>
 
               {courts.length > 1 && (
                 <button
                   onClick={handleSaveAll}
-                  className="px-2.5 py-1.5 rounded-xl bg-primary text-primary-foreground font-black text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-md active:scale-95"
+                  className="h-7 px-2.5 rounded-lg bg-primary text-primary-foreground font-bold text-[10.5px] uppercase tracking-wider flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
                 >
-                  <Save className="w-3.5 h-3.5" />
+                  <Save className="w-3 h-3" />
                   <span>Save All</span>
                 </button>
               )}
@@ -569,24 +604,24 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
 
           {/* Mobile 3-Column Micro Metrics Bar */}
           <div
-            className="grid grid-cols-3 gap-1.5 p-1.5 rounded-xl border text-center"
+            className="grid grid-cols-3 gap-1.5 p-1 rounded-lg border text-center"
             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
           >
-            <div className="p-1 rounded-lg bg-black/20">
-              <span className="text-[8.5px] font-black uppercase text-foreground/40 block leading-tight">Courts</span>
-              <span className="text-xs font-black text-foreground font-mono block mt-0.5">{courts.length}</span>
+            <div className="p-1 rounded-md bg-black/20">
+              <span className="text-[8.5px] font-bold uppercase text-foreground/40 block leading-tight">Courts</span>
+              <span className="text-xs font-bold text-foreground font-mono block mt-0.5">{courts.length}</span>
               <span className="text-[8px] text-foreground/40">Total</span>
             </div>
 
-            <div className="p-1 rounded-lg bg-black/20">
-              <span className="text-[8.5px] font-black uppercase text-red-400/70 block leading-tight">Streams</span>
-              <span className="text-xs font-black text-red-400 font-mono block mt-0.5">{videoStreamCourtsCount}</span>
+            <div className="p-1 rounded-md bg-black/20">
+              <span className="text-[8.5px] font-bold uppercase text-red-400/70 block leading-tight">Streams</span>
+              <span className="text-xs font-bold text-red-400 font-mono block mt-0.5">{videoStreamCourtsCount}</span>
               <span className="text-[8px] text-red-400/50">YouTube</span>
             </div>
 
-            <div className="p-1 rounded-lg bg-black/20">
-              <span className="text-[8.5px] font-black uppercase text-emerald-400/70 block leading-tight">Scores</span>
-              <span className="text-xs font-black text-emerald-400 font-mono block mt-0.5">{scoreOnlyCourtsCount}</span>
+            <div className="p-1 rounded-md bg-black/20">
+              <span className="text-[8.5px] font-bold uppercase text-emerald-400/70 block leading-tight">Scores</span>
+              <span className="text-xs font-bold text-emerald-400 font-mono block mt-0.5">{scoreOnlyCourtsCount}</span>
               <span className="text-[8px] text-emerald-400/50">Digital</span>
             </div>
           </div>
@@ -594,7 +629,7 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
 
         {/* Mobile Courts List */}
         <div className="space-y-3">
-          {courts.map((court, index) => {
+          {courts.map((court) => {
             const isKeyVisible = showKeys[court.id];
             const isCourtSaving = isSaving[court.id];
             const isSuccess = savedSuccess[court.id];
@@ -602,73 +637,79 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
             return (
               <div
                 key={court.id}
-                className="rounded-2xl border p-3.5 shadow-md space-y-3 relative overflow-hidden transition-all"
+                className="rounded-2xl border p-3.5 shadow-2xs space-y-3 relative overflow-hidden transition-all backdrop-blur-xs"
                 style={{
                   backgroundColor: 'var(--athlon-card)',
-                  borderColor: court.enableStream ? 'rgba(239, 68, 68, 0.4)' : 'var(--athlon-border)',
+                  borderColor: 'var(--athlon-border)',
                 }}
               >
-                {/* Glowing Top Accent Line */}
-                <div
-                  className={`absolute top-0 left-0 right-0 h-1 ${
-                    court.enableStream
-                      ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
-                      : 'bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.4)]'
-                  }`}
-                />
+                {/* Court Card Header */}
+                <div className="flex items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-2xs">
+                      <Radio className="w-4 h-4" />
+                    </div>
 
-                {/* Court Name Header & Status Badge */}
-                <div className="flex items-center justify-between gap-2 pt-0.5">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono font-black text-[10px] shrink-0 ${
-                        court.enableStream
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                          : 'bg-primary/15 text-primary border border-primary/30'
-                      }`}
-                    >
-                      #{index + 1}
-                    </span>
-
-                    <input
-                      type="text"
-                      value={court.name}
-                      onChange={(e) => handleUpdateCourt(court.id, 'name', e.target.value)}
-                      className="bg-transparent border-b border-white/10 focus:border-primary text-sm font-black text-foreground outline-none px-1 py-0.5 w-full min-w-0"
-                      placeholder="Court name..."
-                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/70 block leading-tight">
+                        Court Name
+                      </span>
+                      <input
+                        type="text"
+                        value={court.name}
+                        onChange={(e) => handleUpdateCourt(court.id, 'name', e.target.value)}
+                        className="bg-transparent border-0 text-sm font-black text-foreground outline-none p-0 w-full focus:ring-0 placeholder:text-muted-foreground/40 leading-tight"
+                        placeholder="Court name..."
+                      />
+                    </div>
                   </div>
 
-                  {courts.length > 1 && (
-                    <button
-                      onClick={() => handleRemoveCourt(court.id)}
-                      className="p-1 rounded-lg text-foreground/30 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-                      title="Delete Court"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Ready
+                    </span>
+
+                    {courts.length > 1 && (
+                      <button
+                        onClick={() => handleRemoveCourt(court.id)}
+                        className="p-1 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
+                        title="Delete Court"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Compact Broadcast Mode Toggle Bar */}
-                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-black/25 border border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateCourt(court.id, 'enableStream', false)}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
-                      !court.enableStream
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-foreground/50 hover:text-foreground'
-                    }`}
-                  >
-                    <Activity className="w-3.5 h-3.5 shrink-0" />
-                    <span>Score Only</span>
-                  </button>
+                {/* Broadcast & Scoring Mode Info Strip */}
+                <div
+                  className="p-2.5 rounded-xl border flex items-center justify-between gap-2"
+                  style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-black/10 dark:bg-white/5 border border-border/40 flex items-center justify-center text-primary shrink-0 shadow-2xs">
+                      <Activity className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-foreground block leading-tight truncate">
+                        Score Tracking
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-medium block leading-tight">
+                        Digital scoring console
+                      </span>
+                    </div>
+                  </div>
 
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 shrink-0">
+                    Live Score
+                  </span>
+
+                  {/* Live Video Option - Temporarily commented out as requested
                   <button
                     type="button"
                     onClick={() => handleUpdateCourt(court.id, 'enableStream', true)}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${
                       court.enableStream
                         ? 'bg-red-500 text-white shadow-sm shadow-red-500/30'
                         : 'text-foreground/50 hover:text-foreground'
@@ -677,6 +718,7 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
                     <Tv className="w-3.5 h-3.5 shrink-0" />
                     <span>Live Video</span>
                   </button>
+                  */}
                 </div>
 
                 {/* Stream Key Box (If Video Stream is Selected) */}
@@ -684,7 +726,7 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
                   <div
                     className="p-2.5 rounded-xl border border-red-500/20 bg-red-500/5 space-y-1.5"
                   >
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-red-400 flex items-center gap-1">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-red-400 flex items-center gap-1">
                       <Tv className="w-3 h-3" />
                       YouTube Stream Key
                     </span>
@@ -720,12 +762,12 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
                   </div>
                 )}
 
-                {/* 1-Tap Save Button */}
+                {/* Save Court Button */}
                 <button
                   type="button"
                   onClick={() => handleSaveCourt(court.id)}
                   disabled={isCourtSaving}
-                  className={`w-full py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 ${
+                  className={`w-full h-8.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-[0.98] ${
                     isSuccess
                       ? 'bg-emerald-500 text-white'
                       : 'bg-primary text-primary-foreground hover:opacity-95'
@@ -734,7 +776,7 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
                   {isSuccess ? (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Saved</span>
+                      <span>Court Saved</span>
                     </>
                   ) : (
                     <>
@@ -747,7 +789,9 @@ export function LiveStreamSettings({ tournamentId, tournamentName }: LiveStreamS
             );
           })}
         </div>
+
       </div>
+
     </div>
   );
 }

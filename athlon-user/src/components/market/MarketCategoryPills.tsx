@@ -324,110 +324,149 @@ export function MarketCategoryPills({
   onSelectSport,
   className = '',
 }: MarketCategoryPillsProps) {
-  return (
-    <div className={`w-full overflow-x-auto hide-scrollbar select-none -mx-4 px-4 ${className}`}>
-      <div className="flex items-center gap-3.5 sm:gap-5 min-w-max pb-2 pt-1">
-        {CATEGORIES.map((cat) => {
-          const isSelected = selectedSport.toLowerCase() === cat.sport.toLowerCase();
+  const categoriesToDisplay: CategoryItem[] = React.useMemo(() => {
+    const isTopFour = ['all', 'badminton', 'cricket', 'football'].includes(selectedSport.toLowerCase());
 
-          if (cat.iconType === 'more') {
-            return (
-              <Link
-                key={cat.id}
-                href="/market/search"
-                className="flex flex-col items-center gap-1.5 group cursor-pointer"
-              >
-                <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-300 group-hover:scale-105 active:scale-95 shadow-md relative overflow-hidden backdrop-blur-md"
-                  style={{
-                    backgroundColor: 'var(--athlon-card, #111A15)',
-                    borderColor: 'var(--athlon-border, rgba(255, 255, 255, 0.08))',
-                    boxShadow: '0 8px 20px -4px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)',
-                  }}
-                >
-                  <div className="absolute inset-x-0 top-0 h-[40%] bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
-                  <MoreHorizontal className="w-6 h-6 text-foreground/60 group-hover:text-primary transition-colors" />
-                </div>
-                <span className="text-[11px] font-bold text-foreground/60 group-hover:text-foreground">
-                  More
-                </span>
-              </Link>
-            );
-          }
+    if (isTopFour) {
+      return [
+        CATEGORIES[0], // All
+        CATEGORIES[1], // Badminton
+        CATEGORIES[2], // Cricket
+        CATEGORIES[3], // Football
+        CATEGORIES[7], // More
+      ];
+    }
 
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => onSelectSport(cat.sport)}
-              className="flex flex-col items-center gap-1.5 group cursor-pointer active:scale-95 transition-transform"
-            >
-              {/* 3D Round Pod Button */}
-              <div
-                className={`
-                  w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-300 relative overflow-hidden backdrop-blur-md
-                  ${
-                    isSelected
-                      ? 'scale-105 shadow-xl'
-                      : 'hover:scale-105 hover:border-primary/40'
-                  }
-                `}
-                style={
-                  isSelected
-                    ? {
-                        background:
-                          'radial-gradient(circle at 35% 25%, var(--athlon-primary-light, #54AC68) 0%, var(--athlon-primary, #349650) 48%, var(--athlon-primary-dark, #0d381c) 85%, #021208 100%)',
-                        borderColor: 'var(--athlon-primary)',
-                        boxShadow:
-                          '0 0 24px -2px var(--athlon-primary-glow), 0 10px 24px -4px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.5), inset 0 -4px 8px rgba(0,0,0,0.7)',
-                      }
-                    : {
-                        backgroundColor: 'var(--athlon-card, #111A15)',
-                        borderColor: 'var(--athlon-border, rgba(255, 255, 255, 0.08))',
-                        boxShadow:
-                          '0 8px 20px -4px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)',
-                      }
+    const selectedItem = CATEGORIES.find(
+      (c) => c.sport.toLowerCase() === selectedSport.toLowerCase()
+    ) || {
+      id: selectedSport,
+      name: selectedSport,
+      sport: selectedSport,
+      iconType: 'badminton' as const,
+    };
+
+    return [
+      CATEGORIES[0], // All
+      CATEGORIES[1], // Badminton
+      CATEGORIES[2], // Cricket
+      selectedItem,  // Selected sport
+      CATEGORIES[7], // More
+    ];
+  }, [selectedSport]);
+
+  const renderItem = (cat: CategoryItem) => {
+    const isSelected = selectedSport.toLowerCase() === cat.sport.toLowerCase();
+
+    if (cat.iconType === 'more') {
+      return (
+        <Link
+          key={cat.id}
+          href="/market/categories"
+          className="flex flex-col items-center gap-1.5 group cursor-pointer shrink-0"
+        >
+          <div
+            className="w-[52px] h-[52px] sm:w-[60px] sm:h-[60px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center border transition-all duration-300 group-hover:scale-105 active:scale-95 shadow-md relative overflow-hidden backdrop-blur-md"
+            style={{
+              backgroundColor: 'var(--athlon-card, #111A15)',
+              borderColor: 'var(--athlon-border, rgba(255, 255, 255, 0.08))',
+              boxShadow: '0 6px 18px -3px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)',
+            }}
+          >
+            <div className="absolute inset-x-0 top-0 h-[40%] bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
+            <MoreHorizontal className="w-5 h-5 sm:w-6 sm:h-6 text-foreground/60 group-hover:text-primary transition-colors" />
+          </div>
+          <span className="text-[10px] sm:text-[11px] font-bold text-foreground/60 group-hover:text-foreground text-center">
+            More
+          </span>
+        </Link>
+      );
+    }
+
+    return (
+      <button
+        key={cat.id}
+        type="button"
+        onClick={() => onSelectSport(cat.sport)}
+        className="flex flex-col items-center gap-1.5 group cursor-pointer active:scale-95 transition-transform shrink-0"
+      >
+        {/* 3D Round Pod Button */}
+        <div
+          className={`
+            w-[52px] h-[52px] sm:w-[60px] sm:h-[60px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center border transition-all duration-300 relative overflow-hidden backdrop-blur-md
+            ${
+              isSelected
+                ? 'scale-105 shadow-xl'
+                : 'hover:scale-105 hover:border-primary/40'
+            }
+          `}
+          style={
+            isSelected
+              ? {
+                  background:
+                    'radial-gradient(circle at 35% 25%, var(--athlon-primary-light, #54AC68) 0%, var(--athlon-primary, #349650) 48%, var(--athlon-primary-dark, #0d381c) 85%, #021208 100%)',
+                  borderColor: 'var(--athlon-primary)',
+                  boxShadow:
+                    '0 0 20px -2px var(--athlon-primary-glow), 0 8px 20px -4px rgba(0,0,0,0.7), inset 0 2px 4px rgba(255,255,255,0.5), inset 0 -4px 8px rgba(0,0,0,0.7)',
                 }
-              >
-                {/* Specular Top Glass Highlight Arc */}
-                <div
-                  className={`absolute inset-x-1 top-0 h-[42%] rounded-t-xl pointer-events-none ${
-                    isSelected
-                      ? 'bg-gradient-to-b from-white/40 via-white/10 to-transparent'
-                      : 'bg-gradient-to-b from-white/[0.08] to-transparent'
-                  }`}
-                />
+              : {
+                  backgroundColor: 'var(--athlon-card, #111A15)',
+                  borderColor: 'var(--athlon-border, rgba(255, 255, 255, 0.08))',
+                  boxShadow:
+                    '0 6px 18px -3px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1)',
+                }
+          }
+        >
+          {/* Specular Top Glass Highlight Arc */}
+          <div
+            className={`absolute inset-x-1 top-0 h-[42%] rounded-t-xl pointer-events-none ${
+              isSelected
+                ? 'bg-gradient-to-b from-white/40 via-white/10 to-transparent'
+                : 'bg-gradient-to-b from-white/[0.08] to-transparent'
+            }`}
+          />
 
-                <Sport3DIcon type={cat.iconType} isSelected={isSelected} />
-              </div>
+          <Sport3DIcon type={cat.iconType} isSelected={isSelected} />
+        </div>
 
-              {/* Label & Active Dot Indicator */}
-              <div className="flex items-center gap-1">
-                {isSelected && (
-                  <span
-                    className="w-1.5 h-1.5 rounded-full animate-pulse"
-                    style={{
-                      backgroundColor: 'var(--athlon-primary)',
-                      boxShadow: '0 0 6px var(--athlon-primary)',
-                    }}
-                  />
-                )}
-                <span
-                  className={`text-[11px] font-extrabold tracking-tight transition-colors ${
-                    isSelected
-                      ? 'text-primary drop-shadow-[0_0_8px_var(--athlon-primary-glow)]'
-                      : 'text-foreground/70 group-hover:text-foreground'
-                  }`}
-                  style={{ color: isSelected ? 'var(--athlon-primary)' : undefined }}
-                >
-                  {cat.name}
-                </span>
-              </div>
-            </button>
-          );
-        })}
+        {/* Label & Active Dot Indicator */}
+        <div className="flex items-center gap-1">
+          {isSelected && (
+            <span
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{
+                backgroundColor: 'var(--athlon-primary)',
+                boxShadow: '0 0 6px var(--athlon-primary)',
+              }}
+            />
+          )}
+          <span
+            className={`text-[10px] sm:text-[11px] font-extrabold tracking-tight transition-colors text-center ${
+              isSelected
+                ? 'text-primary drop-shadow-[0_0_8px_var(--athlon-primary-glow)]'
+                : 'text-foreground/70 group-hover:text-foreground'
+            }`}
+            style={{ color: isSelected ? 'var(--athlon-primary)' : undefined }}
+          >
+            {cat.name}
+          </span>
+        </div>
+      </button>
+    );
+  };
+
+  return (
+    <>
+      {/* Mobile: 5 pods, justify-between (100% UNTOUCHED) */}
+      <div className={`flex md:hidden items-center justify-between select-none w-full ${className}`}>
+        {categoriesToDisplay.map(renderItem)}
       </div>
-    </div>
+
+      {/* Desktop: All 8 sports, clean centered e-commerce category strip */}
+      <div className={`hidden md:flex items-center justify-center gap-7 lg:gap-9 select-none w-full ${className}`}>
+        {CATEGORIES.map(renderItem)}
+      </div>
+    </>
   );
 }
 

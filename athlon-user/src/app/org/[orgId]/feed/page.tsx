@@ -386,229 +386,236 @@ export default function CommunityFeedPage() {
   const totalItemsCount = posts.length + announcements.length + polls.length;
 
   return (
-    <div className="min-h-screen pb-32 sm:pb-24" style={{ backgroundColor: 'var(--athlon-background)' }}>
-      {/* ─── Top Ambient Gradient ─── */}
-      <div className="relative overflow-hidden border-b" style={{ borderColor: 'var(--athlon-border)' }}>
-        <div
-          className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[260px] blur-[100px] pointer-events-none opacity-20"
-          style={{ backgroundColor: 'var(--athlon-primary, #FF3B30)' }}
-        />
+    <div
+      className="min-h-full w-full pb-28 md:pb-16 text-foreground"
+      style={{
+        backgroundColor: 'var(--athlon-bg)',
+        paddingTop: 'max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem))',
+      }}
+    >
+      <div className="w-full max-w-lg md:max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 flex flex-col gap-3.5 md:gap-6 pt-1.5">
+        {/* ── HYPER-STYLISH ATHLETIC ARENA HERO (Theme Adaptive) ── */}
+        <section
+          className="relative w-full rounded-[26px] overflow-hidden border p-4 sm:p-5 shadow-xl transition-all"
+          style={{
+            backgroundColor: 'var(--athlon-card)',
+            borderColor: 'var(--athlon-border)',
+            boxShadow:
+              '0 12px 32px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.15)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)',
+          }}
+        >
+          {/* Top Edge Neon Energy Rail */}
+          <div
+            className="absolute top-0 inset-x-0 h-[2px] opacity-75 pointer-events-none z-0"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
+            }}
+          />
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 pb-6 space-y-4 relative z-10">
-          {/* Breadcrumb & Navigation */}
-          <div className="flex items-center justify-between gap-3">
-            <Link
-              href={`/org/${orgId}/dashboard`}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-foreground/60 hover:text-foreground transition-colors group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-              <span>Back to Hub</span>
-            </Link>
+          {/* Stadium Floodlight Spotlights */}
+          <div
+            className="absolute -top-16 -right-16 w-60 h-60 rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-60 animate-pulse duration-1000 z-0"
+            style={{
+              background: 'radial-gradient(circle, var(--athlon-primary) 0%, rgba(52, 211, 153, 0.3) 40%, transparent 75%)',
+            }}
+          />
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => fetchFeedData(true)}
-                disabled={refreshing}
-                title="Refresh feed"
-                className="p-2 rounded-xl border bg-surface/50 hover:bg-surface text-foreground/70 hover:text-foreground transition-all cursor-pointer"
-                style={{ borderColor: 'var(--athlon-border)' }}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-              </button>
-              <button
-                onClick={handleCopyLink}
-                title="Share feed"
-                className="p-2 rounded-xl border bg-surface/50 hover:bg-surface text-foreground/70 hover:text-foreground transition-all cursor-pointer"
-                style={{ borderColor: 'var(--athlon-border)' }}
-              >
-                <Share2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+          {/* Specular Sheen Arc */}
+          <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-white/[0.12] dark:from-white/[0.04] via-transparent to-transparent pointer-events-none z-0" />
 
-          {/* Hero Header */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-primary/10 text-primary border border-primary/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  <span>{community?.primarySport || 'COMMUNITY'} PULSE</span>
-                </span>
-                <span className="text-[11px] font-mono text-foreground/40">
-                  {community?.name || activeOrg?.name || 'Athlon Locker Room'}
-                </span>
+          <div className="relative z-10 space-y-3.5">
+            {/* Top Control Bar inside Hero */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Link
+                  href={`/org/${orgId}/dashboard`}
+                  className="w-7 h-7 rounded-lg border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 transition-all shrink-0 shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Back to Hub"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+                </Link>
+
+                <div
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary-soft)',
+                    borderColor: 'var(--athlon-primary)',
+                  }}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span
+                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                    <span
+                      className="relative inline-flex rounded-full h-2 w-2"
+                      style={{ backgroundColor: 'var(--athlon-primary)' }}
+                    />
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary truncate">
+                    {community?.primarySport || 'Badminton'} Pulse
+                  </span>
+                </div>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center gap-2">
-                <span>Feed &amp; Locker Room</span>
-                <Flame className="w-6 h-6 text-primary fill-primary/20 shrink-0" />
+
+              {/* Action Buttons: Refresh & Share */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => fetchFeedData(true)}
+                  disabled={refreshing}
+                  className="w-7 h-7 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 cursor-pointer shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Refresh feed"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`} />
+                </button>
+
+                <button
+                  onClick={handleCopyLink}
+                  className="w-7 h-7 rounded-xl border flex items-center justify-center text-foreground/70 hover:text-foreground active:scale-95 cursor-pointer shadow-sm backdrop-blur-md"
+                  style={{ borderColor: 'var(--athlon-border)', backgroundColor: 'var(--athlon-surface)' }}
+                  title="Share feed"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-primary" />
+                </button>
+              </div>
+            </div>
+
+            {/* Title & Subtitle */}
+            <div className="space-y-1">
+              <h1 className="text-[19px] sm:text-[21px] font-black leading-[1.14] tracking-tight uppercase text-foreground">
+                <span>Feed &amp;</span>{' '}
+                <span className="text-primary drop-shadow-[0_2px_12px_var(--athlon-primary-glow)]">
+                  Locker Room
+                </span>
               </h1>
-              <p className="text-xs sm:text-sm text-foreground/60 max-w-xl">
+              <p className="text-[11px] text-text-secondary leading-relaxed font-medium pt-0.5">
                 Share match highlights, broadcast club bulletins, and participate in live community votes.
               </p>
             </div>
 
-            {/* Top Quick Actions */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
               <button
                 onClick={() => setShowAnnounceModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-black text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 text-[9.5px] font-bold px-3 py-2.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-md tracking-wider uppercase cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary-foreground)',
+                  boxShadow: '0 4px 16px var(--athlon-primary-glow)',
+                }}
               >
-                <Bell className="w-3.5 h-3.5" />
+                <Bell className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Bulletin</span>
               </button>
+
               <button
                 onClick={() => setShowPollModal(true)}
-                className="px-3.5 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary font-black text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 border text-[9.5px] font-bold px-3 py-2.5 rounded-xl active:scale-95 transition-all shadow-sm tracking-wider uppercase backdrop-blur-md cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                  color: 'var(--athlon-text)',
+                }}
               >
-                <Vote className="w-3.5 h-3.5" />
+                <Vote className="w-3.5 h-3.5 text-primary" strokeWidth={2.2} />
                 <span>New Poll</span>
               </button>
             </div>
-          </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-3 gap-2.5 pt-1">
+            {/* Live Telemetry Strip with Dynamic Counts */}
             <div
-              className="p-3 rounded-2xl border flex items-center gap-3 backdrop-blur-md"
-              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
+              className="grid grid-cols-3 divide-x rounded-2xl p-2.5 mt-1 border backdrop-blur-md"
+              style={{
+                backgroundColor: 'var(--athlon-surface)',
+                borderColor: 'var(--athlon-border)',
+              }}
             >
-              <div className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-base sm:text-lg font-black text-foreground font-mono leading-none">
-                  {posts.length}
-                </div>
-                <div className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider truncate">
+              <div
+                onClick={() => setActiveTab('POSTS')}
+                className="flex flex-col items-center justify-center text-center px-1 cursor-pointer transition-opacity active:opacity-70"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-foreground font-mono leading-none">
+                  {loading ? '...' : posts.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
                   Discussions
-                </div>
+                </span>
               </div>
-            </div>
 
-            <div
-              className="p-3 rounded-2xl border flex items-center gap-3 backdrop-blur-md"
-              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
-                <Bell className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-base sm:text-lg font-black text-foreground font-mono leading-none">
-                  {announcements.length}
-                </div>
-                <div className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider truncate">
+              <div
+                onClick={() => setActiveTab('ANNOUNCEMENTS')}
+                className="flex flex-col items-center justify-center text-center px-1 cursor-pointer transition-opacity active:opacity-70"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-primary font-mono leading-none">
+                  {loading ? '...' : announcements.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
                   Bulletins
-                </div>
+                </span>
               </div>
-            </div>
 
-            <div
-              className="p-3 rounded-2xl border flex items-center gap-3 backdrop-blur-md"
-              style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
-            >
-              <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
-                <Vote className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-base sm:text-lg font-black text-foreground font-mono leading-none">
-                  {polls.length}
-                </div>
-                <div className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider truncate">
+              <div
+                onClick={() => setActiveTab('POLLS')}
+                className="flex flex-col items-center justify-center text-center px-1 cursor-pointer transition-opacity active:opacity-70"
+                style={{ borderColor: 'var(--athlon-border)' }}
+              >
+                <span className="text-xs font-black text-emerald-400 font-mono leading-none">
+                  {loading ? '...' : polls.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-text-muted uppercase tracking-wider mt-1">
                   Polls
-                </div>
+                </span>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* ─── Segmented Filter Tabs ─── */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          <button
-            onClick={() => setActiveTab('ALL')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-              activeTab === 'ALL'
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'bg-surface text-foreground/60 hover:text-foreground border'
-            }`}
-            style={activeTab !== 'ALL' ? { borderColor: 'var(--athlon-border)' } : undefined}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>All Activity</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
-                activeTab === 'ALL' ? 'bg-black/20 text-black' : 'bg-card text-foreground/50'
-              }`}
-            >
-              {totalItemsCount}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('POSTS')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-              activeTab === 'POSTS'
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'bg-surface text-foreground/60 hover:text-foreground border'
-            }`}
-            style={activeTab !== 'POSTS' ? { borderColor: 'var(--athlon-border)' } : undefined}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Discussions</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
-                activeTab === 'POSTS' ? 'bg-black/20 text-black' : 'bg-card text-foreground/50'
-              }`}
-            >
-              {posts.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('ANNOUNCEMENTS')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-              activeTab === 'ANNOUNCEMENTS'
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'bg-surface text-foreground/60 hover:text-foreground border'
-            }`}
-            style={activeTab !== 'ANNOUNCEMENTS' ? { borderColor: 'var(--athlon-border)' } : undefined}
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span>Bulletins</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
-                activeTab === 'ANNOUNCEMENTS' ? 'bg-black/20 text-black' : 'bg-card text-foreground/50'
-              }`}
-            >
-              {announcements.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('POLLS')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-              activeTab === 'POLLS'
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'bg-surface text-foreground/60 hover:text-foreground border'
-            }`}
-            style={activeTab !== 'POLLS' ? { borderColor: 'var(--athlon-border)' } : undefined}
-          >
-            <Vote className="w-3.5 h-3.5" />
-            <span>Polls &amp; Votes</span>
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
-                activeTab === 'POLLS' ? 'bg-black/20 text-black' : 'bg-card text-foreground/50'
-              }`}
-            >
-              {polls.length}
-            </span>
-          </button>
+        {/* ── Segmented Filter Tabs (Design System Section 4.3) ── */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar -mx-1 px-1">
+          {[
+            { id: 'ALL', label: 'All Activity', count: totalItemsCount, icon: Sparkles },
+            { id: 'POSTS', label: 'Discussions', count: posts.length, icon: MessageSquare },
+            { id: 'ANNOUNCEMENTS', label: 'Bulletins', count: announcements.length, icon: Bell },
+            { id: 'POLLS', label: 'Polls & Votes', count: polls.length, icon: Vote },
+          ].map((tab) => {
+            const isSelected = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer active:scale-95 flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'border-primary shadow-[0_2px_12px_var(--athlon-primary-glow)] font-black'
+                    : 'text-foreground/70 border-border bg-card/60 hover:bg-card'
+                }`}
+                style={{
+                  backgroundColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-card)',
+                  borderColor: isSelected ? 'var(--athlon-primary)' : 'var(--athlon-border)',
+                  color: isSelected ? 'var(--athlon-primary-foreground)' : undefined,
+                }}
+              >
+                <Icon className="w-3 h-3" />
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[9.5px] font-mono font-bold ${
+                    isSelected ? 'bg-black/20 text-black' : 'bg-surface text-foreground/50'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* ─── Stylish Post Composer ─── */}
         <div
-          className="rounded-3xl border p-4 sm:p-5 shadow-xl transition-all duration-300 relative overflow-hidden group"
+          className="rounded-2xl border p-3.5 sm:p-4 shadow-sm transition-all duration-300 relative overflow-hidden group"
           style={{
             backgroundColor: 'var(--athlon-card)',
             borderColor: 'var(--athlon-border)',
@@ -616,12 +623,12 @@ export default function CommunityFeedPage() {
         >
           {/* Ambient Glow */}
           <div
-            className="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10 pointer-events-none"
+            className="absolute top-0 right-0 w-44 h-44 rounded-full blur-3xl opacity-10 pointer-events-none"
             style={{ backgroundColor: 'var(--athlon-primary, #FF3B30)' }}
           />
 
           {/* Topic Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-2.5 hide-scrollbar">
             {POST_TOPICS.map((topic) => {
               const isSelected = selectedTopic.id === topic.id;
               return (
@@ -629,9 +636,9 @@ export default function CommunityFeedPage() {
                   key={topic.id}
                   type="button"
                   onClick={() => setSelectedTopic(topic)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                  className={`px-2.5 py-1 rounded-xl text-[10.5px] font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 active:scale-95 ${
                     isSelected
-                      ? 'bg-primary/20 text-primary border border-primary/40'
+                      ? 'bg-primary/20 text-primary border border-primary/40 font-black'
                       : 'bg-surface text-foreground/60 hover:text-foreground hover:bg-surface/80 border border-transparent'
                   }`}
                 >
@@ -642,10 +649,10 @@ export default function CommunityFeedPage() {
             })}
           </div>
 
-          <form onSubmit={handleCreatePost} className="space-y-3">
-            <div className="flex gap-3">
+          <form onSubmit={handleCreatePost} className="space-y-2.5">
+            <div className="flex gap-2.5">
               {/* Avatar */}
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-orange-400 p-[2px] shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-orange-400 p-[1.5px] shrink-0">
                 <div
                   className="w-full h-full rounded-full flex items-center justify-center font-black text-xs text-foreground overflow-hidden"
                   style={{ backgroundColor: 'var(--athlon-surface)' }}
@@ -666,24 +673,24 @@ export default function CommunityFeedPage() {
               <div className="flex-1 min-w-0">
                 <textarea
                   ref={composerTextareaRef}
-                  rows={3}
+                  rows={2}
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}
                   placeholder={selectedTopic.prompt}
                   maxLength={1000}
-                  className="w-full bg-transparent text-xs sm:text-sm text-foreground placeholder:text-foreground/40 focus:outline-none resize-none leading-relaxed"
+                  className="w-full bg-transparent text-xs text-foreground placeholder:text-foreground/40 focus:outline-none resize-none leading-relaxed"
                 />
               </div>
             </div>
 
             {/* Quick Emoji Bar & Submission Footer */}
             <div
-              className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t"
+              className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t"
               style={{ borderColor: 'var(--athlon-border)' }}
             >
               {/* Emojis */}
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-foreground/40 font-bold uppercase mr-1 hidden sm:inline">
+              <div className="flex items-center gap-0.5">
+                <span className="text-[9.5px] text-foreground/40 font-bold uppercase mr-1 hidden sm:inline">
                   Mood:
                 </span>
                 {QUICK_EMOJIS.map((emoji) => (
@@ -691,7 +698,7 @@ export default function CommunityFeedPage() {
                     key={emoji}
                     type="button"
                     onClick={() => insertEmoji(emoji)}
-                    className="w-7 h-7 rounded-lg hover:bg-surface flex items-center justify-center text-sm transition-transform active:scale-125 cursor-pointer"
+                    className="w-6 h-6 rounded-lg hover:bg-surface flex items-center justify-center text-xs transition-transform active:scale-125 cursor-pointer"
                   >
                     {emoji}
                   </button>
@@ -699,15 +706,15 @@ export default function CommunityFeedPage() {
               </div>
 
               <div className="flex items-center gap-2 ml-auto">
-                <span className="text-[10px] font-mono text-foreground/40">
+                <span className="text-[9.5px] font-mono text-foreground/40">
                   {newPostContent.length}/1000
                 </span>
                 <button
                   type="submit"
                   disabled={isSubmittingPost || !newPostContent.trim()}
-                  className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs flex items-center gap-1.5 hover:bg-primary/90 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+                  className="px-3.5 py-1.5 rounded-xl bg-primary text-black font-black text-[11px] flex items-center gap-1.5 hover:bg-primary/90 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-md shadow-primary/20 active:scale-95"
                 >
-                  <Send className={`w-3.5 h-3.5 ${isSubmittingPost ? 'animate-pulse' : ''}`} />
+                  <Send className={`w-3 h-3 ${isSubmittingPost ? 'animate-pulse' : ''}`} />
                   <span>{isSubmittingPost ? 'Publishing...' : 'Post to Feed'}</span>
                 </button>
               </div>
@@ -736,7 +743,7 @@ export default function CommunityFeedPage() {
                 return (
                   <div
                     key={ann.announcementId}
-                    className={`p-4 sm:p-5 rounded-3xl border transition-all duration-300 relative overflow-hidden shadow-lg ${
+                    className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden shadow-sm ${
                       isUrgent
                         ? 'bg-rose-500/10 border-rose-500/40 shadow-rose-500/5'
                         : isHigh
@@ -835,7 +842,7 @@ export default function CommunityFeedPage() {
 
         {/* ─── Posts Stream ─── */}
         {showPosts && (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-black uppercase tracking-wider text-foreground/70 flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5 text-primary" />
@@ -851,11 +858,11 @@ export default function CommunityFeedPage() {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="p-5 rounded-3xl border space-y-3 animate-pulse"
+                    className="p-3.5 sm:p-4 rounded-2xl border space-y-3 animate-pulse"
                     style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-surface" />
+                      <div className="w-9 h-9 rounded-full bg-surface" />
                       <div className="space-y-1.5 flex-1">
                         <div className="h-3.5 w-32 bg-surface rounded-md" />
                         <div className="h-2.5 w-20 bg-surface rounded-md" />
@@ -871,24 +878,24 @@ export default function CommunityFeedPage() {
             ) : posts.length === 0 ? (
               /* Inspiring Empty State */
               <div
-                className="p-8 sm:p-12 text-center rounded-3xl border border-dashed space-y-4 shadow-sm"
+                className="p-6 sm:p-8 text-center rounded-2xl border border-dashed space-y-3 shadow-sm"
                 style={{
                   backgroundColor: 'var(--athlon-card)',
                   borderColor: 'var(--athlon-border)',
                 }}
               >
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mx-auto shadow-inner">
-                  <Flame className="w-7 h-7 animate-bounce" />
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mx-auto shadow-inner">
+                  <Flame className="w-6 h-6 animate-bounce" />
                 </div>
-                <div className="space-y-1.5 max-w-sm mx-auto">
-                  <h3 className="text-base font-black text-foreground">The Locker Room is Quiet</h3>
+                <div className="space-y-1 max-w-sm mx-auto">
+                  <h3 className="text-sm font-black text-foreground">The Locker Room is Quiet</h3>
                   <p className="text-xs text-foreground/60 leading-relaxed">
                     Be the first athlete to break the silence! Share a game rally, match report, or kick off a discussion.
                   </p>
                 </div>
                 <button
                   onClick={scrollToComposer}
-                  className="px-5 py-2.5 rounded-2xl bg-primary text-black font-black text-xs inline-flex items-center gap-1.5 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-primary text-black font-black text-xs inline-flex items-center gap-1.5 hover:bg-primary/90 transition-all shadow-md shadow-primary/20 cursor-pointer active:scale-95"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Start the Conversation</span>
@@ -906,7 +913,7 @@ export default function CommunityFeedPage() {
                 return (
                   <div
                     key={post.postId}
-                    className="p-5 sm:p-6 rounded-3xl border space-y-4 shadow-lg transition-all duration-300 hover:border-foreground/20"
+                    className="p-3.5 sm:p-4 rounded-2xl border space-y-3 shadow-sm transition-all duration-300 hover:border-foreground/20"
                     style={{
                       backgroundColor: 'var(--athlon-card)',
                       borderColor: 'var(--athlon-border)',
@@ -914,9 +921,9 @@ export default function CommunityFeedPage() {
                   >
                     {/* Post Top Row */}
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5">
                         {/* Author Avatar with Role Ring */}
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-orange-400 p-[2px] shrink-0 shadow-sm">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-orange-400 p-[1.5px] shrink-0 shadow-sm">
                           <div
                             className="w-full h-full rounded-full flex items-center justify-center font-black text-xs text-foreground overflow-hidden"
                             style={{ backgroundColor: 'var(--athlon-surface)' }}
@@ -934,8 +941,8 @@ export default function CommunityFeedPage() {
                         </div>
 
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-black text-sm text-foreground tracking-tight">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="font-black text-xs sm:text-sm text-foreground tracking-tight">
                               {post.userName || 'Athlete'}
                             </h4>
                             {post.isPinned && (
@@ -952,7 +959,7 @@ export default function CommunityFeedPage() {
 
                       {/* Post Type Tag */}
                       <span
-                        className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-surface text-foreground/60 border"
+                        className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-surface text-foreground/60 border"
                         style={{ borderColor: 'var(--athlon-border)' }}
                       >
                         {post.type || 'STORY'}
@@ -966,19 +973,19 @@ export default function CommunityFeedPage() {
 
                     {/* Action Bar (Like, Comment, Share) */}
                     <div
-                      className="flex items-center justify-between pt-3 border-t text-xs"
+                      className="flex items-center justify-between pt-2.5 border-t text-xs"
                       style={{ borderColor: 'var(--athlon-border)' }}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3.5">
                         {/* Like Button */}
                         <button
                           onClick={() => handleReact(post.postId)}
-                          className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer group ${
+                          className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer group active:scale-110 ${
                             isLiked ? 'text-rose-500 scale-105' : 'text-foreground/60 hover:text-rose-500'
                           }`}
                         >
                           <Heart
-                            className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                            className={`w-3.5 h-3.5 transition-transform group-hover:scale-110 ${
                               isLiked ? 'fill-rose-500' : ''
                             }`}
                           />
@@ -988,11 +995,11 @@ export default function CommunityFeedPage() {
                         {/* Comment Button */}
                         <button
                           onClick={() => toggleComments(post.postId)}
-                          className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer ${
+                          className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer active:scale-95 ${
                             isCommentsOpen ? 'text-primary' : 'text-foreground/60 hover:text-foreground'
                           }`}
                         >
-                          <MessageSquare className="w-4 h-4" />
+                          <MessageSquare className="w-3.5 h-3.5" />
                           <span className="font-mono text-xs">{post.commentsCount || 0}</span>
                           <span className="text-[10px] hidden sm:inline">
                             {post.commentsCount === 1 ? 'Reply' : 'Replies'}
@@ -1002,7 +1009,7 @@ export default function CommunityFeedPage() {
 
                       <button
                         onClick={handleCopyLink}
-                        className="text-foreground/40 hover:text-foreground transition-colors p-1"
+                        className="text-foreground/40 hover:text-foreground transition-colors p-1 cursor-pointer active:scale-95"
                         title="Share post"
                       >
                         <Share2 className="w-3.5 h-3.5" />
@@ -1012,24 +1019,24 @@ export default function CommunityFeedPage() {
                     {/* ─── Expandable Comments Section ─── */}
                     {isCommentsOpen && (
                       <div
-                        className="pt-3 border-t space-y-3 animate-fadeIn"
+                        className="pt-2.5 border-t space-y-2.5 animate-fadeIn"
                         style={{ borderColor: 'var(--athlon-border)' }}
                       >
                         {/* Comments List */}
                         {isLoadingPostComments ? (
-                          <div className="text-center py-3 text-xs text-foreground/40">
+                          <div className="text-center py-2 text-xs text-foreground/40">
                             Loading replies...
                           </div>
                         ) : commentsList.length === 0 ? (
-                          <div className="text-center py-2 text-[11px] text-foreground/40 italic">
+                          <div className="text-center py-1.5 text-[11px] text-foreground/40 italic">
                             No replies yet. Start the thread!
                           </div>
                         ) : (
-                          <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                             {commentsList.map((c) => (
                               <div
                                 key={c.commentId}
-                                className="p-3 rounded-2xl border text-xs space-y-1"
+                                className="p-2.5 rounded-xl border text-xs space-y-1"
                                 style={{
                                   backgroundColor: 'var(--athlon-surface)',
                                   borderColor: 'var(--athlon-border)',
@@ -1041,7 +1048,7 @@ export default function CommunityFeedPage() {
                                     {formatRelativeTime(c.createdAt)}
                                   </span>
                                 </div>
-                                <p className="text-foreground/80 leading-relaxed">{c.content}</p>
+                                <p className="text-foreground/80 leading-relaxed text-[11.5px]">{c.content}</p>
                               </div>
                             ))}
                           </div>
@@ -1061,15 +1068,15 @@ export default function CommunityFeedPage() {
                                 handleAddComment(post.postId);
                               }
                             }}
-                            placeholder="Write a reply to this athlete..."
-                            className="flex-1 px-3.5 py-2 rounded-xl bg-surface border text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50"
+                            placeholder="Write a reply..."
+                            className="flex-1 px-3 py-1.5 rounded-xl bg-surface border text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-primary/50"
                             style={{ borderColor: 'var(--athlon-border)' }}
                           />
                           <button
                             type="button"
                             disabled={isSubmittingThisComment || !newCommentText[post.postId]?.trim()}
                             onClick={() => handleAddComment(post.postId)}
-                            className="px-3.5 py-2 rounded-xl bg-primary text-black font-black text-xs flex items-center gap-1 hover:bg-primary/90 transition-all disabled:opacity-40 cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-primary text-black font-black text-xs flex items-center gap-1 hover:bg-primary/90 transition-all disabled:opacity-40 cursor-pointer active:scale-95"
                           >
                             <Send className="w-3 h-3" />
                             <span className="hidden sm:inline">Reply</span>
@@ -1090,14 +1097,14 @@ export default function CommunityFeedPage() {
         onClick={scrollToComposer}
         label="Share Update"
         title="Share Update"
-        className="fixed bottom-24 right-5 md:bottom-8 md:right-8 z-40"
+        className="fixed bottom-22 right-4 md:bottom-8 md:right-8 z-40"
       />
 
       {/* ─── Create Poll Modal ─── */}
       {showPollModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
           <div
-            className="w-full max-w-md rounded-3xl border p-6 space-y-4 shadow-2xl relative"
+            className="w-full max-w-md rounded-2xl border p-5 sm:p-6 space-y-4 shadow-2xl relative"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',
@@ -1232,7 +1239,7 @@ export default function CommunityFeedPage() {
       {showAnnounceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn">
           <div
-            className="w-full max-w-md rounded-3xl border p-6 space-y-4 shadow-2xl relative"
+            className="w-full max-w-md rounded-2xl border p-5 sm:p-6 space-y-4 shadow-2xl relative"
             style={{
               backgroundColor: 'var(--athlon-card)',
               borderColor: 'var(--athlon-border)',

@@ -14,7 +14,11 @@ public class CreateOrganizationRequest {
     @Size(max = 100, message = "Type must not exceed 100 characters")
     private String type;
 
+    private String planCode;
+    private java.util.UUID planUuid;
+    private String billingCycle;
 
+    // Deprecated alias for backwards compatibility
     private java.util.UUID subscriptionPackageUuid;
 
     public CreateOrganizationRequest() {
@@ -44,12 +48,36 @@ public class CreateOrganizationRequest {
         this.type = type;
     }
 
+    public String getPlanCode() {
+        return planCode;
+    }
+
+    public void setPlanCode(String planCode) {
+        this.planCode = planCode;
+    }
+
+    public java.util.UUID getPlanUuid() {
+        return planUuid != null ? planUuid : subscriptionPackageUuid;
+    }
+
+    public void setPlanUuid(java.util.UUID planUuid) {
+        this.planUuid = planUuid;
+        this.subscriptionPackageUuid = planUuid;
+    }
+
+    public String getBillingCycle() {
+        return billingCycle;
+    }
+
+    public void setBillingCycle(String billingCycle) {
+        this.billingCycle = billingCycle;
+    }
 
     public java.util.UUID getSubscriptionPackageUuid() {
-        return subscriptionPackageUuid;
+        return getPlanUuid();
     }
 
     public void setSubscriptionPackageUuid(java.util.UUID subscriptionPackageUuid) {
-        this.subscriptionPackageUuid = subscriptionPackageUuid;
+        setPlanUuid(subscriptionPackageUuid);
     }
 }

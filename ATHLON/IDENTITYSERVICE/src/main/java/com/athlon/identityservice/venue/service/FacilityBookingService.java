@@ -30,6 +30,7 @@ public class FacilityBookingService {
     private final RecurringReservationExceptionRepository exceptionRepository;
     private final FacilityPricingService pricingService;
     private final FacilityAvailabilityService availabilityService;
+    private final VenueCustomerService customerService;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -44,7 +45,8 @@ public class FacilityBookingService {
             RecurringReservationRepository recurringReservationRepository,
             RecurringReservationExceptionRepository exceptionRepository,
             FacilityPricingService pricingService,
-            FacilityAvailabilityService availabilityService
+            FacilityAvailabilityService availabilityService,
+            VenueCustomerService customerService
     ) {
         this.bookingRepository = bookingRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -57,6 +59,7 @@ public class FacilityBookingService {
         this.exceptionRepository = exceptionRepository;
         this.pricingService = pricingService;
         this.availabilityService = availabilityService;
+        this.customerService = customerService;
     }
 
     /**
@@ -112,6 +115,22 @@ public class FacilityBookingService {
         booking.setCreatedBy(performedByUserId);
 
         FacilityBooking saved = bookingRepository.save(booking);
+
+        // Auto-sync Customer CRM profile & spend
+        try {
+            if (venue.getOrganizationUuid() != null) {
+                customerService.recordBookingVisit(
+                        venue.getOrganizationUuid(),
+                        saved.getGuestName(),
+                        saved.getGuestPhone(),
+                        saved.getGuestEmail(),
+                        saved.getTotalAmount(),
+                        saved.getCustomerUserId()
+                );
+            }
+        } catch (Exception e) {
+            // CRM sync is non-blocking to the core booking transaction
+        }
 
         // Record Initial Status History
         BookingStatusHistory history = new BookingStatusHistory(

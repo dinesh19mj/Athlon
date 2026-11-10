@@ -74,6 +74,8 @@ import { MatchSetupSettings } from '@/components/tournaments/MatchSetupSettings'
 import { TeamEventControlRoom } from '@/components/tournaments/teamevent/TeamEventControlRoom';
 import { TournamentWinnersPodium } from '@/components/tournaments/TournamentWinnersPodium';
 import { ManualParticipantModal } from '@/components/tournaments/ManualParticipantModal';
+import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
+import { useOrganizerEntitlementsStore } from '@/store/useOrganizerEntitlementsStore';
 import * as htmlToImage from 'html-to-image';
 
 interface TournamentDashboardPageProps {
@@ -93,6 +95,27 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   const tournamentId = unwrappedParams?.tournamentId || (routeParams?.tournamentId as string) || '';
 
   const { userId } = useAuthStore();
+  const { organizations, getActiveOrganization } = useWorkspaceStore();
+  const currentOrg = organizations.find((o) => o.id === orgId) || getActiveOrganization();
+  const isOrganizerOrg = !currentOrg?.type || currentOrg?.type === 'ORGANIZER';
+
+  const {
+    loadEntitlements,
+    hasFeature,
+    getLimit,
+    openFeaturePaywall,
+    openQuotaPaywall,
+  } = useOrganizerEntitlementsStore();
+
+  const maxParticipantsLimit = isOrganizerOrg ? getLimit(orgId, 'MAX_PARTICIPANTS', 32) : 9999;
+  const hasPaymentVerification = !isOrganizerOrg || hasFeature(orgId, 'PAYMENT_VERIFICATION');
+  const hasAutoScheduling = !isOrganizerOrg || hasFeature(orgId, 'BASIC_AUTO_SCHEDULING');
+
+  useEffect(() => {
+    if (orgId && isOrganizerOrg) {
+      loadEntitlements(orgId);
+    }
+  }, [orgId, isOrganizerOrg, loadEntitlements]);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -520,6 +543,11 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   };
 
   const handleApprove = async (regUuid: string) => {
+    const currentApprovedCount = registrations.filter((r) => r.status === 'APPROVED').length;
+    if (isOrganizerOrg && currentApprovedCount >= maxParticipantsLimit) {
+      openQuotaPaywall(orgId, 'MAX_PARTICIPANTS', currentApprovedCount, 'Max Participants Per Category');
+      return;
+    }
     try {
       await RegistrationService.updateStatus(regUuid, 'APPROVED', Number(userId));
       setRegistrations((prev) =>
@@ -542,6 +570,10 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   };
 
   const handlePaymentUpdate = async (regUuid: string, status: string) => {
+    if (isOrganizerOrg && !hasPaymentVerification) {
+      openFeaturePaywall(orgId, 'PAYMENT_VERIFICATION', 'Online Entry Fee & Payment Verification');
+      return;
+    }
     try {
       await RegistrationService.updatePaymentStatus(regUuid, status, Number(userId));
       setRegistrations((prev) =>
@@ -582,6 +614,11 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   };
 
   const handleGenerateDraw = async () => {
+    if (isOrganizerOrg && !hasAutoScheduling) {
+      setShowDrawModal(false);
+      openFeaturePaywall(orgId, 'BASIC_AUTO_SCHEDULING', 'Automated Draw Generation & Scheduling');
+      return;
+    }
     try {
       setIsGeneratingDraw(true);
       if (!tournament?.tournamentUuid) throw new Error('Missing tournament UUID');
@@ -859,117 +896,110 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 selection:bg-primary selection:text-black">
       {/* ── TOP HERO BANNER ────────────────────────────────────────────── */}
-      <div className="relative border-b overflow-hidden" style={{ borderColor: 'var(--athlon-border)' }}>
+      <div className="relative border-b overflow-hidden safe-header" style={{ borderColor: 'var(--athlon-border)' }}>
         {/* Ambient Gradient Glows */}
         <div className="absolute top-0 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none translate-y-1/2" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-0 relative z-10">
-          {/* Top Navigation & Action Row */}
-          <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-1 sm:pt-6 pb-0 relative z-10">
+          {/* Top Navigation & Action Row - Desktop Only (Mobile has Share below with badges) */}
+          <div className="hidden sm:flex items-center justify-between gap-2 mb-4">
             <Link
               href={`/org/${orgId}/tournaments`}
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-foreground/60 hover:text-primary transition-colors py-1.5 px-2.5 sm:px-3 rounded-xl border border-white/5 bg-white/[0.03] hover:bg-white/[0.07] shrink-0"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-foreground/70 hover:text-primary transition-all py-1.5 px-3 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface backdrop-blur-md shrink-0 shadow-2xs active:scale-95"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Back to Tournaments</span>
-              <span className="sm:hidden">Back</span>
+              <span>Back to Tournaments</span>
             </Link>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleShare}
                 title="Share Public Link"
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all"
-                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 bg-surface/70 hover:bg-surface backdrop-blur-md text-xs font-semibold text-foreground/80 hover:text-foreground transition-all shadow-2xs active:scale-95"
               >
                 <Share2 className="w-3.5 h-3.5 text-primary" />
-                <span className="hidden sm:inline">{copied ? 'Link Copied!' : 'Share Public Link'}</span>
-                <span className="sm:hidden">{copied ? 'Copied!' : 'Share'}</span>
+                <span>{copied ? 'Link Copied!' : 'Share Public Link'}</span>
               </button>
 
               <Link
                 href={`/tournaments/${tournament.tournamentUuid || tournamentId}`}
                 target="_blank"
                 title="View Public Page"
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold text-primary hover:bg-primary/10 transition-all"
-                style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 backdrop-blur-md text-xs font-semibold text-primary transition-all shadow-2xs active:scale-95"
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">View Public Page</span>
-                <span className="sm:hidden">Public</span>
+                <span>View Public Page</span>
               </Link>
             </div>
           </div>
 
           {/* Tournament Title & Status Header */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-6">
-            <div className="space-y-2.5 max-w-3xl">
-              {/* Badges */}
-              <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
-                <span className="px-2.5 py-0.5 rounded-md bg-primary/15 border border-primary/30 text-primary text-[10px] sm:text-[11px] font-black uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  {tournament.sport || 'Sports'}
-                </span>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-5 pb-4 sm:pb-6">
+            <div className="space-y-1.5 sm:space-y-2.5 max-w-3xl">
+              {/* Badges Row - On mobile, Share button is placed here in place of reg.open */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center flex-wrap gap-1 sm:gap-2">
+                  <span className="px-2 py-0.5 rounded-md bg-primary/15 border border-primary/25 text-primary text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                    <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    {tournament.sport || 'Sports'}
+                  </span>
 
-                <span className="px-2.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-foreground/80 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
-                  {isTeamEvent ? 'Team League' : tournament.tournamentType === 'LEAGUE' ? 'League' : 'Knockout'}
-                </span>
+                  <span className="px-2 py-0.5 rounded-md bg-surface/70 border border-border/70 text-foreground/70 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider shadow-2xs">
+                    {isTeamEvent ? 'Team League' : tournament.tournamentType === 'LEAGUE' ? 'League' : 'Knockout'}
+                  </span>
 
-                <span
-                  className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${tournament.visibility === 'PUBLIC'
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                    }`}
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shadow-2xs ${tournament.visibility === 'PUBLIC'
+                      ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/25'
+                      : 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/25'
+                      }`}
+                  >
+                    {tournament.visibility === 'PRIVATE' ? 'Internal Academy' : tournament.visibility || 'PRIVATE'}
+                  </span>
+
+                  {academyTargetConfig?.centreName && (
+                    <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25 text-blue-500 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                      <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                      Venue: {academyTargetConfig.centreName}
+                    </span>
+                  )}
+
+                  {academyTargetConfig?.targetBatchNames && academyTargetConfig.targetBatchNames.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/25 text-purple-500 dark:text-purple-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                      <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                      Batches: {academyTargetConfig.targetBatchNames.join(', ')}
+                    </span>
+                  )}
+
+                  {liveMatches.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-md bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/25 text-[10px] font-bold uppercase tracking-wider animate-pulse flex items-center gap-1 shadow-2xs">
+                      <Radio className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                      {liveMatches.length} Live
+                    </span>
+                  )}
+                </div>
+
+                {/* Share Button placed in place of reg.open on mobile */}
+                <button
+                  onClick={handleShare}
+                  title="Share Public Link"
+                  className="sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/70 bg-surface/70 hover:bg-surface text-[10.5px] font-bold uppercase tracking-wider text-foreground/80 active:scale-95 transition-all shadow-2xs shrink-0"
                 >
-                  {tournament.visibility === 'PRIVATE' ? 'Internal Academy' : tournament.visibility || 'PRIVATE'}
-                </span>
-
-                {academyTargetConfig?.centreName && (
-                  <span className="px-2.5 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    Venue: {academyTargetConfig.centreName}
-                  </span>
-                )}
-
-                {academyTargetConfig?.targetBatchNames && academyTargetConfig.targetBatchNames.length > 0 && (
-                  <span className="px-2.5 py-0.5 rounded-md bg-purple-500/15 border border-purple-500/30 text-purple-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    Batches: {academyTargetConfig.targetBatchNames.join(', ')}
-                  </span>
-                )}
-
-                {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 bg-primary/20 text-primary border-primary/30">
-                    <Trophy className="w-3 h-3" /> Match Finished • Completed
-                  </span>
-                ) : tournament.status === 'REGISTRATION_CLOSED' ? (
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 bg-red-500/20 text-red-400 border-red-500/30">
-                    <Lock className="w-3 h-3" /> Registration Closed
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
-                    <Unlock className="w-3 h-3" /> Registration Open
-                  </span>
-                )}
-
-                {liveMatches.length > 0 && (
-                  <span className="px-2.5 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
-                    <Radio className="w-3 h-3" />
-                    {liveMatches.length} Live
-                  </span>
-                )}
+                  <Share2 className="w-3 h-3 text-primary" />
+                  <span>{copied ? 'Copied' : 'Share'}</span>
+                </button>
               </div>
 
-              {/* Tournament Name */}
-              <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight leading-tight">
+              {/* Tournament Name - Refined, balanced heading size */}
+              <h1 className="text-base sm:text-3xl lg:text-4xl font-extrabold text-foreground tracking-tight leading-snug">
                 {tournament.name}
               </h1>
 
-              {/* Location & Dates */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-medium text-foreground/75 pt-0.5">
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+              {/* Location, Dates, Fees & Registration Status Strip */}
+              <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] sm:text-xs font-medium text-foreground/70 pt-0.5">
+                <div className="inline-flex items-center gap-1 shrink-0">
+                  <Calendar className="w-3 h-3 text-primary shrink-0" />
                   <span>
                     {new Date(tournament.startDate).toLocaleDateString(undefined, {
                       month: 'short',
@@ -985,39 +1015,62 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 </div>
 
                 {(tournament.location || tournament.city || tournament.district || tournament.state) && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="truncate max-w-[200px] sm:max-w-none">
-                      {[tournament.location, tournament.city, tournament.district, tournament.state].filter(Boolean).join(', ')}
-                    </span>
-                  </div>
+                  <>
+                    <span className="text-foreground/30 hidden xs:inline">•</span>
+                    <div className="inline-flex items-center gap-1 shrink-0 max-w-[150px] sm:max-w-none">
+                      <MapPin className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span className="truncate">
+                        {[tournament.location, tournament.city, tournament.district, tournament.state].filter(Boolean).join(', ')}
+                      </span>
+                    </div>
+                  </>
                 )}
 
-                <div className="flex items-center gap-1.5">
-                  <Ticket className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>{tournament.registrationFees ? `₹${tournament.registrationFees} Entry` : 'Free Entry'}</span>
+                <span className="text-foreground/30 hidden xs:inline">•</span>
+                <div className="inline-flex items-center gap-1 shrink-0 font-semibold text-emerald-500 dark:text-emerald-400">
+                  <Ticket className="w-3 h-3 shrink-0" />
+                  <span>
+                    {tournament.registrationFees ? `₹${tournament.registrationFees} Entry` : 'Free Entry'}
+                  </span>
                 </div>
+
+                {/* Reg. Open Button placed right near Fees */}
+                <span className="text-foreground/30">•</span>
+                {tournament.status === 'COMPLETED' || tournament.status === 'FINISHED' ? (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 bg-primary/20 text-primary border-primary/30 shadow-2xs shrink-0">
+                    <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Completed
+                  </span>
+                ) : tournament.status === 'REGISTRATION_CLOSED' ? (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/25 shadow-2xs shrink-0">
+                    <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Reg. Closed
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/25 shadow-2xs shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Reg. Open
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Quick Actions Group - Horizontal & Compact on Mobile */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Quick Actions Group - Refined, compact button on mobile */}
+            <div className="flex items-center gap-2 w-full sm:w-auto pt-0.5 sm:pt-0">
               <button
                 onClick={handleToggleRegistration}
                 disabled={isUpdatingStatus}
-                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border font-black text-[10.5px] uppercase tracking-wider transition-all shadow-sm active:scale-95 whitespace-nowrap ${tournament.status === 'REGISTRATION_CLOSED'
-                  ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
-                  : 'bg-red-500/15 text-red-500 dark:text-red-400 border-red-500/30 hover:bg-red-500/25'
+                className={`flex-1 sm:flex-initial h-8 sm:h-auto flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold text-[10.5px] uppercase tracking-wider transition-all shadow-2xs active:scale-95 whitespace-nowrap ${tournament.status === 'REGISTRATION_CLOSED'
+                  ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border-emerald-500/25'
+                  : 'bg-rose-500/10 hover:bg-rose-500/15 text-rose-500 dark:text-rose-400 border-rose-500/25'
                   }`}
               >
                 {tournament.status === 'REGISTRATION_CLOSED' ? (
                   <>
-                    <Unlock className="w-3.5 h-3.5 shrink-0" />
+                    <Unlock className="w-3 h-3 shrink-0" />
                     <span>Reopen Registration</span>
                   </>
                 ) : (
                   <>
-                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                    <Lock className="w-3 h-3 shrink-0" />
                     <span>Close Registration</span>
                   </>
                 )}
@@ -1027,9 +1080,9 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 <button
                   onClick={() => setShowDrawModal(true)}
                   disabled={isGeneratingDraw}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-black font-black text-[10.5px] uppercase tracking-wider shadow-md shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
+                  className="flex-1 sm:flex-initial h-8 sm:h-auto flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-black font-bold text-[10.5px] uppercase tracking-wider shadow-sm shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
                 >
-                  <Swords className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                  <Swords className="w-3 h-3 stroke-[2.5] shrink-0" />
                   <span>Generate Draw</span>
                 </button>
               )}
@@ -1037,18 +1090,18 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
               {matches.length > 0 && (
                 <button
                   onClick={() => setActiveTab('match setup')}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-black font-black text-[10.5px] uppercase tracking-wider shadow-md shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
+                  className="flex-1 sm:flex-initial h-8 sm:h-auto flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-black font-bold text-[10.5px] uppercase tracking-wider shadow-sm shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
                 >
-                  <Sliders className="w-3.5 h-3.5 shrink-0" />
+                  <Sliders className="w-3 h-3 shrink-0" />
                   <span>Match Setup</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Navigation Tabs Bar */}
+          {/* Navigation Tabs Bar - Refined tabs */}
           <div
-            className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1 border-t scrollbar-none"
+            className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1.5 sm:py-1 border-t scrollbar-none"
             style={{ borderColor: 'var(--athlon-border-subtle)' }}
           >
             {navTabs.map((tab) => {
@@ -1058,20 +1111,20 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-extrabold uppercase tracking-wider border-b-2 -mb-px transition-all shrink-0 ${isSelected
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-foreground/50 hover:text-foreground hover:border-white/20'
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-3 text-[11px] sm:text-sm font-bold uppercase tracking-wider transition-all shrink-0 rounded-lg sm:rounded-none sm:border-b-2 sm:-mb-px ${isSelected
+                    ? 'bg-primary/15 text-primary border border-primary/30 sm:bg-transparent sm:border-primary sm:border-b-2 sm:rounded-none'
+                    : 'text-foreground/60 border border-transparent hover:text-foreground sm:bg-transparent sm:border-transparent sm:hover:border-white/20'
                     }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>{tab.label}</span>
                   {tab.badge !== undefined && (
                     <span
-                      className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${tab.badge === 'LIVE'
+                      className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded-full ${tab.badge === 'LIVE'
                         ? 'bg-red-500 text-white animate-pulse'
                         : isSelected
                           ? 'bg-primary/20 text-primary'
-                          : 'bg-white/10 text-foreground/60'
+                          : 'bg-foreground/10 text-foreground/60'
                         }`}
                     >
                       {tab.badge}
@@ -1085,7 +1138,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
       </div>
 
       {/* ── MAIN TAB CONTENT ─────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-3 sm:pt-8">
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -1097,33 +1150,35 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
               tournamentStatus={tournament.status}
             />
 
-            {/* 4-Bento Metric Cards - MOBILE DEDICATED STYLISH VIEW */}
+            {/* 4-Bento Metric Cards - REFINED COMPACT & BALANCED MOBILE VIEW */}
             <div className="block lg:hidden">
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
                 {/* 1. Registrations Card */}
                 <div
                   onClick={() => setActiveTab('registrations')}
-                  className="p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between gap-2.5 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  className="p-3 rounded-xl border shadow-2xs flex flex-col justify-between gap-2 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden bg-card/60 border-border/70 backdrop-blur-xs"
+                  style={{ borderColor: 'var(--athlon-border)' }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                       <Users className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50 truncate">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground">
                       Registrations
                     </span>
                   </div>
 
                   <div>
-                    <div className="text-xl font-black text-foreground font-mono leading-none">
+                    <div className="text-lg sm:text-xl font-bold text-foreground font-mono leading-none">
                       {validRegistrations.length}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
+                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                      <span className="text-[8.5px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500" />
                         {approvedRegistrations.length} Approved
                       </span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 dark:text-amber-400">
+                      <span className="text-[8.5px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-amber-500" />
                         {pendingRegistrations.length} Pending
                       </span>
                     </div>
@@ -1132,25 +1187,26 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
 
                 {/* 2. Revenue Collected Card */}
                 <div
-                  className="p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between gap-2.5 relative overflow-hidden"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  className="p-3 rounded-xl border shadow-2xs flex flex-col justify-between gap-2 relative overflow-hidden bg-card/60 border-border/70 backdrop-blur-xs"
+                  style={{ borderColor: 'var(--athlon-border)' }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
+                    <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
                       <IndianRupee className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50 truncate">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground">
                       Revenue
                     </span>
                   </div>
 
                   <div>
-                    <div className="text-xl font-black text-emerald-500 dark:text-emerald-400 font-mono leading-none">
+                    <div className="text-lg sm:text-xl font-bold text-emerald-500 dark:text-emerald-400 font-mono leading-none">
                       ₹{totalRevenue}
                     </div>
-                    <div className="mt-2 text-[9px] font-medium text-foreground/60 flex items-center gap-1">
-                      <span className="px-1.5 py-0.5 rounded-md bg-foreground/5 font-bold">
-                        {paidRegistrations.length}/{validRegistrations.length} Teams Paid
+                    <div className="mt-1.5">
+                      <span className="inline-flex items-center gap-1 text-[8.5px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
+                        <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
+                        {paidRegistrations.length}/{validRegistrations.length} Paid
                       </span>
                     </div>
                   </div>
@@ -1159,30 +1215,31 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 {/* 3. Matches Fixture Card */}
                 <div
                   onClick={() => setActiveTab('matches')}
-                  className="p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between gap-2.5 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  className="p-3 rounded-xl border shadow-2xs flex flex-col justify-between gap-2 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden bg-card/60 border-border/70 backdrop-blur-xs"
+                  style={{ borderColor: 'var(--athlon-border)' }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
+                    <div className="w-6 h-6 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
                       <Trophy className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50 truncate">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground">
                       Fixtures
                     </span>
                   </div>
 
                   <div>
-                    <div className="text-xl font-black text-foreground font-mono leading-none flex items-center gap-2">
+                    <div className="text-lg sm:text-xl font-bold text-foreground font-mono leading-none flex items-center gap-1.5">
                       <span>{matches.length}</span>
                       {liveMatches.length > 0 && (
-                        <span className="flex items-center gap-1 text-[8.5px] font-black px-1.5 py-0.5 rounded-full bg-red-500 text-white animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                        <span className="flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.2 rounded-full bg-red-500 text-white animate-pulse">
+                          <span className="w-1 h-1 rounded-full bg-white animate-ping" />
                           {liveMatches.length} LIVE
                         </span>
                       )}
                     </div>
-                    <div className="mt-2 text-[9px] font-bold text-foreground/60">
-                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 dark:text-emerald-400">
+                    <div className="mt-1.5">
+                      <span className="inline-flex items-center gap-1 text-[8.5px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20">
+                        <span className="w-1 h-1 rounded-full bg-blue-500" />
                         {completedMatches.length} Completed
                       </span>
                     </div>
@@ -1192,24 +1249,25 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 {/* 4. Court & Live Stream Card */}
                 <div
                   onClick={() => setActiveTab('livestream')}
-                  className="p-3.5 rounded-2xl border shadow-sm flex flex-col justify-between gap-2.5 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden"
-                  style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                  className="p-3 rounded-xl border shadow-2xs flex flex-col justify-between gap-2 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden bg-card/60 border-border/70 backdrop-blur-xs"
+                  style={{ borderColor: 'var(--athlon-border)' }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400">
+                    <div className="w-6 h-6 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400">
                       <Tv className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-foreground/50 truncate">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground">
                       Streams
                     </span>
                   </div>
 
                   <div>
-                    <div className="text-xl font-black text-foreground font-mono leading-none">
-                      {courts.length} <span className="text-xs font-bold text-foreground/50 font-sans">Courts</span>
+                    <div className="text-lg sm:text-xl font-bold text-foreground font-mono leading-none">
+                      {courts.length} <span className="text-[11px] font-semibold text-muted-foreground font-sans">Courts</span>
                     </div>
-                    <div className="mt-2 text-[9px] font-medium text-foreground/60">
-                      <span className="px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-500 dark:text-purple-400 font-bold">
+                    <div className="mt-1.5">
+                      <span className="inline-flex items-center gap-1 text-[8.5px] font-semibold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 dark:text-purple-400 border border-purple-500/20">
+                        <span className="w-1 h-1 rounded-full bg-purple-500" />
                         {courts.filter((c) => c.streamKey).length} Ready
                       </span>
                     </div>
@@ -1585,21 +1643,21 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
         {/* REGISTRATIONS TAB */}
         {activeTab === 'registrations' && (
           <div className="space-y-5">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Header - Refined typography & compact actions on mobile */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg sm:text-xl font-black text-foreground">Team & Player Registrations</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black">
+                  <h3 className="text-base sm:text-xl font-bold sm:font-black text-foreground tracking-tight">Team & Player Registrations</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] sm:text-xs font-bold">
                     {validRegistrations.length} Total
                   </span>
                 </div>
-                <p className="text-xs text-foreground/50 font-medium mt-0.5">
+                <p className="text-[11px] sm:text-xs text-foreground/50 font-medium mt-0.5">
                   Review player entries, approve players, and confirm fee payments.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap">
                 {/* Single unified Manual Participant Add Button */}
                 <button
                   type="button"
@@ -1608,28 +1666,28 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                     setManualParticipantMode('INDIVIDUAL');
                     setIsManualParticipantModalOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                  className="h-8 sm:h-auto flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-primary-foreground font-bold sm:font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-sm shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
                   title="Manually add a player or team participant"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>Add Participant</span>
                 </button>
 
                 {tournament.registrationMode !== 'ORGANIZER_MANAGED' && (
                   <Link
                     href={`/home/tournaments/${tournament.tournamentUuid || tournamentId}/register`}
-                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-foreground/80 font-bold text-xs uppercase tracking-wider hover:text-foreground hover:bg-white/5 transition-all"
+                    className="hidden sm:flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-foreground/80 font-bold text-xs uppercase tracking-wider hover:text-foreground hover:bg-white/5 transition-all shadow-2xs"
                     style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                     title="Public registration portal"
                   >
                     <UserPlus className="w-4 h-4 text-foreground/60" />
-                    <span className="hidden sm:inline">Public Link</span>
+                    <span>Public Link</span>
                   </Link>
                 )}
 
                 <button
                   onClick={handleShare}
-                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-bold text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all"
+                  className="h-8 sm:h-auto flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-white/5 transition-all shadow-2xs"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                   title="Share Registration Link"
                 >
@@ -1670,20 +1728,20 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
               />
             )}
 
-            {/* Filter & Search Controls */}
+            {/* Filter & Search Controls - Compact & refined on mobile */}
             <div
-              className="p-3.5 sm:p-4 rounded-2xl border space-y-3.5 shadow-md"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              className="p-3 sm:p-4 rounded-xl sm:rounded-2xl border space-y-2.5 sm:space-y-3.5 shadow-2xs sm:shadow-md bg-card/60 backdrop-blur-xs"
+              style={{ borderColor: 'var(--athlon-border)' }}
             >
               {/* Search Bar */}
               <div className="relative w-full">
-                <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search by team name or player name..."
                   value={registrationSearch}
                   onChange={(e) => setRegistrationSearch(e.target.value)}
-                  className="w-full pl-10 pr-9 py-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30"
+                  className="w-full pl-9 pr-8 py-2 rounded-lg sm:rounded-xl border text-xs font-medium focus:outline-none focus:border-primary transition-all placeholder:text-foreground/30"
                   style={{
                     backgroundColor: 'var(--athlon-surface)',
                     borderColor: 'var(--athlon-border-subtle)',
@@ -1693,7 +1751,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 {registrationSearch && (
                   <button
                     onClick={() => setRegistrationSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1 text-xs"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground p-1 text-xs"
                   >
                     ×
                   </button>
@@ -1777,7 +1835,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                   )}
                 </div>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
                   {[
                     { id: 'ALL', label: 'All Status', count: registrations.length },
                     { id: 'APPROVED', label: 'Approved', count: approvedRegistrations.length },
@@ -1789,15 +1847,15 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                       <button
                         key={f.id}
                         onClick={() => setApprovalFilter(f.id as any)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all border ${isSelected
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
+                        className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold sm:font-bold whitespace-nowrap shrink-0 transition-all border ${isSelected
+                          ? 'bg-primary text-primary-foreground border-primary shadow-2xs font-bold sm:font-black'
                           : 'text-foreground/60 hover:text-foreground hover:bg-white/[0.04]'
                           }`}
                         style={!isSelected ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' } : {}}
                       >
                         <span>{f.label}</span>
                         <span
-                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isSelected ? 'bg-black/20 text-primary-foreground' : 'bg-white/5 text-foreground/40'
+                          className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-bold ${isSelected ? 'bg-black/20 text-primary-foreground' : 'bg-white/5 text-foreground/40'
                             }`}
                         >
                           {f.count}
@@ -1814,7 +1872,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                   Payment Status
                 </span>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
                   {[
                     { id: 'ALL', label: 'All Payments', count: registrations.length },
                     { id: 'PAID', label: 'Paid', count: paidRegistrations.length },
@@ -1825,15 +1883,15 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                       <button
                         key={f.id}
                         onClick={() => setPaymentFilter(f.id as any)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all border ${isSelected
-                          ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm font-black'
+                        className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold sm:font-bold whitespace-nowrap shrink-0 transition-all border ${isSelected
+                          ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs font-bold sm:font-black'
                           : 'text-foreground/60 hover:text-foreground hover:bg-white/[0.04]'
                           }`}
                         style={!isSelected ? { backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' } : {}}
                       >
                         <span>{f.label}</span>
                         <span
-                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isSelected ? 'bg-black/20 text-white' : 'bg-white/5 text-foreground/40'
+                          className={`text-[9.5px] px-1.5 py-0.2 rounded-full font-bold ${isSelected ? 'bg-black/20 text-white' : 'bg-white/5 text-foreground/40'
                             }`}
                         >
                           {f.count}
@@ -1901,20 +1959,20 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                   return (
                     <div
                       key={regUuid || rIdx}
-                      className="rounded-2xl border p-3.5 sm:p-4 flex flex-col justify-between shadow-sm transition-all hover:border-primary/40 relative overflow-hidden gap-3"
-                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                      className="rounded-xl sm:rounded-2xl border p-3 sm:p-4 flex flex-col justify-between shadow-2xs sm:shadow-sm transition-all hover:border-primary/40 relative overflow-hidden gap-2.5 sm:gap-3 bg-card/70 backdrop-blur-xs"
+                      style={{ borderColor: 'var(--athlon-border)' }}
                     >
-                      {/* Top Accent Line */}
+                      {/* Top Accent Line - Hidden on mobile */}
                       <div
-                        className={`absolute top-0 left-0 right-0 h-1 ${isApproved ? 'bg-emerald-500' : isRejected ? 'bg-red-500' : 'bg-primary'
+                        className={`hidden sm:block absolute top-0 left-0 right-0 h-1 ${isApproved ? 'bg-emerald-500' : isRejected ? 'bg-red-500' : 'bg-primary'
                           }`}
                       />
 
                       {/* Header */}
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2">
                         <div className="flex items-center justify-between gap-2 pt-0.5">
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-sm font-black text-foreground truncate">{resolveCleanTeamName(reg)}</h4>
+                            <h4 className="text-sm font-bold sm:font-black text-foreground truncate">{resolveCleanTeamName(reg)}</h4>
                             {resolveRegistrationCategory(reg) ? (
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-wider truncate">
@@ -2064,7 +2122,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                         {!isPaid ? (
                           <button
                             onClick={() => handlePaymentUpdate(regUuid, 'PAID')}
-                            className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 font-black text-[10.5px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap"
+                            className="flex-1 h-7.5 sm:h-auto py-1 sm:py-1.5 px-2 rounded-lg sm:rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 font-bold sm:font-black text-[10px] sm:text-[10.5px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap shadow-2xs"
                             title="Mark as Paid"
                           >
                             <IndianRupee className="w-3 h-3 shrink-0" />
@@ -2073,7 +2131,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                         ) : (
                           <button
                             onClick={() => handlePaymentUpdate(regUuid, 'PENDING')}
-                            className="flex-1 py-1.5 px-2 rounded-xl border text-foreground/60 font-bold text-[10.5px] hover:text-foreground transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap"
+                            className="flex-1 h-7.5 sm:h-auto py-1 sm:py-1.5 px-2 rounded-lg sm:rounded-xl border text-foreground/60 font-semibold sm:font-bold text-[10px] sm:text-[10.5px] hover:text-foreground transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap shadow-2xs"
                             style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                             title="Mark as Unpaid"
                           >
@@ -2086,10 +2144,10 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                         {!isApproved && (
                           <button
                             onClick={() => handleApprove(regUuid)}
-                            className="py-1.5 px-2.5 rounded-xl bg-emerald-500 text-white font-black text-[10.5px] uppercase tracking-wider hover:bg-emerald-600 shadow-sm shadow-emerald-500/20 transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap"
+                            className="h-7.5 sm:h-auto py-1 sm:py-1.5 px-2.5 rounded-lg sm:rounded-xl bg-emerald-500 text-white font-bold sm:font-black text-[10px] sm:text-[10.5px] uppercase tracking-wider hover:bg-emerald-600 shadow-2xs shadow-emerald-500/20 transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap"
                             title="Approve Registration"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                             <span>Approve</span>
                           </button>
                         )}
@@ -2098,15 +2156,15 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                         {!isRejected && (
                           <button
                             onClick={() => handleReject(regUuid)}
-                            className="py-1.5 px-2.5 rounded-xl bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/30 font-black text-[10.5px] uppercase tracking-wider hover:bg-red-500/25 transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap"
+                            className="h-7.5 sm:h-auto py-1 sm:py-1.5 px-2.5 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/25 font-bold sm:font-black text-[10px] sm:text-[10.5px] uppercase tracking-wider hover:bg-rose-500/20 transition-all flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap shadow-2xs"
                             title="Reject Registration"
                           >
-                            <XCircle className="w-3.5 h-3.5 shrink-0" />
+                            <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                             <span>Reject</span>
                           </button>
                         )}
 
-                        {/* 4. Edit Manual Action */}
+                        {/* 4. Edit Manual Action - Hidden on mobile */}
                         <button
                           type="button"
                           onClick={() => {
@@ -2114,7 +2172,7 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                             setManualParticipantMode(reg.players && reg.players.length > 1 ? 'TEAM' : 'INDIVIDUAL');
                             setIsManualParticipantModalOpen(true);
                           }}
-                          className="p-1.5 rounded-xl border text-foreground/60 hover:text-primary hover:border-primary/40 transition-all shrink-0"
+                          className="hidden sm:flex h-auto w-auto p-1.5 rounded-xl border text-foreground/60 hover:text-primary hover:border-primary/40 transition-all shrink-0 items-center justify-center shadow-2xs"
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                           title="Edit Participant"
                         >
@@ -2125,10 +2183,10 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                         <button
                           type="button"
                           onClick={() => handleDeleteRegistration(reg)}
-                          className="p-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 transition-all shrink-0"
+                          className="h-7.5 w-7.5 sm:h-auto sm:w-auto p-1.5 rounded-lg sm:rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 transition-all shrink-0 flex items-center justify-center shadow-2xs"
                           title="Remove Participant"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -2142,35 +2200,35 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
         {/* TEAMS TAB (Approved & Paid Teams) */}
         {activeTab === 'teams' && (
           <div className="space-y-6">
-            {/* Header & Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Header & Controls - Refined typography & search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-black text-foreground tracking-tight">Confirmed Teams</h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30">
+                  <h3 className="text-base sm:text-xl font-bold sm:font-black text-foreground tracking-tight">Confirmed Teams</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30">
                     {approvedAndPaidTeams.length} Verified
                   </span>
                 </div>
-                <p className="text-xs text-foreground/50 font-medium mt-0.5">
+                <p className="text-[11px] sm:text-xs text-foreground/50 font-medium mt-0.5">
                   Official players of approved and paid teams ready for draws and match fixtures.
                 </p>
               </div>
 
               {/* Search */}
               <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-foreground/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-foreground/40 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search team or athlete..."
                   value={teamSearch}
                   onChange={(e) => setTeamSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-surface border focus:outline-none focus:border-primary/50 text-foreground transition-all"
+                  className="w-full pl-8.5 pr-8 py-2 rounded-lg sm:rounded-xl text-xs bg-surface border focus:outline-none focus:border-primary/50 text-foreground transition-all"
                   style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                 />
                 {teamSearch && (
                   <button
                     onClick={() => setTeamSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground text-xs"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground text-xs"
                   >
                     ×
                   </button>
@@ -2267,31 +2325,31 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                   return (
                     <div
                       key={regUuid || tIdx}
-                      className="rounded-2xl border p-3.5 sm:p-4 flex flex-col justify-between shadow-sm transition-all hover:border-emerald-500/40 relative overflow-hidden gap-3"
-                      style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                      className="rounded-xl sm:rounded-2xl border p-3 sm:p-4 flex flex-col justify-between shadow-2xs sm:shadow-sm transition-all hover:border-emerald-500/40 relative overflow-hidden gap-2.5 sm:gap-3 bg-card/70 backdrop-blur-xs"
+                      style={{ borderColor: 'var(--athlon-border)' }}
                     >
-                      {/* Top Accent Line */}
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
+                      {/* Top Accent Line - Hidden on mobile */}
+                      <div className="hidden sm:block absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
 
                       {/* Card Header */}
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2">
                         <div className="flex items-center justify-between gap-2 pt-0.5">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="w-5 h-5 rounded-md bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 text-[10px] font-black flex items-center justify-center font-mono">
+                              <span className="hidden sm:flex w-5 h-5 rounded-md bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 text-[10px] font-bold sm:font-black items-center justify-center font-mono">
                                 #{tIdx + 1}
                               </span>
-                              <h4 className="text-sm font-black text-foreground truncate">{resolveCleanTeamName(reg)}</h4>
+                              <h4 className="text-sm font-bold sm:font-black text-foreground truncate">{resolveCleanTeamName(reg)}</h4>
                             </div>
                             {resolveRegistrationCategory(reg) ? (
-                              <div className="flex items-center gap-1.5 mt-1 ml-6.5">
+                              <div className="flex items-center gap-1.5 mt-1 sm:ml-6.5">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-wider truncate">
                                   <Tag className="w-2.5 h-2.5 text-primary shrink-0" />
                                   {resolveRegistrationCategory(reg)}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-[9.5px] font-bold text-foreground/50 uppercase tracking-wider block truncate mt-0.5 ml-6.5">
+                              <span className="text-[9.5px] font-bold text-foreground/50 uppercase tracking-wider block truncate mt-0.5 sm:ml-6.5">
                                 General Entry
                               </span>
                             )}
@@ -2460,15 +2518,15 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
               />
             ) : (
               <>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-2">
                   <div>
-                    <h3 className="text-xl font-black text-foreground">Tournament Fixture</h3>
-                    <p className="text-xs text-foreground/50 font-medium">
+                    <h3 className="text-base sm:text-xl font-bold sm:font-black text-foreground tracking-tight">Tournament Fixture</h3>
+                    <p className="text-[11px] sm:text-xs text-foreground/50 font-medium mt-0.5">
                       View, export, or generate brackets for registered players and teams.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {matches.length === 0 ? (
                       tournament.status === 'REGISTRATION_CLOSED' ? (
                         <button
@@ -2479,9 +2537,9 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                             setShowDrawModal(true);
                           }}
                           disabled={isGeneratingDraw}
-                          className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+                          className="h-8 sm:h-auto px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-primary text-primary-foreground font-bold sm:font-black text-[11px] sm:text-sm uppercase tracking-wider shadow-sm shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
                         >
-                          <Swords className="w-4 h-4 shrink-0" />
+                          <Swords className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                           <span>{isGeneratingDraw ? 'Generating...' : 'Generate Draw'}</span>
                         </button>
                       ) : (
@@ -2498,11 +2556,11 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                               },
                             });
                           }}
-                          className="px-4 py-2.5 rounded-xl border font-bold text-xs uppercase tracking-wider text-foreground/50 hover:text-foreground hover:border-red-500/40 transition-all flex items-center gap-1.5"
+                          className="h-8 sm:h-auto px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl border font-bold text-[10.5px] sm:text-xs uppercase tracking-wider text-foreground/60 hover:text-foreground hover:border-red-500/40 transition-all flex items-center gap-1.5 shadow-2xs"
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border-subtle)' }}
                           title="Close registration first to generate draw"
                         >
-                          <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
                           <span>Generate Draw (Locked)</span>
                         </button>
                       )
@@ -2623,14 +2681,14 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                   </div>
                 ) : (
                   <div
-                    className="py-20 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
-                    style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+                    className="py-10 sm:py-20 text-center rounded-xl sm:rounded-2xl border border-dashed flex flex-col items-center justify-center p-4 sm:p-6 bg-card/60 backdrop-blur-xs shadow-2xs"
+                    style={{ borderColor: 'var(--athlon-border)' }}
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-3.5">
-                      <Swords className="w-7 h-7" />
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-2.5 sm:mb-3.5 shadow-2xs">
+                      <Swords className="w-5 h-5 sm:w-7 sm:h-7" />
                     </div>
-                    <h4 className="text-base font-bold text-foreground mb-1">No Draw Generated Yet</h4>
-                    <p className="text-xs text-foreground/50 max-w-sm mb-6">
+                    <h4 className="text-sm sm:text-base font-bold sm:font-black text-foreground mb-1">No Draw Generated Yet</h4>
+                    <p className="text-[11px] sm:text-xs text-foreground/50 max-w-sm mb-4 sm:mb-6">
                       {tournament.status === 'REGISTRATION_CLOSED'
                         ? 'Registration is closed. You can now launch automatic seeding or use the manual bracket builder.'
                         : 'Registration is currently open. Once you close registration, draw generation will be unlocked.'}
@@ -2644,18 +2702,18 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                           setSelectedDrawSize(recommended);
                           setShowDrawModal(true);
                         }}
-                        className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                        className="h-8.5 sm:h-auto px-4 sm:px-6 py-1.5 sm:py-3 rounded-lg sm:rounded-xl bg-primary text-primary-foreground font-bold sm:font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-sm shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
                       >
-                        <Swords className="w-4 h-4" />
+                        <Swords className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span>Create Tournament Draw</span>
                       </button>
                     ) : (
                       <button
                         onClick={handleToggleRegistration}
                         disabled={isUpdatingStatus}
-                        className="px-5 py-2.5 rounded-xl bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/30 font-black text-xs uppercase tracking-wider hover:bg-red-500/25 active:scale-95 transition-all flex items-center gap-2 shadow-sm"
+                        className="h-8.5 sm:h-auto px-4 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/25 font-bold sm:font-black text-[10.5px] sm:text-xs uppercase tracking-wider hover:bg-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5 shadow-2xs"
                       >
-                        <Lock className="w-4 h-4" />
+                        <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span>Close Registration to Unlock</span>
                       </button>
                     )}
@@ -3037,34 +3095,34 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
             </div>
 
             {/* MOBILE HEADER & ACTION CONTROL (visible on mobile only) */}
-            <div className="block lg:hidden space-y-3">
+            <div className="block lg:hidden space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 shadow-2xs">
                   <Radio className="w-3 h-3 text-primary animate-pulse" /> Live Match Center
                 </span>
-                <span className="text-[11px] font-bold text-text-muted">
+                <span className="text-[10px] font-bold text-text-muted">
                   {matches.filter((m) => m.teamARegistrationUuid != null || m.teamBRegistrationUuid != null).length} Matches
                 </span>
               </div>
               <div>
-                <h3 className="text-lg font-black text-foreground tracking-tight">Match Schedule & Live Status</h3>
-                <p className="text-[11px] text-text-muted font-medium">
+                <h3 className="text-xs font-bold text-foreground">Match Schedule & Live Status</h3>
+                <p className="text-[10px] text-text-muted font-medium">
                   Assigned courts, umpires, match times & live scoring
                 </p>
               </div>
 
               {/* 2-Button Action Bar */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
                 <button
                   onClick={() => setActiveTab('match setup')}
-                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-extrabold text-xs shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-transform"
+                  className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-primary-foreground font-bold text-[11px] shadow-2xs active:scale-95 transition-all"
                 >
-                  <Sliders className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <Sliders className="w-3.5 h-3.5" />
                   <span>Match Setup</span>
                 </button>
                 <button
                   onClick={fetchMatches}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-border/70 bg-surface text-foreground font-bold text-xs hover:bg-surface-raised active:scale-[0.98] transition-transform"
+                  className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg border border-border/70 bg-surface text-foreground font-bold text-[11px] hover:bg-surface-raised active:scale-95 transition-all"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-text-muted" />
                   <span>Refresh</span>
@@ -3079,12 +3137,12 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                 const schedCount = totalList.length - liveCount - compCount;
 
                 return (
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pt-1">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
                     <button
                       onClick={() => setMatchesMobileFilter('ALL')}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold shrink-0 transition-colors ${
+                      className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold shrink-0 transition-all ${
                         matchesMobileFilter === 'ALL'
-                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          ? 'bg-primary text-primary-foreground shadow-2xs'
                           : 'bg-surface border border-border/60 text-text-muted hover:text-foreground'
                       }`}
                     >
@@ -3093,9 +3151,9 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                     {liveCount > 0 && (
                       <button
                         onClick={() => setMatchesMobileFilter('LIVE')}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold shrink-0 flex items-center gap-1 transition-colors ${
+                        className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold shrink-0 flex items-center gap-1 transition-all ${
                           matchesMobileFilter === 'LIVE'
-                            ? 'bg-red-500 text-white shadow-sm'
+                            ? 'bg-red-500 text-white shadow-2xs'
                             : 'bg-red-500/10 border border-red-500/25 text-red-400'
                         }`}
                       >
@@ -3105,9 +3163,9 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                     )}
                     <button
                       onClick={() => setMatchesMobileFilter('SCHEDULED')}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold shrink-0 transition-colors ${
+                      className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold shrink-0 transition-all ${
                         matchesMobileFilter === 'SCHEDULED'
-                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          ? 'bg-primary text-primary-foreground shadow-2xs'
                           : 'bg-surface border border-border/60 text-text-muted hover:text-foreground'
                       }`}
                     >
@@ -3115,9 +3173,9 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                     </button>
                     <button
                       onClick={() => setMatchesMobileFilter('COMPLETED')}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold shrink-0 transition-colors ${
+                      className={`px-2.5 py-1 rounded-md text-[10.5px] font-bold shrink-0 transition-all ${
                         matchesMobileFilter === 'COMPLETED'
-                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          ? 'bg-primary text-primary-foreground shadow-2xs'
                           : 'bg-surface border border-border/60 text-text-muted hover:text-foreground'
                       }`}
                     >
@@ -3130,17 +3188,17 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
 
             {matches.filter((m) => m.teamARegistrationUuid != null || m.teamBRegistrationUuid != null).length === 0 ? (
               <div
-                className="py-20 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center p-6"
+                className="py-10 sm:py-20 text-center rounded-xl sm:rounded-2xl border border-dashed flex flex-col items-center justify-center p-4 sm:p-6 shadow-2xs"
                 style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
               >
-                <Play className="w-12 h-12 text-foreground/30 mb-3" />
-                <h4 className="text-base font-bold text-foreground mb-1">No Matches Scheduled</h4>
-                <p className="text-xs text-foreground/50 max-w-sm mb-6">
+                <Play className="w-8 h-8 sm:w-12 sm:h-12 text-foreground/30 mb-2 sm:mb-3" />
+                <h4 className="text-sm sm:text-base font-bold text-foreground mb-1">No Matches Scheduled</h4>
+                <p className="text-[11px] sm:text-xs text-foreground/50 max-w-xs sm:max-w-sm mb-4 sm:mb-6">
                   Matches will appear here after you generate the tournament bracket draw.
                 </p>
                 <button
                   onClick={() => setActiveTab('draws')}
-                  className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs uppercase tracking-wider"
+                  className="h-8 px-4 rounded-lg sm:rounded-xl bg-primary text-primary-foreground font-bold text-[11px] sm:text-xs uppercase tracking-wider shadow-2xs active:scale-95 transition-all"
                 >
                   Go to Draws & Brackets
                 </button>
@@ -3362,11 +3420,11 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                       return (
                         <div
                           key={match.uuid || idx}
-                          className="rounded-2xl border border-border/80 bg-gradient-to-b from-surface/95 to-surface/75 backdrop-blur-md p-4 shadow-lg relative overflow-hidden space-y-3"
+                          className="rounded-xl border border-border/80 bg-surface/90 backdrop-blur-xs p-3 shadow-2xs relative overflow-hidden space-y-2.5"
                         >
-                          {/* Top Accent Strip */}
+                          {/* Top Accent Strip - Hidden on mobile */}
                           <div
-                            className={`absolute top-0 left-0 right-0 h-1 ${
+                            className={`hidden sm:block absolute top-0 left-0 right-0 h-1 ${
                               isLive
                                 ? 'bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 animate-pulse'
                                 : isCompleted
@@ -3380,8 +3438,8 @@ export default function TournamentDashboardPage({ params }: TournamentDashboardP
                           {/* Card Header Row */}
                           <div className="flex items-center justify-between gap-2 pt-0.5">
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-[10px] font-black uppercase tracking-wider text-primary px-2 py-0.5 rounded-md bg-primary/15 border border-primary/25 shrink-0">
-                                MATCH #{idx + 1}
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-primary px-2 py-0.5 rounded-md bg-primary/15 border border-primary/25 shrink-0">
+                                MATCH {idx + 1}
                               </span>
                               {match.roundName && (
                                 <span className="text-[9px] font-extrabold text-text-muted bg-surface px-2 py-0.5 rounded-md border border-border/60 uppercase tracking-wide truncate">

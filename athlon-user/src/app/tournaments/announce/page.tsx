@@ -40,6 +40,7 @@ import {
 } from '@/lib/api/location';
 import { SportMetadataService, SportMetadata, CategoryService } from '@/lib/api/tournaments';
 import { getSportEmoji } from '@/lib/hooks/useOrgSports';
+import { compressImageFile, COMPRESSION_PRESETS } from '@/lib/utils/imageCompression';
 
 const FALLBACK_SPORTS = [
   { name: 'Badminton', icon: '🏸' },
@@ -125,8 +126,11 @@ export default function AnnounceTournamentPage() {
   // Files
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
+  const [compressingPoster, setCompressingPoster] = useState(false);
+  const [posterSavings, setPosterSavings] = useState<{ orig: string; comp: string; pct: number } | null>(null);
   const [upiQrFile, setUpiQrFile] = useState<File | null>(null);
   const [upiQrPreview, setUpiQrPreview] = useState<string | null>(null);
+  const [compressingQr, setCompressingQr] = useState(false);
 
   const posterInputRef = useRef<HTMLInputElement>(null);
   const upiQrInputRef = useRef<HTMLInputElement>(null);
@@ -381,19 +385,51 @@ export default function AnnounceTournamentPage() {
     }
   }, [userUuid]);
 
-  const handlePosterSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const formatSize = (bytes: number) => {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${Math.round(bytes / 1024)} KB`;
+  };
+
+  const handlePosterSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPosterFile(file);
-      setPosterPreview(URL.createObjectURL(file));
+      setCompressingPoster(true);
+      try {
+        const res = await compressImageFile(file, COMPRESSION_PRESETS.TOURNAMENT_POSTER);
+        setPosterFile(res.file);
+        setPosterPreview(res.previewUrl);
+        if (res.savedPercent > 0) {
+          setPosterSavings({
+            orig: formatSize(res.originalSize),
+            comp: formatSize(res.compressedSize),
+            pct: res.savedPercent,
+          });
+        } else {
+          setPosterSavings(null);
+        }
+      } catch {
+        setPosterFile(file);
+        setPosterPreview(URL.createObjectURL(file));
+      } finally {
+        setCompressingPoster(false);
+      }
     }
   };
 
-  const handleUpiQrSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpiQrSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUpiQrFile(file);
-      setUpiQrPreview(URL.createObjectURL(file));
+      setCompressingQr(true);
+      try {
+        const res = await compressImageFile(file, COMPRESSION_PRESETS.PAYMENT_QR);
+        setUpiQrFile(res.file);
+        setUpiQrPreview(res.previewUrl);
+      } catch {
+        setUpiQrFile(file);
+        setUpiQrPreview(URL.createObjectURL(file));
+      } finally {
+        setCompressingQr(false);
+      }
     }
   };
 
@@ -603,11 +639,20 @@ export default function AnnounceTournamentPage() {
                       className="w-full h-auto max-h-60 object-contain"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                    
+                    {posterSavings && (
+                      <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-emerald-500/90 backdrop-blur-md text-white text-[9.5px] font-bold shadow-md flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        <span>Optimized {posterSavings.orig} ➔ {posterSavings.comp} ({posterSavings.pct}% saved)</span>
+                      </div>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {
                         setPosterFile(null);
                         setPosterPreview(null);
+                        setPosterSavings(null);
                         if (posterInputRef.current) posterInputRef.current.value = '';
                       }}
                       className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-black text-white backdrop-blur-md transition-transform active:scale-90"
@@ -625,15 +670,19 @@ export default function AnnounceTournamentPage() {
                   </div>
                 ) : (
                   <div
-                    onClick={() => posterInputRef.current?.click()}
-                    className="border-2 border-dashed border-border hover:border-primary/50 active:scale-[0.99] rounded-2xl p-4 text-center cursor-pointer transition-all bg-card/40 hover:bg-card/70 flex flex-col items-center justify-center gap-1.5 group"
+                    onClick={() => !compressingPoster && posterInputRef.current?.click()}
+                    className={`border-2 border-dashed border-border hover:border-primary/50 active:scale-[0.99] rounded-2xl p-4 text-center cursor-pointer transition-all bg-card/40 hover:bg-card/70 flex flex-col items-center justify-center gap-1.5 group ${compressingPoster ? 'opacity-60 pointer-events-none' : ''}`}
                   >
                     <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 group-hover:bg-primary/15 group-hover:text-primary transition-colors flex items-center justify-center">
                       <ImageIcon className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold text-foreground">Upload Event Poster</p>
-                      <p className="text-[9.5px] text-muted-foreground mt-0.5">JPG, PNG, WebP</p>
+                      <p className="text-[11px] font-semibold text-foreground">
+                        {compressingPoster ? 'Optimizing Image...' : 'Upload Event Poster'}
+                      </p>
+                      <p className="text-[9.5px] text-muted-foreground mt-0.5">
+                        {compressingPoster ? 'Compressing for fast mobile loading' : 'JPG, PNG, WebP (Auto-optimized)'}
+                      </p>
                     </div>
                   </div>
                 )}

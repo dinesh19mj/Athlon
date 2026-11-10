@@ -84,7 +84,7 @@ export default function AdminSubscriptionRequestsPage() {
           ───────────────────────────────────────────────────────────── */}
       <div className="block md:hidden space-y-4 pb-10">
         {/* Mobile Header Bar */}
-        <div className="flex items-center justify-between px-0.5 pt-1">
+        <div className="flex items-center justify-between px-0.5 pb-1">
           <div className="flex items-center gap-2.5 min-w-0">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-xs"

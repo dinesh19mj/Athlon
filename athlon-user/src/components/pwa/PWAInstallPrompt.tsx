@@ -11,17 +11,30 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISS_STORAGE_KEY = 'athlon_pwa_install_dismissed';
-const DISMISS_DURATION_DAYS = 3;
+const DISMISS_DURATION_DAYS = 1;
 
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    // Global event to manually trigger prompt from settings or profile
+    const handleManualTrigger = () => {
+      if (isIOS) {
+        setShowIOSGuide(true);
+      } else if (deferredPrompt) {
+        deferredPrompt.prompt();
+      } else {
+        setShowPrompt(true);
+      }
+    };
+    window.addEventListener('athlon-open-pwa-install', handleManualTrigger);
+
     // 1. Check if already running in standalone PWA mode
     const isStandaloneMode =
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -30,22 +43,31 @@ export function PWAInstallPrompt() {
 
     if (isStandaloneMode) {
       setIsStandalone(true);
-      return;
+      return () => {
+        window.removeEventListener('athlon-open-pwa-install', handleManualTrigger);
+      };
     }
 
-    // 2. Check if dismissed recently
+    // 2. Check for iOS / iPadOS Safari & In-App WebViews
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isIOSDevice =
+      (/iphone|ipad|ipod/.test(ua) || (window.navigator.maxTouchPoints > 1 && /macintosh/.test(ua))) &&
+      !(window as unknown as { MSStream?: unknown }).MSStream;
+    setIsIOS(isIOSDevice);
+
+    const inApp = /fban|fbav|instagram|linkedin|micromessenger|telegram|whatsapp|line|twitter|snapchat/i.test(ua);
+    setIsInAppBrowser(inApp);
+
+    // 3. Check if dismissed recently
     const dismissedTimestamp = localStorage.getItem(DISMISS_STORAGE_KEY);
     if (dismissedTimestamp) {
       const daysSinceDismiss = (Date.now() - parseInt(dismissedTimestamp, 10)) / (1000 * 60 * 60 * 24);
       if (daysSinceDismiss < DISMISS_DURATION_DAYS) {
-        return;
+        return () => {
+          window.removeEventListener('athlon-open-pwa-install', handleManualTrigger);
+        };
       }
     }
-
-    // 3. Check for iOS Safari
-    const ua = window.navigator.userAgent.toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
-    setIsIOS(isIOSDevice);
 
     // 4. Handle Chromium / Android beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -74,16 +96,18 @@ export function PWAInstallPrompt() {
       }, 3000);
       return () => {
         clearTimeout(timer);
+        window.removeEventListener('athlon-open-pwa-install', handleManualTrigger);
         window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.removeEventListener('appinstalled', handleAppInstalled);
       };
     }
 
     return () => {
+      window.removeEventListener('athlon-open-pwa-install', handleManualTrigger);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, []);
+  }, [isIOS, deferredPrompt]);
 
   const handleInstallClick = async () => {
     if (isIOS) {
@@ -227,14 +251,27 @@ export function PWAInstallPrompt() {
               </div>
 
               <div className="space-y-3 text-xs text-foreground/80">
+                {isInAppBrowser && (
+                  <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 space-y-1">
+                    <span className="font-bold flex items-center gap-1.5 text-xs text-amber-200">
+                      ⚠️ In-App Browser Detected
+                    </span>
+                    <p className="text-[11px] leading-relaxed text-amber-300/90">
+                      You are opening Athlon inside an in-app browser (e.g. WhatsApp / Instagram). Tap the menu (<span className="font-mono">•••</span> or share) and choose <strong className="text-amber-100">"Open in Safari"</strong> first.
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-surface border border-border">
                   <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                     1
                   </div>
                   <div>
-                    <span className="font-bold text-foreground">Tap the Share button</span>
+                    <span className="font-bold text-foreground flex items-center gap-1">
+                      Tap the Share button <Share className="w-3.5 h-3.5 text-primary ml-0.5" />
+                    </span>
                     <p className="text-foreground/60 text-[11px] mt-0.5">
-                      At the bottom bar of Safari (the square icon with an arrow pointing up).
+                      At the bottom navigation bar of Safari (the square icon with an arrow pointing up).
                     </p>
                   </div>
                 </div>
@@ -244,9 +281,11 @@ export function PWAInstallPrompt() {
                     2
                   </div>
                   <div>
-                    <span className="font-bold text-foreground">Select "Add to Home Screen"</span>
+                    <span className="font-bold text-foreground flex items-center gap-1">
+                      Select "Add to Home Screen" <PlusSquare className="w-3.5 h-3.5 text-primary ml-0.5" />
+                    </span>
                     <p className="text-foreground/60 text-[11px] mt-0.5">
-                      Scroll down in the share sheet and tap <span className="text-primary font-bold">+ Add to Home Screen</span>.
+                      Scroll down in the Safari share sheet and tap <span className="text-primary font-bold">+ Add to Home Screen</span>.
                     </p>
                   </div>
                 </div>

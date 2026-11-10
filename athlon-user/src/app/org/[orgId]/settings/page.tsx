@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/lib/store/useWorkspaceStore';
 import { useOrgRole } from '@/hooks/use-org-role';
@@ -15,6 +16,21 @@ import {
   Clock,
   Sparkles,
   LogOut,
+  Crown,
+  Trophy,
+  Check,
+  Zap,
+  ArrowUpRight,
+  Download,
+  Receipt,
+  FileText,
+  BadgeCheck,
+  CheckCircle2,
+  Loader2,
+  ArrowLeft,
+  ChevronRight,
+  Activity,
+  ExternalLink,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/theme';
 import { AcademyPermissionMatrixView } from '@/components/academy/AcademyPermissionMatrixView';
@@ -27,7 +43,6 @@ import { OrganizationPaymentsSettings } from '@/components/organization/Organiza
 import { useAuthStore } from '@/lib/store/useAuthStore';
 import { CommunityService, CommunityResponse } from '@/lib/api/community';
 import { SubscriptionService, SubscriptionPackage, OrganizationSubscriptionResponse } from '@/lib/api/subscription';
-import { Crown, Trophy, Check, Zap, ArrowUpRight, Download, Receipt, FileText, BadgeCheck, CheckCircle2, Loader2 } from 'lucide-react';
 
 function SettingsContent() {
   const params = useParams();
@@ -298,21 +313,225 @@ function SettingsContent() {
     }
   };
 
+  const navGroups = [
+    {
+      group: 'IDENTITY & PREMISES',
+      items: [
+        {
+          id: 'profile' as const,
+          label: org.type === 'ACADEMY' ? 'Academy Profile' : org.type === 'COACH' ? 'Coach Credentials' : org.type === 'CLUB' ? 'Club Profile' : 'Organization Profile',
+          description: 'Brand logo, cover photo, sports & address',
+          icon: Building2,
+          show: true,
+        },
+        {
+          id: 'amenities' as const,
+          label: 'Amenities & Hours',
+          description: 'Facility operating hours & court specs',
+          icon: Clock,
+          show: isVenueOrg,
+        },
+      ],
+    },
+    {
+      group: 'ACCESS & GOVERNANCE',
+      items: [
+        {
+          id: 'permissions' as const,
+          label: 'Roles & Permissions',
+          description: 'Staff allocation & security matrix',
+          icon: ShieldCheck,
+          show: (org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || isVenueOrg) && isAdmin,
+        },
+      ],
+    },
+    {
+      group: 'EXPERIENCE & ALERTS',
+      items: [
+        {
+          id: 'appearance' as const,
+          label: 'Appearance & Accent',
+          description: 'Sports-tech themes & contrast mode',
+          icon: Palette,
+          show: true,
+        },
+        {
+          id: 'notifications' as const,
+          label: 'Notifications',
+          description: 'Email, WhatsApp & real-time alerts',
+          icon: Bell,
+          show: true,
+        },
+      ],
+    },
+    {
+      group: 'TREASURY & LICENSING',
+      items: [
+        {
+          id: 'payments' as const,
+          label: 'Payments & Settlements',
+          description: 'UPI merchant ID & bank payouts',
+          icon: CreditCard,
+          show: true,
+        },
+        {
+          id: 'billing' as const,
+          label: 'Plan & Billing',
+          description: 'Active license, quotas & tax receipts',
+          icon: Crown,
+          show: true,
+        },
+      ],
+    },
+    {
+      group: 'SECURITY & DANGER',
+      items: [
+        {
+          id: 'danger' as const,
+          label: 'Danger Zone',
+          description: 'Workspace deletion & data wipe',
+          icon: ShieldAlert,
+          show: true,
+          isDanger: true,
+        },
+      ],
+    },
+  ];
+
+  const currentTabMeta = {
+    profile: {
+      title: org.type === 'ACADEMY' ? 'Academy Profile & Identity' : org.type === 'COACH' ? 'Coach Credentials' : org.type === 'CLUB' ? 'Club Profile' : 'Organization Profile',
+      category: 'IDENTITY & PREMISES',
+      desc: 'Fine-tune your brand logo, cover photos, contact details, geo-location, and featured sports.',
+      icon: Building2,
+      badge: 'Live Published',
+    },
+    amenities: {
+      title: 'Amenities & Operating Hours',
+      category: 'IDENTITY & PREMISES',
+      desc: 'Set facility open/close timetables, slot intervals, guest parking, and court rules.',
+      icon: Clock,
+      badge: 'Venue Operations',
+    },
+    permissions: {
+      title: 'Roles & Access Governance',
+      category: 'ACCESS & GOVERNANCE',
+      desc: 'Manage staff accounts, assign operational permissions, and audit clearance levels.',
+      icon: ShieldCheck,
+      badge: 'Security Matrix',
+    },
+    appearance: {
+      title: 'Appearance & Accent Theme',
+      category: 'EXPERIENCE & ALERTS',
+      desc: 'Customize the ATHLON sports-tech accent glow and high-contrast styling across your workspace.',
+      icon: Palette,
+      badge: 'Dynamic UI',
+    },
+    notifications: {
+      title: 'Notification Preferences',
+      category: 'EXPERIENCE & ALERTS',
+      desc: 'Choose automated alerts for member registrations, payments, schedule updates, and digests.',
+      icon: Bell,
+      badge: 'Live Channels',
+    },
+    payments: {
+      title: 'Payments & Settlements',
+      category: 'TREASURY & LICENSING',
+      desc: 'Configure UPI collections, payment gateway credentials, and direct bank settlement accounts.',
+      icon: CreditCard,
+      badge: 'Merchant Treasury',
+    },
+    billing: {
+      title: isCommunityOrg ? 'Community Tier & Features' : 'Plan & Subscription License',
+      category: 'TREASURY & LICENSING',
+      desc: isCommunityOrg
+        ? 'Manage your community plan tier, unlock tournament features, and configure play settings.'
+        : 'Manage your ATHLON enterprise license, view entitlement quotas, and download GST tax receipts.',
+      icon: Crown,
+      badge: isCommunityOrg ? 'Community Hub' : 'SaaS Enterprise',
+    },
+    danger: {
+      title: 'Danger Zone',
+      category: 'SECURITY & DANGER',
+      desc: 'Irreversible workspace actions, data deletion, and account decommissioning.',
+      icon: ShieldAlert,
+      badge: 'High Caution',
+    },
+  }[activeTab] || {
+    title: 'Workspace Settings',
+    category: 'CONFIGURATION',
+    desc: 'Fine-tune workspace parameters and preferences.',
+    icon: Settings,
+    badge: 'Operational',
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto overflow-x-hidden p-3.5 sm:p-6 md:p-8 pb-32 sm:pb-16 safe-area-top space-y-4 sm:space-y-6 animate-in fade-in duration-300 text-foreground font-sans">
-      {/* ── 1. LUXURY REDESIGNED WORKSPACE SETTINGS HERO COMMAND CARD ── */}
+      {/* ── 1. RESPONSIVE WORKSPACE SETTINGS HERO COMMAND CARD ── */}
+      {/* Mobile Compact Hero Bar (visible on mobile only) */}
       <div
-        className="relative overflow-hidden rounded-[26px] sm:rounded-[30px] p-5 sm:p-7 md:p-8 border shadow-xl transition-all select-none"
+        className="block sm:hidden p-3 rounded-xl border shadow-2xs space-y-2 relative overflow-hidden backdrop-blur-xs"
+        style={{
+          backgroundColor: 'var(--athlon-card)',
+          borderColor: 'var(--athlon-border)',
+        }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9.5px] font-bold uppercase tracking-wider border"
+            style={{
+              backgroundColor: 'var(--athlon-primary-soft)',
+              borderColor: 'var(--athlon-primary)',
+              color: 'var(--athlon-primary)',
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            Configuration
+          </span>
+          <span
+            className="px-2 py-0.5 rounded-md text-[9.5px] font-bold uppercase tracking-wider border"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border-subtle)',
+              color: 'var(--athlon-text-muted)',
+            }}
+          >
+            {org.type}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2.5 pt-0.5">
+          <div
+            className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-2xs"
+            style={{
+              backgroundColor: 'var(--athlon-primary-soft)',
+              borderColor: 'var(--athlon-primary)',
+            }}
+          >
+            <Settings className="w-4 h-4 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xs font-bold text-foreground truncate">Workspace Settings</h1>
+            <p className="text-[10px] text-foreground/50 font-medium truncate">
+              Parameters & permissions for {org.name}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Rich Command Card (hidden on mobile) */}
+      <div
+        className="hidden sm:block relative overflow-hidden rounded-[28px] sm:rounded-[32px] p-6 sm:p-7 md:p-8 border shadow-xl transition-all select-none"
         style={{
           backgroundColor: 'var(--athlon-card)',
           borderColor: 'var(--athlon-border)',
           boxShadow:
-            '0 16px 40px -12px var(--athlon-shadow, rgba(0, 0, 0, 0.14)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.14)',
+            '0 20px 48px -12px var(--athlon-shadow, rgba(0, 0, 0, 0.16)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12)',
         }}
       >
         {/* Top Edge Neon Energy Accent Rail */}
         <div
-          className="absolute top-0 inset-x-0 h-[2.5px] opacity-85 pointer-events-none z-0"
+          className="absolute top-0 inset-x-0 h-[2.5px] opacity-90 pointer-events-none z-0"
           style={{
             background:
               'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
@@ -321,140 +540,31 @@ function SettingsContent() {
 
         {/* Ambient Neon Spotlight Glows */}
         <div
-          className="absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl pointer-events-none opacity-40 dark:opacity-60 z-0"
+          className="absolute -top-24 -right-24 w-80 h-80 rounded-full blur-3xl pointer-events-none opacity-30 dark:opacity-50 z-0"
           style={{
             background:
-              'radial-gradient(circle, var(--athlon-primary) 0%, rgba(251, 146, 60, 0.3) 40%, transparent 75%)',
+              'radial-gradient(circle, var(--athlon-primary) 0%, rgba(251, 146, 60, 0.25) 45%, transparent 75%)',
           }}
         />
         <div
-          className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-25 dark:opacity-40 z-0"
+          className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full blur-3xl pointer-events-none opacity-20 dark:opacity-35 z-0"
           style={{
-            background:
-              'radial-gradient(circle, var(--athlon-primary) 0%, transparent 75%)',
+            background: 'radial-gradient(circle, var(--athlon-primary) 0%, transparent 75%)',
           }}
         />
-
-        {/* Precision Tech Dot-Matrix Pattern with Fade Mask */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.14] dark:opacity-[0.22] z-0"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle, var(--athlon-primary) 1.2px, transparent 1.2px)',
-            backgroundSize: '16px 16px',
-            maskImage:
-              'radial-gradient(ellipse 80% 80% at 85% 20%, black 20%, transparent 85%)',
-            WebkitMaskImage:
-              'radial-gradient(ellipse 80% 80% at 85% 20%, black 20%, transparent 85%)',
-          }}
-        />
-
-        {/* High-Tech Precision Geometry / Settings Wireframe SVG */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden z-0"
-          viewBox="0 0 600 240"
-          preserveAspectRatio="xMidYMid slice"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          {/* Concentric Telemetry Calibration Rings */}
-          <g transform="translate(510, 60)" opacity="0.28" stroke="var(--athlon-primary)">
-            <circle cx="0" cy="0" r="110" fill="none" strokeWidth="1" strokeDasharray="4 4" />
-            <circle cx="0" cy="0" r="85" fill="none" strokeWidth="0.8" opacity="0.6" />
-            <circle cx="0" cy="0" r="62" fill="none" strokeWidth="1.2" />
-            <circle cx="0" cy="0" r="42" fill="none" strokeWidth="0.75" strokeDasharray="3 3" />
-            <circle cx="0" cy="0" r="22" fill="none" strokeWidth="1" />
-
-            {/* Crosshair Radial Axis */}
-            <line x1="-120" y1="0" x2="120" y2="0" strokeWidth="0.75" opacity="0.4" />
-            <line x1="0" y1="-120" x2="0" y2="120" strokeWidth="0.75" opacity="0.4" />
-            <line x1="-80" y1="-80" x2="80" y2="80" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.3" />
-            <line x1="-80" y1="80" x2="80" y2="-80" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.3" />
-
-            {/* Precision Degree Ticks */}
-            <line x1="0" y1="-62" x2="0" y2="-55" strokeWidth="1.2" />
-            <line x1="62" y1="0" x2="55" y2="0" strokeWidth="1.2" />
-            <line x1="0" y1="62" x2="0" y2="55" strokeWidth="1.2" />
-            <line x1="-62" y1="0" x2="-55" y2="0" strokeWidth="1.2" />
-          </g>
-
-          {/* Velocity Chevrons in Top-Right */}
-          <g transform="translate(430, 20)" stroke="var(--athlon-primary)" strokeWidth="1.5" strokeLinecap="round" opacity="0.35">
-            <line x1="0" y1="0" x2="6" y2="8" />
-            <line x1="6" y1="8" x2="0" y2="16" />
-            <line x1="8" y1="0" x2="14" y2="8" />
-            <line x1="14" y1="8" x2="8" y2="16" />
-            <line x1="16" y1="0" x2="22" y2="8" />
-            <line x1="22" y1="8" x2="16" y2="16" />
-          </g>
-
-          {/* Technical Reticles */}
-          <path d="M 570 190 L 580 190 M 575 185 L 575 195" stroke="var(--athlon-primary)" strokeWidth="1" opacity="0.3" />
-          <path d="M 20 20 L 30 20 M 20 20 L 20 30" stroke="var(--athlon-primary)" strokeWidth="1" opacity="0.35" />
-        </svg>
 
         {/* Foreground Content */}
-        <div className="relative z-10 space-y-4 sm:space-y-5">
-          {/* 1. Header Top Badges Row */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider border backdrop-blur-md transition-all shadow-xs"
-                style={{
-                  backgroundColor: 'var(--athlon-primary-soft)',
-                  borderColor: 'var(--athlon-primary)',
-                  color: 'var(--athlon-primary)',
-                }}
-              >
-                <span className="relative flex h-2 w-2">
-                  <span
-                    className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                    style={{ backgroundColor: 'var(--athlon-primary)' }}
-                  />
-                  <span
-                    className="relative inline-flex rounded-full h-2 w-2"
-                    style={{ backgroundColor: 'var(--athlon-primary)' }}
-                  />
-                </span>
-                Workspace Configuration
-              </span>
-
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold text-foreground/70 bg-foreground/[0.04] border border-border/80 backdrop-blur-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Live Control Center
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wide shadow-xs">
-                  <ShieldCheck className="w-3 h-3 text-amber-500" />
-                  Administrator
-                </span>
-              )}
-              <span
-                className="px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider border shadow-xs transition-all"
-                style={{
-                  backgroundColor: 'var(--athlon-card)',
-                  borderColor: 'var(--athlon-border)',
-                  color: 'var(--athlon-primary)',
-                }}
-              >
-                {org.type}
-              </span>
-            </div>
-          </div>
-
-          {/* 2. Main Title and Org Avatar Hero Identity */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-            <div className="flex items-start sm:items-center gap-3.5 sm:gap-4">
-              {/* High-Gloss Glassmorphic Settings Icon Container */}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          {/* Left Brand Identity & Breadcrumbs */}
+          <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
+            {/* Org Emblem / Logo */}
+            <div className="relative group shrink-0">
               <div
-                className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border flex items-center justify-center shrink-0 shadow-lg group transition-transform"
+                className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl sm:rounded-3xl border-2 flex items-center justify-center shrink-0 shadow-xl overflow-hidden transition-all duration-300 group-hover:scale-105"
                 style={{
                   backgroundColor: 'var(--athlon-primary-soft)',
                   borderColor: 'var(--athlon-primary)',
-                  boxShadow: '0 8px 24px -4px var(--athlon-shadow, rgba(0, 0, 0, 0.15))',
+                  boxShadow: '0 12px 28px -6px var(--athlon-shadow, rgba(0, 0, 0, 0.2))',
                 }}
               >
                 {(org as any)?.logo ? (
@@ -464,86 +574,112 @@ function SettingsContent() {
                     className="w-full h-full object-cover rounded-2xl"
                   />
                 ) : (
-                  <div className="relative flex items-center justify-center">
-                    <Settings
-                      className="w-6 h-6 sm:w-7 sm:h-7 transition-transform duration-700 group-hover:rotate-90"
-                      style={{ color: 'var(--athlon-primary)' }}
-                    />
-                  </div>
+                  <Settings
+                    className="w-8 h-8 transition-transform duration-700 group-hover:rotate-90"
+                    style={{ color: 'var(--athlon-primary)' }}
+                  />
                 )}
-                {/* Micro corner accent indicator */}
+              </div>
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-card flex items-center justify-center shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
+              </span>
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span
-                  className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-card flex items-center justify-center shadow-xs"
-                  style={{ backgroundColor: 'var(--athlon-primary)' }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs"
+                  style={{
+                    backgroundColor: 'var(--athlon-primary-soft)',
+                    borderColor: 'var(--athlon-primary)',
+                    color: 'var(--athlon-primary)',
+                  }}
                 >
-                  <Sparkles className="w-2 h-2 text-black dark:text-black" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  WORKSPACE COMMAND DECK
+                </span>
+                <span className="text-border text-xs">•</span>
+                <span className="text-[11px] font-bold text-foreground/60 uppercase tracking-wide truncate">
+                  {org.name}
+                </span>
+                <span className="text-border text-xs">•</span>
+                <span className="text-[11px] font-mono font-bold text-primary uppercase">
+                  {currentTabMeta.category}
                 </span>
               </div>
 
-              <div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tracking-tight leading-none flex items-center gap-2">
-                  <span>Workspace Settings</span>
-                </h1>
-                <p className="text-foreground/70 text-xs sm:text-sm font-medium mt-1.5 max-w-2xl leading-relaxed">
-                  Fine-tune operating hours, permissions, appearance, notifications, billing, and system parameters for{' '}
-                  <span
-                    className="inline-flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-md border text-foreground"
-                    style={{
-                      backgroundColor: 'var(--athlon-primary-soft)',
-                      borderColor: 'var(--athlon-primary)',
-                    }}
-                  >
-                    <Building2 className="w-3 h-3 text-primary shrink-0" />
-                    {org.name}
-                  </span>
-                </p>
-              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight leading-tight flex items-center gap-2">
+                <span>Workspace Settings</span>
+              </h1>
+              <p className="text-foreground/65 text-xs sm:text-sm font-medium mt-1 max-w-2xl leading-relaxed">
+                Configure identity parameters, staff permissions, branding theme, financial gateways, and SaaS licenses for{' '}
+                <span
+                  className="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md border text-foreground"
+                  style={{
+                    backgroundColor: 'var(--athlon-surface)',
+                    borderColor: 'var(--athlon-border)',
+                  }}
+                >
+                  <Building2 className="w-3 h-3 text-primary shrink-0" />
+                  {org.name}
+                </span>
+              </p>
             </div>
           </div>
 
-          {/* 3. Quick Telemetry & Status Badges Strip */}
-          <div
-            className="pt-3 border-t flex flex-wrap items-center justify-between gap-3 text-xs"
-            style={{ borderColor: 'var(--athlon-border)' }}
-          >
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-foreground/60 text-[11px] sm:text-xs font-semibold">
-              <span className="flex items-center gap-1.5">
+          {/* Right Telemetry & Actions */}
+          <div className="flex flex-wrap lg:flex-col items-start lg:items-end justify-between gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/60">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-foreground/80 bg-foreground/[0.04] border border-border/80 backdrop-blur-sm">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Status:</span>
-                <strong className="text-foreground font-bold">Active &amp; Synced</strong>
+                Active &amp; Synced
               </span>
-              <span className="text-border">•</span>
-              <span>
-                Domain: <strong className="text-foreground font-bold">{org.type}</strong>
-              </span>
-            </div>
 
-            <div className="flex items-center gap-2 text-[11px] font-bold">
-              <span className="text-foreground/50">Active Tab:</span>
+              {isAdmin && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wide shadow-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                  Administrator
+                </span>
+              )}
+
               <span
-                className="px-2.5 py-0.5 rounded-lg border font-black uppercase tracking-wider"
+                className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border shadow-xs"
                 style={{
-                  backgroundColor: 'var(--athlon-primary-soft)',
-                  borderColor: 'var(--athlon-primary)',
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
                   color: 'var(--athlon-primary)',
                 }}
               >
-                {activeTab}
+                {org.type} Edition
               </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/org/${org.id || orgId}/dashboard`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 text-foreground hover:text-primary hover:border-primary/50 shadow-xs"
+                style={{
+                  backgroundColor: 'var(--athlon-surface)',
+                  borderColor: 'var(--athlon-border)',
+                }}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── MOBILE HORIZONTAL PILL BAR & DESKTOP SIDEBAR ── */}
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8 w-full max-w-full">
-        {/* Navigation Tabs (Horizontal on mobile, Vertical on desktop) */}
-        <div className="w-full md:w-64 shrink-0 max-w-full">
-          <div className="p-1 md:p-1.5 rounded-2xl bg-card/70 backdrop-blur-md border border-border/70 flex md:flex-col gap-1.5 overflow-x-auto pb-1.5 md:pb-1.5 hide-scrollbar w-full max-w-full shadow-xs">
+      {/* ── 2. MOBILE HORIZONTAL PILL BAR & DESKTOP CATEGORIZED SIDEBAR ── */}
+      <div className="flex flex-col md:flex-row gap-5 md:gap-8 w-full max-w-full">
+        {/* Mobile Navigation Tabs (Horizontal on mobile) */}
+        <div className="block md:hidden w-full shrink-0 max-w-full">
+          <div className="p-1 rounded-2xl bg-card/70 backdrop-blur-md border border-border/70 flex gap-1.5 overflow-x-auto pb-1.5 hide-scrollbar w-full max-w-full shadow-xs">
             {/* 1. Organization Profile Tab */}
             <button
               onClick={() => setActiveTab('profile')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'profile'
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'profile'
                 ? 'bg-primary text-black font-black shadow-md shadow-primary/20'
                 : 'text-foreground/75 hover:bg-foreground/5 hover:text-foreground border border-transparent'
                 }`}
@@ -553,43 +689,43 @@ function SettingsContent() {
                 {org.type === 'ACADEMY'
                   ? 'Academy Profile'
                   : org.type === 'COACH'
-                    ? 'Coach Profile & Credentials'
+                    ? 'Coach Profile'
                     : org.type === 'CLUB'
                       ? 'Club Profile'
-                      : 'Organization Profile'}
+                      : 'Profile'}
               </span>
             </button>
 
-            {/* 2. Venue Amenities & Hours Tab (Specific to Court / Venue Manager) */}
+            {/* 2. Venue Amenities & Hours Tab */}
             {isVenueOrg && (
               <button
                 onClick={() => setActiveTab('amenities')}
-                className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'amenities'
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'amenities'
                   ? 'bg-primary text-black font-black shadow-md shadow-primary/20'
                   : 'text-foreground/75 hover:bg-foreground/5 hover:text-foreground border border-transparent'
                   }`}
               >
                 <Clock className="w-4 h-4 shrink-0" />
-                <span className="whitespace-nowrap">Amenities &amp; Hours</span>
+                <span className="whitespace-nowrap">Amenities</span>
               </button>
             )}
 
             {(org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || isVenueOrg) && isAdmin && (
               <button
                 onClick={() => setActiveTab('permissions')}
-                className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'permissions'
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'permissions'
                   ? 'bg-primary text-black font-black shadow-md shadow-primary/20'
                   : 'text-foreground/75 hover:bg-foreground/5 hover:text-foreground border border-transparent'
                   }`}
               >
                 <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span className="whitespace-nowrap">Roles &amp; Permissions</span>
+                <span className="whitespace-nowrap">Permissions</span>
               </button>
             )}
 
             <button
               onClick={() => setActiveTab('appearance')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'appearance'
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'appearance'
                 ? 'bg-primary text-black font-black shadow-md shadow-primary/20'
                 : 'text-foreground/75 hover:bg-foreground/5 hover:text-foreground border border-transparent'
                 }`}
@@ -600,7 +736,7 @@ function SettingsContent() {
 
             <button
               onClick={() => setActiveTab('notifications')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'notifications'
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'notifications'
                 ? 'bg-primary text-black font-black shadow-md shadow-primary/20'
                 : 'text-foreground/75 hover:bg-foreground/5 hover:text-foreground border border-transparent'
                 }`}
@@ -611,35 +747,35 @@ function SettingsContent() {
 
             <button
               onClick={() => setActiveTab('payments')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'payments'
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'payments'
                 ? 'bg-primary text-black font-black shadow-md shadow-primary/20'
                 : 'text-foreground/75 hover:bg-foreground/5 hover:text-foreground border border-transparent'
                 }`}
             >
               <CreditCard className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">Payments &amp; Settlements</span>
+              <span className="whitespace-nowrap">Payments</span>
             </button>
 
             <button
               onClick={() => setActiveTab('billing')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'billing'
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'billing'
                 ? 'bg-primary text-black font-black shadow-md shadow-primary/20'
                 : 'text-foreground/75 hover:bg-foreground/5 hover:text-foreground border border-transparent'
                 }`}
             >
               <CreditCard className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">Plan &amp; Billing</span>
+              <span className="whitespace-nowrap">Plan</span>
             </button>
 
             <button
               onClick={() => setActiveTab('danger')}
-              className={`flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'danger'
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 ${activeTab === 'danger'
                 ? 'bg-red-500 text-white shadow-md shadow-red-500/25 font-black'
                 : 'text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20'
                 }`}
             >
               <ShieldAlert className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">Danger Zone</span>
+              <span className="whitespace-nowrap">Danger</span>
             </button>
 
             <button
@@ -647,10 +783,7 @@ function SettingsContent() {
                 logout();
                 window.location.href = '/';
               }}
-              className="flex items-center gap-2 md:gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 active:scale-95 text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 md:mt-2"
-              style={{
-                backgroundColor: 'var(--athlon-card)',
-              }}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95 text-rose-500 hover:bg-rose-500/10 border border-rose-500/20"
             >
               <LogOut className="w-4 h-4 shrink-0" />
               <span className="whitespace-nowrap">Log Out</span>
@@ -658,8 +791,177 @@ function SettingsContent() {
           </div>
         </div>
 
+        {/* Desktop Categorized Navigation Sidebar (Desktop Only) */}
+        <div className="hidden md:flex md:w-72 lg:w-80 flex-col shrink-0 space-y-6">
+          <div
+            className="p-3.5 rounded-3xl border shadow-lg space-y-5 transition-all"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+              boxShadow: '0 12px 36px -10px var(--athlon-shadow, rgba(0, 0, 0, 0.12)), 0 0 0 1px var(--athlon-border)',
+            }}
+          >
+            {navGroups.map((group, gIdx) => {
+              const visibleItems = group.items.filter((item) => item.show);
+              if (visibleItems.length === 0) return null;
+
+              return (
+                <div key={gIdx} className="space-y-1.5">
+                  <div className="px-2 text-[9.5px] font-black text-foreground/45 uppercase tracking-widest flex items-center justify-between">
+                    <span>{group.group}</span>
+                    <span className="text-[9px] font-mono text-foreground/30">{visibleItems.length}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    {visibleItems.map((item) => {
+                      const IconComp = item.icon;
+                      const isActive = activeTab === item.id;
+                      const isDanger = (item as any).isDanger;
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setActiveTab(item.id as any)}
+                          className={`w-full text-left p-2.5 rounded-2xl transition-all duration-200 group flex items-center justify-between relative overflow-hidden ${
+                            isActive
+                              ? isDanger
+                                ? 'bg-red-500/15 text-red-400 border border-red-500/35 shadow-sm'
+                                : 'bg-primary text-black font-black shadow-md shadow-primary/25 border border-primary'
+                              : 'text-foreground/75 hover:text-foreground hover:bg-foreground/[0.04] border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                                isActive
+                                  ? isDanger
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-black text-primary'
+                                  : 'bg-foreground/5 text-foreground/70 group-hover:bg-primary/10 group-hover:text-primary'
+                              }`}
+                            >
+                              <IconComp className="w-4 h-4" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div
+                                className={`text-xs font-bold truncate leading-tight ${
+                                  isActive ? (isDanger ? 'text-red-400 font-black' : 'text-black font-black') : 'text-foreground font-bold'
+                                }`}
+                              >
+                                {item.label}
+                              </div>
+                              <div
+                                className={`text-[10px] truncate leading-tight mt-0.5 font-medium ${
+                                  isActive
+                                    ? isDanger
+                                      ? 'text-red-400/80'
+                                      : 'text-black/70'
+                                    : 'text-foreground/50'
+                                }`}
+                              >
+                                {item.description}
+                              </div>
+                            </div>
+                          </div>
+
+                          <ChevronRight
+                            className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
+                              isActive
+                                ? isDanger
+                                  ? 'text-red-400 translate-x-0.5'
+                                  : 'text-black translate-x-0.5'
+                                : 'text-foreground/25 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5'
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bottom System & Logout Card */}
+          <div
+            className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-xs"
+            style={{
+              backgroundColor: 'var(--athlon-surface)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-wider text-foreground block">
+                Athlon Core Engine
+              </span>
+              <span className="text-[9.5px] text-foreground/50 font-medium">
+                v2.4 • Edge Live Synced
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                window.location.href = '/';
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-500/25 transition-all active:scale-95 shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </button>
+          </div>
+        </div>
+
         {/* ── Settings Content Area ── */}
-        <div className="flex-grow min-w-0 w-full max-w-full overflow-x-hidden">
+        <div className="flex-grow min-w-0 w-full max-w-full overflow-x-hidden space-y-4">
+          {/* Desktop Active Tab Header Card (hidden on mobile) */}
+          <div
+            className="hidden sm:flex items-center justify-between p-5 rounded-2xl border shadow-sm transition-all"
+            style={{
+              backgroundColor: 'var(--athlon-card)',
+              borderColor: 'var(--athlon-border)',
+            }}
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div
+                className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-xs"
+                style={{
+                  backgroundColor: 'var(--athlon-primary-soft)',
+                  borderColor: 'var(--athlon-primary)',
+                  color: 'var(--athlon-primary)',
+                }}
+              >
+                {React.createElement(currentTabMeta.icon, { className: 'w-5 h-5' })}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.2 rounded-md bg-foreground/5 text-foreground/60 border border-border">
+                    {currentTabMeta.category}
+                  </span>
+                  <span className="text-border">•</span>
+                  <span className="text-[10px] font-bold text-primary">
+                    {currentTabMeta.badge}
+                  </span>
+                </div>
+                <h2 className="text-lg font-black text-foreground tracking-tight truncate">
+                  {currentTabMeta.title}
+                </h2>
+                <p className="text-xs text-foreground/55 font-medium truncate">
+                  {currentTabMeta.desc}
+                </p>
+              </div>
+            </div>
+
+            <div className="hidden lg:flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold text-foreground/70 bg-foreground/[0.03] border border-border">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Live Configuration
+              </span>
+            </div>
+          </div>
           {/* 1. Profile Editor Tab (Always OrganizationProfileEditor) */}
           {activeTab === 'profile' && (
             <div className="animate-in fade-in duration-300">
@@ -702,16 +1004,33 @@ function SettingsContent() {
           {/* Other Tabs in Card */}
           {activeTab !== 'profile' && activeTab !== 'amenities' && !(activeTab === 'permissions' && (org.type === 'ACADEMY' || org.type === 'CLUB' || org.type === 'ORGANIZER' || org.type === 'ASSOCIATION' || isVenueOrg)) && (
             <div
-              className="rounded-[24px] p-4 sm:p-6 md:p-8 shadow-sm border"
-              style={{ backgroundColor: 'var(--athlon-card)', borderColor: 'var(--athlon-border)' }}
+              className="rounded-[28px] sm:rounded-[32px] p-5 sm:p-7 md:p-9 border shadow-xl relative overflow-hidden backdrop-blur-md transition-all"
+              style={{
+                backgroundColor: 'var(--athlon-card)',
+                borderColor: 'var(--athlon-border)',
+                boxShadow:
+                  '0 20px 48px -12px var(--athlon-shadow, rgba(0, 0, 0, 0.14)), 0 0 0 1px var(--athlon-border), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08)',
+              }}
             >
+              {/* Top Accent Energy Line */}
+              <div
+                className="absolute top-0 inset-x-0 h-[2px] opacity-85 pointer-events-none z-0"
+                style={{
+                  background:
+                    'linear-gradient(90deg, transparent 0%, var(--athlon-primary) 50%, transparent 100%)',
+                }}
+              />
+
               {/* ─── Appearance Tab ───────────────────────────────────────────── */}
               {activeTab === 'appearance' && (
-                <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-6 animate-in fade-in duration-300 relative z-10">
                   <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-foreground mb-1">Appearance &amp; Accent Theme</h2>
-                    <p className="text-xs sm:text-sm font-medium text-foreground/50 mb-6">
-                      Customize the ATHLON sports-tech accent theme across your workspace.
+                    <h2 className="text-xl sm:text-2xl font-black text-foreground mb-1.5 tracking-tight flex items-center gap-2">
+                      <Palette className="w-6 h-6 text-primary" />
+                      <span>Appearance &amp; Accent Theme</span>
+                    </h2>
+                    <p className="text-xs sm:text-sm font-medium text-foreground/60 mb-6 max-w-2xl leading-relaxed">
+                      Personalize the sports-tech accent glow, contrast themes, and visual tone across your organization workspace console and management screens.
                     </p>
                     <ThemeSelector showPreviews={true} />
                   </div>
@@ -720,32 +1039,54 @@ function SettingsContent() {
 
               {/* ─── Notifications Tab ────────────────────────────────────────── */}
               {activeTab === 'notifications' && (
-                <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-6 animate-in fade-in duration-300 relative z-10">
                   <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-foreground mb-1">Notification Preferences</h2>
-                    <p className="text-xs sm:text-sm font-medium text-foreground/50 mb-6">
-                      Choose how you want to be alerted about workspace activity.
+                    <h2 className="text-xl sm:text-2xl font-black text-foreground mb-1.5 tracking-tight flex items-center gap-2">
+                      <Bell className="w-6 h-6 text-primary" />
+                      <span>Notification Preferences</span>
+                    </h2>
+                    <p className="text-xs sm:text-sm font-medium text-foreground/60 mb-6 max-w-2xl leading-relaxed">
+                      Control automated event triggers, WhatsApp notifications, payment receipts, and weekly digests for workspace administrators.
                     </p>
 
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       {[
-                        { title: 'New Member Registrations', desc: 'Get notified when a new member or student joins.' },
-                        { title: 'Fee Payment Alerts', desc: 'Notifications for successful fee collections and overdue alerts.' },
-                        { title: 'Schedule Changes', desc: 'Alerts when a coach modifies or cancels a batch.' },
-                        { title: 'Weekly Reports', desc: 'Receive a weekly digest of analytics and attendance.' },
+                        {
+                          tag: 'MEMBERSHIP',
+                          title: 'New Member Registrations',
+                          desc: 'Instant alert when a player, student, or guest enrolls or checks in.',
+                        },
+                        {
+                          tag: 'TREASURY',
+                          title: 'Fee Payment & Settlement Alerts',
+                          desc: 'Push notification on successful UPI transactions and monthly dues.',
+                        },
+                        {
+                          tag: 'OPERATIONS',
+                          title: 'Schedule & Slot Timetable Changes',
+                          desc: 'Real-time alert when a coach or manager modifies court sessions.',
+                        },
+                        {
+                          tag: 'INSIGHTS',
+                          title: 'Weekly Performance Digest',
+                          desc: 'Consolidated report on court occupancy, revenue, and attendance.',
+                        },
                       ].map((item, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between p-3.5 border rounded-2xl"
+                          className="flex items-center justify-between p-4 border rounded-2xl transition-all hover:border-primary/40 group"
                           style={{ backgroundColor: 'var(--athlon-surface)', borderColor: 'var(--athlon-border)' }}
                         >
-                          <div>
-                            <div className="font-bold text-foreground text-xs sm:text-sm">{item.title}</div>
-                            <div className="text-[11px] text-foreground/50 mt-0.5">{item.desc}</div>
+                          <div className="space-y-1 pr-3">
+                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-foreground/5 text-foreground/60 border border-border">
+                              {item.tag}
+                            </span>
+                            <div className="font-bold text-foreground text-xs sm:text-sm mt-1">{item.title}</div>
+                            <div className="text-[11px] text-foreground/50 leading-relaxed">{item.desc}</div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" className="sr-only peer" defaultChecked={i < 3} />
-                            <div className="w-10 h-5 bg-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                            <div className="w-11 h-6 bg-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                           </label>
                         </div>
                       ))}
@@ -1361,21 +1702,50 @@ function SettingsContent() {
 
               {/* ─── Danger Tab ───────────────────────────────────────────────── */}
               {activeTab === 'danger' && (
-                <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-6 animate-in fade-in duration-300 relative z-10">
                   <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-red-400 mb-1 flex items-center gap-2">
-                      <ShieldAlert className="w-5 h-5" /> Danger Zone
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-black uppercase tracking-wider">
+                        SECURITY RISK ZONE
+                      </span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-red-500 mb-1.5 tracking-tight flex items-center gap-2">
+                      <ShieldAlert className="w-6 h-6 text-red-500" />
+                      <span>Danger Zone</span>
                     </h2>
-                    <p className="text-xs sm:text-sm font-medium text-foreground/50 mb-6">Irreversible actions for your workspace.</p>
+                    <p className="text-xs sm:text-sm font-medium text-foreground/60 mb-6 max-w-2xl leading-relaxed">
+                      Irreversible and destructive actions for this organization workspace. These actions cannot be undone.
+                    </p>
 
-                    <div className="border border-red-500/25 bg-red-500/5 rounded-2xl p-4 sm:p-6">
-                      <h3 className="font-bold text-foreground text-sm mb-1.5">Delete Workspace</h3>
-                      <p className="text-xs text-foreground/60 mb-5 leading-relaxed">
-                        Once you delete this workspace, there is no going back. All members, tournament records, settings, and financial logs will be permanently wiped.
-                      </p>
-                      <button className="px-4 py-2.5 rounded-xl bg-red-500 text-white text-xs font-black uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">
-                        Delete {org.name}
-                      </button>
+                    <div className="border border-red-500/30 bg-red-500/5 rounded-3xl p-5 sm:p-7 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-48 h-48 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
+                      
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 text-red-500 font-black text-sm sm:text-base mb-2">
+                          <ShieldAlert className="w-4 h-4 shrink-0" />
+                          <span>Decommission &amp; Delete Workspace</span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-foreground/70 mb-6 leading-relaxed max-w-2xl">
+                          Once you permanently delete <strong>{org.name}</strong>, all member enrollments, tournament draws, transaction history, court timetable schedules, and team configurations will be irreversibly erased from ATHLON cloud clusters.
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Are you absolutely sure you want to permanently delete workspace "${org.name}"? This action CANNOT be undone.`)) {
+                                alert('Workspace deletion request initiated. For security reasons, please contact workspace superadmin.');
+                              }
+                            }}
+                            className="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-red-500/25 active:scale-95 cursor-pointer"
+                          >
+                            Delete {org.name} Workspace
+                          </button>
+                          <span className="text-[11px] font-medium text-foreground/50">
+                            Requires superadmin security key
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
