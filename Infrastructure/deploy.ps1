@@ -8,10 +8,10 @@
 
 $ErrorActionPreference = "Stop"
 
-$ProjectRoot = "C:\Dinesh\Projects\Athlon-Sport"
+$ProjectRoot = "C:\Frncs\carmelpublicschool\Athlon"
 $FrontendDir = "$ProjectRoot\athlon-user"
-$KeyPath = "$ProjectRoot\Infrastructure\athlon-key.pem"
-$ServerHost = "ubuntu@15.252.63.6"
+$KeyPath = "$ProjectRoot\Infrastructure\athlon.pem"
+$ServerHost = "ubuntu@16.179.62.112"
 $ArchiveName = "athlon-standalone.tar.gz"
 $ArchivePath = "$ProjectRoot\$ArchiveName"
 
@@ -30,7 +30,7 @@ Write-Host "[3/5] Uploading bundle to server..." -ForegroundColor Cyan
 scp -i $KeyPath -o StrictHostKeyChecking=no $ArchivePath "${ServerHost}:/home/ubuntu/$ArchiveName"
 
 Write-Host "[4/5] Deploying and restarting athlon-user service..." -ForegroundColor Cyan
-$RemoteCmd = "cd /home/ubuntu/athlon-user && rm -rf node_modules .next src public && tar -xzf /home/ubuntu/$ArchiveName -C /home/ubuntu/athlon-user && rm -f /home/ubuntu/$ArchiveName && sudo systemctl restart athlon-user"
+$RemoteCmd = "cd /home/ubuntu/athlon-user && rm -rf node_modules .next src public server.js && tar -xzf /home/ubuntu/$ArchiveName -C /home/ubuntu/athlon-user && rm -f /home/ubuntu/$ArchiveName && if [ -d Athlon/athlon-user ]; then cp -rn Athlon/athlon-user/* . 2>/dev/null; cp -rn Athlon/athlon-user/.[!.]* . 2>/dev/null; rm -rf Athlon; fi && chmod -R 755 /home/ubuntu/athlon-user && pm2 restart athlon-user || pm2 start ecosystem.config.cjs"
 ssh -i $KeyPath -o StrictHostKeyChecking=no $ServerHost $RemoteCmd
 
 Write-Host "[5/5] Cleaning local temporary archive..." -ForegroundColor Cyan

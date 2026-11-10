@@ -6,14 +6,14 @@
 #>
 
 param (
-    [string[]]$Services = @("GATEWAYSERVICE", "IDENTITYSERVICE", "MARKETPLACESERVICE", "TOURNAMENTSERVICE", "AUTHSERVICE")
+    [string[]]$Services = @("AUTHSERVICE", "IDENTITYSERVICE", "TOURNAMENTSERVICE", "PAYMENTSERVICE", "MARKETPLACESERVICE", "GATEWAYSERVICE")
 )
 
 $ErrorActionPreference = "Stop"
 
-$ProjectRoot = "C:\Dinesh\Projects\Athlon-Sport"
-$KeyPath = "$ProjectRoot\Infrastructure\athlon-key.pem"
-$ServerHost = "ubuntu@15.252.63.6"
+$ProjectRoot = "C:\Frncs\carmelpublicschool\Athlon"
+$KeyPath = "$ProjectRoot\Infrastructure\athlon.pem"
+$ServerHost = "ubuntu@16.179.62.112"
 $RemoteServicesDir = "/home/ubuntu/services"
 
 $ServiceMap = @{
